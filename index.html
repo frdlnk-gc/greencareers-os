@@ -15,6 +15,19 @@
 
   /* ---------- gallery chrome ---------- */
   .page{ max-width:1320px; margin:0 auto; padding:32px 20px 90px; }
+  .finalcta{ display:flex; align-items:center; gap:24px; flex-wrap:wrap; text-decoration:none;
+    background:linear-gradient(135deg,#10331F,#0B5D38); color:#fff; border-radius:18px; padding:24px 28px;
+    margin-bottom:18px; box-shadow:0 16px 40px rgba(11,93,56,.30); border:1px solid rgba(255,255,255,.08); transition:.18s; }
+  .finalcta:hover{ transform:translateY(-2px); box-shadow:0 22px 50px rgba(11,93,56,.38); }
+  .finalcta .fc-l{ flex:1; min-width:260px; }
+  .fc-badge{ display:inline-flex; align-items:center; gap:6px; font-size:11.5px; font-weight:800; letter-spacing:.02em;
+    color:#9DF5C2; background:rgba(0,210,97,.14); border:1px solid rgba(0,210,97,.3); border-radius:999px; padding:5px 12px; }
+  .fc-badge .lucide{ width:14px; height:14px; }
+  .fc-title{ font-size:21px; font-weight:800; letter-spacing:-.01em; margin-top:11px; }
+  .fc-sub{ font-size:13.5px; line-height:1.5; color:rgba(255,255,255,.78); margin-top:6px; max-width:640px; }
+  .fc-btn{ display:inline-flex; align-items:center; gap:9px; font-size:14.5px; font-weight:700; color:#10331F;
+    background:#fff; border-radius:999px; padding:13px 22px; white-space:nowrap; box-shadow:0 6px 18px rgba(0,0,0,.18); }
+  .fc-btn .lucide{ width:17px; height:17px; }
   .masthead{ background:#fff; border:1px solid #E3E5E1; border-radius:18px; padding:28px 30px; box-shadow:0 1px 2px rgba(20,30,20,.04); }
   .masthead h1{ font-size:26px; font-weight:800; letter-spacing:-.02em; }
   .masthead .sub{ display:inline-block; font-size:12px; font-weight:700; color:#0E7A43; background:#E8F6EE; border:1px solid #CFEBDA; border-radius:999px; padding:4px 11px; margin-bottom:14px; }
@@ -228,6 +241,14 @@
 </head>
 <body>
 <div class="page">
+  <a class="finalcta" href="app.html">
+    <div class="fc-l">
+      <span class="fc-badge"><i data-lucide="check-circle-2"></i> FINALE WAHL · Skin 1 „Hell &amp; Weich"</span>
+      <div class="fc-title">Der fertige, voll klickbare Prototyp ist da</div>
+      <div class="fc-sub">Login, alle 4 Bereiche (Heute · Team · Planung · Kunden), Drag &amp; Drop, Detail-Ansichten — mit Dummy-Daten. Bereit zum Testen mit Julian &amp; Liam.</div>
+    </div>
+    <span class="fc-btn">Prototyp öffnen <i data-lucide="arrow-right"></i></span>
+  </a>
   <div class="masthead">
     <span class="sub">RUNDE 4 · gleiche Anordnung („Mein Cockpit") — 5 komplett verschiedene Optiken</span>
     <h1>Wie soll es grafisch aussehen?</h1>

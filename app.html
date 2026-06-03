@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>GreenCareers OS</title>
+<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --accent:#16A34A; --accent2:#0E7A43; --accentSoft:#EAF7EF;
+    --text:#17231A; --muted:#6A7A6E; --line:#E9ECE8; --card:#fff;
+    --canvas: radial-gradient(820px 340px at 100% -12%, rgba(22,163,74,.10), transparent 58%), radial-gradient(640px 300px at -6% 112%, rgba(22,163,74,.08), transparent 60%), linear-gradient(180deg,#FBFDFB 0%,#F2F6F2 100%);
+    --sb:#15241A; --sbText:#A9B8AC; --sbMuted:#6E7E72;
+    --shadow:0 1px 2px rgba(20,30,20,.05),0 8px 22px rgba(20,30,20,.05);
+    --radius:14px;
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html,body{ height:100%; }
+  body{ font-family:'Inter',system-ui,sans-serif; background:#0F1B0F; color:var(--text); -webkit-font-smoothing:antialiased; }
+  .lucide{ width:1em; height:1em; }
+  button{ font-family:inherit; cursor:pointer; border:none; background:none; color:inherit; }
+  input{ font-family:inherit; }
+  ::-webkit-scrollbar{ width:9px; height:9px; } ::-webkit-scrollbar-thumb{ background:#c8d0c8; border-radius:9px; }
+
+  /* ============ LOGIN ============ */
+  .auth{ min-height:100vh; display:grid; place-items:center; padding:24px;
+    background: radial-gradient(900px 500px at 80% -10%, rgba(22,163,74,.22), transparent 55%), linear-gradient(160deg,#13251A,#0A140C); }
+  .auth__card{ width:100%; max-width:410px; background:#fff; border-radius:20px; padding:34px 32px; box-shadow:0 30px 70px rgba(0,0,0,.4); }
+  .auth__logo{ display:flex; align-items:center; gap:11px; margin-bottom:22px; }
+  .auth__logo .m{ width:42px; height:42px; border-radius:11px; background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff; display:grid; place-items:center; }
+  .auth__logo .n{ font-size:18px; font-weight:800; letter-spacing:-.01em; }
+  .auth__logo .n small{ color:var(--accent2); }
+  .auth h1{ font-family:'Fraunces',serif; font-weight:500; font-size:25px; letter-spacing:-.02em; }
+  .auth p.sub{ font-size:13.5px; color:var(--muted); margin-top:5px; margin-bottom:22px; }
+  .field{ margin-bottom:14px; }
+  .field label{ display:block; font-size:12.5px; font-weight:600; margin-bottom:6px; color:var(--text); }
+  .field input{ width:100%; padding:12px 14px; border:1px solid var(--line); border-radius:11px; font-size:14px; outline:none; transition:.15s; }
+  .field input:focus{ border-color:var(--accent); box-shadow:0 0 0 3px var(--accentSoft); }
+  .btn{ width:100%; padding:13px; border-radius:11px; font-size:14.5px; font-weight:700; background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff; box-shadow:0 10px 24px rgba(22,163,74,.28); transition:.15s; }
+  .btn:hover{ transform:translateY(-1px); box-shadow:0 14px 30px rgba(22,163,74,.36); }
+  .btn.ghost{ background:#fff; color:var(--text); border:1px solid var(--line); box-shadow:none; }
+  .auth__row{ display:flex; justify-content:space-between; align-items:center; margin:4px 0 18px; font-size:12.5px; }
+  .auth__row a{ color:var(--accent2); font-weight:600; text-decoration:none; cursor:pointer; }
+  .auth__chk{ display:flex; align-items:center; gap:7px; color:var(--muted); }
+  .auth__foot{ text-align:center; font-size:11.5px; color:var(--muted); margin-top:18px; }
+  .auth__back{ display:inline-flex; align-items:center; gap:6px; font-size:12.5px; color:var(--muted); margin-bottom:14px; cursor:pointer; }
+  .hidden{ display:none !important; }
+
+  /* ============ APP SHELL ============ */
+  .app{ display:flex; height:100vh; background:var(--sb); }
+  .sb{ width:230px; flex-shrink:0; background:var(--sb); color:var(--sbText); display:flex; flex-direction:column; padding:16px 12px; transition:width .22s ease; }
+  .app.collapsed .sb{ width:74px; }
+  .sb__brand{ display:flex; align-items:center; gap:11px; padding:6px 8px 16px; }
+  .sb__brand .m{ width:38px; height:38px; border-radius:10px; background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff; display:grid; place-items:center; flex-shrink:0; }
+  .sb__brand .t{ line-height:1.15; white-space:nowrap; overflow:hidden; }
+  .sb__brand .t b{ font-size:14px; color:#fff; }
+  .sb__brand .t small{ display:block; font-size:10.5px; color:var(--sbMuted); }
+  .app.collapsed .sb__brand .t{ display:none; }
+  .sb__nav{ display:flex; flex-direction:column; gap:3px; margin-top:6px; }
+  .sb__nl{ font-size:10.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--sbMuted); padding:8px 10px 6px; white-space:nowrap; }
+  .app.collapsed .sb__nl{ opacity:0; }
+  .ni{ display:flex; align-items:center; gap:12px; padding:11px; border-radius:10px; font-size:13.5px; font-weight:500; color:var(--sbText); cursor:pointer; transition:.13s; white-space:nowrap; }
+  .ni .lucide{ width:18px; height:18px; flex-shrink:0; }
+  .ni:hover{ background:rgba(255,255,255,.05); }
+  .ni.on{ background:rgba(255,255,255,.11); color:#fff; }
+  .ni .cnt{ margin-left:auto; font-size:11px; font-weight:700; background:var(--accent); color:#fff; border-radius:999px; padding:1px 7px; }
+  .ni .lab{ overflow:hidden; }
+  .app.collapsed .ni .lab,.app.collapsed .ni .cnt{ display:none; }
+  .app.collapsed .ni{ justify-content:center; }
+  .sb__foot{ margin-top:auto; display:flex; flex-direction:column; gap:10px; }
+  .sb__pwr{ font-size:11px; color:var(--sbMuted); text-align:center; padding:9px; border-top:1px solid rgba(255,255,255,.07); display:flex; align-items:center; justify-content:center; gap:5px; white-space:nowrap; }
+  .sb__pwr .lucide{ width:12px; height:12px; color:var(--accent); }
+  .sb__pwr b{ color:#B7C3B3; }
+  .app.collapsed .sb__pwr span{ display:none; }
+  .sb__user{ display:flex; align-items:center; gap:9px; padding:5px 6px; cursor:pointer; border-radius:9px; }
+  .sb__user:hover{ background:rgba(255,255,255,.05); }
+  .sb__ava{ width:32px; height:32px; border-radius:8px; background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff; display:grid; place-items:center; font-size:12px; font-weight:700; flex-shrink:0; }
+  .sb__user .t{ line-height:1.2; white-space:nowrap; overflow:hidden; }
+  .sb__user .t b{ font-size:12.5px; color:#fff; font-weight:600; }
+  .sb__user .t small{ display:block; font-size:11px; color:var(--sbMuted); }
+  .app.collapsed .sb__user .t{ display:none; }
+
+  .main{ flex:1; display:flex; flex-direction:column; min-width:0; background:#fff; border-radius:16px 0 0 16px; overflow:hidden; }
+  .top{ height:60px; display:flex; align-items:center; gap:12px; padding:0 22px; border-bottom:1px solid var(--line); background:rgba(255,255,255,.8); backdrop-filter:blur(8px); flex-shrink:0; }
+  .top .burger{ width:36px; height:36px; border-radius:9px; display:grid; place-items:center; color:var(--muted); }
+  .top .burger:hover{ background:var(--accentSoft); color:var(--accent); }
+  .top .ttl{ font-size:16px; font-weight:700; }
+  .top .ttl .lucide{ width:18px; height:18px; vertical-align:-3px; color:var(--accent); margin-right:6px; }
+  .top .sp{ flex:1; }
+  .wmini{ display:flex; align-items:center; gap:9px; background:#fff; border:1px solid var(--line); border-radius:10px; padding:6px 12px 6px 8px; font-size:11.5px; color:var(--muted); }
+  .wmini .wt{ width:30px; height:30px; border-radius:8px; background:var(--accentSoft); color:var(--accent); display:grid; place-items:center; }
+  .wmini b{ color:var(--text); }
+  .bell{ width:38px; height:38px; border-radius:9px; border:1px solid var(--line); background:#fff; display:grid; place-items:center; position:relative; color:var(--muted); }
+  .bell::after{ content:''; position:absolute; top:8px; right:8px; width:7px; height:7px; border-radius:50%; background:var(--accent); border:2px solid #fff; }
+  .body{ flex:1; overflow:auto; padding:22px; background:var(--canvas); }
+
+  /* mobile bottom nav */
+  .mnav{ display:none; }
+
+  /* ============ COMMON COMPONENTS ============ */
+  .hello h2{ font-family:'Fraunces',serif; font-weight:500; font-size:27px; letter-spacing:-.02em; line-height:1.06; }
+  .hello h2 em{ font-style:italic; color:var(--accent2); }
+  .hello p{ font-size:13px; color:var(--muted); margin-top:5px; }
+  .pagehead{ display:flex; align-items:flex-end; gap:14px; margin-bottom:18px; flex-wrap:wrap; }
+  .pagehead h2{ font-family:'Fraunces',serif; font-weight:500; font-size:24px; letter-spacing:-.02em; }
+  .pagehead p{ font-size:13px; color:var(--muted); margin-top:3px; }
+  .pagehead .sp{ flex:1; }
+
+  .kpi{ background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:15px 16px; box-shadow:var(--shadow); }
+  .kpi .kr{ display:flex; align-items:center; gap:10px; }
+  .kpi .ki{ width:34px; height:34px; border-radius:9px; background:var(--accentSoft); color:var(--accent); display:grid; place-items:center; }
+  .kpi .ki .lucide{ width:17px; height:17px; }
+  .kpi .num{ margin-left:auto; font-size:24px; font-weight:800; }
+  .kpi .lab{ font-size:12.5px; font-weight:600; margin-top:9px; }
+  .kpi .sub{ font-size:11px; color:var(--muted); margin-top:2px; }
+  .kpi.acc{ background:linear-gradient(135deg,var(--accent),var(--accent2)); border-color:transparent; color:#fff; box-shadow:0 14px 34px rgba(22,163,74,.2); }
+  .kpi.acc .ki{ background:rgba(255,255,255,.2); color:#fff; }
+  .kpi.acc .sub{ color:rgba(255,255,255,.85); }
+  .kpi.clk{ cursor:pointer; transition:.15s; } .kpi.clk:hover{ transform:translateY(-2px); box-shadow:0 16px 36px rgba(20,40,25,.12); }
+
+  .panel{ background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:16px 17px; box-shadow:var(--shadow); }
+  .ph{ display:flex; align-items:center; gap:9px; font-size:13.5px; font-weight:700; margin-bottom:12px; }
+  .ph .lucide{ width:16px; height:16px; color:var(--accent); }
+  .ph .more{ margin-left:auto; font-size:11.5px; font-weight:600; color:var(--accent2); cursor:pointer; }
+  .task{ display:flex; align-items:center; gap:12px; padding:11px; border-radius:11px; transition:.15s; cursor:pointer; }
+  .task+.task{ margin-top:4px; }
+  .task:hover{ background:#F5F8F4; }
+  .task.hot{ background:var(--accentSoft); }
+  .ti{ width:34px; height:34px; border-radius:9px; display:grid; place-items:center; background:#EFF3EF; color:var(--accent); flex-shrink:0; }
+  .ti .lucide{ width:16px; height:16px; }
+  .task.hot .ti{ background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff; }
+  .tt{ min-width:0; flex:1; } .tt .a{ font-size:13px; font-weight:600; } .tt .b{ font-size:11.5px; color:var(--muted); }
+  .tb{ font-size:12px; font-weight:600; padding:7px 14px; border-radius:999px; border:1px solid var(--line); background:#fff; color:var(--text); flex-shrink:0; }
+  .tb.p{ background:var(--accent); color:#fff; border-color:transparent; }
+
+  .reco{ background:linear-gradient(155deg,#16251A,#0C160C); color:#E6F1E7; border-radius:var(--radius); padding:17px; box-shadow:var(--shadow); }
+  .reco .rh{ display:flex; align-items:center; gap:8px; font-size:12px; font-weight:700; color:#fff; }
+  .reco .rh .lucide{ width:15px; height:15px; color:var(--accent); }
+  .reco .rs{ font-size:14px; font-weight:700; color:#fff; margin:9px 0 12px; }
+  .reco .rg{ display:flex; gap:10px; }
+  .reco .rb{ flex:1; background:rgba(255,255,255,.06); border-radius:10px; padding:10px; }
+  .reco .rb .n{ font-size:20px; font-weight:800; color:#fff; } .reco .rb .n.g{ color:var(--accent); }
+  .reco .rb .l{ font-size:10.5px; color:#9AA89D; }
+  .reco .rcta{ margin-top:13px; text-align:center; background:var(--accent); color:#fff; font-weight:700; font-size:12.5px; border-radius:999px; padding:11px; cursor:pointer; }
+
+  .qa{ display:grid; grid-template-columns:1fr 1fr; gap:9px; }
+  .qa button{ display:flex; align-items:center; gap:9px; font-size:12.5px; font-weight:600; color:var(--text); background:#fff; border:1px solid var(--line); border-radius:11px; padding:12px; box-shadow:var(--shadow); }
+  .qa button .lucide{ width:17px; height:17px; color:var(--accent); }
+  .qa button:hover{ border-color:var(--accent); }
+
+  .grid2{ display:grid; grid-template-columns:1.65fr 1fr; gap:14px; align-items:start; }
+  .rail{ display:flex; flex-direction:column; gap:13px; }
+  .modhint{ display:flex; align-items:center; gap:9px; font-size:12px; color:var(--accent2); background:var(--accentSoft); border:1px solid color-mix(in srgb,var(--accent) 20%,#fff); border-radius:11px; padding:9px 13px; margin:14px 0; }
+  .modhint .lucide{ width:15px; height:15px; }
+  .mod{ position:relative; } .mod .grip{ position:absolute; top:9px; right:11px; color:#C4CCC4; font-size:13px; cursor:grab; }
+  .mod.drag{ opacity:.4; } .mod.over{ outline:2px dashed var(--accent); outline-offset:3px; border-radius:var(--radius); }
+  .addmod{ border:1.5px dashed #C9D3C8; border-radius:var(--radius); padding:14px; text-align:center; font-size:12px; font-weight:600; color:var(--muted); display:flex; align-items:center; justify-content:center; gap:7px; cursor:pointer; }
+  .addmod .lucide{ width:15px; height:15px; color:var(--accent); }
+
+  /* ====== Tabs (Team / Kunden) ====== */
+  .tabs{ display:flex; gap:5px; background:#EEF2ED; border:1px solid var(--line); border-radius:12px; padding:4px; margin-bottom:18px; width:fit-content; flex-wrap:wrap; }
+  .tab{ font-size:12.5px; font-weight:600; color:var(--muted); padding:8px 15px; border-radius:9px; }
+  .tab.on{ background:#fff; color:var(--text); box-shadow:var(--shadow); }
+  .tab .cnt{ font-size:10.5px; background:var(--accentSoft); color:var(--accent); border-radius:999px; padding:1px 6px; margin-left:5px; }
+
+  /* ====== Kanban ====== */
+  .kan{ display:grid; grid-template-columns:repeat(4,1fr); gap:13px; align-items:start; }
+  .kcol{ background:#F3F6F2; border:1px solid var(--line); border-radius:13px; padding:11px; min-height:200px; }
+  .kcol.over{ outline:2px dashed var(--accent); outline-offset:-2px; }
+  .kch{ display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:700; margin-bottom:11px; padding:0 3px; }
+  .kch .d{ width:8px; height:8px; border-radius:50%; }
+  .kch .c{ margin-left:auto; font-size:11px; color:var(--muted); background:#fff; border:1px solid var(--line); border-radius:999px; padding:1px 8px; }
+  .kcard{ background:#fff; border:1px solid var(--line); border-radius:11px; padding:12px; box-shadow:var(--shadow); cursor:grab; margin-bottom:9px; }
+  .kcard.drag{ opacity:.4; }
+  .kcard .knm{ font-size:13px; font-weight:700; display:flex; align-items:center; gap:8px; }
+  .kcard .kav{ width:28px; height:28px; border-radius:8px; background:var(--accentSoft); color:var(--accent2); display:grid; place-items:center; font-size:11px; font-weight:700; }
+  .kcard .krole{ font-size:11.5px; color:var(--muted); margin:7px 0; }
+  .kcard .kmeta{ display:flex; gap:6px; flex-wrap:wrap; }
+  .ktag{ font-size:10.5px; font-weight:600; background:#F0F3EF; color:#4A5A4C; border-radius:6px; padding:3px 7px; }
+  .ktag.g{ background:var(--accentSoft); color:var(--accent2); }
+  .kcard .kbot{ display:flex; align-items:center; gap:7px; margin-top:10px; padding-top:10px; border-top:1px solid var(--line); font-size:11px; color:var(--muted); }
+
+  /* ====== Tables ====== */
+  .tbl{ width:100%; border-collapse:collapse; font-size:13px; }
+  .tbl th{ text-align:left; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); padding:11px 14px; border-bottom:1px solid var(--line); }
+  .tbl td{ padding:12px 14px; border-bottom:1px solid var(--line); }
+  .tbl tr:last-child td{ border-bottom:0; }
+  .tbl tr.clk{ cursor:pointer; } .tbl tr.clk:hover td{ background:#F6F8F5; }
+  .ava2{ display:inline-grid; place-items:center; width:28px; height:28px; border-radius:7px; background:var(--accentSoft); color:var(--accent2); font-size:11px; font-weight:700; margin-right:9px; vertical-align:-9px; }
+  .pill{ font-size:11px; font-weight:700; padding:3px 10px; border-radius:999px; display:inline-block; }
+  .pill.g{ background:var(--accentSoft); color:var(--accent2); } .pill.a{ background:#FEF3E2; color:#B7791F; } .pill.r{ background:#FDECEC; color:#C44; } .pill.b{ background:#EAF0FE; color:#2563EB; } .pill.n{ background:#F0F3EF; color:#5A6A5C; }
+
+  /* ====== Plantafel ====== */
+  .plan{ display:grid; grid-template-columns:140px repeat(5,1fr); gap:8px; min-width:820px; }
+  .pcell{ background:#F3F6F2; border:1px solid var(--line); border-radius:11px; padding:9px; min-height:96px; }
+  .pcell.over{ outline:2px dashed var(--accent); outline-offset:-2px; }
+  .phdr{ font-size:12px; font-weight:700; padding:9px; text-align:center; color:var(--muted); }
+  .prow0{ display:flex; align-items:center; gap:9px; background:#15241A; color:#fff; border-radius:11px; padding:11px; font-size:12.5px; font-weight:700; }
+  .prow0 .pi{ width:30px; height:30px; border-radius:8px; background:rgba(255,255,255,.12); display:grid; place-items:center; }
+  .pjob{ background:#fff; border:1px solid var(--line); border-left:3px solid var(--jc,#16A34A); border-radius:9px; padding:9px; box-shadow:var(--shadow); cursor:grab; margin-bottom:7px; }
+  .pjob.drag{ opacity:.4; }
+  .pjob .pj1{ font-size:12px; font-weight:700; } .pjob .pj2{ font-size:10.5px; color:var(--muted); margin-top:2px; }
+
+  /* ====== Inbox ====== */
+  .inbox{ display:grid; grid-template-columns:1fr; gap:10px; }
+  .msg{ display:flex; gap:13px; background:#fff; border:1px solid var(--line); border-radius:13px; padding:14px 15px; box-shadow:var(--shadow); cursor:pointer; transition:.15s; }
+  .msg:hover{ border-color:var(--accent); }
+  .msg.unread{ border-left:3px solid var(--accent); }
+  .msg .ch{ width:38px; height:38px; border-radius:10px; display:grid; place-items:center; flex-shrink:0; }
+  .msg .ch .lucide{ width:18px; height:18px; }
+  .ch.wa{ background:#E7F8EE; color:#1FA855; } .ch.mail{ background:#EAF0FE; color:#2563EB; } .ch.tel{ background:#FEF3E2; color:#B7791F; } .ch.web{ background:#F1EAFE; color:#7C3AED; }
+  .msg .mc{ flex:1; min-width:0; }
+  .msg .m1{ display:flex; align-items:center; gap:8px; } .msg .m1 b{ font-size:13.5px; } .msg .m1 .t{ margin-left:auto; font-size:11px; color:var(--muted); }
+  .msg .m2{ font-size:12.5px; color:var(--text); margin-top:3px; } .msg .m3{ font-size:11.5px; color:var(--muted); margin-top:3px; }
+
+  /* ====== Modal ====== */
+  .ov{ position:fixed; inset:0; background:rgba(15,27,15,.55); backdrop-filter:blur(3px); display:grid; place-items:center; z-index:200; padding:20px; }
+  .ov.hidden{ display:none; }
+  .sheet{ width:100%; max-width:520px; background:#fff; border-radius:18px; box-shadow:0 30px 70px rgba(0,0,0,.35); max-height:88vh; overflow:auto; }
+  .sheet__h{ display:flex; align-items:center; gap:13px; padding:20px 22px; border-bottom:1px solid var(--line); position:sticky; top:0; background:#fff; }
+  .sheet__h .x{ margin-left:auto; width:34px; height:34px; border-radius:9px; display:grid; place-items:center; color:var(--muted); }
+  .sheet__h .x:hover{ background:#F0F3EF; }
+  .sheet__b{ padding:20px 22px; }
+  .bigava{ width:52px; height:52px; border-radius:13px; background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff; display:grid; place-items:center; font-size:18px; font-weight:700; }
+  .drow{ display:flex; gap:12px; padding:11px 0; border-bottom:1px solid var(--line); font-size:13px; }
+  .drow:last-child{ border:0; } .drow .dk{ width:130px; color:var(--muted); flex-shrink:0; } .drow .dv{ font-weight:600; }
+
+  /* ====== Toast ====== */
+  .toast{ position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px); background:#15241A; color:#fff; padding:12px 18px; border-radius:11px; font-size:13px; font-weight:600; box-shadow:0 18px 40px rgba(0,0,0,.3); opacity:0; pointer-events:none; transition:.25s; z-index:300; display:flex; align-items:center; gap:9px; }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+  .toast .lucide{ width:16px; height:16px; color:var(--accent); }
+
+  /* ====== Responsive ====== */
+  @media(max-width:860px){
+    .main{ border-radius:0; }
+    .sb{ position:fixed; left:0; top:0; bottom:0; z-index:150; transform:translateX(-100%); transition:transform .22s; box-shadow:0 0 50px rgba(0,0,0,.4); }
+    .app.mopen .sb{ transform:translateX(0); }
+    .app.collapsed .sb{ width:230px; }
+    .scrim{ position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:140; }
+    .scrim.hidden{ display:none; }
+    .body{ padding:16px 14px 86px; }
+    .grid2{ grid-template-columns:1fr; }
+    .kan{ grid-template-columns:1fr; }
+    .wmini{ display:none; }
+    .mnav{ display:flex; position:fixed; bottom:0; left:0; right:0; height:64px; background:#fff; border-top:1px solid var(--line); z-index:120; padding:6px 6px env(safe-area-inset-bottom); }
+    .mnav button{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; font-size:10.5px; font-weight:600; color:var(--muted); border-radius:10px; position:relative; }
+    .mnav button .lucide{ width:20px; height:20px; }
+    .mnav button.on{ color:var(--accent); }
+    .mnav button .cnt{ position:absolute; top:4px; right:50%; transform:translateX(16px); font-size:9px; background:var(--accent); color:#fff; border-radius:999px; padding:0 5px; line-height:15px; }
+    .tabs{ width:100%; overflow:auto; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ================= LOGIN ================= -->
+<div class="auth" id="auth">
+  <div class="auth__card">
+    <!-- view: login -->
+    <div id="vLogin">
+      <div class="auth__logo"><span class="m"><i data-lucide="leaf"></i></span><span class="n">GreenCareers <small>OS</small></span></div>
+      <h1>Willkommen zurück</h1>
+      <p class="sub">Melde dich an, um dein Betriebs-Dashboard zu öffnen.</p>
+      <div class="field"><label>E-Mail</label><input id="liMail" type="email" placeholder="georg@mueller-galabau.de" value="georg@mueller-galabau.de" /></div>
+      <div class="field"><label>Passwort</label><input id="liPass" type="password" placeholder="••••••••" value="demo1234" /></div>
+      <div class="auth__row"><label class="auth__chk"><input type="checkbox" checked /> Angemeldet bleiben</label><a onclick="authView('reset')">Passwort vergessen?</a></div>
+      <button class="btn" onclick="doLogin()">Anmelden</button>
+      <div class="auth__foot">Geschützter Bereich · GreenCareers OS</div>
+    </div>
+    <!-- view: reset -->
+    <div id="vReset" class="hidden">
+      <span class="auth__back" onclick="authView('login')"><i data-lucide="arrow-left"></i> Zurück</span>
+      <h1>Passwort zurücksetzen</h1>
+      <p class="sub">Gib deine E-Mail ein — wir senden dir einen Link zum Zurücksetzen.</p>
+      <div class="field"><label>E-Mail</label><input type="email" placeholder="georg@mueller-galabau.de" /></div>
+      <button class="btn" onclick="authView('sent')">Link senden</button>
+    </div>
+    <!-- view: sent -->
+    <div id="vSent" class="hidden" style="text-align:center">
+      <div style="width:56px;height:56px;border-radius:50%;background:var(--accentSoft);color:var(--accent);display:grid;place-items:center;margin:8px auto 16px"><i data-lucide="mail-check" style="width:26px;height:26px"></i></div>
+      <h1>E-Mail unterwegs</h1>
+      <p class="sub">Wir haben dir einen Link zum Zurücksetzen geschickt. Schau in dein Postfach.</p>
+      <button class="btn ghost" onclick="authView('login')">Zurück zum Login</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= APP ================= -->
+<div class="app hidden" id="app">
+  <div class="scrim hidden" id="scrim" onclick="toggleMobile(false)"></div>
+  <aside class="sb">
+    <div class="sb__brand"><span class="m"><i data-lucide="leaf"></i></span><div class="t"><b>Müller GaLaBau</b><small>Garten- &amp; Landschaftsbau</small></div></div>
+    <nav class="sb__nav" id="sbNav"></nav>
+    <div class="sb__foot">
+      <div class="sb__pwr"><i data-lucide="leaf"></i><span>läuft auf <b>GreenCareers OS</b></span></div>
+      <div class="sb__user" onclick="toast('Profil &amp; Einstellungen folgen')"><span class="sb__ava">GM</span><div class="t"><b>Georg Müller</b><small>Inhaber</small></div></div>
+    </div>
+  </aside>
+  <div class="main">
+    <header class="top">
+      <button class="burger" onclick="toggleSidebar()"><i data-lucide="panel-left"></i></button>
+      <div class="ttl" id="topTitle"><i data-lucide="layout-dashboard"></i> Heute</div>
+      <span class="sp"></span>
+      <div class="wmini"><span class="wt"><i data-lucide="cloud-sun"></i></span><div style="line-height:1.25"><div><b>21°C</b> · Hamburg</div><div style="font-size:10.5px">trocken — guter Arbeitstag</div></div></div>
+      <button class="bell" onclick="toast('Keine neuen Benachrichtigungen')"><i data-lucide="bell"></i></button>
+    </header>
+    <div class="body" id="view"></div>
+  </div>
+  <nav class="mnav" id="mnav"></nav>
+</div>
+
+<div class="ov hidden" id="modal"><div class="sheet" id="sheet"></div></div>
+<div class="toast" id="toast"><i data-lucide="check-circle-2"></i><span id="toastText"></span></div>
+
+<script>
+/* ============ DATA ============ */
+const NAV = [
+  ['heute','layout-dashboard','Heute',''],
+  ['team','users','Team','2'],
+  ['planung','calendar-range','Planung',''],
+  ['kunden','handshake','Kunden','5'],
+];
+const applicants = {
+  neu: [
+    {id:1,name:'Daniel Hoffmann',role:'Landschaftsgärtner',tags:['Führerschein','3 J. Erfahrung'],meta:'Beworben heute · WhatsApp'},
+    {id:2,name:'Erik Lindqvist',role:'Geselle GaLaBau',tags:['Umzug möglich'],meta:'Beworben gestern · Web'},
+  ],
+  quali: [
+    {id:3,name:'Thomas Krause',role:'Vorarbeiter',tags:['Führerschein BE','Bagger'],meta:'Vom Bot qualifiziert',hot:true},
+    {id:4,name:'Murat Yilmaz',role:'Pflasterer',tags:['10 J. Erfahrung'],meta:'Vom Bot qualifiziert',hot:true},
+  ],
+  gespraech: [
+    {id:5,name:'Lukas Berger',role:'Azubi GaLaBau',tags:['Probetag 14.06.'],meta:'Termin vereinbart'},
+  ],
+  eingestellt: [
+    {id:6,name:'Jonas Weber',role:'Landschaftsgärtner',tags:['Start 01.07.'],meta:'Vertrag unterschrieben'},
+  ],
+};
+const KCOLS = [['neu','Neu','#9AA59B'],['quali','Qualifiziert · anrufen','#16A34A'],['gespraech','Im Gespräch','#2563EB'],['eingestellt','Eingestellt','#7C3AED']];
+const employees = [
+  {id:1,name:'Sven Albrecht',role:'Vorarbeiter',kol:'Kolonne 1',tel:'0171 2345678',since:'2019',status:['Aktiv','g'],urlaub:'12 / 30'},
+  {id:2,name:'Mehmet Kaya',role:'Pflasterer',kol:'Kolonne 2',tel:'0152 9876543',since:'2021',status:['Aktiv','g'],urlaub:'8 / 28'},
+  {id:3,name:'Tim Schulz',role:'Landschaftsgärtner',kol:'Kolonne 3',tel:'0176 4455667',since:'2022',status:['Aktiv','g'],urlaub:'19 / 28'},
+  {id:4,name:'Ali Demir',role:'Geselle',kol:'Kolonne 2',tel:'0163 1122334',since:'2020',status:['Krank','r'],urlaub:'5 / 28'},
+  {id:5,name:'Lukas Berger',role:'Azubi',kol:'Kolonne 1',tel:'0151 7788990',since:'2024',status:['Urlaub','a'],urlaub:'2 / 26'},
+];
+const urlaub = [
+  {name:'Sven Albrecht',type:['Urlaub','b'],von:'08.07.',bis:'19.07.',tage:'10 Tage',status:['Offen','a']},
+  {name:'Lukas Berger',type:['Urlaub','b'],von:'03.06.',bis:'07.06.',tage:'5 Tage',status:['Genehmigt','g']},
+  {name:'Ali Demir',type:['Krank','r'],von:'03.06.',bis:'—',tage:'AU liegt vor',status:['Aktiv','r']},
+  {name:'Tim Schulz',type:['Urlaub','b'],von:'12.08.',bis:'23.08.',tage:'10 Tage',status:['Offen','a']},
+];
+const zeit = [
+  {name:'Sven Albrecht',ein:'06:58',aus:'—',std:'5,2 h',ort:'Garten Schmidt',status:['Läuft','g']},
+  {name:'Mehmet Kaya',ein:'06:31',aus:'—',std:'5,7 h',ort:'Pflaster Brandt',status:['Läuft','g']},
+  {name:'Tim Schulz',ein:'07:45',aus:'—',std:'4,4 h',ort:'Hecke Petersen',status:['Läuft','g']},
+  {name:'Jonas Weber',ein:'07:02',aus:'15:30',std:'8,0 h',ort:'Bauhof',status:['Fertig','n']},
+];
+const plantafel = {
+  k1: { neu:[{t:'Garten Schmidt',o:'Norderstedt · Neuanlage',c:'#16A34A'}], di:[{t:'Garten Schmidt',o:'Norderstedt',c:'#16A34A'}], mi:[{t:'Pflege Stadtpark',o:'Hamburg-Nord',c:'#2563EB'}], do:[], fr:[{t:'Hecke Voss',o:'Pinneberg',c:'#7C3AED'}] },
+  k2: { neu:[{t:'Pflaster Brandt',o:'Ahrensburg',c:'#B7791F'}], di:[{t:'Pflaster Brandt',o:'Ahrensburg',c:'#B7791F'}], mi:[{t:'Pflaster Brandt',o:'Ahrensburg',c:'#B7791F'}], do:[{t:'Mauer Köhler',o:'Reinbek',c:'#16A34A'}], fr:[] },
+  k3: { neu:[{t:'Hecke Petersen',o:'Volksdorf',c:'#7C3AED'}], di:[], mi:[{t:'Rasen Sülldorf',o:'Hamburg-West',c:'#16A34A'}], do:[{t:'Rasen Sülldorf',o:'Hamburg-West',c:'#16A34A'}], fr:[{t:'Pflege Tour',o:'Diverse',c:'#2563EB'}] },
+};
+const PDAYS=[['neu','Heute · Mi'],['di','Do'],['mi','Fr'],['do','Mo'],['fr','Di']];
+const PKOL=[['k1','Kolonne 1','3 Mann'],['k2','Kolonne 2','2 Mann'],['k3','Kolonne 3','3 Mann']];
+const inbox = [
+  {id:1,ch:'wa',from:'Familie Brandt',sub:'Gartenneuanlage gewünscht',pre:'Hallo, wir möchten unseren Garten neu anlegen lassen. Können Sie…',time:'vor 20 Min.',unread:true},
+  {id:2,ch:'mail',from:'Stadtwerke Nord',sub:'Ausschreibung Grünpflege 2026/27',pre:'Sehr geehrte Damen und Herren, anbei die Unterlagen zur…',time:'vor 1 Std.',unread:true},
+  {id:3,ch:'tel',from:'Herr Petersen',sub:'Rückruf erbeten — Heckenschnitt',pre:'Verpasster Anruf · Mailbox: „…wegen dem Heckenschnitt…"',time:'vor 2 Std.',unread:true},
+  {id:4,ch:'web',from:'Anja Bauer',sub:'Anfrage über Website',pre:'Terrasse pflastern, ca. 40 m², Wunschtermin im Juli.',time:'gestern',unread:false},
+  {id:5,ch:'wa',from:'Klaus Möller',sub:'Frage zu Angebot',pre:'Passt der Termin am Freitag noch für die Besichtigung?',time:'gestern',unread:false},
+];
+const kunden = [
+  {name:'Familie Brandt',ort:'Ahrensburg',typ:['Neukunde','b'],proj:'Gartenneuanlage',wert:'~ 18.500 €',status:['Anfrage','a']},
+  {name:'Stadtwerke Nord',ort:'Hamburg',typ:['Bestand','g'],proj:'Grünpflege Rahmenvertrag',wert:'42.000 € / Jahr',status:['Aktiv','g']},
+  {name:'Herr Petersen',ort:'Volksdorf',typ:['Bestand','g'],proj:'Heckenschnitt jährlich',wert:'1.200 €',status:['Aktiv','g']},
+  {name:'Anja Bauer',ort:'Pinneberg',typ:['Neukunde','b'],proj:'Terrasse pflastern',wert:'~ 9.000 €',status:['Angebot','a']},
+  {name:'Klaus Möller',ort:'Reinbek',typ:['Bestand','g'],proj:'Mauerbau + Beet',wert:'6.400 €',status:['Aktiv','g']},
+];
+
+/* ============ AUTH ============ */
+function authView(v){ ['login','reset','sent'].forEach(x=>document.getElementById('v'+x.charAt(0).toUpperCase()+x.slice(1)).classList.toggle('hidden',x!==v)); icons(); }
+function doLogin(){
+  document.getElementById('auth').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  renderNav(); setView('heute'); icons();
+}
+
+/* ============ NAV / SHELL ============ */
+let current='heute';
+function renderNav(){
+  document.getElementById('sbNav').innerHTML = `<span class="sb__nl">Übersicht</span>` + NAV.map(n=>
+    `<div class="ni ${n[0]===current?'on':''}" onclick="setView('${n[0]}')"><i data-lucide="${n[1]}"></i><span class="lab">${n[2]}</span>${n[3]?`<span class="cnt">${n[3]}</span>`:''}</div>`).join('');
+  document.getElementById('mnav').innerHTML = NAV.map(n=>
+    `<button class="${n[0]===current?'on':''}" onclick="setView('${n[0]}')"><i data-lucide="${n[1]}"></i>${n[2]}${n[3]?`<span class="cnt">${n[3]}</span>`:''}</button>`).join('');
+}
+function setView(v){ current=v; renderNav();
+  const meta=NAV.find(n=>n[0]===v);
+  document.getElementById('topTitle').innerHTML = `<i data-lucide="${meta[1]}"></i> ${meta[2]}`;
+  document.getElementById('view').innerHTML = VIEWS[v]();
+  document.getElementById('view').scrollTop=0;
+  toggleMobile(false); icons(); afterRender(v);
+}
+function toggleSidebar(){ const a=document.getElementById('app'); if(window.innerWidth<=860){ toggleMobile(!a.classList.contains('mopen')); } else { a.classList.toggle('collapsed'); } }
+function toggleMobile(open){ const a=document.getElementById('app'); a.classList.toggle('mopen',open); document.getElementById('scrim').classList.toggle('hidden',!open); }
+
+/* ============ SHARED BLOCKS ============ */
+function kpi(ic,n,l,s,acc,onclick){return `<div class="kpi ${acc?'acc':''} ${onclick?'clk':''}" ${onclick?`onclick="${onclick}"`:''}><div class="kr"><span class="ki"><i data-lucide="${ic}"></i></span><span class="num">${n}</span></div><div class="lab">${l}</div>${s?`<div class="sub">${s}</div>`:''}</div>`;}
+
+/* ============ VIEWS ============ */
+const VIEWS = {
+  heute: ()=>`
+    <div class="hello"><h2>Guten Morgen, <em>Georg</em></h2><p>Mittwoch, 3. Juni 2026 · KW 23 · 11 Mitarbeiter im Einsatz</p></div>
+    <div class="modhint"><i data-lucide="move"></i> Dein Cockpit: Module per Drag &amp; Drop anordnen — leg dir oben, was für <b>dich</b> am wichtigsten ist.</div>
+    <div class="grid2">
+      <div style="display:flex;flex-direction:column;gap:13px" id="modcol">
+        <div class="mod" draggable="true" style="display:grid;grid-template-columns:1fr 1fr;gap:13px"><span class="grip">⠿</span>
+          ${kpi('phone-call',2,'Bewerber anrufen','vom Bot qualifiziert',1,"setView('team')")}
+          ${kpi('inbox',5,'Neue Anfragen','WhatsApp · Mail · Tel.',0,"setView('kunden')")}
+        </div>
+        <div class="mod" draggable="true">
+          <div class="panel"><div class="ph"><i data-lucide="list-checks"></i> Das ist heute wichtig <span class="more" onclick="toast('Alle Aufgaben')">Alle ansehen</span></div>
+            <div class="task hot" onclick="setView('team')"><span class="ti"><i data-lucide="phone"></i></span><div class="tt"><div class="a">2 qualifizierte Bewerber anrufen</div><div class="b">Thomas K. (Vorarbeiter) · Murat Y. (Pflasterer)</div></div><button class="tb p">Öffnen</button></div>
+            <div class="task" onclick="setView('kunden')"><span class="ti"><i data-lucide="message-circle"></i></span><div class="tt"><div class="a">Anfrage Familie Brandt beantworten</div><div class="b">Gartenneuanlage · WhatsApp · vor 20 Min.</div></div><button class="tb">Öffnen</button></div>
+            <div class="task" onclick="setView('team')"><span class="ti"><i data-lucide="calendar-clock"></i></span><div class="tt"><div class="a">Urlaubsantrag Sven prüfen</div><div class="b">KW 28 — Überschneidung mit Lukas</div></div><button class="tb">Öffnen</button></div>
+          </div>
+        </div>
+        <div class="addmod" onclick="toast('Modul-Auswahl folgt')"><i data-lucide="plus"></i> Modul hinzufügen</div>
+      </div>
+      <div class="rail" id="railcol">
+        <div class="mod" draggable="true"><div class="panel" style="padding:15px"><div style="display:flex;align-items:center;gap:11px"><span class="ti"><i data-lucide="cloud-sun"></i></span><div><div style="font-size:20px;font-weight:800">21°C</div><div style="font-size:11.5px;color:var(--muted)">Hamburg · trocken · guter Arbeitstag</div></div></div></div></div>
+        <div class="mod" draggable="true"><div class="reco"><div class="rh"><i data-lucide="sparkles"></i> Ihre Recruiting-Suche</div><div class="rs">Landschaftsgärtner (m/w/d)</div><div class="rg"><div class="rb"><div class="n">7</div><div class="l">Bewerber / Monat</div></div><div class="rb"><div class="n g">2</div><div class="l">qualifiziert</div></div></div><div class="rcta" onclick="setView('team')">Bewerber ansehen</div></div></div>
+        <div class="mod" draggable="true"><div class="qa">
+          <button onclick="setView('team')"><i data-lucide="user-plus"></i>Mitarbeiter</button>
+          <button onclick="setView('planung')"><i data-lucide="calendar-plus"></i>Einsatz</button>
+          <button onclick="setView('kunden')"><i data-lucide="file-plus"></i>Angebot</button>
+          <button onclick="teamTab('zeit')"><i data-lucide="clock"></i>Zeiten</button>
+        </div></div>
+      </div>
+    </div>`,
+
+  team: ()=>`
+    <div class="pagehead"><div><h2>Team</h2><p>Recruiting, Mitarbeiter, Urlaub &amp; Zeiten an einem Ort.</p></div><div class="sp"></div></div>
+    <div class="tabs" id="teamTabs">
+      <div class="tab on" onclick="teamTab('bewerber')">Bewerber <span class="cnt">${applicants.neu.length+applicants.quali.length}</span></div>
+      <div class="tab" onclick="teamTab('mitarbeiter')">Mitarbeiter <span class="cnt">${employees.length}</span></div>
+      <div class="tab" onclick="teamTab('urlaub')">Urlaub &amp; Krank</div>
+      <div class="tab" onclick="teamTab('zeit')">Zeiterfassung</div>
+    </div>
+    <div id="teamBody"></div>`,
+
+  planung: ()=>`
+    <div class="pagehead"><div><h2>Plantafel</h2><p>Wer arbeitet wann wo — Aufträge per Drag &amp; Drop auf Kolonnen &amp; Tage ziehen.</p></div><div class="sp"></div><button class="tb p" onclick="toast('Neuer Auftrag folgt')">+ Auftrag</button></div>
+    <div class="panel" style="overflow:auto">
+      <div class="plan" id="plan">
+        <div></div>
+        ${PDAYS.map(d=>`<div class="phdr">${d[1]}</div>`).join('')}
+        ${PKOL.map(k=>`
+          <div class="prow0"><span class="pi"><i data-lucide="truck"></i></span><div>${k[1]}<div style="font-size:10.5px;color:#9FB3A2;font-weight:500">${k[2]}</div></div></div>
+          ${PDAYS.map(d=>`<div class="pcell" data-kol="${k[0]}" data-day="${d[0]}">${(plantafel[k[0]][d[0]]||[]).map((j,ji)=>`<div class="pjob" draggable="true" data-kol="${k[0]}" data-day="${d[0]}" data-i="${ji}" style="--jc:${j.c}"><div class="pj1">${j.t}</div><div class="pj2">${j.o}</div></div>`).join('')}</div>`).join('')}
+        `).join('')}
+      </div>
+    </div>`,
+
+  kunden: ()=>`
+    <div class="pagehead"><div><h2>Kunden</h2><p>Alle Anfragen aus allen Kanälen — plus deine Kundenliste.</p></div><div class="sp"></div></div>
+    <div class="tabs" id="kundenTabs">
+      <div class="tab on" onclick="kundenTab('anfragen')">Anfragen-Inbox <span class="cnt">${inbox.filter(m=>m.unread).length}</span></div>
+      <div class="tab" onclick="kundenTab('liste')">Kundenliste <span class="cnt">${kunden.length}</span></div>
+    </div>
+    <div id="kundenBody"></div>`,
+};
+
+/* ============ TEAM SUB-VIEWS ============ */
+function teamTab(t){
+  if(current!=='team'){ setView('team'); }
+  setTimeout(()=>{
+    document.querySelectorAll('#teamTabs .tab').forEach((el,i)=>el.classList.toggle('on',['bewerber','mitarbeiter','urlaub','zeit'][i]===t));
+    document.getElementById('teamBody').innerHTML = TEAM[t]();
+    icons(); if(t==='bewerber') wireKanban();
+  },0);
+}
+const TEAM = {
+  bewerber: ()=>`
+    <div class="modhint"><i data-lucide="sparkles"></i> Bewerber vom <b>WhatsApp-Bot vorqualifiziert</b> landen direkt in „Qualifiziert · anrufen". Karten per Drag &amp; Drop verschieben.</div>
+    <div class="kan" id="kanban">
+      ${KCOLS.map(c=>`<div class="kcol" data-col="${c[0]}">
+        <div class="kch"><span class="d" style="background:${c[2]}"></span>${c[1]}<span class="c">${applicants[c[0]].length}</span></div>
+        ${applicants[c[0]].map(a=>`<div class="kcard" draggable="true" data-id="${a.id}" data-col="${c[0]}" onclick="openApplicant(${a.id})">
+          <div class="knm"><span class="kav">${ini(a.name)}</span>${a.name}</div>
+          <div class="krole">${a.role}</div>
+          <div class="kmeta">${a.tags.map(t=>`<span class="ktag ${a.hot?'g':''}">${t}</span>`).join('')}</div>
+          <div class="kbot"><i data-lucide="${a.hot?'phone':'clock'}" style="width:13px;height:13px"></i> ${a.meta}</div>
+        </div>`).join('')}
+      </div>`).join('')}
+    </div>`,
+  mitarbeiter: ()=>`<div class="panel" style="padding:0;overflow:hidden">
+      <table class="tbl"><thead><tr><th>Mitarbeiter</th><th>Funktion</th><th>Kolonne</th><th>Telefon</th><th>Status</th><th>Urlaub</th></tr></thead><tbody>
+      ${employees.map(e=>`<tr class="clk" onclick="openEmployee(${e.id})"><td><span class="ava2">${ini(e.name)}</span>${e.name}</td><td>${e.role}</td><td>${e.kol}</td><td>${e.tel}</td><td><span class="pill ${e.status[1]}">${e.status[0]}</span></td><td>${e.urlaub}</td></tr>`).join('')}
+      </tbody></table></div>`,
+  urlaub: ()=>`<div class="panel" style="padding:0;overflow:hidden">
+      <table class="tbl"><thead><tr><th>Mitarbeiter</th><th>Art</th><th>Von</th><th>Bis</th><th>Dauer</th><th>Status</th></tr></thead><tbody>
+      ${urlaub.map(u=>`<tr><td><span class="ava2">${ini(u.name)}</span>${u.name}</td><td><span class="pill ${u.type[1]}">${u.type[0]}</span></td><td>${u.von}</td><td>${u.bis}</td><td>${u.tage}</td><td>${u.status[0]==='Offen'?`<button class="tb p" style="padding:5px 12px" onclick="toast('Antrag genehmigt')">Genehmigen</button>`:`<span class="pill ${u.status[1]}">${u.status[0]}</span>`}</td></tr>`).join('')}
+      </tbody></table></div>`,
+  zeit: ()=>`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:13px;margin-bottom:14px">
+      ${kpi('users',11,'Eingestempelt','aktuell im Einsatz',1)}${kpi('clock',9,'Ø Stunden','heute pro Kopf')}${kpi('check-circle-2',1,'Feierabend','heute fertig')}</div>
+    <div class="panel" style="padding:0;overflow:hidden">
+      <table class="tbl"><thead><tr><th>Mitarbeiter</th><th>Einstempeln</th><th>Ausstempeln</th><th>Stunden</th><th>Baustelle</th><th>Status</th></tr></thead><tbody>
+      ${zeit.map(z=>`<tr><td><span class="ava2">${ini(z.name)}</span>${z.name}</td><td>${z.ein}</td><td>${z.aus}</td><td>${z.std}</td><td>${z.ort}</td><td><span class="pill ${z.status[1]}">${z.status[0]}</span></td></tr>`).join('')}
+      </tbody></table></div>`,
+};
+
+/* ============ KUNDEN SUB-VIEWS ============ */
+function kundenTab(t){
+  document.querySelectorAll('#kundenTabs .tab').forEach((el,i)=>el.classList.toggle('on',['anfragen','liste'][i]===t));
+  document.getElementById('kundenBody').innerHTML = KUNDEN[t](); icons();
+}
+const KUNDEN = {
+  anfragen: ()=>`<div class="inbox">${inbox.map(m=>`<div class="msg ${m.unread?'unread':''}" onclick="openMsg(${m.id})">
+      <span class="ch ${m.ch}"><i data-lucide="${{wa:'message-circle',mail:'mail',tel:'phone',web:'globe'}[m.ch]}"></i></span>
+      <div class="mc"><div class="m1"><b>${m.from}</b><span class="pill ${m.unread?'g':'n'}" style="font-size:9.5px;padding:2px 7px">${{wa:'WhatsApp',mail:'E-Mail',tel:'Telefon',web:'Website'}[m.ch]}</span><span class="t">${m.time}</span></div>
+      <div class="m2">${m.sub}</div><div class="m3">${m.pre}</div></div></div>`).join('')}</div>`,
+  liste: ()=>`<div class="panel" style="padding:0;overflow:hidden">
+      <table class="tbl"><thead><tr><th>Kunde</th><th>Ort</th><th>Typ</th><th>Projekt</th><th>Wert</th><th>Status</th></tr></thead><tbody>
+      ${kunden.map(k=>`<tr class="clk" onclick="toast('Kundenakte folgt')"><td><span class="ava2">${ini(k.name)}</span>${k.name}</td><td>${k.ort}</td><td><span class="pill ${k.typ[1]}">${k.typ[0]}</span></td><td>${k.proj}</td><td>${k.wert}</td><td><span class="pill ${k.status[1]}">${k.status[0]}</span></td></tr>`).join('')}
+      </tbody></table></div>`,
+};
+
+/* ============ after render hooks ============ */
+function afterRender(v){
+  if(v==='team') teamTab('bewerber');
+  if(v==='kunden') kundenTab('anfragen');
+  if(v==='planung') wirePlan();
+  if(v==='heute') wireMods();
+}
+
+/* ============ Kanban drag&drop ============ */
+function wireKanban(){
+  let dragEl=null;
+  document.querySelectorAll('#kanban .kcard').forEach(c=>{
+    c.addEventListener('dragstart',()=>{ dragEl=c; c.classList.add('drag'); });
+    c.addEventListener('dragend',()=>{ c.classList.remove('drag'); dragEl=null; });
+  });
+  document.querySelectorAll('#kanban .kcol').forEach(col=>{
+    col.addEventListener('dragover',e=>{ e.preventDefault(); col.classList.add('over'); });
+    col.addEventListener('dragleave',()=>col.classList.remove('over'));
+    col.addEventListener('drop',e=>{ e.preventDefault(); col.classList.remove('over'); if(!dragEl)return;
+      const from=dragEl.dataset.col, to=col.dataset.col, id=+dragEl.dataset.id;
+      if(from===to)return;
+      const idx=applicants[from].findIndex(a=>a.id===id); const [a]=applicants[from].splice(idx,1);
+      a.hot = (to==='quali'); applicants[to].push(a);
+      teamTab('bewerber'); toast(`${a.name} → ${KCOLS.find(c=>c[0]===to)[1]}`);
+    });
+  });
+}
+
+/* ============ Plantafel drag&drop ============ */
+function wirePlan(){
+  let dragInfo=null;
+  document.querySelectorAll('#plan .pjob').forEach(j=>{
+    j.addEventListener('dragstart',()=>{ dragInfo={kol:j.dataset.kol,day:j.dataset.day,i:+j.dataset.i}; j.classList.add('drag'); });
+    j.addEventListener('dragend',()=>j.classList.remove('drag'));
+  });
+  document.querySelectorAll('#plan .pcell').forEach(cell=>{
+    cell.addEventListener('dragover',e=>{ e.preventDefault(); cell.classList.add('over'); });
+    cell.addEventListener('dragleave',()=>cell.classList.remove('over'));
+    cell.addEventListener('drop',e=>{ e.preventDefault(); cell.classList.remove('over'); if(!dragInfo)return;
+      const job=plantafel[dragInfo.kol][dragInfo.day].splice(dragInfo.i,1)[0];
+      plantafel[cell.dataset.kol][cell.dataset.day].push(job);
+      setView('planung'); toast(`„${job.t}" verschoben`);
+    });
+  });
+}
+
+/* ============ Heute module drag&drop ============ */
+function wireMods(){
+  ['modcol','railcol'].forEach(colId=>{
+    const col=document.getElementById(colId); if(!col)return; let dragEl=null;
+    col.querySelectorAll('.mod').forEach(m=>{
+      m.addEventListener('dragstart',()=>{ dragEl=m; m.classList.add('drag'); });
+      m.addEventListener('dragend',()=>{ m.classList.remove('drag'); dragEl=null; });
+      m.addEventListener('dragover',e=>{ e.preventDefault(); if(m!==dragEl) m.classList.add('over'); });
+      m.addEventListener('dragleave',()=>m.classList.remove('over'));
+      m.addEventListener('drop',e=>{ e.preventDefault(); m.classList.remove('over'); if(!dragEl||m===dragEl)return;
+        const rect=m.getBoundingClientRect(); const after=e.clientY > rect.top+rect.height/2;
+        col.insertBefore(dragEl, after?m.nextSibling:m); toast('Cockpit angepasst');
+      });
+    });
+  });
+}
+
+/* ============ Modals ============ */
+function openApplicant(id){
+  let a; for(const k in applicants){ const f=applicants[k].find(x=>x.id===id); if(f){a=f;break;} }
+  if(!a)return;
+  sheet(`<div class="sheet__h"><span class="bigava">${ini(a.name)}</span><div><div style="font-size:17px;font-weight:800">${a.name}</div><div style="font-size:12.5px;color:var(--muted)">${a.role}</div></div><span class="x" onclick="closeModal()"><i data-lucide="x"></i></span></div>
+    <div class="sheet__b">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">${a.tags.map(t=>`<span class="ktag g">${t}</span>`).join('')}</div>
+      <div class="drow"><div class="dk">Status</div><div class="dv">${a.meta}</div></div>
+      <div class="drow"><div class="dk">Quelle</div><div class="dv">WhatsApp-Recruiting · GreenCareers</div></div>
+      <div class="drow"><div class="dk">Vorqualifikation</div><div class="dv">Bot-Score 87 / 100 · alle Kriterien erfüllt</div></div>
+      <div class="drow"><div class="dk">Verfügbar ab</div><div class="dv">sofort</div></div>
+      <div style="display:flex;gap:10px;margin-top:18px">
+        <button class="btn" style="flex:1" onclick="closeModal();toast('Anruf wird gestartet…')"><i data-lucide="phone" style="width:15px;height:15px;vertical-align:-2px"></i> Jetzt anrufen</button>
+        <button class="btn ghost" style="flex:1" onclick="closeModal();toast('Zum Probetag eingeladen')">Probetag</button>
+      </div>
+    </div>`);
+}
+function openEmployee(id){
+  const e=employees.find(x=>x.id===id); if(!e)return;
+  sheet(`<div class="sheet__h"><span class="bigava">${ini(e.name)}</span><div><div style="font-size:17px;font-weight:800">${e.name}</div><div style="font-size:12.5px;color:var(--muted)">${e.role} · ${e.kol}</div></div><span class="x" onclick="closeModal()"><i data-lucide="x"></i></span></div>
+    <div class="sheet__b">
+      <div class="drow"><div class="dk">Status</div><div class="dv"><span class="pill ${e.status[1]}">${e.status[0]}</span></div></div>
+      <div class="drow"><div class="dk">Telefon</div><div class="dv">${e.tel}</div></div>
+      <div class="drow"><div class="dk">Im Betrieb seit</div><div class="dv">${e.since}</div></div>
+      <div class="drow"><div class="dk">Urlaub</div><div class="dv">${e.urlaub} Tage genommen</div></div>
+      <div class="drow"><div class="dk">Dokumente</div><div class="dv">Vertrag · Führerschein · Bescheinigungen</div></div>
+      <div style="display:flex;gap:10px;margin-top:18px">
+        <button class="btn" style="flex:1" onclick="closeModal();toast('Personalakte folgt')">Akte öffnen</button>
+        <button class="btn ghost" style="flex:1" onclick="closeModal();teamTab('zeit')">Zeiten</button>
+      </div>
+    </div>`);
+}
+function openMsg(id){
+  const m=inbox.find(x=>x.id===id); if(!m)return; m.unread=false;
+  const chName={wa:'WhatsApp',mail:'E-Mail',tel:'Telefon',web:'Website'}[m.ch];
+  sheet(`<div class="sheet__h"><span class="ch ${m.ch}" style="width:44px;height:44px"><i data-lucide="${{wa:'message-circle',mail:'mail',tel:'phone',web:'globe'}[m.ch]}"></i></span><div><div style="font-size:17px;font-weight:800">${m.from}</div><div style="font-size:12.5px;color:var(--muted)">${chName} · ${m.time}</div></div><span class="x" onclick="closeModal()"><i data-lucide="x"></i></span></div>
+    <div class="sheet__b">
+      <div style="font-size:14px;font-weight:700;margin-bottom:10px">${m.sub}</div>
+      <div style="background:#F5F8F4;border:1px solid var(--line);border-radius:12px;padding:14px;font-size:13px;line-height:1.6;color:var(--text)">${m.pre}</div>
+      <div class="field" style="margin-top:16px"><label>Antwort</label><input placeholder="Antwort schreiben…" /></div>
+      <div style="display:flex;gap:10px;margin-top:6px">
+        <button class="btn" style="flex:1" onclick="closeModal();toast('Antwort gesendet')">Antworten</button>
+        <button class="btn ghost" style="flex:1" onclick="closeModal();toast('Als Kunde angelegt')">Zu Kunden</button>
+      </div>
+    </div>`);
+}
+function sheet(html){ document.getElementById('sheet').innerHTML=html; document.getElementById('modal').classList.remove('hidden'); icons(); }
+function closeModal(){ document.getElementById('modal').classList.add('hidden'); if(current==='kunden')kundenTab('anfragen'); }
+document.getElementById('modal').addEventListener('click',e=>{ if(e.target.id==='modal')closeModal(); });
+
+/* ============ utils ============ */
+function ini(n){ return n.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase(); }
+let toastT;
+function toast(msg){ const t=document.getElementById('toast'); document.getElementById('toastText').innerHTML=msg; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),2400); }
+function icons(){ if(window.lucide) lucide.createIcons(); }
+icons();
+</script>
+</body>
+</html>
