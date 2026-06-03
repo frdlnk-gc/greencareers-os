@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>GreenCareers OS · Runde 2 — 10 Dashboard-Layouts</title>
+<title>GreenCareers OS · Runde 2 — 11 Dashboard-Layouts</title>
 <script src="https://unpkg.com/lucide@latest"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet" />
 <style>
   *{ box-sizing:border-box; margin:0; padding:0; }
   body{ font-family:'Inter',system-ui,sans-serif; background:#EAECE9; color:#16201A; -webkit-font-smoothing:antialiased; }
@@ -195,14 +195,54 @@
   .spacious .hello h2{ font-size:30px; }
   .spacious .kpi{ padding:22px; }
   .spacious .kpi .num{ font-size:30px; }
+
+  /* ===== ABO-STIL (Design der abo.green-careers.de) ===== */
+  .gc.abo{ --accent:#0E7A43; --accent2:#00C95C; --accentSoft:rgba(0,210,97,.10); --border:#E7E1D4; --muted:#7A7468; --chip:#F0EBDF; --radius:18px;
+    --shadow:0 1px 3px rgba(20,40,15,.06),0 14px 34px rgba(20,40,15,.08);
+    --sbBg:#0F1B0F; --sbText:#B7C3B3; --sbMuted:#76836F; --sbActive:rgba(0,210,97,.16); --sbHover:rgba(255,255,255,.05); }
+  .gc.abo .gc__main{ background:#F5F1E8; }
+  .gc.abo .gc__top{ background:rgba(245,241,232,.86); backdrop-filter:blur(10px); border-bottom:1px solid #E7E1D4; }
+  .gc.abo .gc__ttl{ font-family:'Fraunces',serif; font-weight:500; letter-spacing:-.02em; font-size:18px; }
+  .gc.abo .gc__body{ background:#F5F1E8 !important; }
+  .gc.abo .grad-abo{ background:
+      radial-gradient(680px 300px at 100% -10%, rgba(0,210,97,.10), transparent 60%),
+      radial-gradient(560px 260px at -5% 110%, rgba(82,194,119,.08), transparent 60%),
+      #F5F1E8; }
+  .gc.abo .gc__brand{ font-family:'Fraunces',serif; font-weight:600; }
+  .gc.abo .gc__brand .mark{ background:#00C95C; }
+  .gc.abo .gc__ni.on{ background:var(--sbActive); color:#fff; border-left:3px solid #00C95C; padding-left:9px; }
+  .gc.abo .gc__abo{ background:linear-gradient(135deg,rgba(0,210,97,.18),rgba(0,210,97,.06)); border:1px solid rgba(0,210,97,.4); color:#DDEFE0; }
+  .gc.abo .gc__ava{ background:#00C95C; color:#08260C; }
+  /* eyebrow + serif greeting */
+  .abo-eyebrow{ display:inline-flex; align-items:center; gap:9px; padding:7px 14px 7px 11px; background:linear-gradient(135deg,rgba(0,210,97,.16),rgba(0,210,97,.06)); border:1.5px solid rgba(0,201,92,.5); border-radius:999px; font-size:12px; font-weight:700; color:#0E5A30; box-shadow:0 6px 20px rgba(0,210,97,.14); margin-bottom:13px; }
+  .abo-eyebrow .dot{ width:8px; height:8px; border-radius:50%; background:#00C95C; box-shadow:0 0 12px #00C95C; }
+  .abo-eyebrow .tag{ padding:2px 9px; background:#00C95C; color:#08260C; border-radius:999px; font-size:11px; font-weight:800; }
+  .gc.abo .hello h2{ font-family:'Fraunces',serif; font-weight:500; font-size:30px; letter-spacing:-.03em; line-height:1.05; }
+  .gc.abo .hello h2 em{ font-style:italic; color:#0E7A43; }
+  .gc.abo .hello p{ color:var(--muted); }
+  /* cards: white on cream, warm soft shadow, pill-cta look */
+  .gc.abo .kpi, .gc.abo .panel, .gc.abo .reco, .gc.abo .tile{ border:1px solid #EDE7D9; background:#fff; box-shadow:0 1px 3px rgba(20,40,15,.05),0 12px 30px rgba(20,40,15,.07); }
+  .gc.abo .kpi .kr .lucide,.gc.abo .ph .lucide{ color:var(--accent); }
+  .gc.abo .kpi.acc{ background:linear-gradient(135deg,#00C95C,#0E7A43); border:0; box-shadow:0 14px 38px rgba(0,210,97,.28); }
+  .gc.abo .task.hot{ background:rgba(0,210,97,.07); }
+  .gc.abo .task.hot .ti, .gc.abo .ti{ background:rgba(0,210,97,.12); color:var(--accent); }
+  .gc.abo .task.hot .ti{ background:linear-gradient(135deg,#00C95C,#0E7A43); color:#fff; }
+  .gc.abo .tb{ border-radius:999px; }
+  .gc.abo .tb.p{ background:#00C95C; color:#08260C; box-shadow:0 8px 20px rgba(0,210,97,.22); }
+  .gc.abo .reco{ background:linear-gradient(150deg,#11210F,#0B160B); color:#E6F1E7; border:0; }
+  .gc.abo .reco .rs{ color:#fff; }
+  .gc.abo .reco .rb{ background:rgba(255,255,255,.05); }
+  .gc.abo .reco .rcta{ background:#00C95C; color:#08260C; border-radius:999px; font-weight:700; box-shadow:0 8px 22px rgba(0,210,97,.3); }
+  .gc.abo .reco .n.g{ color:#34D77F; }
+  .gc.abo .pill.g{ background:rgba(0,210,97,.12); color:var(--accent); }
 </style>
 </head>
 <body>
 <div class="page">
   <div class="masthead">
     <span class="sub">RUNDE 2 · Basis: dunkle Sidebar (V2) + sanfter Verlauf (V7)</span>
-    <h1>GreenCareers OS — 10 Dashboard-Layouts</h1>
-    <p>Alle bauen auf deiner Wahl auf: <b>dunkle Sidebar</b> + <b>weicher Farbverlauf</b> im Hintergrund. Diesmal geht's um den <b>Aufbau der Arbeitsfläche</b> — zehn deutlich verschiedene Anordnungen. Sag mir, welche Logik dir gefällt, dann bauen wir daraus das finale, voll klickbare Tool. <a class="r1" href="runde-1.html">← Runde 1 ansehen</a></p>
+    <h1>GreenCareers OS — 11 Dashboard-Layouts</h1>
+    <p>Alle bauen auf deiner Wahl auf: <b>dunkle Sidebar</b> + <b>weicher Farbverlauf</b> im Hintergrund. Diesmal geht's um den <b>Aufbau der Arbeitsfläche</b> — verschiedene Anordnungen. <b>Neu: Nr. 11</b> im Design unserer <b>Abo-Landingpage</b> (Cream + Fraunces-Serif). Sag mir, welche Logik dir gefällt, dann bauen wir daraus das finale, voll klickbare Tool. <a class="r1" href="runde-1.html">← Runde 1 ansehen</a></p>
     <div class="chips" id="chips"></div>
   </div>
   <div id="variants"></div>
@@ -220,6 +260,7 @@ const V = [
   ['Farbcodiert','Jede Kennzahl mit eigener Farbe — schnelles Scannen.',['Farben','Scan-bar']],
   ['Soft Depth','Randlose Karten mit weicher Tiefe & Verläufen. Wertig & sanft.',['weich','wertig']],
   ['Spacious','Sehr viel Luft, große Headlines, wenig Elemente. Premium-minimal.',['luftig','minimal']],
+  ['Abo-Stil (Landingpage-Look)','Im Design unserer neuen Abo-Landingpage: warmes Cream, Fraunces-Serif-Headline, tiefes Moss-Grün, grüne Pill-Buttons mit Glow.',['Cream','Serif','Brand']],
 ];
 
 function shell(body, grad, hideWeather, extraClass){
@@ -322,6 +363,13 @@ const layouts = [
   ()=>shell(`<div class="hello" style="margin-bottom:6px"><h2>Guten Morgen, Herr Müller</h2><p>Mittwoch, 3. Juni 2026</p></div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:26px">${kpi('phone-call',2,'Bewerber anrufen','vom Bot qualifiziert',1)}${kpi('user-minus',3,'Heute nicht da','1 krank · 2 Urlaub')}${kpi('inbox',5,'Neue Anfragen','3 Kanäle')}</div>
     <div style="margin-top:24px">${tasks}</div>`,'grad-b',false,'spacious'),
+
+  // 11 Abo-Stil (Design der Landingpage)
+  ()=>shell(`<div class="hello">
+      <span class="abo-eyebrow"><span class="dot"></span> Recruiting-Abo aktiv <span class="tag">7 Bewerber / Monat</span></span>
+      <h2>Guten Morgen, <em>Herr Müller</em></h2><p>Mittwoch, 3. Juni 2026 · KW 23 · 11 Mitarbeiter im Einsatz</p></div>
+    ${kpis4}
+    <div style="display:grid;grid-template-columns:1.7fr 1fr;gap:16px;margin-top:16px">${tasks}${recoCard}</div>`,'grad-abo',false,'abo'),
 ];
 
 document.getElementById('chips').innerHTML = V.map((v,i)=>`<a class="chip" href="#v${i+1}">${i+1}. ${v[0]}</a>`).join('');
