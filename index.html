@@ -3,346 +3,334 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>GreenCareers OS · 10 Design-Richtungen</title>
+<title>GreenCareers OS · Runde 2 — 10 Dashboard-Layouts</title>
 <script src="https://unpkg.com/lucide@latest"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 <style>
   *{ box-sizing:border-box; margin:0; padding:0; }
-  body{ font-family:'Inter',system-ui,sans-serif; background:#EDEEEC; color:#16201A; -webkit-font-smoothing:antialiased; }
+  body{ font-family:'Inter',system-ui,sans-serif; background:#EAECE9; color:#16201A; -webkit-font-smoothing:antialiased; }
   .lucide{ width:1em; height:1em; }
 
   /* ---------- gallery chrome ---------- */
-  .page{ max-width:1240px; margin:0 auto; padding:32px 20px 80px; }
+  .page{ max-width:1280px; margin:0 auto; padding:32px 20px 90px; }
   .masthead{ background:#fff; border:1px solid #E3E5E1; border-radius:18px; padding:28px 30px; box-shadow:0 1px 2px rgba(20,30,20,.04); }
   .masthead h1{ font-size:26px; font-weight:800; letter-spacing:-.02em; }
-  .masthead p{ color:#5C6B5E; margin-top:8px; max-width:680px; font-size:14.5px; line-height:1.55; }
+  .masthead .sub{ display:inline-block; font-size:12px; font-weight:700; color:#0E7A43; background:#E8F6EE; border:1px solid #CFEBDA; border-radius:999px; padding:4px 11px; margin-bottom:14px; }
+  .masthead p{ color:#5C6B5E; margin-top:8px; max-width:720px; font-size:14.5px; line-height:1.55; }
+  .masthead a.r1{ color:#0E7A43; font-weight:600; text-decoration:none; }
   .chips{ display:flex; flex-wrap:wrap; gap:8px; margin-top:18px; }
   .chip{ font-size:12px; font-weight:600; color:#2C3A2E; background:#F1F4F0; border:1px solid #E3E7E1; border-radius:999px; padding:6px 12px; text-decoration:none; transition:.15s; }
-  .chip:hover{ background:#16241A; color:#fff; border-color:#16241A; }
-  .toolbar{ position:sticky; top:0; z-index:30; background:rgba(237,238,236,.85); backdrop-filter:blur(8px); padding:12px 0; margin:24px 0 8px; display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
-  .toolbar .seg{ display:inline-flex; background:#fff; border:1px solid #E3E5E1; border-radius:10px; padding:3px; }
-  .toolbar .seg button{ border:0; background:transparent; font:inherit; font-size:13px; font-weight:600; color:#5C6B5E; padding:6px 14px; border-radius:7px; cursor:pointer; }
-  .toolbar .seg button.on{ background:#16241A; color:#fff; }
+  .chip:hover{ background:#15241A; color:#fff; border-color:#15241A; }
 
-  .variant{ margin-top:26px; scroll-margin-top:70px; }
+  .variant{ margin-top:30px; scroll-margin-top:20px; }
   .vhead{ display:flex; align-items:flex-end; gap:14px; margin-bottom:12px; flex-wrap:wrap; }
-  .vnum{ font-size:13px; font-weight:800; color:#fff; background:#16241A; width:30px; height:30px; border-radius:9px; display:grid; place-items:center; flex-shrink:0; }
+  .vnum{ font-size:13px; font-weight:800; color:#fff; background:#15241A; width:30px; height:30px; border-radius:9px; display:grid; place-items:center; flex-shrink:0; }
   .vname{ font-size:18px; font-weight:800; letter-spacing:-.01em; }
   .vdesc{ font-size:13.5px; color:#5C6B5E; }
   .vtraits{ display:flex; gap:6px; flex-wrap:wrap; margin-left:auto; }
   .vtrait{ font-size:11px; font-weight:600; color:#41513F; background:#fff; border:1px solid #E3E5E1; border-radius:999px; padding:4px 10px; }
 
-  .window{ background:#fff; border:1px solid #DfE2dd; border-radius:14px; overflow:hidden; box-shadow:0 6px 30px rgba(20,30,20,.10); }
+  .window{ background:#fff; border:1px solid #DfE2dd; border-radius:14px; overflow:hidden; box-shadow:0 8px 34px rgba(20,30,20,.11); }
   .winbar{ height:36px; display:flex; align-items:center; gap:7px; padding:0 14px; background:#F6F7F5; border-bottom:1px solid #E7E9E5; }
   .dot{ width:11px; height:11px; border-radius:50%; }
   .winurl{ margin-left:12px; font-size:11.5px; color:#9AA59B; font-weight:500; }
   .winscroll{ overflow-x:auto; }
   .winscroll::-webkit-scrollbar{ height:8px; } .winscroll::-webkit-scrollbar-thumb{ background:#cfd5cd; border-radius:8px; }
 
-  /* phone frame */
-  .phonewrap{ display:flex; justify-content:center; padding:22px; background:#F6F7F5; }
-  .phone{ width:340px; border-radius:30px; overflow:hidden; border:1px solid #DfE2dd; box-shadow:0 10px 40px rgba(20,30,20,.14); }
-
-  /* ================= APP SKELETON (var-driven) ================= */
-  .gc{ display:flex; min-width:920px; height:580px; font-family:var(--font); background:var(--bg); color:var(--text); }
-  .gc.phoneapp{ min-width:0; width:100%; height:600px; flex-direction:column; }
+  /* ================= SHARED SHELL ================= */
+  :root{
+    --accent:#15803D; --accent2:#16A34A; --accentSoft:#EAF7EF; --onAccent:#fff;
+    --text:#17231A; --muted:#6A7A6E; --border:#E9ECE8; --surface:#fff; --chip:#EFF3EF;
+    --shadow:0 1px 2px rgba(20,30,20,.05),0 8px 22px rgba(20,30,20,.05);
+    --radius:13px;
+    --sbBg:#15241A; --sbText:#A9B8AC; --sbMuted:#6E7E72; --sbActive:rgba(255,255,255,.10); --sbHover:rgba(255,255,255,.06);
+  }
+  .gc{ display:flex; min-width:940px; height:600px; }
   .gc *{ box-sizing:border-box; }
-
-  .gc__sb{ width:214px; flex-shrink:0; background:var(--sbBg); color:var(--sbText); border-right:1px solid var(--sbBorder); padding:16px 12px; display:flex; flex-direction:column; }
-  .gc__brand{ display:flex; align-items:center; gap:9px; padding:6px 8px; font-weight:800; font-size:15px; letter-spacing:-.01em; color:var(--sbBrand); }
-  .gc__brand .mark{ width:26px; height:26px; border-radius:7px; background:var(--accent); color:var(--onAccent); display:grid; place-items:center; }
+  .gc__sb{ width:212px; flex-shrink:0; background:var(--sbBg); color:var(--sbText); padding:16px 12px; display:flex; flex-direction:column; }
+  .gc__brand{ display:flex; align-items:center; gap:9px; padding:6px 8px; font-weight:800; font-size:15px; color:#fff; }
+  .gc__brand .mark{ width:26px; height:26px; border-radius:7px; background:var(--accent2); display:grid; place-items:center; color:#fff; }
   .gc__brand .mark .lucide{ width:15px; height:15px; }
-  .gc__brand small{ color:var(--accent); font-weight:700; }
-  .gc__collapse{ margin-left:auto; color:var(--sbMuted); display:grid; place-items:center; width:24px; height:24px; border-radius:6px; cursor:pointer; }
-  .gc__collapse:hover{ background:var(--sbHover); }
+  .gc__brand small{ color:#34D77F; }
+  .gc__brand .col{ margin-left:auto; color:var(--sbMuted); width:22px; height:22px; display:grid; place-items:center; border-radius:6px; cursor:pointer; }
   .gc__nav{ margin-top:18px; display:flex; flex-direction:column; gap:3px; }
-  .gc__navlabel{ font-size:10.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--sbMuted); font-weight:700; padding:6px 10px 4px; }
-  .gc__ni{ display:flex; align-items:center; gap:11px; padding:9px 10px; border-radius:calc(var(--radius) - 3px); font-size:13.5px; font-weight:500; color:var(--sbText); cursor:pointer; }
+  .gc__nl{ font-size:10.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--sbMuted); font-weight:700; padding:6px 10px 4px; }
+  .gc__ni{ display:flex; align-items:center; gap:11px; padding:9px 10px; border-radius:9px; font-size:13.5px; font-weight:500; color:var(--sbText); cursor:pointer; }
   .gc__ni:hover{ background:var(--sbHover); }
-  .gc__ni.on{ background:var(--sbActiveBg); color:var(--sbActiveText); font-weight:600; }
-  .gc__ni .lucide{ width:17px; height:17px; color:var(--sbIcon); }
-  .gc__ni.on .lucide{ color:var(--sbActiveText); }
-  .gc__ni .cnt{ margin-left:auto; font-size:11px; font-weight:700; background:var(--accentSoft); color:var(--accent); border-radius:999px; padding:1px 7px; }
+  .gc__ni.on{ background:var(--sbActive); color:#fff; font-weight:600; }
+  .gc__ni .lucide{ width:17px; height:17px; color:var(--sbMuted); }
+  .gc__ni.on .lucide{ color:#34D77F; }
+  .gc__ni .cnt{ margin-left:auto; font-size:11px; font-weight:700; background:rgba(0,210,97,.16); color:#34D77F; border-radius:999px; padding:1px 7px; }
   .gc__sbfoot{ margin-top:auto; }
-  .gc__abo{ background:var(--sbHover); border:1px solid var(--sbBorder); border-radius:var(--radius); padding:11px; font-size:11.5px; color:var(--sbMuted); }
-  .gc__abo b{ color:var(--sbText); }
-  .gc__user{ display:flex; align-items:center; gap:9px; padding:8px; margin-top:8px; border-radius:var(--radius); }
-  .gc__ava{ width:30px; height:30px; border-radius:8px; background:var(--accent); color:var(--onAccent); display:grid; place-items:center; font-size:12px; font-weight:700; }
+  .gc__abo{ background:var(--sbHover); border-radius:11px; padding:11px; font-size:11.5px; color:var(--sbMuted); }
+  .gc__abo b{ color:#fff; }
+  .gc__user{ display:flex; align-items:center; gap:9px; padding:8px; margin-top:8px; }
+  .gc__ava{ width:30px; height:30px; border-radius:8px; background:var(--accent2); color:#fff; display:grid; place-items:center; font-size:12px; font-weight:700; }
 
   .gc__main{ flex:1; min-width:0; display:flex; flex-direction:column; }
-  .gc__top{ height:60px; flex-shrink:0; display:flex; align-items:center; gap:14px; padding:0 22px; border-bottom:1px solid var(--border); background:var(--bg); }
-  .gc__burger{ display:none; }
+  .gc__top{ height:60px; flex-shrink:0; display:flex; align-items:center; gap:14px; padding:0 22px; border-bottom:1px solid var(--border); background:rgba(255,255,255,.6); backdrop-filter:blur(6px); }
   .gc__ttl{ font-weight:700; font-size:17px; letter-spacing:-.01em; }
-  .gc__weather{ margin-left:auto; display:flex; align-items:center; gap:9px; background:var(--weatherBg); border:1px solid var(--weatherBorder); border-radius:var(--radius); padding:7px 13px; font-size:12.5px; color:var(--muted); }
-  .gc__weather .wt{ width:30px; height:30px; border-radius:8px; background:var(--accentSoft); color:var(--accent); display:grid; place-items:center; }
-  .gc__weather b{ color:var(--text); }
-  .gc__weather .lucide{ width:17px; height:17px; }
-  .gc__bell{ width:38px; height:38px; border-radius:var(--radius); border:1px solid var(--border); background:var(--surface); display:grid; place-items:center; color:var(--muted); position:relative; }
-  .gc__bell::after{ content:''; position:absolute; top:9px; right:9px; width:7px; height:7px; border-radius:50%; background:var(--accent); border:2px solid var(--surface); }
+  .gc__top .sp{ margin-left:auto; }
+  .gc__wmini{ display:flex; align-items:center; gap:9px; background:#fff; border:1px solid var(--border); border-radius:11px; padding:7px 13px; font-size:12.5px; color:var(--muted); }
+  .gc__wmini .wt{ width:30px; height:30px; border-radius:8px; background:var(--accentSoft); color:var(--accent); display:grid; place-items:center; }
+  .gc__wmini b{ color:var(--text); }
+  .gc__wmini .lucide{ width:17px; height:17px; }
+  .gc__bell{ width:38px; height:38px; border-radius:11px; border:1px solid var(--border); background:#fff; display:grid; place-items:center; color:var(--muted); position:relative; }
+  .gc__bell::after{ content:''; position:absolute; top:9px; right:9px; width:7px; height:7px; border-radius:50%; background:var(--accent2); border:2px solid #fff; }
 
+  /* gradient content backgrounds (the V7 vibe) */
   .gc__body{ padding:22px; overflow:auto; flex:1; }
-  .gc__hello h2{ font-size:21px; font-weight:700; letter-spacing:-.01em; }
-  .gc__hello p{ color:var(--muted); font-size:13px; margin-top:3px; }
+  .grad-a{ background:radial-gradient(900px 360px at 100% -8%, rgba(22,163,74,.10), transparent 60%), linear-gradient(180deg,#FAFCFA 0%,#F3F7F3 100%); }
+  .grad-b{ background:radial-gradient(800px 340px at 0% -10%, rgba(22,163,74,.09), transparent 55%), linear-gradient(180deg,#F8FBF9,#EFF4F0); }
+  .grad-c{ background:linear-gradient(135deg,#FAFCF9 0%,#EEF5EF 55%,#E9F2EC 100%); }
+  .grad-d{ background:radial-gradient(700px 300px at 100% 0%, rgba(20,128,61,.08), transparent), radial-gradient(600px 280px at 0% 100%, rgba(20,128,61,.05), transparent), #F7FAF8; }
 
-  .gc__kpis{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-top:18px; }
-  .gc__kpi{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:15px; box-shadow:var(--shadow); }
-  .gc__kpi.acc{ background:var(--accent); color:var(--onAccent); border-color:transparent; }
-  .gc__kpi .kr{ display:flex; align-items:center; justify-content:space-between; }
-  .gc__kpi .kr .lucide{ width:18px; height:18px; color:var(--accent); }
-  .gc__kpi.acc .kr .lucide{ color:var(--onAccent); opacity:.85; }
-  .gc__kpi .num{ font-size:25px; font-weight:800; letter-spacing:-.02em; }
-  .gc__kpi .lab{ font-size:12.5px; font-weight:600; margin-top:7px; }
-  .gc__kpi .sub{ font-size:11px; color:var(--muted); margin-top:1px; }
-  .gc__kpi.acc .sub{ color:var(--onAccent); opacity:.7; }
+  /* shared components */
+  .hello h2{ font-size:21px; font-weight:700; letter-spacing:-.01em; }
+  .hello p{ color:var(--muted); font-size:13px; margin-top:3px; }
+  .kpi{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:15px; box-shadow:var(--shadow); }
+  .kpi.acc{ background:linear-gradient(135deg,var(--accent2),var(--accent)); color:#fff; border-color:transparent; }
+  .kpi .kr{ display:flex; align-items:center; justify-content:space-between; }
+  .kpi .kr .lucide{ width:18px; height:18px; color:var(--accent); }
+  .kpi.acc .kr .lucide{ color:#fff; opacity:.9; }
+  .kpi .num{ font-size:25px; font-weight:800; letter-spacing:-.02em; }
+  .kpi .lab{ font-size:12.5px; font-weight:600; margin-top:7px; }
+  .kpi .sub{ font-size:11px; color:var(--muted); margin-top:1px; }
+  .kpi.acc .sub{ color:#fff; opacity:.78; }
+  .panel{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); padding:17px; }
+  .ph{ font-weight:700; font-size:14px; display:flex; align-items:center; gap:8px; margin-bottom:13px; }
+  .ph .lucide{ width:16px; height:16px; color:var(--accent); }
+  .ph .more{ margin-left:auto; font-size:11.5px; color:var(--muted); font-weight:500; }
+  .task{ display:flex; align-items:center; gap:12px; padding:11px; border-radius:10px; }
+  .task+.task{ margin-top:4px; }
+  .task.hot{ background:var(--accentSoft); }
+  .ti{ width:34px; height:34px; border-radius:9px; display:grid; place-items:center; background:var(--chip); color:var(--accent); flex-shrink:0; }
+  .task.hot .ti{ background:linear-gradient(135deg,var(--accent2),var(--accent)); color:#fff; }
+  .ti .lucide{ width:16px; height:16px; }
+  .tt{ flex:1; min-width:0; }
+  .tt .a{ font-size:13px; font-weight:600; }
+  .tt .b{ font-size:11.5px; color:var(--muted); }
+  .tb{ font-size:11.5px; font-weight:700; border-radius:8px; padding:7px 12px; border:1px solid var(--border); color:var(--text); background:#fff; cursor:pointer; }
+  .tb.p{ background:var(--accent); color:#fff; border-color:transparent; }
+  .reco{ border-radius:var(--radius); padding:17px; display:flex; flex-direction:column; box-shadow:var(--shadow); background:#15241A; color:#EAF1EB; }
+  .reco .rh{ font-weight:700; font-size:14px; display:flex; align-items:center; gap:8px; }
+  .reco .rh .lucide{ width:16px; height:16px; color:#34D77F; }
+  .reco .rs{ font-size:12px; color:#9AA89D; margin-top:3px; }
+  .reco .rg{ display:grid; grid-template-columns:1fr 1fr; gap:9px; margin-top:14px; }
+  .reco .rb{ background:rgba(255,255,255,.06); border-radius:10px; padding:11px; }
+  .reco .rb .n{ font-size:21px; font-weight:800; }
+  .reco .rb .n.g{ color:#34D77F; }
+  .reco .rb .l{ font-size:10.5px; color:#9AA89D; }
+  .reco .rcta{ margin-top:auto; padding-top:14px; }
+  .reco .rcta span{ display:block; text-align:center; background:#34D77F; color:#08160d; font-weight:700; font-size:12.5px; border-radius:10px; padding:10px; }
 
-  .gc__cols{ display:grid; grid-template-columns:1.7fr 1fr; gap:14px; margin-top:14px; }
-  .gc__panel{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); padding:17px; }
-  .gc__ph{ font-weight:700; font-size:14px; display:flex; align-items:center; gap:8px; margin-bottom:13px; }
-  .gc__ph .lucide{ width:16px; height:16px; color:var(--accent); }
-  .gc__task{ display:flex; align-items:center; gap:12px; padding:11px; border-radius:calc(var(--radius) - 2px); }
-  .gc__task+.gc__task{ margin-top:4px; }
-  .gc__task.hot{ background:var(--accentSoft); }
-  .gc__ti{ width:34px; height:34px; border-radius:9px; display:grid; place-items:center; background:var(--chipBg); color:var(--accent); flex-shrink:0; }
-  .gc__task.hot .gc__ti{ background:var(--accent); color:var(--onAccent); }
-  .gc__ti .lucide{ width:16px; height:16px; }
-  .gc__tt{ flex:1; min-width:0; }
-  .gc__tt .a{ font-size:13px; font-weight:600; }
-  .gc__tt .b{ font-size:11.5px; color:var(--muted); }
-  .gc__tb{ font-size:11.5px; font-weight:700; border-radius:8px; padding:7px 12px; border:1px solid var(--border); color:var(--text); background:var(--surface); cursor:pointer; }
-  .gc__tb.p{ background:var(--accent); color:var(--onAccent); border-color:transparent; }
+  /* hero weather banner */
+  .hero{ border-radius:16px; padding:22px; color:#fff; background:radial-gradient(600px 200px at 90% 0%, rgba(255,255,255,.18), transparent), linear-gradient(120deg,#1C5E36,#16A34A 70%,#0F9E54); display:flex; align-items:center; gap:22px; box-shadow:0 10px 30px rgba(16,120,67,.25); }
+  .hero h2{ font-size:23px; font-weight:800; }
+  .hero p{ opacity:.85; font-size:13px; margin-top:4px; }
+  .hero .wbig{ margin-left:auto; text-align:right; display:flex; align-items:center; gap:14px; }
+  .hero .wbig .t{ font-size:40px; font-weight:800; line-height:1; }
+  .hero .wbig .lucide{ width:46px; height:46px; opacity:.95; }
+  .hero .wbig .d{ font-size:12px; opacity:.85; }
 
-  .gc__reco{ background:var(--recoBg); color:var(--recoText); border-radius:var(--radius); padding:17px; display:flex; flex-direction:column; box-shadow:var(--shadow); border:1px solid var(--recoBorder); }
-  .gc__reco .rh{ font-weight:700; font-size:14px; display:flex; align-items:center; gap:8px; }
-  .gc__reco .rh .lucide{ width:16px; height:16px; color:var(--recoAccent); }
-  .gc__reco .rs{ font-size:12px; color:var(--recoMuted); margin-top:3px; }
-  .gc__reco .rg{ display:grid; grid-template-columns:1fr 1fr; gap:9px; margin-top:14px; }
-  .gc__reco .rb{ background:var(--recoTile); border-radius:calc(var(--radius) - 3px); padding:11px; }
-  .gc__reco .rb .n{ font-size:21px; font-weight:800; }
-  .gc__reco .rb .n.g{ color:var(--recoAccent); }
-  .gc__reco .rb .l{ font-size:10.5px; color:var(--recoMuted); }
-  .gc__reco .rcta{ margin-top:auto; padding-top:14px; }
-  .gc__reco .rcta span{ display:block; text-align:center; background:var(--recoAccent); color:var(--recoOnAccent,#0b1f12); font-weight:700; font-size:12.5px; border-radius:calc(var(--radius) - 3px); padding:10px; }
+  /* table */
+  .gtable{ width:100%; border-collapse:collapse; font-size:12.5px; }
+  .gtable th{ text-align:left; color:var(--muted); font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; padding:9px 12px; border-bottom:1px solid var(--border); }
+  .gtable td{ padding:11px 12px; border-bottom:1px solid var(--border); }
+  .gtable tr:last-child td{ border-bottom:0; }
+  .ava2{ width:26px; height:26px; border-radius:7px; background:#15241A; color:#34D77F; display:inline-grid; place-items:center; font-size:11px; font-weight:700; margin-right:8px; vertical-align:middle; }
+  .pill{ font-size:11px; font-weight:700; border-radius:999px; padding:3px 9px; }
+  .pill.g{ background:var(--accentSoft); color:var(--accent); }
+  .pill.a{ background:#FEF3E2; color:#B7791F; }
+  .pill.r{ background:#FDECEC; color:#C53030; }
 
-  /* ---- top-nav layout (variant 10) ---- */
-  .gc.topnav{ flex-direction:column; }
-  .gc.topnav .gc__sb{ display:none; }
-  .gc.topnav .gc__tnav{ display:flex; align-items:center; gap:6px; height:62px; padding:0 26px; border-bottom:1px solid var(--border); background:var(--bg); }
-  .gc__tnav .gc__brand{ margin-right:18px; }
-  .gc__tnav .ti{ font-size:13.5px; font-weight:500; color:var(--muted); padding:8px 14px; border-radius:var(--radius); cursor:pointer; }
-  .gc__tnav .ti.on{ color:var(--text); background:var(--sbActiveBg); font-weight:600; }
-  .gc__tnav .tw{ margin-left:auto; }
-  .gc:not(.topnav) .gc__tnav{ display:none; }
+  /* bento */
+  .bento{ display:grid; grid-template-columns:repeat(4,1fr); grid-auto-rows:118px; gap:13px; }
+  .bento>*{ border-radius:var(--radius); }
+  .b-span2{ grid-column:span 2; } .b-row2{ grid-row:span 2; }
+  .bento .tile{ background:var(--surface); border:1px solid var(--border); box-shadow:var(--shadow); padding:15px; display:flex; flex-direction:column; }
 
-  /* ---- dense (variant 5) ---- */
-  .dense .gc__body{ padding:16px; }
-  .dense .gc__kpis{ gap:8px; margin-top:13px; }
-  .dense .gc__kpi{ padding:11px; }
-  .dense .gc__kpi .num{ font-size:21px; }
-  .dense .gc__cols{ gap:10px; margin-top:10px; }
-  .dense .gc__panel{ padding:13px; }
-  .dense .gc__task{ padding:8px; }
-  .dense .gc__hello h2{ font-size:18px; }
+  /* right rail layout */
+  .work{ display:grid; grid-template-columns:1fr 290px; gap:14px; }
+  .rail{ display:flex; flex-direction:column; gap:13px; }
+  .qa{ display:grid; grid-template-columns:1fr 1fr; gap:9px; }
+  .qa button{ font:inherit; font-size:12px; font-weight:600; color:var(--text); background:#fff; border:1px solid var(--border); border-radius:11px; padding:12px 8px; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:6px; box-shadow:var(--shadow); }
+  .qa button .lucide{ width:18px; height:18px; color:var(--accent); }
 
-  /* ---- serif (variant 4) ---- */
-  .serif .gc__hello h2,.serif .gc__brand,.serif .gc__ph,.serif .gc__ttl,.serif .gc__reco .rh{ font-family:'Fraunces',Georgia,serif; font-weight:600; letter-spacing:0; }
-  .serif .gc__kpi .num,.serif .gc__reco .rb .n{ font-family:'Fraunces',Georgia,serif; }
+  /* big numbers */
+  .bignums{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+  .bn{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); padding:20px; }
+  .bn .n{ font-size:42px; font-weight:800; letter-spacing:-.03em; }
+  .bn .l{ font-size:13px; font-weight:600; margin-top:2px; }
+  .bn .bar{ height:6px; border-radius:6px; background:var(--chip); margin-top:14px; overflow:hidden; }
+  .bn .bar i{ display:block; height:100%; background:linear-gradient(90deg,var(--accent2),var(--accent)); }
 
-  @media(max-width:560px){ .phone{ width:100%; } }
+  /* timeline */
+  .tl{ position:relative; padding-left:8px; }
+  .tlrow{ display:grid; grid-template-columns:64px 1fr; gap:14px; }
+  .tlrow .tm{ font-size:12px; font-weight:700; color:var(--muted); text-align:right; padding-top:14px; }
+  .tlrow .tc{ border-left:2px solid var(--border); padding:0 0 14px 18px; position:relative; }
+  .tlrow .tc::before{ content:''; position:absolute; left:-7px; top:15px; width:12px; height:12px; border-radius:50%; background:#fff; border:2px solid var(--accent); }
+  .tlrow.hot .tc::before{ background:var(--accent); }
+  .tlcard{ background:var(--surface); border:1px solid var(--border); border-radius:11px; box-shadow:var(--shadow); padding:12px 14px; }
+  .tlcard .a{ font-size:13px; font-weight:600; }
+  .tlcard .b{ font-size:11.5px; color:var(--muted); }
 
-  /* ================= VARIANT THEMES ================= */
-  /* 1 Clean Minimal */
-  .v1{ --font:'Inter'; --bg:#fff; --surface:#fff; --border:#ECECEC; --text:#18181B; --muted:#71717A; --accent:#15803D; --accentSoft:#F0FDF4; --onAccent:#fff; --radius:9px; --shadow:none; --chipBg:#F4F4F5;
-    --sbBg:#fff; --sbBorder:#EEEEEE; --sbText:#3F3F46; --sbMuted:#A1A1AA; --sbBrand:#18181B; --sbIcon:#9CA3AF; --sbHover:#F4F4F5; --sbActiveBg:#F4F4F5; --sbActiveText:#15803D;
-    --weatherBg:#fff; --weatherBorder:#ECECEC;
-    --recoBg:#FAFAFA; --recoBorder:#ECECEC; --recoText:#18181B; --recoMuted:#71717A; --recoAccent:#15803D; --recoOnAccent:#fff; --recoTile:#F4F4F5; }
-  /* 2 Dark Sidebar Pro */
-  .v2{ --font:'Inter'; --bg:#F7F8F7; --surface:#fff; --border:#EAEDEA; --text:#18241A; --muted:#6B7280; --accent:#15803D; --accentSoft:#ECFDF3; --onAccent:#fff; --radius:11px; --shadow:0 1px 2px rgba(20,30,20,.05),0 1px 3px rgba(20,30,20,.04); --chipBg:#F1F5F1;
-    --sbBg:#15241A; --sbBorder:rgba(255,255,255,.07); --sbText:#AFBDB1; --sbMuted:#6E7E72; --sbBrand:#fff; --sbIcon:#7E8E81; --sbHover:rgba(255,255,255,.06); --sbActiveBg:rgba(255,255,255,.10); --sbActiveText:#fff;
-    --weatherBg:#fff; --weatherBorder:#EAEDEA;
-    --recoBg:#15241A; --recoBorder:transparent; --recoText:#EAF1EB; --recoMuted:#9AA89D; --recoAccent:#34D77F; --recoOnAccent:#08160d; --recoTile:rgba(255,255,255,.06); }
-  /* 3 Soft Sage */
-  .v3{ --font:'Inter'; --bg:#F4F6F2; --surface:#fff; --border:#E6EAE1; --text:#2A332A; --muted:#79836F; --accent:#5C8A57; --accentSoft:#EDF3EB; --onAccent:#fff; --radius:15px; --shadow:0 1px 3px rgba(40,50,40,.05),0 10px 26px rgba(40,50,40,.05); --chipBg:#EDF3EB;
-    --sbBg:#FBFCFA; --sbBorder:#E6EAE1; --sbText:#4A5546; --sbMuted:#9AA593; --sbBrand:#2A332A; --sbIcon:#8C9A86; --sbHover:#EEF2EA; --sbActiveBg:#E6EFE3; --sbActiveText:#3C6B3A;
-    --weatherBg:#fff; --weatherBorder:#E6EAE1;
-    --recoBg:#2F4A2C; --recoBorder:transparent; --recoText:#EEF4 EC; --recoText:#EEF4EC; --recoMuted:#B4C6B0; --recoAccent:#9BD08F; --recoOnAccent:#10240d; --recoTile:rgba(255,255,255,.08); }
-  /* 4 Editorial Mono */
-  .v4{ --font:'Inter'; --bg:#fff; --surface:#fff; --border:#E7E7E4; --text:#141413; --muted:#6F6F69; --accent:#0F5132; --accentSoft:#EFF5F1; --onAccent:#fff; --radius:3px; --shadow:none; --chipBg:#F3F3F0;
-    --sbBg:#fff; --sbBorder:#E7E7E4; --sbText:#3A3A36; --sbMuted:#9A9A92; --sbBrand:#141413; --sbIcon:#9A9A92; --sbHover:#F5F5F2; --sbActiveBg:#F0F2EF; --sbActiveText:#0F5132;
-    --weatherBg:#fff; --weatherBorder:#E7E7E4;
-    --recoBg:#141413; --recoBorder:transparent; --recoText:#F3F3F0; --recoMuted:#A3A39B; --recoAccent:#7BC49A; --recoOnAccent:#0c1f15; --recoTile:rgba(255,255,255,.07); }
-  /* 5 Data Dense */
-  .v5{ --font:'IBM Plex Sans'; --bg:#FAFAFA; --surface:#fff; --border:#E8E8E8; --text:#1C1C1C; --muted:#767676; --accent:#0E7A43; --accentSoft:#EBF7F0; --onAccent:#fff; --radius:7px; --shadow:none; --chipBg:#F0F0F0;
-    --sbBg:#fff; --sbBorder:#E8E8E8; --sbText:#3C3C3C; --sbMuted:#9A9A9A; --sbBrand:#1C1C1C; --sbIcon:#909090; --sbHover:#F3F3F3; --sbActiveBg:#EBF7F0; --sbActiveText:#0E7A43;
-    --weatherBg:#fff; --weatherBorder:#E8E8E8;
-    --recoBg:#0E7A43; --recoBorder:transparent; --recoText:#EAF7EF; --recoMuted:#BDE3CC; --recoAccent:#fff; --recoOnAccent:#0E7A43; --recoTile:rgba(255,255,255,.14); }
-  /* 6 Midnight (dark) */
-  .v6{ --font:'Inter'; --bg:#0E140F; --surface:#161E18; --border:#243029; --text:#E8EFE9; --muted:#8FA193; --accent:#00D261; --accentSoft:rgba(0,210,97,.13); --onAccent:#06160d; --radius:13px; --shadow:0 1px 2px rgba(0,0,0,.4); --chipBg:#1E2820;
-    --sbBg:#0A0F0B; --sbBorder:#1C261E; --sbText:#9FB0A3; --sbMuted:#5E6E62; --sbBrand:#fff; --sbIcon:#6E7E72; --sbHover:#141B16; --sbActiveBg:rgba(0,210,97,.14); --sbActiveText:#3CF08D;
-    --weatherBg:#161E18; --weatherBorder:#243029;
-    --recoBg:#161E18; --recoBorder:#243029; --recoText:#E8EFE9; --recoMuted:#8FA193; --recoAccent:#00D261; --recoOnAccent:#06160d; --recoTile:#1E2820; }
-  /* 7 Card Elevated */
-  .v7{ --font:'Inter'; --bg:#F3F4F6; --surface:#fff; --border:#EBEDF0; --text:#111827; --muted:#6B7280; --accent:#16A34A; --accentSoft:#ECFDF3; --onAccent:#fff; --radius:14px; --shadow:0 1px 2px rgba(16,24,40,.06),0 10px 24px rgba(16,24,40,.07); --chipBg:#F1F3F6;
-    --sbBg:#fff; --sbBorder:#EBEDF0; --sbText:#374151; --sbMuted:#9CA3AF; --sbBrand:#111827; --sbIcon:#9CA3AF; --sbHover:#F4F6F8; --sbActiveBg:#ECFDF3; --sbActiveText:#16A34A;
-    --weatherBg:#fff; --weatherBorder:#EBEDF0;
-    --recoBg:#111827; --recoBorder:transparent; --recoText:#F3F4F6; --recoMuted:#9CA3AF; --recoAccent:#34D77F; --recoOnAccent:#06160d; --recoTile:rgba(255,255,255,.06); }
-  /* 8 Outline Flat */
-  .v8{ --font:'Space Grotesk'; --bg:#fff; --surface:#fff; --border:#1A1A1A; --text:#0A0A0A; --muted:#555; --accent:#0B7A36; --accentSoft:#E9F6EE; --onAccent:#fff; --radius:5px; --shadow:none; --chipBg:#F2F2F2;
-    --sbBg:#fff; --sbBorder:#1A1A1A; --sbText:#1A1A1A; --sbMuted:#777; --sbBrand:#0A0A0A; --sbIcon:#1A1A1A; --sbHover:#F2F2F2; --sbActiveBg:#0A0A0A; --sbActiveText:#fff;
-    --weatherBg:#fff; --weatherBorder:#1A1A1A;
-    --recoBg:#fff; --recoBorder:#1A1A1A; --recoText:#0A0A0A; --recoMuted:#555; --recoAccent:#0B7A36; --recoOnAccent:#fff; --recoTile:#F2F2F2; }
-  /* 9 Fresh Green (brand) */
-  .v9{ --font:'Inter'; --bg:#F1F8F2; --surface:#fff; --border:#DCEEDD; --text:#14321C; --muted:#5B7A60; --accent:#00B257; --accentSoft:#E2F7E8; --onAccent:#fff; --radius:13px; --shadow:0 1px 3px rgba(10,60,25,.06),0 8px 22px rgba(10,60,25,.05); --chipBg:#E6F6EA;
-    --sbBg:#13301B; --sbBorder:rgba(255,255,255,.07); --sbText:#A7C4AD; --sbMuted:#6B8A70; --sbBrand:#fff; --sbIcon:#7CA083; --sbHover:rgba(255,255,255,.07); --sbActiveBg:rgba(0,210,97,.18); --sbActiveText:#7CF0A6;
-    --weatherBg:#fff; --weatherBorder:#DCEEDD;
-    --recoBg:#fff; --recoBorder:#DCEEDD; --recoText:#14321C; --recoMuted:#5B7A60; --recoAccent:#00B257; --recoOnAccent:#fff; --recoTile:#EAF7EE; }
-  /* 10 Spacious / Big Type (top-nav) */
-  .v10{ --font:'Inter'; --bg:#FCFCFB; --surface:#fff; --border:#EDEEEB; --text:#16201A; --muted:#8A8A82; --accent:#0F7A3F; --accentSoft:#EEF6F0; --onAccent:#fff; --radius:16px; --shadow:0 1px 2px rgba(20,30,20,.04); --chipBg:#F2F4F1;
-    --sbBg:#fff; --sbBorder:#EDEEEB; --sbText:#3A463C; --sbMuted:#9AA597; --sbBrand:#16201A; --sbIcon:#9AA597; --sbHover:#F4F6F3; --sbActiveBg:#EEF6F0; --sbActiveText:#0F7A3F;
-    --weatherBg:#fff; --weatherBorder:#EDEEEB;
-    --recoBg:#16201A; --recoBorder:transparent; --recoText:#F2F4F1; --recoMuted:#A3AE A0; --recoMuted:#A3AEA0; --recoAccent:#5FD08C; --recoOnAccent:#08160d; --recoTile:rgba(255,255,255,.07); }
+  /* color coded */
+  .cc{ display:grid; grid-template-columns:repeat(4,1fr); gap:13px; }
+  .cc .k{ background:#fff; border:1px solid var(--border); border-radius:var(--radius); padding:15px; box-shadow:var(--shadow); border-left:4px solid var(--c); }
+  .cc .k .ic{ width:34px; height:34px; border-radius:9px; display:grid; place-items:center; background:var(--cs); color:var(--c); }
+  .cc .k .ic .lucide{ width:17px; height:17px; }
+  .cc .k .num{ font-size:24px; font-weight:800; margin-top:10px; }
+  .cc .k .lab{ font-size:12px; font-weight:600; color:var(--muted); }
+
+  /* soft depth cards */
+  .soft .panel{ border:0; box-shadow:0 2px 4px rgba(20,40,25,.04),0 14px 34px rgba(20,40,25,.08); border-radius:18px; }
+  .soft .kpi{ border:0; border-radius:18px; box-shadow:0 2px 4px rgba(20,40,25,.04),0 14px 30px rgba(20,40,25,.07); background:linear-gradient(180deg,#fff,#FBFEFC); }
+  .soft .kpi.acc{ background:linear-gradient(140deg,#19A84E,#0E7A43); }
+
+  /* spacious */
+  .spacious .hello h2{ font-size:30px; }
+  .spacious .kpi{ padding:22px; }
+  .spacious .kpi .num{ font-size:30px; }
 </style>
 </head>
 <body>
 <div class="page">
-
   <div class="masthead">
-    <h1>GreenCareers OS — 10 Design-Richtungen</h1>
-    <p>Gleicher Aufbau (Sidebar + „Heute"-Dashboard mit Wetter), zehnmal sehr unterschiedlich gestaltet. Schau dir alle an und sag mir: <b>welche Richtung trifft's?</b> Aus deinem Favoriten (oder einem Mix) bauen wir dann die finale, voll klickbare Version. Alle Ansichten sind aus <b>Kundensicht</b> — kein Admin.</p>
+    <span class="sub">RUNDE 2 · Basis: dunkle Sidebar (V2) + sanfter Verlauf (V7)</span>
+    <h1>GreenCareers OS — 10 Dashboard-Layouts</h1>
+    <p>Alle bauen auf deiner Wahl auf: <b>dunkle Sidebar</b> + <b>weicher Farbverlauf</b> im Hintergrund. Diesmal geht's um den <b>Aufbau der Arbeitsfläche</b> — zehn deutlich verschiedene Anordnungen. Sag mir, welche Logik dir gefällt, dann bauen wir daraus das finale, voll klickbare Tool. <a class="r1" href="runde-1.html">← Runde 1 ansehen</a></p>
     <div class="chips" id="chips"></div>
   </div>
-
-  <div class="toolbar">
-    <span style="font-size:12.5px;font-weight:600;color:#5C6B5E">Ansicht:</span>
-    <div class="seg">
-      <button class="on" data-view="desktop" onclick="setView('desktop')">🖥 Desktop</button>
-      <button data-view="mobile" onclick="setView('mobile')">📱 Mobile</button>
-    </div>
-  </div>
-
   <div id="variants"></div>
 </div>
 
 <script>
-const VARIANTS = [
-  { id:'v1',  name:'Clean Minimal',     desc:'Viel Weißraum, Haarlinien statt Schatten, Grün nur als Akzent. Ruhig & sachlich (Linear/Notion-Stil).', traits:['hell','dezent','reduziert'] },
-  { id:'v2',  name:'Dark Sidebar Pro',  desc:'Dunkle Seitenleiste, helle Arbeitsfläche. Der Klassiker für ernste SaaS-Tools (Stripe/Vercel).',     traits:['dunkle Sidebar','SaaS-Standard'] },
-  { id:'v3',  name:'Soft Sage',         desc:'Warme Off-White-Töne, weiche Rundungen, gedämpftes Salbeigrün. Wirkt wertig & angenehm.',            traits:['warm','weich','wertig'] },
-  { id:'v4',  name:'Editorial Mono',    desc:'Serifen-Überschriften, fast monochrom, Grün nur als feiner Strich. Seriös & redaktionell.',          traits:['Serif','monochrom','seriös'] },
-  { id:'v5',  name:'Data Dense',        desc:'Kompakt, kleine Schrift, viel Info auf wenig Raum. Für Power-User die alles im Blick wollen.',         traits:['kompakt','effizient'] },
-  { id:'v6',  name:'Midnight',          desc:'Komplett dunkles Interface mit grünem Glow. Modern, fokussiert, premium.',                          traits:['Dark Mode','premium'] },
-  { id:'v7',  name:'Card Elevated',     desc:'Weiße Karten auf hellem Grau, weiche Tiefe. Freundlich, aber klar strukturiert.',                   traits:['Karten','soft shadow'] },
-  { id:'v8',  name:'Outline / Flat',    desc:'Harte 1px-Rahmen, keine Schatten, technischer Look. Sachlich wie ein Werkzeug.',                    traits:['Rahmen','technisch'] },
-  { id:'v9',  name:'Fresh Green',       desc:'GreenCareers-Grün als Identität — grün getönte Flächen, dunkle Markensidebar.',                      traits:['Brand-Grün','markant'] },
-  { id:'v10', name:'Spacious / Big',    desc:'Horizontales Top-Menü, große Headlines, viel Luft. Elegant & übersichtlich.',                       traits:['Top-Menü','großzügig'] },
+const V = [
+  ['Refined Baseline','Deine Wahl, sauber ausgearbeitet: KPI-Reihe + Aufgaben + Recruiting-Karte.',['klassisch','aufgeräumt']],
+  ['Wetter-Hero','Großes Begrüßungs-Banner mit prominentem Wetter oben — perfekt für die Wetter-Abhängigkeit.',['Wetter-Fokus','Banner']],
+  ['Bento Grid','Kacheln in verschiedenen Größen, modern & verspielt-strukturiert.',['Bento','asymmetrisch']],
+  ['Operativ / Tabelle','Schlanke Stat-Leiste + große Tabelle „Heute im Einsatz". Für den Macher-Blick.',['Tabelle','operativ']],
+  ['Workspace + Rail','Hauptspalte links, rechte Leiste mit Wetter, Recruiting & Schnellaktionen.',['rechte Leiste','App-Feel']],
+  ['Big Numbers','Wenige, sehr große Kennzahlen im Fokus. Executive-Übersicht.',['Kennzahlen','groß']],
+  ['Tagesagenda','Der Tag als Zeitstrahl — wer/was wann. Zeitbasiert.',['Timeline','Agenda']],
+  ['Farbcodiert','Jede Kennzahl mit eigener Farbe — schnelles Scannen.',['Farben','Scan-bar']],
+  ['Soft Depth','Randlose Karten mit weicher Tiefe & Verläufen. Wertig & sanft.',['weich','wertig']],
+  ['Spacious','Sehr viel Luft, große Headlines, wenig Elemente. Premium-minimal.',['luftig','minimal']],
 ];
 
-function appHTML(topnav){
-  const nav = [
-    ['layout-dashboard','Heute',true,''],
-    ['users','Team',false,'2'],
-    ['calendar-range','Planung',false,''],
-    ['handshake','Kunden',false,'5'],
-  ];
-  const sideNav = nav.map(n=>`<div class="gc__ni ${n[2]?'on':''}"><i data-lucide="${n[0]}"></i> ${n[1]}${n[3]?`<span class="cnt">${n[3]}</span>`:''}</div>`).join('');
-  const topNav = nav.map(n=>`<div class="ti ${n[2]?'on':''}">${n[1]}</div>`).join('');
-
-  const brand = `<div class="gc__brand"><span class="mark"><i data-lucide="leaf"></i></span> GreenCareers<small>&nbsp;OS</small>`;
-  const sidebar = `<aside class="gc__sb">
-      ${brand}<span class="gc__collapse"><i data-lucide="panel-left-close"></i></span></div>
-      <nav class="gc__nav"><span class="gc__navlabel">Übersicht</span>${sideNav}</nav>
+function shell(body, grad, hideWeather, extraClass){
+  const nav=[['layout-dashboard','Heute',1,''],['users','Team',0,'2'],['calendar-range','Planung',0,''],['handshake','Kunden',0,'5']];
+  const ni=nav.map(n=>`<div class="gc__ni ${n[2]?'on':''}"><i data-lucide="${n[0]}"></i> ${n[1]}${n[3]?`<span class="cnt">${n[3]}</span>`:''}</div>`).join('');
+  const weather=`<div class="gc__wmini"><span class="wt"><i data-lucide="cloud-sun"></i></span><div style="line-height:1.25"><div><b>21°C</b> · Hamburg</div><div style="font-size:10.5px">trocken — guter Arbeitstag</div></div></div>`;
+  return `<div class="gc ${extraClass||''}">
+    <aside class="gc__sb">
+      <div class="gc__brand"><span class="mark"><i data-lucide="leaf"></i></span> GreenCareers<small>&nbsp;OS</small><span class="col"><i data-lucide="panel-left-close"></i></span></div>
+      <nav class="gc__nav"><span class="gc__nl">Übersicht</span>${ni}</nav>
       <div class="gc__sbfoot">
         <div class="gc__abo"><b>Recruiting-Abo aktiv</b><br>7 neue Bewerber diesen Monat</div>
-        <div class="gc__user"><span class="gc__ava">GM</span><div style="line-height:1.2"><div style="font-size:12.5px;font-weight:600">GaLaBau Müller</div><div style="font-size:11px;color:var(--sbMuted)">Inhaber</div></div></div>
+        <div class="gc__user"><span class="gc__ava">GM</span><div style="line-height:1.2"><div style="font-size:12.5px;font-weight:600;color:#fff">GaLaBau Müller</div><div style="font-size:11px;color:var(--sbMuted)">Inhaber</div></div></div>
       </div>
-    </aside>`;
-
-  const weather = `<div class="gc__weather"><span class="wt"><i data-lucide="cloud-sun"></i></span><div style="line-height:1.25"><div><b>21°C</b> · Hamburg</div><div style="font-size:10.5px">trocken — guter Arbeitstag</div></div></div>`;
-
-  const top = topnav
-    ? `<header class="gc__tnav">${brand}</div><div class="ti on">Heute</div><div class="ti">Team</div><div class="ti">Planung</div><div class="ti">Kunden</div><div class="tw">${weather}</div></header>`
-    : `<header class="gc__top"><div class="gc__ttl">Heute</div>${weather}<button class="gc__bell"><i data-lucide="bell"></i></button></header>`;
-
-  const body = `<div class="gc__body">
-    <div class="gc__hello"><h2>Guten Morgen, Herr Müller</h2><p>Mittwoch, 3. Juni 2026 · KW 23</p></div>
-    <div class="gc__kpis">
-      <div class="gc__kpi acc"><div class="kr"><i data-lucide="phone-call"></i><span class="num">2</span></div><div class="lab">Bewerber anrufen</div><div class="sub">vom Bot qualifiziert</div></div>
-      <div class="gc__kpi"><div class="kr"><i data-lucide="user-minus"></i><span class="num">3</span></div><div class="lab">Heute nicht da</div><div class="sub">1 krank · 2 Urlaub</div></div>
-      <div class="gc__kpi"><div class="kr"><i data-lucide="truck"></i><span class="num">4</span></div><div class="lab">Trupps unterwegs</div><div class="sub">11 im Einsatz</div></div>
-      <div class="gc__kpi"><div class="kr"><i data-lucide="inbox"></i><span class="num">5</span></div><div class="lab">Neue Anfragen</div><div class="sub">WhatsApp · Mail · Tel.</div></div>
-    </div>
-    <div class="gc__cols">
-      <div class="gc__panel">
-        <div class="gc__ph"><i data-lucide="list-checks"></i> Das ist heute wichtig</div>
-        <div class="gc__task hot"><span class="gc__ti"><i data-lucide="phone"></i></span><div class="gc__tt"><div class="a">2 qualifizierte Bewerber anrufen</div><div class="b">Thomas K. (Vorarbeiter) · Murat Y. (Pflasterer)</div></div><button class="gc__tb p">Öffnen</button></div>
-        <div class="gc__task"><span class="gc__ti"><i data-lucide="message-circle"></i></span><div class="gc__tt"><div class="a">Anfrage Familie Brandt beantworten</div><div class="b">Gartenneuanlage · WhatsApp · vor 20 Min.</div></div><button class="gc__tb">Öffnen</button></div>
-        <div class="gc__task"><span class="gc__ti"><i data-lucide="calendar-clock"></i></span><div class="gc__tt"><div class="a">Urlaubsantrag Sven prüfen</div><div class="b">KW 28 — Überschneidung mit Lukas</div></div><button class="gc__tb">Öffnen</button></div>
-      </div>
-      <div class="gc__reco">
-        <div class="rh"><i data-lucide="sparkles"></i> Ihre Recruiting-Suche</div>
-        <div class="rs">Landschaftsgärtner (m/w/d)</div>
-        <div class="rg"><div class="rb"><div class="n">7</div><div class="l">Bewerber / Monat</div></div><div class="rb"><div class="n g">2</div><div class="l">qualifiziert</div></div></div>
-        <div class="rcta"><span>Bewerber ansehen</span></div>
-      </div>
-    </div>
-  </div>`;
-
-  return `<div class="gc ${topnav?'topnav':''}">${topnav?'':sidebar}<div class="gc__main">${top}${body}</div></div>`;
-}
-
-let view = 'desktop';
-function render(){
-  // chips
-  document.getElementById('chips').innerHTML = VARIANTS.map((v,i)=>`<a class="chip" href="#${v.id}">${i+1}. ${v.name}</a>`).join('');
-  // variants
-  document.getElementById('variants').innerHTML = VARIANTS.map((v,i)=>{
-    const topnav = v.id==='v10';
-    const extra = (v.id==='v5'?'dense ':'') + (v.id==='v4'?'serif ':'') + (v.id==='v6'?'dark ':'');
-    const app = `<div class="gc-wrap ${v.id} ${extra}">${appHTML(topnav)}</div>`;
-    const desktop = `<div class="window"><div class="winbar"><span class="dot" style="background:#FF5F57"></span><span class="dot" style="background:#FEBC2E"></span><span class="dot" style="background:#28C840"></span><span class="winurl">app.green-careers.de</span></div><div class="winscroll">${app.replace('gc-wrap','gc-wrap desk')}</div></div>`;
-    const mobile = `<div class="phonewrap"><div class="phone"><div class="${v.id} ${extra}">${mobileHTML(v)}</div></div></div>`;
-    return `<section class="variant" id="${v.id}">
-      <div class="vhead"><span class="vnum">${i+1}</span><div><div class="vname">${v.name}</div><div class="vdesc">${v.desc}</div></div><div class="vtraits">${v.traits.map(t=>`<span class="vtrait">${t}</span>`).join('')}</div></div>
-      <div class="frame-desktop" ${view==='mobile'?'style="display:none"':''}>${desktop}</div>
-      <div class="frame-mobile" ${view==='desktop'?'style="display:none"':''}>${mobile}</div>
-    </section>`;
-  }).join('');
-  if(window.lucide) lucide.createIcons();
-}
-
-function mobileHTML(v){
-  const weather = `<div class="gc__weather" style="margin:0"><span class="wt"><i data-lucide="cloud-sun"></i></span><div style="line-height:1.2"><div><b>21°</b> Hamburg</div><div style="font-size:10px">trocken</div></div></div>`;
-  return `<div class="gc phoneapp ${v.id==='v6'?'':''}">
-    <header class="gc__top" style="padding:0 16px;height:54px"><span class="gc__brand" style="padding:0"><span class="mark"><i data-lucide="leaf"></i></span></span><div class="gc__ttl" style="font-size:15px">Heute</div>${weather}</header>
-    <div class="gc__body" style="padding:14px">
-      <div class="gc__hello"><h2 style="font-size:18px">Guten Morgen</h2><p>Mi, 3. Juni</p></div>
-      <div class="gc__kpis" style="grid-template-columns:1fr 1fr;margin-top:12px;gap:9px">
-        <div class="gc__kpi acc"><div class="kr"><i data-lucide="phone-call"></i><span class="num">2</span></div><div class="lab">Anrufen</div></div>
-        <div class="gc__kpi"><div class="kr"><i data-lucide="user-minus"></i><span class="num">3</span></div><div class="lab">Nicht da</div></div>
-        <div class="gc__kpi"><div class="kr"><i data-lucide="truck"></i><span class="num">4</span></div><div class="lab">Unterwegs</div></div>
-        <div class="gc__kpi"><div class="kr"><i data-lucide="inbox"></i><span class="num">5</span></div><div class="lab">Anfragen</div></div>
-      </div>
-      <div class="gc__panel" style="margin-top:12px">
-        <div class="gc__ph"><i data-lucide="list-checks"></i> Heute wichtig</div>
-        <div class="gc__task hot"><span class="gc__ti"><i data-lucide="phone"></i></span><div class="gc__tt"><div class="a">2 Bewerber anrufen</div><div class="b">vom Bot qualifiziert</div></div></div>
-        <div class="gc__task"><span class="gc__ti"><i data-lucide="message-circle"></i></span><div class="gc__tt"><div class="a">Anfrage Fam. Brandt</div><div class="b">WhatsApp · 20 Min.</div></div></div>
-      </div>
-    </div>
-    <div style="display:flex;border-top:1px solid var(--border);background:var(--surface)">
-      ${['Heute|layout-dashboard|1','Team|users|0','Planung|calendar-range|0','Kunden|handshake|0'].map(s=>{const[l,ic,on]=s.split('|');return `<div style="flex:1;text-align:center;padding:9px 0;color:${on==='1'?'var(--accent)':'var(--muted)'}"><i data-lucide="${ic}" style="width:19px;height:19px"></i><div style="font-size:10px;font-weight:600;margin-top:2px">${l}</div></div>`}).join('')}
+    </aside>
+    <div class="gc__main">
+      <header class="gc__top"><div class="gc__ttl">Heute</div><span class="sp"></span>${hideWeather?'':weather}<button class="gc__bell"><i data-lucide="bell"></i></button></header>
+      <div class="gc__body ${grad}">${body}</div>
     </div>
   </div>`;
 }
 
-function setView(v){
-  view = v;
-  document.querySelectorAll('.seg button').forEach(b=>b.classList.toggle('on', b.dataset.view===v));
-  document.querySelectorAll('.frame-desktop').forEach(e=>e.style.display = v==='desktop'?'':'none');
-  document.querySelectorAll('.frame-mobile').forEach(e=>e.style.display = v==='mobile'?'':'none');
-  if(window.lucide) lucide.createIcons();
-}
-render();
+const helloBlk=`<div class="hello"><h2>Guten Morgen, Herr Müller</h2><p>Mittwoch, 3. Juni 2026 · KW 23</p></div>`;
+function kpi(ic,n,l,s,acc){return `<div class="kpi ${acc?'acc':''}"><div class="kr"><i data-lucide="${ic}"></i><span class="num">${n}</span></div><div class="lab">${l}</div><div class="sub">${s}</div></div>`;}
+const kpis4=`<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:13px;margin-top:18px">${kpi('phone-call',2,'Bewerber anrufen','vom Bot qualifiziert',1)}${kpi('user-minus',3,'Heute nicht da','1 krank · 2 Urlaub')}${kpi('truck',4,'Trupps unterwegs','11 im Einsatz')}${kpi('inbox',5,'Neue Anfragen','WhatsApp · Mail · Tel.')}</div>`;
+const tasks=`<div class="panel"><div class="ph"><i data-lucide="list-checks"></i> Das ist heute wichtig <span class="more">Alle ansehen</span></div>
+  <div class="task hot"><span class="ti"><i data-lucide="phone"></i></span><div class="tt"><div class="a">2 qualifizierte Bewerber anrufen</div><div class="b">Thomas K. (Vorarbeiter) · Murat Y. (Pflasterer)</div></div><button class="tb p">Öffnen</button></div>
+  <div class="task"><span class="ti"><i data-lucide="message-circle"></i></span><div class="tt"><div class="a">Anfrage Familie Brandt beantworten</div><div class="b">Gartenneuanlage · WhatsApp · vor 20 Min.</div></div><button class="tb">Öffnen</button></div>
+  <div class="task"><span class="ti"><i data-lucide="calendar-clock"></i></span><div class="tt"><div class="a">Urlaubsantrag Sven prüfen</div><div class="b">KW 28 — Überschneidung mit Lukas</div></div><button class="tb">Öffnen</button></div></div>`;
+const recoCard=`<div class="reco"><div class="rh"><i data-lucide="sparkles"></i> Ihre Recruiting-Suche</div><div class="rs">Landschaftsgärtner (m/w/d)</div><div class="rg"><div class="rb"><div class="n">7</div><div class="l">Bewerber / Monat</div></div><div class="rb"><div class="n g">2</div><div class="l">qualifiziert</div></div></div><div class="rcta"><span>Bewerber ansehen</span></div></div>`;
+
+/* ---- 10 layouts ---- */
+const layouts = [
+  // 1 Refined Baseline
+  ()=>shell(`${helloBlk}${kpis4}<div style="display:grid;grid-template-columns:1.7fr 1fr;gap:14px;margin-top:14px">${tasks}${recoCard}</div>`,'grad-a'),
+
+  // 2 Wetter-Hero
+  ()=>shell(`<div class="hero"><div><h2>Guten Morgen, Herr Müller</h2><p>Mittwoch, 3. Juni 2026 · 11 Mitarbeiter heute im Einsatz</p></div><div class="wbig"><i data-lucide="cloud-sun"></i><div><div class="t">21°</div><div class="d">Hamburg · trocken<br>guter Arbeitstag</div></div></div></div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:13px;margin-top:16px">${kpi('phone-call',2,'Bewerber anrufen','qualifiziert',1)}${kpi('user-minus',3,'Heute nicht da','1 krank · 2 Urlaub')}${kpi('truck',4,'Trupps unterwegs','11 im Einsatz')}${kpi('inbox',5,'Neue Anfragen','3 Kanäle')}</div>
+    <div style="margin-top:14px">${tasks}</div>`,'grad-b',true),
+
+  // 3 Bento Grid
+  ()=>shell(`${helloBlk}<div class="bento" style="margin-top:18px">
+      <div class="tile b-span2 b-row2 acc" style="background:linear-gradient(140deg,#16A34A,#0E7A43);color:#fff;border:0"><div style="display:flex;justify-content:space-between"><i data-lucide="phone-call"></i><span style="font-size:34px;font-weight:800">2</span></div><div style="margin-top:auto"><div style="font-weight:700;font-size:15px">Bewerber anrufen</div><div style="opacity:.8;font-size:12px">Thomas K. · Murat Y. — vom Bot qualifiziert</div></div></div>
+      <div class="tile"><div class="kr" style="display:flex;justify-content:space-between"><i data-lucide="cloud-sun" style="color:var(--accent)"></i><span style="font-size:22px;font-weight:800">21°</span></div><div style="margin-top:auto;font-size:12px;color:var(--muted)">Hamburg · trocken</div></div>
+      <div class="tile"><span style="font-size:24px;font-weight:800">3</span><div style="font-size:12px;color:var(--muted);margin-top:auto">Heute nicht da</div></div>
+      <div class="tile b-span2"><div class="ph" style="margin:0 0 8px"><i data-lucide="message-circle"></i> Neue Anfragen <span class="more">5</span></div><div style="font-size:12px;color:var(--muted)">Fam. Brandt · Stadtwerke Nord · Hr. Petersen …</div></div>
+      <div class="tile"><span style="font-size:24px;font-weight:800">4</span><div style="font-size:12px;color:var(--muted);margin-top:auto">Trupps unterwegs</div></div>
+      <div class="tile" style="background:#15241A;color:#EAF1EB;border:0"><div style="font-weight:700;font-size:13px;color:#fff"><i data-lucide="sparkles" style="color:#34D77F;vertical-align:-2px"></i> Recruiting</div><div style="margin-top:auto;font-size:12px;color:#9AA89D"><b style="color:#34D77F;font-size:18px">7</b> / Monat · 2 qualifiziert</div></div>
+    </div>`,'grad-c'),
+
+  // 4 Operativ / Tabelle
+  ()=>shell(`${helloBlk}
+    <div class="panel" style="margin-top:16px;padding:0"><div style="display:flex;gap:0">
+      ${['2|Bewerber anrufen','3|Heute nicht da','4|Trupps unterwegs','11|Mitarbeiter aktiv','5|Neue Anfragen'].map((s,i)=>{const[n,l]=s.split('|');return `<div style="flex:1;padding:15px 18px;${i?'border-left:1px solid var(--border)':''}"><div style="font-size:24px;font-weight:800;${i==0?'color:var(--accent)':''}">${n}</div><div style="font-size:11.5px;color:var(--muted)">${l}</div></div>`}).join('')}
+    </div></div>
+    <div class="panel" style="margin-top:14px;padding:0;overflow:hidden"><div class="ph" style="padding:15px 17px 0;margin:0"><i data-lucide="truck"></i> Heute im Einsatz</div>
+      <table class="gtable" style="margin-top:10px"><thead><tr><th>Mitarbeiter</th><th>Kolonne</th><th>Baustelle</th><th>Zeit</th><th>Status</th></tr></thead><tbody>
+      ${[['SA','Sven Albrecht','Kolonne 1','Garten Schmidt, Norderstedt','07:00','läuft','g'],['MK','Mehmet Kaya','Kolonne 2','Pflaster Brandt, Ahrensburg','06:30','läuft','g'],['TS','Tim Schulz','Kolonne 3','Hecke Petersen','08:00','Anfahrt','a'],['AD','Ali Demir','—','—','—','krank','r']].map(r=>`<tr><td><span class="ava2">${r[0]}</span>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td><td><span class="pill ${r[6]}">${r[5]}</span></td></tr>`).join('')}
+      </tbody></table></div>`,'grad-d'),
+
+  // 5 Workspace + Rail
+  ()=>shell(`${helloBlk}<div class="work" style="margin-top:16px">
+      <div><div style="display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-bottom:13px">${kpi('phone-call',2,'Bewerber anrufen','qualifiziert',1)}${kpi('inbox',5,'Neue Anfragen','3 Kanäle')}</div>${tasks}</div>
+      <div class="rail">
+        <div class="panel" style="padding:15px"><div style="display:flex;align-items:center;gap:10px"><span class="ti"><i data-lucide="cloud-sun"></i></span><div><div style="font-size:20px;font-weight:800">21°C</div><div style="font-size:11.5px;color:var(--muted)">Hamburg · trocken</div></div></div></div>
+        ${recoCard}
+        <div class="qa"><button><i data-lucide="user-plus"></i>Mitarbeiter</button><button><i data-lucide="calendar-plus"></i>Einsatz</button><button><i data-lucide="file-plus"></i>Angebot</button><button><i data-lucide="clock"></i>Zeiten</button></div>
+      </div></div>`,'grad-a',true),
+
+  // 6 Big Numbers
+  ()=>shell(`${helloBlk}<div class="bignums" style="margin-top:18px">
+      <div class="bn"><div class="n" style="color:var(--accent)">2</div><div class="l">Bewerber anrufen</div><div class="bar"><i style="width:60%"></i></div><div style="font-size:11px;color:var(--muted);margin-top:8px">vom WhatsApp-Bot qualifiziert</div></div>
+      <div class="bn"><div class="n">11</div><div class="l">Mitarbeiter im Einsatz</div><div class="bar"><i style="width:78%"></i></div><div style="font-size:11px;color:var(--muted);margin-top:8px">3 fehlen heute (1 krank · 2 Urlaub)</div></div>
+      <div class="bn"><div class="n">5</div><div class="l">Offene Anfragen</div><div class="bar"><i style="width:42%"></i></div><div style="font-size:11px;color:var(--muted);margin-top:8px">WhatsApp · Mail · Telefon · Web</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1.7fr 1fr;gap:14px;margin-top:14px">${tasks}${recoCard}</div>`,'grad-b'),
+
+  // 7 Tagesagenda / Timeline
+  ()=>shell(`${helloBlk}<div style="display:grid;grid-template-columns:1.5fr 1fr;gap:14px;margin-top:16px">
+    <div class="panel"><div class="ph"><i data-lucide="calendar-clock"></i> Tagesablauf</div><div class="tl">
+      ${[['06:48','Krankmeldung Ali Demir','Kolonne 2 fährt zu zweit',0],['07:00','Trupps ausgerückt','3 Kolonnen · 11 Mitarbeiter',0],['11:00','2 Bewerber anrufen','Thomas K. · Murat Y. — qualifiziert',1],['14:00','Gespräch Daniel Hoffmann','Landschaftsgärtner',0],['16:30','Angebot Stadtwerke senden','Grünpflege 2026/27',0]].map(r=>`<div class="tlrow ${r[3]?'hot':''}"><div class="tm">${r[0]}</div><div class="tc"><div class="tlcard"><div class="a">${r[1]}</div><div class="b">${r[2]}</div></div></div></div>`).join('')}
+    </div></div>
+    <div style="display:flex;flex-direction:column;gap:13px"><div style="display:grid;grid-template-columns:1fr 1fr;gap:13px">${kpi('phone-call',2,'Anrufen','',1)}${kpi('user-minus',3,'Nicht da','')}</div>${recoCard}</div>
+    </div>`,'grad-c'),
+
+  // 8 Farbcodiert
+  ()=>shell(`${helloBlk}<div class="cc" style="margin-top:18px">
+      <div class="k" style="--c:#16A34A;--cs:#EAF7EF"><div class="ic"><i data-lucide="phone-call"></i></div><div class="num">2</div><div class="lab">Bewerber anrufen</div></div>
+      <div class="k" style="--c:#D97706;--cs:#FEF4E6"><div class="ic"><i data-lucide="user-minus"></i></div><div class="num">3</div><div class="lab">Heute nicht da</div></div>
+      <div class="k" style="--c:#2563EB;--cs:#EAF0FE"><div class="ic"><i data-lucide="truck"></i></div><div class="num">4</div><div class="lab">Trupps unterwegs</div></div>
+      <div class="k" style="--c:#7C3AED;--cs:#F1EAFE"><div class="ic"><i data-lucide="inbox"></i></div><div class="num">5</div><div class="lab">Neue Anfragen</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1.7fr 1fr;gap:14px;margin-top:14px">${tasks}${recoCard}</div>`,'grad-d'),
+
+  // 9 Soft Depth
+  ()=>shell(`${helloBlk}${kpis4}<div style="display:grid;grid-template-columns:1.7fr 1fr;gap:16px;margin-top:16px">${tasks}${recoCard}</div>`,'grad-a',false,'soft'),
+
+  // 10 Spacious
+  ()=>shell(`<div class="hello" style="margin-bottom:6px"><h2>Guten Morgen, Herr Müller</h2><p>Mittwoch, 3. Juni 2026</p></div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:26px">${kpi('phone-call',2,'Bewerber anrufen','vom Bot qualifiziert',1)}${kpi('user-minus',3,'Heute nicht da','1 krank · 2 Urlaub')}${kpi('inbox',5,'Neue Anfragen','3 Kanäle')}</div>
+    <div style="margin-top:24px">${tasks}</div>`,'grad-b',false,'spacious'),
+];
+
+document.getElementById('chips').innerHTML = V.map((v,i)=>`<a class="chip" href="#v${i+1}">${i+1}. ${v[0]}</a>`).join('');
+document.getElementById('variants').innerHTML = V.map((v,i)=>`
+  <section class="variant" id="v${i+1}">
+    <div class="vhead"><span class="vnum">${i+1}</span><div><div class="vname">${v[0]}</div><div class="vdesc">${v[1]}</div></div><div class="vtraits">${v[2].map(t=>`<span class="vtrait">${t}</span>`).join('')}</div></div>
+    <div class="window"><div class="winbar"><span class="dot" style="background:#FF5F57"></span><span class="dot" style="background:#FEBC2E"></span><span class="dot" style="background:#28C840"></span><span class="winurl">app.green-careers.de</span></div><div class="winscroll">${layouts[i]()}</div></div>
+  </section>`).join('');
+if(window.lucide) lucide.createIcons();
 </script>
 </body>
 </html>
