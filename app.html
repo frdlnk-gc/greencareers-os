@@ -862,6 +862,9 @@
     .sheet-actions{ flex-direction:column; }
     .toast{ bottom:78px; }
     .fab-wrap{ right:16px; bottom:74px; }
+    .zeit .kpi-grid{ grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
+    .clockcard__row{ flex-direction:column; }
+    .clockbtn.stop,.clockbtn.pause,.clockbtn.site{ width:100%; }
   }
   @media(max-width:520px){
     .auth__card{ padding:24px; }
@@ -1054,6 +1057,135 @@
   .authumb{ width:50px; height:50px; object-fit:cover; border-radius:8px; border:1px solid var(--line); cursor:pointer; }
   .aupin{ display:inline-flex; align-items:center; gap:4px; color:var(--muted); font-weight:700; }
   .aupin .lucide{ width:13px; height:13px; }
+
+  /* ===== Zeiterfassung ===== */
+  .clockcard{ border-radius:14px; padding:16px 17px; border:1px solid var(--line); box-shadow:var(--shadow); }
+  .clockcard.in{ background:linear-gradient(135deg,#10331F,#0E7A43); color:#fff; border:none; }
+  .clockcard.running{ background:#fff; border:1.5px solid var(--green); }
+  .clockcard.done{ background:var(--mint); border:1px solid var(--line); }
+  .clockcard__top{ display:flex; align-items:center; justify-content:space-between; margin-bottom:4px; }
+  .clockcard__lbl{ display:inline-flex; align-items:center; gap:7px; font-size:12.5px; font-weight:800; letter-spacing:.01em; }
+  .clockcard__lbl .lucide{ width:16px; height:16px; }
+  .clockcard.in .clockcard__lbl{ color:#BFEFD0; }
+  .clockcard__time{ font-size:19px; font-weight:900; font-variant-numeric:tabular-nums; }
+  .clockcard__sub{ font-size:12.5px; opacity:.85; margin-bottom:13px; }
+  .clockcard.in .clockcard__sub{ color:#D6F2E0; }
+  .clockcard__site{ display:flex; align-items:center; gap:8px; font-size:15px; margin:2px 0 9px; }
+  .clockcard__site .lucide{ width:17px; height:17px; color:var(--green-2); }
+  .clockcard__meta{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-bottom:13px; }
+  .clockcard__since{ font-size:11.5px; color:var(--muted); font-weight:700; }
+  .clockcard__row{ display:flex; gap:9px; flex-wrap:wrap; }
+  .clockcard__ok{ display:inline-flex; align-items:center; gap:6px; margin-top:10px; font-size:12.5px; font-weight:800; color:var(--green-2); }
+  .clockcard__ok .lucide{ width:15px; height:15px; }
+  .clockbtn{ display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:12px 16px; border-radius:11px; font-size:14px; font-weight:850; cursor:pointer; border:1px solid transparent; }
+  .clockbtn .lucide{ width:17px; height:17px; }
+  .clockbtn.go{ width:100%; background:#fff; color:var(--green-3); }
+  .clockbtn.go:hover{ background:#F0FBF4; }
+  .clockbtn.stop{ background:var(--green); color:#fff; flex:1; }
+  .clockbtn.pause,.clockbtn.site,.clockbtn.proto{ background:var(--canvas); border-color:var(--line); color:var(--ink); }
+  .clockbtn.proto{ width:100%; background:var(--green); color:#fff; border:none; }
+  .clockbtn.pause:hover,.clockbtn.site:hover{ background:var(--mint); border-color:var(--green); }
+  .rz{ display:inline-flex; align-items:center; gap:5px; font-size:11.5px; font-weight:800; color:var(--green-3); background:var(--mint); padding:3px 9px; border-radius:999px; }
+  .rz .lucide{ width:13px; height:13px; }
+  .rz.sm{ padding:2px 7px; font-size:11px; }
+  .rz.done{ color:#1D6FE0; background:#EAF1FE; }
+  .geo{ display:inline-flex; align-items:center; gap:5px; font-size:11.5px; font-weight:800; padding:3px 9px; border-radius:999px; }
+  .geo .lucide{ width:13px; height:13px; }
+  .geo.ok{ color:var(--green-3); background:var(--mint); }
+  .geo.warn{ color:#B45309; background:#FEF3E2; }
+  .zsec-h{ display:flex; align-items:baseline; justify-content:space-between; margin:0 2px 9px; }
+  .zsec-h b{ font-size:14px; }
+  .zsec-h span{ font-size:12px; color:var(--muted); }
+  .tlist{ display:flex; flex-direction:column; gap:8px; }
+  .trow{ display:flex; align-items:center; gap:12px; width:100%; text-align:left; padding:11px 13px; background:#fff; border:1px solid var(--line); border-radius:12px; cursor:pointer; transition:border-color .14s, box-shadow .14s; }
+  .trow:hover{ border-color:var(--green); box-shadow:var(--shadow); }
+  .trow.flag{ border-color:#F4C77E; background:#FFFCF6; }
+  .trow__main{ min-width:0; flex:1; display:flex; flex-direction:column; gap:3px; }
+  .trow__top{ display:flex; align-items:center; gap:8px; font-size:14px; }
+  .trow__site{ display:flex; align-items:center; gap:6px; font-size:12px; color:var(--muted); }
+  .trow__site .lucide{ width:13px; height:13px; }
+  .trow__meta{ display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin-top:2px; }
+  .trow__right{ text-align:right; flex-shrink:0; display:flex; flex-direction:column; gap:1px; }
+  .trow__right b{ font-size:15px; font-variant-numeric:tabular-nums; }
+  .trow__right small{ font-size:11px; color:var(--muted); }
+  .dotlive{ width:8px; height:8px; border-radius:50%; background:var(--green); box-shadow:0 0 0 3px rgba(22,163,74,.18); }
+  .dsgvo{ display:flex; align-items:flex-start; gap:9px; margin-top:16px; padding:12px 14px; background:#F3F8F4; border:1px solid var(--line); border-radius:11px; font-size:12px; color:var(--muted); line-height:1.5; }
+  .dsgvo b{ color:var(--ink-2); }
+  .dsgvo .lucide{ width:17px; height:17px; color:var(--green-2); flex-shrink:0; margin-top:1px; }
+  /* Sheets: Baustelle wählen, Kartei, Protokoll */
+  .sitepicks{ display:flex; flex-direction:column; gap:9px; margin-bottom:9px; }
+  .sitepick{ display:flex; align-items:center; gap:12px; width:100%; text-align:left; padding:12px; border:1px solid var(--line); border-radius:12px; background:#fff; cursor:pointer; }
+  .sitepick:hover{ border-color:var(--green); background:#FAFEFB; }
+  .sitepick.ghost{ background:var(--canvas); }
+  .sitepick__ico{ width:42px; height:42px; border-radius:10px; background:var(--mint); display:grid; place-items:center; flex-shrink:0; }
+  .sitepick__ico .lucide{ width:20px; height:20px; color:var(--green-2); }
+  .sitepick__txt{ min-width:0; flex:1; display:flex; flex-direction:column; gap:2px; }
+  .sitepick__txt b{ font-size:14.5px; }
+  .sitepick__txt small{ font-size:12px; color:var(--muted); }
+  .sitepick__chips{ display:flex; gap:10px; margin-top:3px; }
+  .sitepick__chips span{ display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:750; color:var(--green-3); }
+  .sitepick__chips .lucide{ width:13px; height:13px; }
+  .sitepick > .lucide{ width:18px; height:18px; color:var(--muted-2); flex-shrink:0; }
+  .addrrow{ display:flex; align-items:center; gap:11px; width:100%; text-align:left; padding:12px 13px; border:1px solid var(--line); border-radius:11px; background:var(--canvas); cursor:pointer; margin-bottom:13px; }
+  .addrrow:hover{ border-color:var(--green); }
+  .addrrow > .lucide{ width:18px; height:18px; color:var(--green-2); }
+  .addrrow span{ flex:1; min-width:0; line-height:1.35; }
+  .addrrow b{ font-size:13.5px; display:block; }
+  .addrrow small{ font-size:11.5px; color:var(--muted); }
+  .addrrow__nav{ width:18px; height:18px; color:var(--green-2); }
+  .taskbox{ border:1px solid var(--line); border-radius:11px; padding:11px 13px; margin-bottom:13px; background:#fff; }
+  .taskbox__h{ display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:850; margin-bottom:7px; }
+  .taskbox__h .lucide{ width:15px; height:15px; color:var(--green-2); }
+  .taskline{ display:flex; align-items:center; gap:5px; font-size:13px; padding:3px 0; color:var(--ink); }
+  .taskline .lucide{ width:15px; height:15px; color:var(--green); }
+  .load{ border:1px solid var(--line); border-radius:11px; padding:11px 13px; margin-bottom:13px; background:#FAFEFB; }
+  .load__h{ display:flex; flex-wrap:wrap; align-items:center; gap:7px; font-size:12.5px; font-weight:850; margin-bottom:8px; }
+  .load__h .lucide{ width:15px; height:15px; color:var(--green-2); }
+  .load__h small{ font-weight:600; color:var(--muted); font-size:11px; }
+  .loaditem{ display:flex; align-items:center; gap:10px; padding:7px 0; font-size:13px; cursor:pointer; border-top:1px solid var(--line); }
+  .loaditem:first-of-type{ border-top:none; }
+  .loaditem input{ width:18px; height:18px; accent-color:var(--green); }
+  .loaditem input:checked + span{ color:var(--muted); text-decoration:line-through; }
+  .rztoggle{ display:flex; align-items:flex-start; gap:11px; padding:12px 13px; border:1px solid var(--line); border-radius:11px; background:#fff; cursor:pointer; margin-bottom:12px; }
+  .rztoggle input{ width:19px; height:19px; margin-top:1px; accent-color:var(--green); }
+  .rztoggle__txt b{ display:flex; align-items:center; gap:6px; font-size:13.5px; }
+  .rztoggle__txt b .lucide{ width:15px; height:15px; color:var(--green-2); }
+  .rztoggle__txt small{ font-size:11.5px; color:var(--muted); }
+  .geonote{ display:flex; align-items:flex-start; gap:8px; padding:11px 13px; background:var(--mint); border-radius:10px; font-size:12px; color:var(--green-3); line-height:1.45; margin-bottom:4px; }
+  .geonote b{ font-weight:850; }
+  .geonote .lucide{ width:16px; height:16px; flex-shrink:0; margin-top:1px; }
+  .protobox{ border:1px solid var(--line); border-radius:11px; padding:12px 13px; margin:4px 0 6px; background:#FAFEFB; }
+  .protobox.empty2,.protobox.empty2 .lucide{ color:var(--muted); }
+  .protobox.empty2{ display:flex; align-items:center; gap:8px; font-size:12.5px; }
+  .protobox__h{ display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:850; margin-bottom:6px; }
+  .protobox__h .lucide{ width:15px; height:15px; color:var(--green-2); }
+  .protobox__txt{ font-size:13px; line-height:1.5; }
+  .protodmg{ display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin-top:9px; padding-top:9px; border-top:1px solid var(--line); font-size:12.5px; font-weight:750; color:#B45309; }
+  .protodmg .lucide{ width:15px; height:15px; }
+  .protodmg img{ width:54px; height:54px; object-fit:cover; border-radius:8px; }
+  .voicewrap{ position:relative; }
+  .voicewrap textarea{ width:100%; padding:11px 48px 11px 12px; border:1px solid var(--line); border-radius:10px; font:inherit; font-size:13.5px; resize:vertical; box-sizing:border-box; }
+  .micbtn{ position:absolute; right:8px; bottom:8px; width:34px; height:34px; border-radius:9px; border:none; background:var(--mint); color:var(--green-3); display:grid; place-items:center; cursor:pointer; }
+  .micbtn .lucide{ width:18px; height:18px; }
+  .micbtn.on{ background:var(--green); color:#fff; animation:micpulse 1.1s infinite; }
+  @keyframes micpulse{ 0%,100%{ box-shadow:0 0 0 0 rgba(22,163,74,.4);} 50%{ box-shadow:0 0 0 7px rgba(22,163,74,0);} }
+  .voicehint{ display:flex; align-items:center; gap:6px; margin-top:6px; font-size:11.5px; color:var(--muted); }
+  .voicehint .lucide{ width:13px; height:13px; color:var(--green-2); }
+  .protogrid{ display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+  .pthumb{ position:relative; width:74px; height:74px; }
+  .pthumb img{ width:74px; height:74px; object-fit:cover; border-radius:9px; border:1px solid var(--line); }
+  .pthumb button{ position:absolute; top:-6px; right:-6px; width:21px; height:21px; border-radius:50%; border:none; background:#122118; color:#fff; display:grid; place-items:center; cursor:pointer; }
+  .pthumb button .lucide{ width:13px; height:13px; }
+  .protobox .protogrid img{ width:74px; height:74px; object-fit:cover; border-radius:9px; border:1px solid var(--line); }
+  .dmgbox{ border:1px solid var(--line); border-radius:11px; padding:12px 13px; margin-bottom:4px; }
+  .dmgtoggle{ display:flex; align-items:flex-start; gap:11px; cursor:pointer; }
+  .dmgtoggle input{ width:19px; height:19px; margin-top:1px; accent-color:#D97706; }
+  .dmgtoggle b{ display:flex; align-items:center; gap:6px; font-size:13.5px; }
+  .dmgtoggle b .lucide{ width:15px; height:15px; color:#D97706; }
+  .dmgtoggle small{ display:block; font-size:11.5px; color:var(--muted); }
+  .dmgfields{ margin-top:11px; display:flex; flex-direction:column; gap:9px; }
+  .dmgfields input[type=text],.dmgfields input:not([type]){ width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:9px; font:inherit; font-size:13.5px; box-sizing:border-box; }
+  .upload__btn.sm{ padding:10px; font-size:12.5px; }
 </style>
 </head>
 <body>
@@ -1207,12 +1339,38 @@ function resetAbsences(){
   teamTab('urlaub');
   toast('Demo-Daten zurückgesetzt');
 }
-const times = [
-  {name:'Sven Albrecht',in:'06:58',out:'-',hours:'5,2 h',site:'Garten Schmidt',status:['Läuft','g']},
-  {name:'Mehmet Kaya',in:'06:31',out:'-',hours:'5,7 h',site:'Pflaster Brandt',status:['Läuft','g']},
-  {name:'Tim Schulz',in:'07:45',out:'-',hours:'4,4 h',site:'Hecke Petersen',status:['Läuft','g']},
-  {name:'Jonas Weber',in:'07:02',out:'15:30',hours:'8,0 h',site:'Bauhof',status:['Fertig','n']},
+// „Jetzt" für die Zeiterfassung (Prototyp-Uhrzeit am Mittwoch, 3. Juni)
+const NOW = '11:12';
+// Baustellen = aktive Kunden-Einsatzorte (mit Adresse, Geo, Aufgaben & Material zum Beladen)
+const sites = [
+  {id:'s1', customer:'Familie Brandt', label:'Pflaster Brandt', addr:'Hauptstr. 12, 22926 Ahrensburg', lat:53.6745, lng:10.2389,
+   tasks:['Pflasterfläche 60 m² verlegen','Randsteine setzen','Fläche abrütteln'],
+   material:['Pflastersteine grau · 3 Paletten','Splitt 0/5 · 1 t','Randsteine · 40 lfm','Rüttelplatte','Kantenschneider']},
+  {id:'s2', customer:'Garten Schmidt', label:'Garten Schmidt', addr:'Am Wäldchen 4, 22846 Norderstedt', lat:53.7065, lng:10.0112,
+   tasks:['Beet ausheben','Mutterboden auffüllen','Rollrasen verlegen'],
+   material:['Rollrasen · 120 m²','Mutterboden · 4 m³','Beeteinfassung · 30 lfm','Spaten, Rechen, Schubkarre']},
+  {id:'s3', customer:'Herr Petersen', label:'Hecke Petersen', addr:'Dorfstr. 8, 22359 Volksdorf', lat:53.6512, lng:10.1789,
+   tasks:['Hecke auf 1,80 m schneiden','Schnittgut häckseln & abfahren'],
+   material:['Heckenschere','Astschere','Häcksler','Anhänger']},
+  {id:'s0', customer:'Bauhof / Werkstatt', label:'Bauhof', addr:'Gewerbestr. 5, 22844 Norderstedt', lat:53.7012, lng:9.9842,
+   tasks:['Maschinen warten','Material kommissionieren'], material:[]},
 ];
+// Stempel-Einträge heute · in/out HH:MM · ruest = Rüstzeit (Beladen+Anfahrt) · dist km zur Baustelle · geoOk = vor Ort
+let timeEntries = [
+  {id:1, empId:1, siteId:'s2', in:'06:58', out:null,    ruest:true,  pauseMin:0,  dist:0.1, geoOk:true,  proto:false},
+  {id:2, empId:2, siteId:'s1', in:'06:31', out:null,    ruest:true,  pauseMin:30, dist:0.2, geoOk:true,  proto:false},
+  {id:3, empId:7, siteId:'s1', in:'06:34', out:null,    ruest:true,  pauseMin:30, dist:0.2, geoOk:true,  proto:false},
+  {id:4, empId:8, siteId:'s1', in:'06:36', out:null,    ruest:false, pauseMin:30, dist:0.2, geoOk:true,  proto:false},
+  {id:5, empId:3, siteId:'s3', in:'07:45', out:null,    ruest:false, pauseMin:0,  dist:3.9, geoOk:false, proto:false},
+  {id:6, empId:5, siteId:'s2', in:'07:01', out:null,    ruest:true,  pauseMin:0,  dist:0.1, geoOk:true,  proto:false},
+  {id:7, empId:9, siteId:'s0', in:'06:30', out:'10:50', ruest:false, pauseMin:20, dist:0.0, geoOk:true,  proto:true},
+];
+let timeSeq = 100;
+let myEntry = null;            // Selbst-Stempelung (Du = Georg) – Demo des Mitarbeiter-Flows
+let protocols = [];            // Tagesprotokolle dieser Session {empId, siteId, text, photos[], damageText, damagePhoto}
+let protoPhotos = [];          // temp Fotos im offenen Protokoll-Formular
+let protoDamage = null;        // temp Schaden-Foto im offenen Protokoll-Formular
+let voiceRec = null;           // laufende SpeechRecognition
 const plan = {
   k1:{neu:[{t:'Garten Schmidt',o:'Norderstedt · Neuanlage',c:'#16A34A'}],di:[{t:'Garten Schmidt',o:'Norderstedt',c:'#16A34A'}],mi:[{t:'Pflege Stadtpark',o:'Hamburg-Nord',c:'#2563EB'}],do:[],fr:[{t:'Hecke Voss',o:'Pinneberg',c:'#7C3AED'}]},
   k2:{neu:[{t:'Pflaster Brandt',o:'Ahrensburg',c:'#B7791F'}],di:[{t:'Pflaster Brandt',o:'Ahrensburg',c:'#B7791F'}],mi:[{t:'Pflaster Brandt',o:'Ahrensburg',c:'#B7791F'}],do:[{t:'Mauer Köhler',o:'Reinbek',c:'#16A34A'}],fr:[]},
@@ -1485,14 +1643,7 @@ const TEAM = {
     ${employees.map(e => { const s = empStatus(e.id); const v = vacInfo(e.id); return `<tr class="clickable" onclick="openEmployee(${e.id})"><td><span class="person-cell"><span class="avatar">${initials(e.name)}</span>${e.name}</span></td><td>${e.role}</td><td>${e.crew}</td><td>${e.phone}</td><td><span class="pill ${s[1]}">${s[0]}</span></td><td><b>${v.rest}</b> <span style="color:var(--muted)">/ ${e.annual}</span></td></tr>`; }).join('')}
   </tbody></table></div>`,
   urlaub: () => urlaubView(),
-  zeit: () => `<div class="kpi-grid" style="grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:14px">
-      ${kpi('users','11','Eingestempelt','aktuell im Einsatz',true)}
-      ${kpi('timer','9','Ø Stunden','heute pro Kopf',false)}
-      ${kpi('check-circle-2','1','Feierabend','heute fertig',false)}
-    </div>
-    <div class="panel table-wrap"><table><thead><tr><th>Mitarbeiter</th><th>Einstempeln</th><th>Ausstempeln</th><th>Stunden</th><th>Baustelle</th><th>Status</th></tr></thead><tbody>
-      ${times.map(t => `<tr><td><span class="person-cell"><span class="avatar">${initials(t.name)}</span>${t.name}</span></td><td>${t.in}</td><td>${t.out}</td><td>${t.hours}</td><td>${t.site}</td><td><span class="pill ${t.status[1]}">${t.status[0]}</span></td></tr>`).join('')}
-    </tbody></table></div>`,
+  zeit: () => zeitView(),
 };
 
 /* ===================== URLAUB & KRANK ===================== */
@@ -2170,6 +2321,273 @@ function openApplicant(id){
       </div>
     </div>`);
 }
+/* ===================== ZEITERFASSUNG ===================== */
+function site(id){ return sites.find(s => s.id === id); }
+function hm2min(s){ if(!s) return 0; const p = s.split(':').map(Number); return p[0]*60 + p[1]; }
+function hoursStr(min){ return (Math.max(0,min)/60).toFixed(1).replace('.',',') + ' h'; }
+function entryMin(e){ const end = e.out ? hm2min(e.out) : hm2min(NOW); return Math.max(0, end - hm2min(e.in) - (e.pauseMin||0)); }
+function distStr(km){ return km < 1 ? Math.round(km*1000) + ' m' : km.toFixed(1).replace('.',',') + ' km'; }
+function geoBadge(e){
+  return e.geoOk
+    ? `<span class="geo ok"><i data-lucide="map-pin"></i> vor Ort · ${distStr(e.dist)}</span>`
+    : `<span class="geo warn"><i data-lucide="alert-triangle"></i> ${distStr(e.dist)} entfernt</span>`;
+}
+function hasProto(empId, siteId){ return protocols.some(p => p.empId === empId && p.siteId === siteId); }
+
+function zeitView(){
+  const running = timeEntries.filter(e => !e.out);
+  const done = timeEntries.filter(e => e.out);
+  const onSite = running.filter(e => e.geoOk).length;
+  const flags = running.filter(e => !e.geoOk).length;
+  const totalMin = timeEntries.reduce((n,e) => n + entryMin(e), 0);
+  const avg = timeEntries.length ? totalMin/timeEntries.length : 0;
+  return `
+  <div class="zeit">
+    ${clockCard()}
+    <div class="kpi-grid" style="grid-template-columns:repeat(4,minmax(0,1fr));margin:14px 0">
+      ${kpi('users', String(running.length), 'Eingestempelt', 'aktuell im Einsatz', true)}
+      ${kpi('map-pin', String(onSite), 'Vor Ort bestätigt', 'per Standort', false)}
+      ${kpi('timer', hoursStr(avg).replace(' h',''), 'Ø Stunden', 'heute pro Kopf', false)}
+      ${kpi(flags?'alert-triangle':'check-circle-2', String(done.length), 'Feierabend', flags?`${flags} Standort prüfen`:'heute fertig', false)}
+    </div>
+    <div class="zsec-h"><b>Live im Einsatz</b><span>${running.length} eingestempelt · tippen für Details</span></div>
+    <div class="tlist">
+      ${running.map(timeRow).join('') || `<div class="empty"><i data-lucide="clock"></i><div>Noch niemand eingestempelt.</div></div>`}
+    </div>
+    ${done.length ? `<div class="zsec-h" style="margin-top:16px"><b>Feierabend</b><span>heute fertig</span></div><div class="tlist">${done.map(timeRow).join('')}</div>` : ''}
+    <div class="dsgvo"><i data-lucide="shield-check"></i> <span><b>Datenschutz:</b> Der Standort wird <b>nur beim Ein- &amp; Ausstempeln</b> einmalig erfasst – als Nachweis vor Ort. Keine laufende Ortung während der Arbeitszeit.</span></div>
+  </div>`;
+}
+function clockCard(){
+  if(!myEntry){
+    return `<div class="clockcard in">
+      <div class="clockcard__top"><span class="clockcard__lbl"><i data-lucide="fingerprint"></i> Stempeluhr</span><span class="clockcard__time">${NOW}</span></div>
+      <div class="clockcard__sub">Auf Kunde stechen – Adresse, Aufgaben &amp; Material direkt dabei.</div>
+      <button class="clockbtn go" onclick="openClockIn()"><i data-lucide="play"></i> Einstempeln</button>
+    </div>`;
+  }
+  const s = site(myEntry.siteId); const min = entryMin(myEntry);
+  if(myEntry.out){
+    return `<div class="clockcard done">
+      <div class="clockcard__top"><span class="clockcard__lbl"><i data-lucide="check-circle-2"></i> Feierabend</span><span class="clockcard__time">${hoursStr(min)}</span></div>
+      <div class="clockcard__sub">${myEntry.in}–${myEntry.out} Uhr · ${s.customer}${myEntry.pauseMin?` · ${myEntry.pauseMin} Min Pause`:''}</div>
+      <div class="clockcard__row">
+        <button class="clockbtn proto" onclick="openProtocol('${s.id}','self')"><i data-lucide="clipboard-list"></i> Tagesprotokoll ausfüllen</button>
+      </div>
+      ${hasProto('self',s.id)?`<div class="clockcard__ok"><i data-lucide="check"></i> Tagesprotokoll abgegeben</div>`:''}
+    </div>`;
+  }
+  return `<div class="clockcard running">
+    <div class="clockcard__top"><span class="clockcard__lbl"><i data-lucide="radio"></i> Eingestempelt</span><span class="clockcard__time">${hoursStr(min)}</span></div>
+    <div class="clockcard__site"><i data-lucide="hard-hat"></i> <b>${s.customer}</b> · ${s.label}</div>
+    <div class="clockcard__meta">${geoBadge(myEntry)}${myEntry.ruest?`<span class="rz"><i data-lucide="truck"></i> mit Rüstzeit</span>`:''}<span class="clockcard__since">seit ${myEntry.in} Uhr${myEntry.pauseMin?` · ${myEntry.pauseMin} Min Pause`:''}</span></div>
+    <div class="clockcard__row">
+      <button class="clockbtn pause" onclick="myPause()"><i data-lucide="coffee"></i> Pause +30</button>
+      <button class="clockbtn site" onclick="openSiteSheet('${s.id}')"><i data-lucide="folder-open"></i> Kundenkartei</button>
+      <button class="clockbtn stop" onclick="myClockOut()"><i data-lucide="square"></i> Ausstempeln</button>
+    </div>
+  </div>`;
+}
+function timeRow(e){
+  const emp_ = emp(e.empId); const s = site(e.siteId); const min = entryMin(e);
+  const st = e.out ? `<span class="pill n">fertig</span>` : (e.pauseMin && !e.out ? '' : '');
+  return `<button class="trow ${!e.geoOk?'flag':''}" onclick="openTimeEntry(${e.id})">
+    <span class="avatar">${initials(emp_.name)}</span>
+    <span class="trow__main">
+      <span class="trow__top"><b>${emp_.name}</b>${e.out?`<span class="pill n">fertig</span>`:`<span class="dotlive"></span>`}</span>
+      <span class="trow__site"><i data-lucide="hard-hat"></i> ${s.customer} · ${s.label}</span>
+      <span class="trow__meta">${geoBadge(e)}${e.ruest?`<span class="rz sm"><i data-lucide="truck"></i> Rüstzeit</span>`:''}${e.proto||hasProto(e.empId,e.siteId)?`<span class="rz sm done"><i data-lucide="clipboard-check"></i> Protokoll</span>`:''}</span>
+    </span>
+    <span class="trow__right"><b>${hoursStr(min)}</b><small>${e.in}${e.out?'–'+e.out:' · läuft'}</small></span>
+  </button>`;
+}
+function renderZeit(){ if(currentView==='team' && activeTeamTab==='zeit'){ const h=document.getElementById('teamBody'); if(h){ h.innerHTML = zeitView(); icons(); } } }
+
+/* ---- Einstempeln: Baustelle / Kunde wählen ("auf Kunde stechen") ---- */
+function openClockIn(){
+  const cards = sites.filter(s => s.id !== 's0').map(s => `
+    <button class="sitepick" onclick="clockConfirm('${s.id}')">
+      <span class="sitepick__ico"><i data-lucide="hard-hat"></i></span>
+      <span class="sitepick__txt"><b>${s.customer}</b><small>${s.label} · ${s.addr.split(',')[1]||s.addr}</small>
+        <span class="sitepick__chips"><span><i data-lucide="list-checks"></i> ${s.tasks.length} Aufgaben</span><span><i data-lucide="package"></i> ${s.material.length} Material</span></span></span>
+      <i data-lucide="chevron-right"></i>
+    </button>`).join('');
+  openSheet(`
+    <div class="sheet__head">
+      <span class="avatar" style="width:50px;height:50px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="fingerprint" style="width:22px;height:22px"></i></span>
+      <div><div class="sheet__title">Einstempeln</div><div class="sheet__sub">Auf welche Baustelle / welchen Kunden?</div></div>
+      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+    </div>
+    <div class="sheet__body">
+      <div class="sitepicks">${cards}</div>
+      <button class="sitepick ghost" onclick="clockConfirm('s0')"><span class="sitepick__ico"><i data-lucide="warehouse"></i></span><span class="sitepick__txt"><b>Bauhof / Werkstatt</b><small>Beladen, Wartung, interne Arbeiten</small></span><i data-lucide="chevron-right"></i></button>
+    </div>`);
+}
+function clockConfirm(siteId){
+  const s = site(siteId);
+  const mat = s.material.length ? `<div class="load">
+    <div class="load__h"><i data-lucide="package"></i> Material laden <small>vorm Losfahren abhaken – spart die Baumarkt-Doppelfahrt</small></div>
+    ${s.material.map((m,i) => `<label class="loaditem"><input type="checkbox" id="ld${i}"><span>${m}</span></label>`).join('')}
+  </div>` : '';
+  const tasks = s.tasks.length ? `<div class="taskbox"><div class="taskbox__h"><i data-lucide="list-checks"></i> Aufgaben heute</div>${s.tasks.map(t => `<div class="taskline"><i data-lucide="dot"></i> ${t}</div>`).join('')}</div>` : '';
+  openSheet(`
+    <div class="sheet__head">
+      <span class="avatar" style="width:50px;height:50px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="hard-hat" style="width:22px;height:22px"></i></span>
+      <div><div class="sheet__title">${s.customer}</div><div class="sheet__sub">${s.label}</div></div>
+      <button class="iconbtn sheet__close" onclick="openClockIn()"><i data-lucide="arrow-left"></i></button>
+    </div>
+    <div class="sheet__body">
+      <button class="addrrow" onclick="toast('Route in Karten öffnen')"><i data-lucide="map-pin"></i><span><b>${s.addr}</b><small>Tippen für Route</small></span><i data-lucide="navigation" class="addrrow__nav"></i></button>
+      ${tasks}
+      ${mat}
+      <label class="rztoggle"><input type="checkbox" id="rzChk" checked><span class="rztoggle__txt"><b><i data-lucide="truck"></i> Mit Rüstzeit starten</b><small>Beladen &amp; Anfahrt zählen mit – Uhr läuft ab jetzt.</small></span></label>
+      <div class="geonote"><i data-lucide="map-pin"></i> <span>Dein <b>Standort</b> wird beim Stempeln einmalig erfasst (Nachweis vor Ort). Keine Dauerortung.</span></div>
+      <div class="sheet-actions">
+        <button class="btn" style="flex:1" onclick="doClockIn('${siteId}')"><i data-lucide="play"></i> Jetzt einstempeln</button>
+      </div>
+    </div>`);
+}
+function doClockIn(siteId){
+  const ruest = (document.getElementById('rzChk')||{}).checked !== false;
+  const btn = document.querySelector('.sheet-actions .btn');
+  if(btn){ btn.disabled = true; btn.innerHTML = '<i data-lucide="loader"></i> Standort wird erfasst …'; icons(); }
+  // Prototyp: Standort-Erfassung simulieren (in Produktion: navigator.geolocation.getCurrentPosition + Haversine zur Baustelle)
+  setTimeout(() => {
+    const dist = Math.round((0.05 + Math.random()*0.2)*1000)/1000;
+    myEntry = { empId:'self', siteId, in:NOW, out:null, ruest, pauseMin:0, dist, geoOk:true };
+    closeSheet(); renderZeit();
+    toast(`Eingestempelt um ${NOW} · ${site(siteId).customer}`);
+  }, 750);
+}
+function myPause(){ if(!myEntry) return; myEntry.pauseMin = (myEntry.pauseMin||0) + 30; renderZeit(); toast('30 Min Pause erfasst'); }
+function myClockOut(){ if(!myEntry) return; myEntry.out = NOW; renderZeit(); toast(`Ausgestempelt um ${NOW} · ${hoursStr(entryMin(myEntry))}`); }
+
+/* ---- Owner-Detail eines Stempel-Eintrags ---- */
+function openTimeEntry(id){
+  const e = timeEntries.find(x => x.id === id); if(!e) return;
+  const emp_ = emp(e.empId); const s = site(e.siteId); const min = entryMin(e);
+  const p = protocols.find(x => x.empId === e.empId && x.siteId === e.siteId);
+  openSheet(`
+    <div class="sheet__head">
+      <span class="avatar" style="width:50px;height:50px;font-size:17px">${initials(emp_.name)}</span>
+      <div><div class="sheet__title">${emp_.name}</div><div class="sheet__sub">${emp_.role} · ${emp_.crew}</div></div>
+      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+    </div>
+    <div class="sheet__body">
+      <div class="tagrow" style="margin-bottom:12px">${e.out?`<span class="pill n">Feierabend</span>`:`<span class="pill g">läuft</span>`}${e.ruest?`<span class="pill b">mit Rüstzeit</span>`:''}</div>
+      <dl>
+        <div class="detail-row"><dt>Baustelle</dt><dd>${s.customer} · ${s.label}</dd></div>
+        <div class="detail-row"><dt>Zeit</dt><dd>${e.in}${e.out?' – '+e.out:' – läuft'} Uhr · <b>${hoursStr(min)}</b>${e.pauseMin?` · ${e.pauseMin} Min Pause`:''}</dd></div>
+        <div class="detail-row"><dt>Standort</dt><dd>${e.geoOk?`<span style="color:var(--green-2);font-weight:800"><i data-lucide="map-pin" style="width:14px;height:14px;vertical-align:-2px"></i> vor Ort bestätigt · ${distStr(e.dist)} zur Baustelle</span>`:`<span style="color:var(--amber);font-weight:800"><i data-lucide="alert-triangle" style="width:14px;height:14px;vertical-align:-2px"></i> ${distStr(e.dist)} von der Baustelle entfernt – bitte prüfen</span>`}</dd></div>
+        <div class="detail-row"><dt>Adresse</dt><dd>${s.addr}</dd></div>
+      </dl>
+      ${p ? `<div class="protobox"><div class="protobox__h"><i data-lucide="clipboard-check"></i> Tagesprotokoll</div><div class="protobox__txt">${p.text||'—'}</div>${p.photos.length?`<div class="protogrid">${p.photos.map(src=>`<img src="${src}" alt="Baustelle">`).join('')}</div>`:''}${p.damageText?`<div class="protodmg"><i data-lucide="alert-octagon"></i> Schaden: ${p.damageText}${p.damagePhoto?`<img src="${p.damagePhoto}" alt="Schaden">`:''}</div>`:''}</div>` : `<div class="protobox empty2"><i data-lucide="clipboard-list"></i> Noch kein Tagesprotokoll abgegeben.</div>`}
+      <div class="sheet-actions">
+        <button class="btn ghost" style="flex:1" onclick="openSiteSheet('${s.id}')"><i data-lucide="folder-open"></i> Kundenkartei</button>
+        <button class="btn ghost" style="flex:1" onclick="toast('Mitarbeiter anrufen')"><i data-lucide="phone"></i> Anrufen</button>
+      </div>
+    </div>`);
+}
+/* ---- Kundenkartei (Adresse, Aufgaben, Material) – Querverbindung zu Kunden ---- */
+function openSiteSheet(siteId){
+  const s = site(siteId);
+  openSheet(`
+    <div class="sheet__head">
+      <span class="avatar" style="width:50px;height:50px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="folder-open" style="width:22px;height:22px"></i></span>
+      <div><div class="sheet__title">${s.customer}</div><div class="sheet__sub">${s.label} · Kundenkartei</div></div>
+      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+    </div>
+    <div class="sheet__body">
+      <button class="addrrow" onclick="toast('Route in Karten öffnen')"><i data-lucide="map-pin"></i><span><b>${s.addr}</b><small>Tippen für Route</small></span><i data-lucide="navigation" class="addrrow__nav"></i></button>
+      ${s.tasks.length?`<div class="taskbox"><div class="taskbox__h"><i data-lucide="list-checks"></i> Aufgaben</div>${s.tasks.map(t=>`<div class="taskline"><i data-lucide="dot"></i> ${t}</div>`).join('')}</div>`:''}
+      ${s.material.length?`<div class="taskbox"><div class="taskbox__h"><i data-lucide="package"></i> Material</div>${s.material.map(m=>`<div class="taskline"><i data-lucide="dot"></i> ${m}</div>`).join('')}</div>`:''}
+      <div class="sheet-actions"><button class="btn ghost" style="flex:1" onclick="closeSheet();setView('kunden')"><i data-lucide="external-link"></i> Im Kundenmodul öffnen</button></div>
+    </div>`);
+}
+
+/* ---- Tagesprotokoll: Voice ODER Text + Baustellen-Fotos + Schaden melden ---- */
+function openProtocol(siteId, empId){
+  protoPhotos = []; protoDamage = null;
+  const s = site(siteId);
+  openSheet(`
+    <div class="sheet__head">
+      <span class="avatar" style="width:50px;height:50px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="clipboard-list" style="width:22px;height:22px"></i></span>
+      <div><div class="sheet__title">Tagesprotokoll</div><div class="sheet__sub">${s.customer} · ${s.label}</div></div>
+      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+    </div>
+    <div class="sheet__body">
+      <div class="field"><label>Was wurde heute gemacht?</label>
+        <div class="voicewrap">
+          <textarea id="protoText" rows="4" placeholder="Kurz beschreiben – oder einfach das Mikrofon antippen und sprechen …"></textarea>
+          <button type="button" class="micbtn" id="micBtn" onclick="voiceToggle()" title="Per Sprache diktieren"><i data-lucide="mic"></i></button>
+        </div>
+        <div class="voicehint"><i data-lucide="mic"></i> Tippen &amp; sprechen – wird automatisch in Text umgewandelt.</div>
+      </div>
+      <div class="field"><label>Fotos von der Baustelle <span class="opt">3–5 empfohlen</span></label>
+        <input type="file" id="protoPics" accept="image/*" capture="environment" multiple onchange="protoPicsAdd(this)" hidden>
+        <button type="button" class="upload__btn" onclick="document.getElementById('protoPics').click()"><i data-lucide="camera"></i> Fotos aufnehmen oder hochladen</button>
+        <div class="upload__hint"><i data-lucide="info"></i> So sieht der Chef sofort: so sieht die Grube aus, so das Beet, so die Hecke.</div>
+        <div class="protogrid" id="protoPrev"></div>
+      </div>
+      <div class="dmgbox">
+        <label class="dmgtoggle"><input type="checkbox" id="dmgChk" onchange="dmgToggle(this)"><span><b><i data-lucide="alert-octagon"></i> Schaden melden</b><small>z. B. Bewässerungsrohr angefahren, Pflanze beschädigt</small></span></label>
+        <div class="dmgfields" id="dmgFields" style="display:none">
+          <input id="dmgText" placeholder="Was ist passiert?">
+          <input type="file" id="dmgPic" accept="image/*" capture="environment" onchange="dmgPicAdd(this)" hidden>
+          <button type="button" class="upload__btn sm" onclick="document.getElementById('dmgPic').click()"><i data-lucide="camera"></i> Foto vom Schaden</button>
+          <div class="protogrid" id="dmgPrev"></div>
+        </div>
+      </div>
+      <div class="sheet-actions">
+        <button class="btn" style="flex:1" onclick="submitProtocol('${siteId}','${empId}')"><i data-lucide="check"></i> Protokoll abgeben</button>
+        <button class="btn ghost" onclick="closeSheet()">Abbrechen</button>
+      </div>
+    </div>`);
+}
+function voiceToggle(){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const btn = document.getElementById('micBtn');
+  if(voiceRec){ voiceRec.stop(); voiceRec = null; if(btn) btn.classList.remove('on'); return; }
+  if(!SR){ toast('Spracheingabe hier nicht verfügbar – bitte tippen'); return; }
+  voiceRec = new SR(); voiceRec.lang = 'de-DE'; voiceRec.interimResults = true; voiceRec.continuous = true;
+  if(btn) btn.classList.add('on');
+  const ta = document.getElementById('protoText'); const base = ta ? ta.value : '';
+  voiceRec.onresult = ev => {
+    let txt = '';
+    for(let i = 0; i < ev.results.length; i++) txt += ev.results[i][0].transcript;
+    if(ta) ta.value = (base ? base + ' ' : '') + txt;
+  };
+  voiceRec.onerror = () => { if(btn) btn.classList.remove('on'); voiceRec = null; toast('Spracheingabe abgebrochen'); };
+  voiceRec.onend = () => { if(btn) btn.classList.remove('on'); voiceRec = null; };
+  try{ voiceRec.start(); toast('Sprich jetzt …'); }catch(e){ voiceRec = null; if(btn) btn.classList.remove('on'); }
+}
+function protoPicsAdd(input){
+  const files = Array.from(input.files || []);
+  files.forEach(f => { const r = new FileReader(); r.onload = ev => { protoPhotos.push(ev.target.result); renderProtoPrev(); }; r.readAsDataURL(f); });
+  input.value = '';
+}
+function renderProtoPrev(){
+  const host = document.getElementById('protoPrev'); if(!host) return;
+  host.innerHTML = protoPhotos.map((src,i) => `<div class="pthumb"><img src="${src}" alt="Foto ${i+1}"><button type="button" onclick="protoPicDel(${i})"><i data-lucide="x"></i></button></div>`).join('');
+  icons();
+}
+function protoPicDel(i){ protoPhotos.splice(i,1); renderProtoPrev(); }
+function dmgToggle(chk){ const f = document.getElementById('dmgFields'); if(f) f.style.display = chk.checked ? '' : 'none'; }
+function dmgPicAdd(input){ const f = input.files && input.files[0]; if(!f) return; const r = new FileReader(); r.onload = ev => { protoDamage = ev.target.result; const p = document.getElementById('dmgPrev'); if(p){ p.innerHTML = `<div class="pthumb"><img src="${ev.target.result}" alt="Schaden"><button type="button" onclick="dmgPicDel()"><i data-lucide="x"></i></button></div>`; icons(); } }; r.readAsDataURL(f); }
+function dmgPicDel(){ protoDamage = null; const p = document.getElementById('dmgPrev'); if(p) p.innerHTML = ''; const inp = document.getElementById('dmgPic'); if(inp) inp.value = ''; }
+function submitProtocol(siteId, empId){
+  if(voiceRec){ voiceRec.stop(); voiceRec = null; }
+  const text = (document.getElementById('protoText')||{}).value || '';
+  const dmgOn = (document.getElementById('dmgChk')||{}).checked;
+  const damageText = dmgOn ? ((document.getElementById('dmgText')||{}).value || 'Schaden gemeldet') : '';
+  protocols = protocols.filter(p => !(p.empId === empId && p.siteId === siteId));
+  protocols.push({ empId, siteId, text, photos: protoPhotos.slice(), damageText, damagePhoto: dmgOn ? protoDamage : null });
+  const e = timeEntries.find(x => String(x.empId) === String(empId) && x.siteId === siteId); if(e) e.proto = true;
+  protoPhotos = []; protoDamage = null;
+  closeSheet(); renderZeit();
+  toast('Tagesprotokoll gespeichert' + (damageText ? ' · Schaden gemeldet' : ''));
+}
+
 function openEmployee(id){
   const e = employees.find(item => item.id === id);
   if(!e) return;
