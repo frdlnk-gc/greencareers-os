@@ -641,6 +641,66 @@
   .crew__icon{ width:32px; height:32px; border-radius:8px; display:grid; place-items:center; background:rgba(255,255,255,.10); flex-shrink:0; }
   .crew b{ display:block; font-size:13px; }
   .crew span{ display:block; color:#A8B7AB; font-size:11px; margin-top:3px; }
+  .crewtag{ display:inline-flex; align-items:center; gap:7px; white-space:nowrap; }
+  .crewtag__dot{ width:9px; height:9px; border-radius:50%; flex-shrink:0; display:inline-block; }
+  /* Kolonnen-Verwaltung */
+  .kgrid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(290px,1fr)); gap:14px; }
+  .kcard{ background:#fff; border:1px solid var(--line); border-radius:14px; padding:14px; box-shadow:var(--shadow-sm); }
+  .kcard--spring{ background:linear-gradient(180deg,#fbfdfb,#f4f7f3); border-style:dashed; }
+  .kcard__head{ display:flex; align-items:center; gap:10px; }
+  .kcard__dot{ width:12px; height:12px; border-radius:4px; background:var(--kc); flex-shrink:0; }
+  .kcard__t{ flex:1; min-width:0; }
+  .kcard__t b{ display:block; font-size:14px; }
+  .kcard__t span{ display:block; font-size:11.5px; color:var(--muted); margin-top:2px; }
+  .kcard__warn{ display:flex; align-items:center; gap:7px; margin-top:10px; padding:8px 10px; background:#FFF7EB; color:#8A5A14; border-radius:9px; font-size:11.5px; }
+  .kcard__warn i{ width:14px; height:14px; flex-shrink:0; }
+  .kmembers{ margin-top:10px; display:flex; flex-direction:column; gap:7px; }
+  .kmember{ display:flex; align-items:center; gap:9px; padding:6px; border-radius:9px; background:var(--mint-2); }
+  .kmember.off{ background:#FFF7EB; }
+  .kmember__t{ flex:1; min-width:0; }
+  .kmember__t b{ display:block; font-size:12.5px; }
+  .kmember__t small{ display:block; font-size:10.5px; color:var(--muted); }
+  .kmove{ font-size:11px; padding:5px 7px; border:1px solid var(--line); border-radius:7px; background:#fff; max-width:120px; }
+  .kempty{ font-size:11.5px; color:var(--muted); padding:10px; text-align:center; background:var(--mint-2); border-radius:9px; }
+  .kswatches{ display:flex; flex-wrap:wrap; gap:9px; }
+  .kswatch{ width:30px; height:30px; border-radius:8px; border:2px solid transparent; cursor:pointer; }
+  .kswatch.on{ border-color:var(--text); box-shadow:0 0 0 2px #fff inset; }
+  /* Modul-Marktplatz */
+  .modlist{ display:flex; flex-direction:column; gap:9px; margin-bottom:6px; }
+  .modtile{ display:flex; align-items:center; gap:12px; width:100%; text-align:left; padding:12px; border:1px solid var(--line); border-radius:12px; background:#fff; cursor:pointer; transition:border-color .15s, box-shadow .15s; }
+  .modtile:hover:not(:disabled){ border-color:var(--green); box-shadow:var(--shadow-sm); }
+  .modtile:disabled{ opacity:.6; cursor:default; }
+  .modtile.paid{ background:linear-gradient(180deg,#fff,#FBFAF6); }
+  .modtile__ic{ width:38px; height:38px; border-radius:10px; display:grid; place-items:center; background:var(--mint); color:var(--green-2); flex-shrink:0; }
+  .modtile.paid .modtile__ic{ background:#FBEFD9; color:#8A5A14; }
+  .modtile__t{ flex:1; min-width:0; }
+  .modtile__t b{ display:block; font-size:13px; }
+  .modtile__t small{ display:block; font-size:11px; color:var(--muted); margin-top:1px; }
+  .modtile__badge{ font-size:10.5px; font-weight:600; padding:4px 9px; border-radius:999px; white-space:nowrap; flex-shrink:0; }
+  .modtile__badge.free{ background:var(--mint); color:var(--green-2); }
+  .modtile__badge.paid{ background:#FBEFD9; color:#8A5A14; }
+  .modtile__badge.on{ background:var(--green); color:#fff; }
+  .modemo{ display:flex; align-items:center; gap:11px; padding:6px 2px; color:var(--muted); font-size:12.5px; }
+  .modemo__ic{ width:40px; height:40px; border-radius:10px; display:grid; place-items:center; background:var(--mint); color:var(--green-2); flex-shrink:0; }
+  .modemo small{ color:var(--muted-2); font-size:11px; }
+
+  /* Software-Tour */
+  .tour-layer{ position:fixed; inset:0; z-index:400; pointer-events:none; }
+  .tour-layer.hidden{ display:none; }
+  .tour-spot{ position:fixed; border-radius:12px; box-shadow:0 0 0 9999px rgba(13,28,18,.58); transition:all .22s cubic-bezier(.4,0,.2,1); pointer-events:none; }
+  .tour-card{ position:fixed; width:300px; max-width:calc(100vw - 24px); background:#fff; border-radius:14px; box-shadow:0 18px 48px rgba(13,28,18,.34); padding:16px 16px 13px; pointer-events:auto; transition:top .22s, left .22s; }
+  .tour-card__step{ font-size:11px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--green-2); }
+  .tour-card h4{ margin:5px 0 6px; font-size:15.5px; color:var(--ink); }
+  .tour-card p{ margin:0; font-size:13px; line-height:1.5; color:var(--muted); }
+  .tour-x{ position:absolute; top:10px; right:10px; width:26px; height:26px; border:0; background:var(--canvas); border-radius:8px; display:grid; place-items:center; cursor:pointer; color:var(--muted); }
+  .tour-x:hover{ background:var(--line); color:var(--ink); }
+  .tour-x .lucide{ width:15px; height:15px; }
+  .tour-foot{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:14px; }
+  .tour-dots{ display:flex; gap:6px; }
+  .tour-dot{ width:7px; height:7px; border-radius:50%; background:var(--line); }
+  .tour-dot.on{ background:var(--green); width:18px; border-radius:99px; }
+  .tour-btns{ display:flex; gap:7px; }
+  .btn.sm{ padding:8px 14px; font-size:12.5px; }
   .plan-cell{
     min-height:104px;
     padding:8px;
@@ -1400,16 +1460,16 @@ const kanbanCols = [
   {id:'eingestellt', label:'Eingestellt', color:'#7C3AED'},
 ];
 const employees = [
-  {id:1,name:'Sven Albrecht',role:'Vorarbeiter',crew:'Kolonne 1',phone:'0171 2345678',since:'2019',annual:30},
-  {id:2,name:'Mehmet Kaya',role:'Pflasterer',crew:'Kolonne 2',phone:'0152 9876543',since:'2021',annual:28},
-  {id:3,name:'Tim Schulz',role:'Landschaftsgärtner',crew:'Kolonne 3',phone:'0176 4455667',since:'2022',annual:28},
-  {id:4,name:'Ali Demir',role:'Geselle',crew:'Kolonne 2',phone:'0163 1122334',since:'2020',annual:28},
-  {id:5,name:'Lukas Berger',role:'Azubi',crew:'Kolonne 1',phone:'0151 7788990',since:'2024',annual:26},
-  {id:6,name:'Jonas Weber',role:'Landschaftsgärtner',crew:'Kolonne 3',phone:'0170 5566778',since:'2023',annual:28},
-  {id:7,name:'Peter Krause',role:'Vorarbeiter',crew:'Kolonne 3',phone:'0172 9988776',since:'2018',annual:30},
-  {id:8,name:'Marek Nowak',role:'Pflasterer',crew:'Kolonne 2',phone:'0159 4433221',since:'2022',annual:28},
-  {id:9,name:'Finn Hansen',role:'Geselle',crew:'Kolonne 1',phone:'0162 1212343',since:'2023',annual:28},
-  {id:10,name:'Stefan Vogt',role:'Maschinist',crew:'Kolonne 3',phone:'0177 7676545',since:'2017',annual:30},
+  {id:1,name:'Sven Albrecht',role:'Vorarbeiter',crewId:'k1',phone:'0171 2345678',since:'2019',annual:30},
+  {id:2,name:'Mehmet Kaya',role:'Pflasterer',crewId:'k2',phone:'0152 9876543',since:'2021',annual:28},
+  {id:3,name:'Tim Schulz',role:'Landschaftsgärtner',crewId:'k3',phone:'0176 4455667',since:'2022',annual:28},
+  {id:4,name:'Ali Demir',role:'Geselle',crewId:'k2',phone:'0163 1122334',since:'2020',annual:28},
+  {id:5,name:'Lukas Berger',role:'Azubi',crewId:'k1',phone:'0151 7788990',since:'2024',annual:26},
+  {id:6,name:'Jonas Weber',role:'Landschaftsgärtner',crewId:'k3',phone:'0170 5566778',since:'2023',annual:28},
+  {id:7,name:'Peter Krause',role:'Vorarbeiter',crewId:'k3',phone:'0172 9988776',since:'2018',annual:30},
+  {id:8,name:'Marek Nowak',role:'Pflasterer',crewId:'k2',phone:'0159 4433221',since:'2022',annual:28},
+  {id:9,name:'Finn Hansen',role:'Geselle',crewId:null,phone:'0162 1212343',since:'2023',annual:28},
+  {id:10,name:'Stefan Vogt',role:'Maschinist',crewId:null,phone:'0177 7676545',since:'2017',annual:30},
 ];
 // Prototyp-„Heute" = Mittwoch, 3. Juni 2026 (passt zum Cockpit-Gruß)
 const TODAY = '2026-06-03';
@@ -1488,11 +1548,13 @@ const days = [
   {id:'do', label:'Mo'},
   {id:'fr', label:'Di'},
 ];
+// Kolonnen (Trupps) – frei benennbar & farbcodiert. Mitarbeiter hängen per crewId dran.
 const crews = [
-  {id:'k1', label:'Kolonne 1', meta:'3 Mann'},
-  {id:'k2', label:'Kolonne 2', meta:'2 Mann'},
-  {id:'k3', label:'Kolonne 3', meta:'3 Mann'},
+  {id:'k1', label:'Kolonne Grün',  color:'#16A34A', icon:'sprout'},
+  {id:'k2', label:'Kolonne Pflaster', color:'#B7791F', icon:'brick-wall'},
+  {id:'k3', label:'Kolonne LKW',   color:'#2563EB', icon:'truck'},
 ];
+let crewSeq = 4;
 const inbox = [
   {id:1,ch:'wa',customerId:'c1',from:'Familie Brandt',sub:'Gartenneuanlage gewünscht',pre:'Hallo, wir möchten unseren Garten neu anlegen lassen. Können Sie kurzfristig vorbeikommen?',time:'vor 20 Min.',unread:true},
   {id:2,ch:'mail',customerId:'c4',from:'Stadtwerke Nord',sub:'Ausschreibung Grünpflege 2026/27',pre:'Sehr geehrte Damen und Herren, anbei die Unterlagen zur Ausschreibung.',time:'vor 1 Std.',unread:true},
@@ -1555,16 +1617,28 @@ employees.forEach(e => {
   e.sysRole = 'mitarbeiter';   // 'admin' | 'buero' | 'mitarbeiter'
   e.account = 'active';        // 'active' (kann sich anmelden) | 'invited' (eingeladen) | 'none' (kein Zugang)
 });
-employees.push({id:11, name:'Sandra Krüger', role:'Büro / Personal', crew:'Büro', phone:'040 5550022', since:'2020', annual:30, email:'sandra.krueger@mueller-galabau.de', sysRole:'buero', account:'active'});
+employees.push({id:11, name:'Sandra Krüger', role:'Personalverwaltung', crewId:null, phone:'040 5550022', since:'2020', annual:30, email:'sandra.krueger@mueller-galabau.de', sysRole:'buero', account:'active'});
 emp(6).account = 'invited';    // Jonas Weber – eingeladen, noch nicht angemeldet
 emp(10).account = 'none';      // Stefan Vogt – noch kein Zugang
 let empSeq = employees.reduce((m,e) => Math.max(m, e.id), 0) + 1;
 
 const ROLES = {
   admin:       {label:'Inhaber · Admin', short:'Admin', icon:'shield-check', sub:'Sieht & darf alles'},
-  buero:       {label:'Büro · rechte Hand', short:'Büro', icon:'user-cog', sub:'Personal & Verwaltung'},
+  buero:       {label:'Personalverwaltung', short:'Personal', icon:'user-cog', sub:'Personal, Kolonnen & Kunden'},
   mitarbeiter: {label:'Mitarbeiter', short:'Mitarbeiter', icon:'hard-hat', sub:'Sieht nur das Eigene'},
 };
+// ---- Kolonnen-Helfer (Single Source of Truth: crews + employee.crewId) ----
+function crewById(id){ return crews.find(c => c.id === id) || null; }
+function crewColor(id){ const c = crewById(id); return c ? c.color : '#6A7A6E'; }
+function crewLabelOf(id){ const c = crewById(id); return c ? c.label : 'Springer'; }
+// Anzeige-Label für einen Mitarbeiter (Kolonne, Springer oder Büro)
+function crewOf(e){ if(e.crewId) return crewLabelOf(e.crewId); return e.sysRole === 'buero' ? 'Büro' : 'Springer'; }
+function crewMembers(id){ return employees.filter(e => e.crewId === id); }
+// Springer = Feld-Mitarbeiter ohne feste Kolonne (Büro/Admin zählen nicht dazu)
+function springerPool(){ return employees.filter(e => !e.crewId && e.sysRole !== 'buero'); }
+function assignCrew(empId, crewId){ const e = emp(empId); if(e){ e.crewId = crewId || null; } }
+// Heute abwesend (genehmigt & deckt TODAY ab) → für Besetzungsplanung
+function absentToday(id){ return absences.find(x => x.empId === id && x.status === 'genehmigt' && covers(x, TODAY)) || null; }
 let viewRole = 'admin';   // welche Rolle ich gerade ansehe (Inhaber kann durchschalten)
 let viewEmpId = 1;        // bei Mitarbeiter-Ansicht: welcher Mitarbeiter (Default Sven Albrecht)
 
@@ -1679,7 +1753,7 @@ function setRole(role, empId){
   if(role === 'mitarbeiter' && empId) viewEmpId = empId;
   closeSheet();
   applyRole();
-  toast(role === 'admin' ? 'Admin-Ansicht' : 'Vorschau: ' + (role === 'mitarbeiter' ? selfEmp().name : 'Büro'));
+  toast(role === 'admin' ? 'Admin-Ansicht' : 'Vorschau: ' + (role === 'mitarbeiter' ? selfEmp().name : 'Personalverwaltung'));
 }
 function openRoleSwitch(){
   const staff = employees.filter(e => e.account !== 'none');
@@ -1696,7 +1770,7 @@ function openRoleSwitch(){
       <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body">
-      <p class="sheet-note"><i data-lucide="info"></i> Nur du als Inhaber kannst durchschalten – ideal, um zu sehen, was du für Büro &amp; Mitarbeiter freigegeben hast.</p>
+      <p class="sheet-note"><i data-lucide="info"></i> Nur du als Inhaber kannst durchschalten – ideal, um zu sehen, was du für Personalverwaltung &amp; Mitarbeiter freigegeben hast.</p>
       ${opt('admin', viewRole==='admin')}
       ${opt('buero', viewRole==='buero')}
       <div class="roleopt__label"><i data-lucide="hard-hat"></i> Als Mitarbeiter ansehen</div>
@@ -1735,12 +1809,12 @@ function openSettings(){
       <div class="setsec">Zeiterfassung</div>
       ${swRow('Mit Rüstzeit rechnen','Beladen &amp; Anfahrt zählen als Arbeitszeit. Gilt für alle Aufträge – nicht pro Auftrag wählbar.', s.ruestzeit, "toggleSetting('ruestzeit')")}
       ${swRow('Standortnachweis beim Stempeln','Einmaliger Standort beim Ein-/Ausstempeln als Nachweis vor Ort. Keine Dauerortung.', s.geo, "toggleSetting('geo')")}
-      ${swRow('Mitarbeiter stempeln selbst','Mitarbeiter stempeln per Handy „auf Kunde". Aus = nur Büro/Admin stempelt.', s.selfClockIn, "toggleSetting('selfClockIn')")}
+      ${swRow('Mitarbeiter stempeln selbst','Mitarbeiter stempeln per Handy „auf Kunde". Aus = nur Personalverwaltung/Admin stempelt.', s.selfClockIn, "toggleSetting('selfClockIn')")}
 
-      <div class="setsec">Rechte „Büro / rechte Hand"</div>
-      <p class="sheet-note"><i data-lucide="user-cog"></i> Lege fest, was deine rechte Hand (z. B. Sekretariat) selbstständig darf.</p>
+      <div class="setsec">Rechte „Personalverwaltung"</div>
+      <p class="sheet-note"><i data-lucide="user-cog"></i> Lege fest, was die Personalverwaltung (z. B. Sekretariat/Bürokraft) selbstständig darf.</p>
       ${permRow('buero','approveAbsence','Urlaub genehmigen / ablehnen','Anträge der Mitarbeiter freigeben oder ablehnen.')}
-      ${permRow('buero','editEmployees','Mitarbeiter verwalten','Anlegen, bearbeiten, einladen.')}
+      ${permRow('buero','editEmployees','Mitarbeiter &amp; Kolonnen verwalten','Anlegen, bearbeiten, einladen, Kolonnen zuordnen.')}
       ${permRow('buero','manageCustomers','Kunden verwalten','Kunden &amp; Anfragen bearbeiten.')}
       ${permRow('buero','clockOthers','Mitarbeiter ein-/ausstempeln','Im Ausnahmefall für andere stempeln.')}
 
@@ -1775,7 +1849,7 @@ function maybeOnboard(){
       </div>
     </div>`);
 }
-function skipOnboarding(){ settings.onboarded = true; saveSettings(); closeSheet(); }
+function skipOnboarding(){ settings.onboarded = true; saveSettings(); closeSheet(); setTimeout(startTour, 360); }
 function startOnboarding(){ obStep = 0; OB_DRAFT.company = Object.assign({}, settings.company); OB_DRAFT.ruestzeit = settings.ruestzeit; OB_DRAFT.geo = settings.geo; OB_DRAFT.selfClockIn = settings.selfClockIn; renderOnboard(); }
 const OB_STEPS = ['betrieb','zeit','rechte','fertig'];
 function renderOnboard(){
@@ -1799,7 +1873,7 @@ function renderOnboard(){
       ${swRow('Mitarbeiter stempeln selbst','Im Alltag stempeln die Mitarbeiter per Handy „auf Kunde".', OB_DRAFT.selfClockIn, "obToggle('selfClockIn')")}`;
   } else if(step === 'rechte'){
     body = `
-      <div class="obhead"><span class="obnum">3 / 3</span><h3>Rechte deiner rechten Hand</h3><p>Was darf das Büro selbstständig erledigen?</p></div>
+      <div class="obhead"><span class="obnum">3 / 3</span><h3>Rechte der Personalverwaltung</h3><p>Was darf die Personalverwaltung selbstständig erledigen?</p></div>
       ${permRow('buero','approveAbsence','Urlaub genehmigen','Anträge freigeben/ablehnen.')}
       ${permRow('buero','editEmployees','Mitarbeiter verwalten','Anlegen, bearbeiten, einladen.')}
       ${permRow('buero','manageCustomers','Kunden verwalten','Kunden &amp; Anfragen pflegen.')}
@@ -1848,7 +1922,91 @@ function finishOnboarding(){
   closeSheet();
   applyRole();
   toast('Einrichtung abgeschlossen');
+  setTimeout(startTour, 360);
 }
+
+// ---- Software-Tour (geführte Kurz-Tour, jederzeit per X schließbar) ----
+const TOUR_STEPS = [
+  { sel:['#sideNav','#mobileNav'], title:'Deine vier Bereiche', text:'Heute, Team, Planung und Kunden – dein ganzer Betrieb in vier Klicks. Hier wechselst du den Bereich.' },
+  { sel:['.add-module'], title:'Cockpit selbst bauen', text:'Mit „Modul hinzufügen“ holst du dir Umsatz, Geburtstage, Lager und mehr direkt auf die Startseite.' },
+  { sel:['#fab'], title:'Schnell anlegen', text:'Mitarbeiter, Einsatz oder Angebot – mit dem Plus legst du von überall in Sekunden neu an.' },
+  { sel:['#rolePill'], title:'Ansicht wechseln', text:'Sieh die App als Inhaber, Personalverwaltung oder Mitarbeiter – ideal zum Ausprobieren.' },
+];
+let tourIdx = 0;
+function tourVisible(el){
+  if(!el) return false;
+  const cs = getComputedStyle(el);
+  if(cs.display === 'none' || cs.visibility === 'hidden' || parseFloat(cs.opacity) < .05) return false;
+  const r = el.getBoundingClientRect();
+  if(r.width < 2 || r.height < 2) return false; // collapsed
+  // horizontal aus dem Bild geschoben (eingeklappte Slide-in-Sidebar) ausschließen –
+  // vertikal unterhalb des Folds ist OK, dahin wird gescrollt.
+  if(r.right < 8 || r.left > window.innerWidth - 8) return false;
+  return true;
+}
+function tourAnchor(step){ for(const s of step.sel){ const el = document.querySelector(s); if(tourVisible(el)) return el; } return null; }
+function startTour(){
+  tourIdx = 0;
+  if(!document.getElementById('tourLayer')){
+    const l = document.createElement('div');
+    l.id = 'tourLayer'; l.className = 'tour-layer hidden';
+    l.innerHTML = `<div class="tour-spot" id="tourSpot"></div><div class="tour-card" id="tourCard"></div>`;
+    document.body.appendChild(l);
+    window.addEventListener('resize', tourReposition);
+  }
+  tourShow();
+}
+function tourShow(){
+  const step = TOUR_STEPS[tourIdx];
+  const el = tourAnchor(step);
+  if(!el){ if(tourIdx < TOUR_STEPS.length - 1){ tourIdx++; return tourShow(); } return endTour(); }
+  const layer = document.getElementById('tourLayer');
+  layer.classList.remove('hidden');
+  const last = tourIdx === TOUR_STEPS.length - 1;
+  const dots = TOUR_STEPS.map((_,i) => `<span class="tour-dot ${i===tourIdx?'on':''}"></span>`).join('');
+  document.getElementById('tourCard').innerHTML = `
+    <button class="tour-x" onclick="endTour()" title="Tour beenden"><i data-lucide="x"></i></button>
+    <div class="tour-card__step">Tour · ${tourIdx+1}/${TOUR_STEPS.length}</div>
+    <h4>${step.title}</h4>
+    <p>${step.text}</p>
+    <div class="tour-foot">
+      <div class="tour-dots">${dots}</div>
+      <div class="tour-btns">
+        ${tourIdx>0 ? `<button class="btn ghost sm" onclick="tourPrev()">Zurück</button>` : ''}
+        <button class="btn sm" onclick="${last?'endTour()':'tourNext()'}">${last?'Fertig':'Weiter'}</button>
+      </div>
+    </div>`;
+  // Anker unterhalb/oberhalb des Folds in den Blick scrollen
+  const rr = el.getBoundingClientRect();
+  if(rr.top < 8 || rr.bottom > window.innerHeight - 8){
+    el.scrollIntoView({block:'center'});
+    setTimeout(() => tourPlace(el), 60);
+  }
+  tourPlace(el);
+  icons();
+}
+function tourPlace(el){
+  const r = el.getBoundingClientRect();
+  const pad = 8, vh = window.innerHeight, vw = window.innerWidth;
+  const spot = document.getElementById('tourSpot');
+  spot.style.left = (r.left - pad) + 'px';
+  spot.style.top = (r.top - pad) + 'px';
+  spot.style.width = (r.width + pad*2) + 'px';
+  spot.style.height = (r.height + pad*2) + 'px';
+  const card = document.getElementById('tourCard');
+  const cw = card.offsetWidth, ch = card.offsetHeight;
+  let top = r.bottom + 14;
+  if(top + ch > vh - 12) top = Math.max(12, r.top - ch - 14);
+  let left = r.left + r.width/2 - cw/2;
+  if(left + cw > vw - 12) left = vw - cw - 12;
+  if(left < 12) left = 12;
+  card.style.top = top + 'px';
+  card.style.left = left + 'px';
+}
+function tourReposition(){ const l = document.getElementById('tourLayer'); if(!l || l.classList.contains('hidden')) return; const el = tourAnchor(TOUR_STEPS[tourIdx]); if(el) tourPlace(el); }
+function tourNext(){ if(tourIdx < TOUR_STEPS.length - 1){ tourIdx++; tourShow(); } else endTour(); }
+function tourPrev(){ if(tourIdx > 0){ tourIdx--; tourShow(); } }
+function endTour(){ const l = document.getElementById('tourLayer'); if(l) l.classList.add('hidden'); }
 
 function navButton(item,mode){
   const active = item.id === currentView ? 'on' : '';
@@ -1977,12 +2135,11 @@ const VIEWS = {
         ${moduleWrap(`<div class="panel">
           ${panelHead('route','Baustellenlage heute')}
           <div class="daymap">
-            <div class="daymap__item"><b>Kolonne 1</b><span>Garten Schmidt · Neuanlage läuft nach Plan</span></div>
-            <div class="daymap__item"><b>Kolonne 2</b><span>Pflaster Brandt · Material 14:00 Uhr prüfen</span></div>
-            <div class="daymap__item"><b>Kolonne 3</b><span>Hecke Petersen · Abschlussfotos fehlen</span></div>
+            ${[['Garten Schmidt · Neuanlage läuft nach Plan'],['Pflaster Brandt · Material 14:00 Uhr prüfen'],['Hecke Petersen · Abschlussfotos fehlen']].map((d,i) => crews[i] ? `<div class="daymap__item"><span class="crewtag__dot" style="background:${crews[i].color}"></span><b>${crews[i].label}</b><span>${d[0]}</span></div>` : '').join('')}
           </div>
         </div>`)}
-        <button class="add-module" onclick="toast('Modul-Auswahl folgt')"><i data-lucide="plus"></i> Modul hinzufügen</button>
+        ${[...addedModules].map(id => moduleWrap(extraModuleHtml(id))).join('')}
+        <button class="add-module" onclick="openModuleMarket()"><i data-lucide="plus"></i> Modul hinzufügen</button>
       </div>
       <div class="module-lane" id="railModules">
         ${moduleWrap(`<div class="panel weather-card">
@@ -2020,12 +2177,12 @@ const VIEWS = {
       <div class="plan-grid" id="planGrid">
         <div></div>
         ${days.map(day => `<div class="plan-day">${day.label}</div>`).join('')}
-        ${crews.map(crew => `
-          <div class="crew"><span class="crew__icon"><i data-lucide="truck"></i></span><div><b>${crew.label}</b><span>${crew.meta}</span></div></div>
+        ${crews.map(crew => { const n = crewMembers(crew.id).length; const off = crewMembers(crew.id).filter(m => absentToday(m.id)).length; return `
+          <div class="crew"><span class="crew__icon" style="background:${crew.color}22;color:${crew.color}"><i data-lucide="${crew.icon||'users'}"></i></span><div><b>${crew.label}</b><span>${n} ${n===1?'Mann':'Mann'}${off?` · <span style="color:var(--amber)">${off} fehlt</span>`:''}</span></div></div>
           ${days.map(day => `<div class="plan-cell" data-crew="${crew.id}" data-day="${day.id}">
-            ${(plan[crew.id][day.id] || []).map((job,index) => `<div class="job" draggable="true" data-crew="${crew.id}" data-day="${day.id}" data-index="${index}" style="--job-color:${job.c}"><b>${job.t}</b><span>${job.o}</span></div>`).join('')}
+            ${((plan[crew.id]&&plan[crew.id][day.id]) || []).map((job,index) => `<div class="job" draggable="true" data-crew="${crew.id}" data-day="${day.id}" data-index="${index}" style="--job-color:${job.c}"><b>${job.t}</b><span>${job.o}</span></div>`).join('')}
           </div>`).join('')}
-        `).join('')}
+        `; }).join('')}
       </div>
     </div>`,
 
@@ -2048,6 +2205,7 @@ function teamTabList(){
   const tabs = [];
   if(viewRole === 'admin') tabs.push({id:'bewerber', label:'Bewerber', count:applicants.neu.length + applicants.quali.length});
   tabs.push({id:'mitarbeiter', label:'Mitarbeiter', count:employees.length});
+  if(can('editEmployees')) tabs.push({id:'kolonnen', label:'Kolonnen', count:crews.length});
   tabs.push({id:'urlaub', label:'Urlaub & Krank', count:absences.filter(a => a.status === 'offen').length || ''});
   tabs.push({id:'zeit', label:'Zeiterfassung', count:''});
   return tabs;
@@ -2086,11 +2244,162 @@ const TEAM = {
   mitarbeiter: () => `
     ${can('editEmployees') ? `<div class="listbar"><span class="listbar__c">${employees.length} Mitarbeiter</span><button class="mini-btn primary" onclick="openEmployeeForm()"><i data-lucide="user-plus"></i> Mitarbeiter anlegen</button></div>` : ''}
     <div class="panel table-wrap"><table><thead><tr><th>Name</th><th>Funktion</th><th>Kolonne</th><th>Telefon</th><th>Status</th><th>Zugang</th><th>Resturlaub</th></tr></thead><tbody>
-    ${employees.map(e => { const s = empStatus(e.id); const v = vacInfo(e.id); const am = accountMeta(e.account); return `<tr class="clickable" onclick="openEmployee(${e.id})"><td><span class="person-cell"><span class="avatar">${initials(e.name)}</span>${e.name}</span></td><td>${e.role}</td><td>${e.crew}</td><td>${e.phone}</td><td><span class="pill ${s[1]}">${s[0]}</span></td><td><span class="pill ${am[1]}"><i data-lucide="${am[2]}" style="width:11px;height:11px;vertical-align:-1px"></i> ${am[0]}</span></td><td><b>${v.rest}</b> <span style="color:var(--muted)">/ ${e.annual}</span></td></tr>`; }).join('')}
+    ${employees.map(e => { const s = empStatus(e.id); const v = vacInfo(e.id); const am = accountMeta(e.account); return `<tr class="clickable" onclick="openEmployee(${e.id})"><td><span class="person-cell"><span class="avatar">${initials(e.name)}</span>${e.name}</span></td><td>${e.role}</td><td><span class="crewtag"><span class="crewtag__dot" style="background:${e.crewId?crewColor(e.crewId):'#9AA8A0'}"></span>${crewOf(e)}</span></td><td>${e.phone}</td><td><span class="pill ${s[1]}">${s[0]}</span></td><td><span class="pill ${am[1]}"><i data-lucide="${am[2]}" style="width:11px;height:11px;vertical-align:-1px"></i> ${am[0]}</span></td><td><b>${v.rest}</b> <span style="color:var(--muted)">/ ${e.annual}</span></td></tr>`; }).join('')}
   </tbody></table></div>`,
+  kolonnen: () => kolonnenView(),
   urlaub: () => urlaubView(),
   zeit: () => zeitView(),
 };
+
+/* ===================== KOLONNEN-VERWALTUNG ===================== */
+const CREW_COLORS = ['#16A34A','#2563EB','#B7791F','#7C3AED','#0D9488','#C24141','#475569','#DB2777'];
+let crewDraft = null;   // {color} beim Anlegen/Bearbeiten
+
+// Auswahl-Dropdown, um einen Mitarbeiter einer Kolonne / Springer zuzuordnen
+function crewMoveSelect(empId, cur){
+  return `<select class="kmove" onchange="moveMember(${empId}, this.value)">
+    <option value="" ${!cur?'selected':''}>Springer</option>
+    ${crews.map(c => `<option value="${c.id}" ${cur===c.id?'selected':''}>${c.label}</option>`).join('')}
+  </select>`;
+}
+function memberRow(m){
+  const ab = absentToday(m.id);
+  return `<div class="kmember${ab?' off':''}">
+    <span class="avatar sm">${initials(m.name)}</span>
+    <span class="kmember__t"><b>${m.name}</b><small>${m.role}${ab?` · <span style="color:var(--amber)">${typeMeta(ab.type).label} heute</span>`:''}</small></span>
+    ${crewMoveSelect(m.id, m.crewId)}
+  </div>`;
+}
+function crewCard(c){
+  const members = crewMembers(c.id);
+  const off = members.filter(m => absentToday(m.id));
+  const present = members.length - off.length;
+  return `<div class="kcard" style="--kc:${c.color}">
+    <div class="kcard__head">
+      <span class="kcard__dot"></span>
+      <div class="kcard__t"><b>${c.label}</b><span>${members.length} ${members.length===1?'Person':'Personen'} · <b style="color:${off.length?'var(--amber)':'var(--green-2)'}">${present} heute da</b></span></div>
+      <button class="iconbtn" title="Kolonne bearbeiten" onclick="openCrewForm('${c.id}')"><i data-lucide="pencil"></i></button>
+    </div>
+    ${off.length ? `<div class="kcard__warn"><i data-lucide="alert-triangle"></i> ${off.length} heute abwesend: ${off.map(o=>o.name.split(' ')[0]).join(', ')}. ${springerPool().length?'Springer einsetzen.':'Kein Springer frei.'}</div>` : ''}
+    <div class="kmembers">
+      ${members.length ? members.map(memberRow).join('') : '<div class="kempty">Noch niemand zugewiesen – unten Springer oder im Mitarbeiter-Tab zuordnen.</div>'}
+    </div>
+  </div>`;
+}
+function kolonnenView(){
+  const sp = springerPool();
+  const spOff = sp.filter(m => absentToday(m.id));
+  return `
+    <div class="listbar"><span class="listbar__c">${crews.length} Kolonnen · ${sp.length} Springer</span><button class="mini-btn primary" onclick="openCrewForm()"><i data-lucide="plus"></i> Kolonne anlegen</button></div>
+    <p class="sheet-note" style="margin:0 0 14px"><i data-lucide="info"></i> Erst Mitarbeiter anlegen, dann Kolonnen – hier ordnest du jede Person ihrer Kolonne zu. Springer fangen Urlaub &amp; Krankheit auf. Änderungen wirken sofort auf Plantafel &amp; Urlaubsplanung.</p>
+    <div class="kgrid">
+      ${crews.map(crewCard).join('')}
+      <div class="kcard kcard--spring" style="--kc:#6A7A6E">
+        <div class="kcard__head">
+          <span class="kcard__dot"></span>
+          <div class="kcard__t"><b>Springer-Pool</b><span>${sp.length} flexibel · ${sp.length-spOff.length} heute einsetzbar</span></div>
+          <span class="iconbtn" style="pointer-events:none"><i data-lucide="users"></i></span>
+        </div>
+        <div class="kmembers">
+          ${sp.length ? sp.map(memberRow).join('') : '<div class="kempty">Keine Springer – jeder Mitarbeiter ist fest zugeordnet.</div>'}
+        </div>
+      </div>
+    </div>`;
+}
+function moveMember(empId, crewId){
+  assignCrew(empId, crewId || null);
+  teamTab('kolonnen');
+  const c = crewId ? crewLabelOf(crewId) : 'Springer';
+  toast(`${emp(empId).name.split(' ')[0]} → ${c}`);
+}
+function openCrewForm(id){
+  const c = id ? crewById(id) : null;
+  crewDraft = { color: c ? c.color : CREW_COLORS[crews.length % CREW_COLORS.length] };
+  const swatches = CREW_COLORS.map(col => `<button class="kswatch ${crewDraft.color===col?'on':''}" style="background:${col}" onclick="crewDraft.color='${col}';document.querySelectorAll('.kswatch').forEach(b=>b.classList.remove('on'));this.classList.add('on')"></button>`).join('');
+  openSheet(`
+    <div class="sheet__head">
+      <span class="avatar" style="width:46px;height:46px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="${c?'pencil':'plus'}" style="width:20px;height:20px"></i></span>
+      <div><div class="sheet__title">${c?'Kolonne bearbeiten':'Kolonne anlegen'}</div><div class="sheet__sub">${c?c.label:'Name & Farbe frei wählbar'}</div></div>
+      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+    </div>
+    <div class="sheet__body">
+      <div class="field"><label>Name der Kolonne</label><input id="crName" value="${c?c.label.replace(/"/g,'&quot;'):''}" placeholder="z. B. Kolonne Grün, LKW-Trupp, Team Nord"></div>
+      <div class="field"><label>Farbe</label><div class="kswatches">${swatches}</div></div>
+      ${c ? `<div class="fieldhint"><i data-lucide="users"></i> ${crewMembers(c.id).length} Person(en) zugewiesen. Mitglieder änderst du direkt auf den Karten.</div>` : ''}
+      <div class="sheet-actions">
+        <button class="btn" style="flex:1" onclick="submitCrew(${id?`'${id}'`:0})"><i data-lucide="check"></i> ${c?'Speichern':'Anlegen'}</button>
+        <button class="btn ghost" onclick="closeSheet()">Abbrechen</button>
+      </div>
+      ${c ? `<button class="btn danger btn--block" onclick="deleteCrew('${c.id}')"><i data-lucide="trash-2"></i> Kolonne löschen (Mitglieder werden Springer)</button>` : ''}
+    </div>`);
+}
+function submitCrew(id){
+  const label = document.getElementById('crName').value.trim();
+  if(!label){ toast('Bitte einen Namen eingeben'); return; }
+  const color = crewDraft ? crewDraft.color : CREW_COLORS[0];
+  if(id){
+    const c = crewById(id); c.label = label; c.color = color;
+    closeSheet(); teamTab('kolonnen'); toast('Kolonne aktualisiert');
+    return;
+  }
+  const newId = 'k' + (crewSeq++);
+  crews.push({ id:newId, label, color, icon:'users' });
+  plan[newId] = {}; days.forEach(d => plan[newId][d.id] = []);
+  closeSheet(); teamTab('kolonnen'); toast(`Kolonne „${label}" angelegt`);
+}
+function deleteCrew(id){
+  crewMembers(id).forEach(m => m.crewId = null);   // Mitglieder werden Springer
+  const i = crews.findIndex(c => c.id === id); if(i > -1) crews.splice(i,1);
+  delete plan[id];
+  closeSheet(); teamTab('kolonnen'); toast('Kolonne gelöscht – Mitglieder sind jetzt Springer');
+}
+
+/* ===================== MODUL-MARKTPLATZ („Modul hinzufügen") ===================== */
+const MODULES = [
+  {id:'umsatz',     name:'Umsatz heute',          desc:'Tagesumsatz & offene Posten auf einen Blick.',        icon:'euro',            price:0},
+  {id:'geburtstage',name:'Geburtstage & Jubiläen',desc:'Wer hat Geburtstag oder Firmenjubiläum?',             icon:'cake',            price:0},
+  {id:'lager',      name:'Materiallager',         desc:'Bestand an Pflanzen, Pflaster & Verbrauchsmaterial.', icon:'package',         price:0},
+  {id:'fuhrpark',   name:'Fuhrpark-Check',        desc:'TÜV, Wartung & wer fährt welches Fahrzeug.',          icon:'truck',           price:0},
+  {id:'route',      name:'Routenoptimierung Pro', desc:'Beste Reihenfolge & Fahrzeit für alle Baustellen.',   icon:'route',           price:29},
+  {id:'lohn',       name:'Lohn-Export (DATEV)',   desc:'Zeiten direkt an Steuerberater / DATEV exportieren.', icon:'file-spreadsheet',price:19},
+  {id:'termin',     name:'Online-Terminbuchung',  desc:'Kunden buchen Aufmaß-Termine selbst online.',         icon:'calendar-check',  price:15},
+  {id:'ki',         name:'KI-Angebotsschreiber',  desc:'Aus einer Anfrage in Sekunden ein fertiges Angebot.', icon:'sparkles',        price:39},
+];
+const addedModules = new Set();
+function moduleMeta(id){ return MODULES.find(m => m.id === id); }
+function extraModuleHtml(id){ const m = moduleMeta(id); return `<div class="panel">
+  ${panelHead(m.icon, m.name, {label:'Entfernen', action:`removeModule('${id}')`})}
+  <div class="modemo"><span class="modemo__ic"><i data-lucide="${m.icon}"></i></span><span>${m.desc}<br><small>Demo-Modul · Live-Daten folgen</small></span></div>
+</div>`; }
+function openModuleMarket(){
+  const tile = (m) => { const added = addedModules.has(m.id); const paid = m.price > 0; return `
+    <button class="modtile${paid?' paid':''}" ${added?'disabled':''} onclick="${paid?`upsellModule('${m.id}')`:`addFreeModule('${m.id}')`}">
+      <span class="modtile__ic"><i data-lucide="${m.icon}"></i></span>
+      <span class="modtile__t"><b>${m.name}</b><small>${m.desc}</small></span>
+      <span class="modtile__badge ${added?'on':paid?'paid':'free'}">${added?'✓ Aktiv':paid?`${m.price} €/Mon.`:'Gratis'}</span>
+    </button>`; };
+  openSheet(`
+    <div class="sheet__head">
+      <span class="avatar" style="width:46px;height:46px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="layout-grid" style="width:20px;height:20px"></i></span>
+      <div><div class="sheet__title">Module hinzufügen</div><div class="sheet__sub">Bau dir dein Cockpit – kostenlos &amp; Premium</div></div>
+      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+    </div>
+    <div class="sheet__body">
+      <div class="setsec">Kostenlos – sofort nutzbar</div>
+      <div class="modlist">${MODULES.filter(m => m.price === 0).map(tile).join('')}</div>
+      <div class="setsec">Premium – kostenpflichtig</div>
+      <p class="sheet-note"><i data-lucide="sparkles"></i> Premium-Module schaltest du später im Tarif frei. Heute schon als Vorschau sichtbar.</p>
+      <div class="modlist">${MODULES.filter(m => m.price > 0).map(tile).join('')}</div>
+    </div>`);
+}
+function addFreeModule(id){
+  if(addedModules.has(id)){ toast('Modul ist bereits aktiv'); return; }
+  addedModules.add(id);
+  closeSheet(); setView('heute');
+  toast(`Modul „${moduleMeta(id).name}" hinzugefügt`);
+}
+function removeModule(id){ addedModules.delete(id); setView('heute'); toast('Modul entfernt'); }
+function upsellModule(id){ const m = moduleMeta(id); toast(`${m.name}: kostenpflichtig (${m.price} €/Monat) – bald freischaltbar`); }
 
 /* ===================== URLAUB & KRANK ===================== */
 let urlaubSub = 'kalender';
@@ -2140,9 +2449,9 @@ function statusMeta(s){ return { offen:['Offen','a'], genehmigt:['Genehmigt','g'
 function conflictWarn(a){
   const list = absences.filter(x => x.id !== a.id && x.status !== 'abgelehnt' && x.empId !== a.empId && rangesOverlap(x.from, effTo(x), a.from, effTo(a)));
   if(!list.length) return '';
-  const crew = emp(a.empId).crew;
-  const same = list.filter(x => emp(x.empId).crew === crew);
-  if(same.length) return `${same.length+1} aus ${crew} gleichzeitig abwesend`;
+  const cid = emp(a.empId).crewId;
+  const same = cid ? list.filter(x => emp(x.empId).crewId === cid) : [];
+  if(same.length) return `${same.length+1} aus ${crewLabelOf(cid)} gleichzeitig abwesend`;
   if(list.length >= 2) return `${list.length+1} Mitarbeiter im selben Zeitraum abwesend`;
   return '';
 }
@@ -2213,7 +2522,7 @@ function calendarHTML(){
   let head = '<div class="cal-name cal-name--h">Mitarbeiter</div>';
   for(let d = 1; d <= dim; d++){ const dt = new Date(calY, calM, d); const we = isWeekend(dt); const today = dISO(dt) === TODAY; head += `<div class="cal-h ${we?'we':''} ${today?'today':''}"><span>${WD[dt.getDay()]}</span><b>${d}</b></div>`; }
   const rows = employees.map(e => {
-    let row = `<div class="cal-name clickable" onclick="openPersonCal(${e.id})" title="Einzelkalender von ${e.name} öffnen"><span class="avatar">${initials(e.name)}</span><span class="cal-name__t"><b>${e.name}</b><small>${e.crew}</small></span><i data-lucide="chevron-right" class="cal-name__chev"></i></div>`;
+    let row = `<div class="cal-name clickable" onclick="openPersonCal(${e.id})" title="Einzelkalender von ${e.name} öffnen"><span class="avatar">${initials(e.name)}</span><span class="cal-name__t"><b>${e.name}</b><small>${crewOf(e)}</small></span><i data-lucide="chevron-right" class="cal-name__chev"></i></div>`;
     const labeled = new Set();
     for(let d = 1; d <= dim; d++){
       const dt = new Date(calY, calM, d); const iso = dISO(dt); const we = isWeekend(dt); const today = iso === TODAY;
@@ -2311,7 +2620,7 @@ function personCalHTML(id){
   <div class="pcal">
     <div class="pcal-head">
       <button class="backlink" onclick="closePersonCal()"><i data-lucide="arrow-left"></i> Teamkalender</button>
-      <div class="pcal-person"><span class="avatar" style="width:44px;height:44px;font-size:15px">${initials(e.name)}</span><div><div class="pcal-person__n">${e.name}</div><div class="pcal-person__s">${e.role} · ${e.crew}</div></div></div>
+      <div class="pcal-person"><span class="avatar" style="width:44px;height:44px;font-size:15px">${initials(e.name)}</span><div><div class="pcal-person__n">${e.name}</div><div class="pcal-person__s">${e.role} · ${crewOf(e)}</div></div></div>
       <button class="btn" onclick="openAbsenceForm(${id})"><i data-lucide="plus"></i> Abwesenheit erfassen</button>
     </div>
     <div class="pcal-stats">
@@ -2376,7 +2685,7 @@ function openAbsence(id){
   openSheet(`
     <div class="sheet__head">
       <span class="avatar" style="width:50px;height:50px;font-size:17px">${initials(e.name)}</span>
-      <div><div class="sheet__title">${e.name}</div><div class="sheet__sub">${e.role} · ${e.crew}</div></div>
+      <div><div class="sheet__title">${e.name}</div><div class="sheet__sub">${e.role} · ${crewOf(e)}</div></div>
       <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body">
@@ -2406,7 +2715,7 @@ function absenceActions(a){
     if(mine && a.status === 'offen'){
       return `<div class="sheet-actions"><button class="btn ghost" style="flex:1" onclick="deleteAbsence(${a.id});closeSheet()"><i data-lucide="x"></i> Antrag zurückziehen</button></div>`;
     }
-    return `<div class="sheet-note"><i data-lucide="lock"></i> Diesen Eintrag verwaltet das Büro.</div>`;
+    return `<div class="sheet-note"><i data-lucide="lock"></i> Diesen Eintrag verwaltet die Personalverwaltung.</div>`;
   }
   // Admin/Büro, bereits entschieden: Bearbeiten (mit Löschen darin)
   return `<button class="btn ghost btn--block" onclick="editAbsence(${a.id})"><i data-lucide="pencil"></i> Eintrag bearbeiten</button>`;
@@ -2430,7 +2739,7 @@ function openAbsenceForm(preEmp, preFrom, preTo, preType, preNote, editId){
   const from = preFrom || TODAY;
   const to = preTo || preFrom || TODAY;
   const lockEmp = viewRole === 'mitarbeiter';
-  const opts = employees.map(e => `<option value="${e.id}" ${preEmp===e.id?'selected':''}>${e.name} · ${e.crew}</option>`).join('');
+  const opts = employees.map(e => `<option value="${e.id}" ${preEmp===e.id?'selected':''}>${e.name} · ${crewOf(e)}</option>`).join('');
   const seg = (t,l) => `<button type="button" class="segb ${ty===t?'on':''}" data-t="${t}" onclick="afType(this)">${l}</button>`;
   const title = afEditId ? 'Eintrag bearbeiten' : (lockEmp ? 'Abwesenheit beantragen' : 'Abwesenheit erfassen');
   openSheet(`
@@ -2495,7 +2804,7 @@ function absencePreview(){
   if(type === 'urlaub'){ const after = vacInfo(empId).rest - wd; extra = ` · Resturlaub danach: <b>${after}</b> Tage${after < 0 ? ' — überzogen!' : ''}`; }
   host.className = 'afprev' + (warn ? ' warn' : '');
   const directOk = type==='krank' || can('approveAbsence');
-  const hint = type==='krank' ? 'Krankmeldung wird sofort eingetragen.' : (directOk ? 'Wird direkt genehmigt eingetragen.' : 'Wird als Antrag „offen" gesendet — das Büro gibt frei.');
+  const hint = type==='krank' ? 'Krankmeldung wird sofort eingetragen.' : (directOk ? 'Wird direkt genehmigt eingetragen.' : 'Wird als Antrag „offen" gesendet — die Personalverwaltung gibt frei.');
   host.innerHTML = `<div class="afprev__main"><b>${wd}</b> ${lbl} (Mo–Fr gezählt)${extra}</div>${warn?`<div class="afprev__warn"><i data-lucide="alert-triangle"></i> ${warn}</div>`:''}<div class="afprev__hint">${hint}</div>`;
   icons();
 }
@@ -2904,7 +3213,7 @@ function openClockOther(){
   const free = employees.filter(e => empStatus(e.id)[0] === 'Aktiv' && !timeEntries.some(t => t.empId === e.id && !t.out));
   const list = free.map(e => `<button class="roleopt" onclick="pickClockEmp(${e.id})">
       <span class="avatar sm">${initials(e.name)}</span>
-      <span class="roleopt__txt"><b>${e.name}</b><small>${e.role} · ${e.crew}</small></span>
+      <span class="roleopt__txt"><b>${e.name}</b><small>${e.role} · ${crewOf(e)}</small></span>
       <i data-lucide="chevron-right" class="roleopt__chk"></i></button>`).join('') || `<div class="empty"><i data-lucide="check-circle-2"></i><div>Alle aktiven Mitarbeiter sind bereits eingestempelt.</div></div>`;
   openSheet(`
     <div class="sheet__head">
@@ -3052,7 +3361,7 @@ function openTimeEntry(id){
   openSheet(`
     <div class="sheet__head">
       <span class="avatar" style="width:50px;height:50px;font-size:17px">${initials(emp_.name)}</span>
-      <div><div class="sheet__title">${emp_.name}</div><div class="sheet__sub">${emp_.role} · ${emp_.crew}</div></div>
+      <div><div class="sheet__title">${emp_.name}</div><div class="sheet__sub">${emp_.role} · ${crewOf(emp_)}</div></div>
       <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body">
@@ -3098,7 +3407,7 @@ function openCustomer(custId){
       const em = emp(e.empId);
       return `<button class="crow" onclick="closeSheet();teamTab('zeit');setTimeout(()=>openTimeEntry(${e.id}),70)">
         <span class="avatar">${initials(em.name)}</span>
-        <span class="crow__main"><b>${em.name}</b><small>${em.role} · ${em.crew}</small></span>
+        <span class="crow__main"><b>${em.name}</b><small>${em.role} · ${crewOf(em)}</small></span>
         <span class="crow__st">${e.out?`<span class="pill n">fertig</span>`:`<span class="crow__live"><span class="dotlive"></span> läuft</span>`}</span>
       </button>`;
     }).join('') : `<div class="cust-empty">Heute niemand auf dieser Baustelle eingeteilt.</div>`;
@@ -3223,7 +3532,7 @@ function openEmployee(id){
   openSheet(`
     <div class="sheet__head">
       <span class="avatar" style="width:50px;height:50px;font-size:17px">${initials(e.name)}</span>
-      <div><div class="sheet__title">${e.name}</div><div class="sheet__sub">${e.role} · ${e.crew}</div></div>
+      <div><div class="sheet__title">${e.name}</div><div class="sheet__sub">${e.role} · ${crewOf(e)}</div></div>
       <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body">
@@ -3248,7 +3557,7 @@ function openEmployee(id){
 /* ---- Mitarbeiter anlegen / bearbeiten + Einladung ---- */
 function openEmployeeForm(id){
   const e = id ? emp(id) : null;
-  const roleOpts = [['mitarbeiter','Mitarbeiter'],['buero','Büro / Personal']].map(([v,l]) => `<option value="${v}" ${e&&e.sysRole===v?'selected':''}>${l}</option>`).join('');
+  const roleOpts = [['mitarbeiter','Mitarbeiter'],['buero','Personalverwaltung']].map(([v,l]) => `<option value="${v}" ${e&&e.sysRole===v?'selected':''}>${l}</option>`).join('');
   openSheet(`
     <div class="sheet__head">
       <span class="avatar" style="width:50px;height:50px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="${e?'user-cog':'user-plus'}" style="width:22px;height:22px"></i></span>
@@ -3259,7 +3568,10 @@ function openEmployeeForm(id){
       <div class="field"><label>Name</label><input id="efName" value="${e?e.name.replace(/"/g,'&quot;'):''}" placeholder="Vor- und Nachname"></div>
       <div class="fieldrow">
         <div class="field"><label>Funktion</label><input id="efRole" value="${e?(e.role||'').replace(/"/g,'&quot;'):''}" placeholder="z. B. Landschaftsgärtner"></div>
-        <div class="field"><label>Kolonne</label><input id="efCrew" value="${e?(e.crew||'').replace(/"/g,'&quot;'):''}" placeholder="z. B. Kolonne 1"></div>
+        <div class="field"><label>Kolonne</label><select id="efCrew">
+          <option value="" ${e&&!e.crewId?'selected':''}>Springer (keine feste Kolonne)</option>
+          ${crews.map(c => `<option value="${c.id}" ${e&&e.crewId===c.id?'selected':''}>${c.label}</option>`).join('')}
+        </select></div>
       </div>
       <div class="fieldrow">
         <div class="field"><label>Telefon</label><input id="efPhone" value="${e?(e.phone||''):''}" placeholder="z. B. 0170 1234567"></div>
@@ -3267,7 +3579,7 @@ function openEmployeeForm(id){
       </div>
       <div class="field"><label>E-Mail (für Login &amp; Einladung)</label><input id="efEmail" type="email" value="${e?(e.email||''):''}" placeholder="name@firma.de"></div>
       <div class="field"><label>Rolle &amp; Rechte</label><select id="efSys">${roleOpts}</select>
-        <div class="fieldhint"><i data-lucide="info"></i> „Büro" verwaltet Personal &amp; Kunden – was genau, legst du in den Einstellungen fest.</div>
+        <div class="fieldhint"><i data-lucide="info"></i> „Personalverwaltung" betreut Personal, Kolonnen &amp; Kunden – was genau, legst du in den Einstellungen fest.</div>
       </div>
       ${!e ? `<label class="rztoggle"><input type="checkbox" id="efInvite" checked><span class="rztoggle__txt"><b><i data-lucide="send"></i> Einladung sofort senden</b><small>Der Mitarbeiter bekommt eine E-Mail und legt beim ersten Login sein Passwort fest.</small></span></label>` : ''}
       <div class="sheet-actions">
@@ -3281,19 +3593,19 @@ function submitEmployee(id){
   const name = document.getElementById('efName').value.trim();
   if(!name){ toast('Bitte Namen eingeben'); return; }
   const role = document.getElementById('efRole').value.trim() || 'Mitarbeiter';
-  const crew = document.getElementById('efCrew').value.trim() || '—';
+  const crewId = document.getElementById('efCrew').value || null;
   const phone = document.getElementById('efPhone').value.trim();
   const annual = Math.max(0, parseInt(document.getElementById('efAnnual').value,10) || 30);
   const email = document.getElementById('efEmail').value.trim();
   const sysRole = document.getElementById('efSys').value;
   if(id){
-    const e = emp(id); Object.assign(e, {name, role, crew, phone, annual, email, sysRole});
+    const e = emp(id); Object.assign(e, {name, role, crewId, phone, annual, email, sysRole});
     closeSheet(); teamTab('mitarbeiter'); toast('Mitarbeiter aktualisiert');
     return;
   }
   const invite = document.getElementById('efInvite').checked;
   const newId = empSeq++;
-  employees.push({ id:newId, name, role, crew, phone, since:String(new Date(TODAY).getFullYear()), annual, email, sysRole, account: invite ? 'invited' : 'none' });
+  employees.push({ id:newId, name, role, crewId, phone, since:String(new Date(TODAY).getFullYear()), annual, email, sysRole, account: invite ? 'invited' : 'none' });
   closeSheet(); teamTab('mitarbeiter');
   toast(invite && email ? `${name} angelegt · Einladung an ${email} gesendet` : `${name} angelegt`);
 }
