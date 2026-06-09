@@ -761,6 +761,23 @@
   .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
   .toast .lucide{ width:16px; height:16px; color:#8DE8AE; }
 
+  /* ----- Kontext-FAB (Schnell anlegen) ----- */
+  .fab-wrap{ position:fixed; right:24px; bottom:24px; z-index:260; display:none; flex-direction:column; align-items:flex-end; gap:12px; }
+  body.authed .fab-wrap{ display:flex; }
+  .fab{ width:54px; height:54px; border:none; border-radius:50%; background:linear-gradient(135deg,var(--green),var(--green-2)); color:#fff; box-shadow:0 8px 22px rgba(14,122,67,.4); cursor:pointer; display:grid; place-items:center; transition:transform .2s; }
+  .fab:hover{ transform:scale(1.06); }
+  .fab__plus{ width:26px; height:26px; transition:transform .25s; }
+  .fab-wrap.open .fab__plus{ transform:rotate(45deg); }
+  .fab-menu{ display:flex; flex-direction:column; align-items:flex-end; gap:9px; max-height:0; overflow:hidden; opacity:0; transform:translateY(8px); transition:opacity .2s, transform .2s, max-height .2s; }
+  .fab-wrap.open .fab-menu{ max-height:480px; opacity:1; transform:translateY(0); }
+  .fab-item{ display:flex; align-items:center; gap:10px; padding:10px 14px; border:1px solid var(--line); border-radius:11px; background:#fff; box-shadow:var(--shadow); color:var(--ink); font-size:13.5px; font-weight:750; cursor:pointer; white-space:nowrap; }
+  .fab-item:hover{ background:var(--mint); border-color:var(--green); }
+  .fab-item .lucide{ width:18px; height:18px; color:var(--green-2); }
+  .fab-item__ico{ width:30px; height:30px; border-radius:8px; background:var(--mint); display:grid; place-items:center; flex-shrink:0; }
+  .fab-grouplabel{ align-self:flex-end; font-size:10.5px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:var(--muted-2); margin:5px 3px 0; }
+  .fab-scrim{ position:fixed; inset:0; z-index:255; background:rgba(18,33,24,.18); opacity:0; pointer-events:none; transition:opacity .2s; }
+  .fab-scrim.show{ opacity:1; pointer-events:auto; }
+
   @media(max-width:1080px){
     .dashboard{ grid-template-columns:1fr; }
     .kanban{ grid-template-columns:repeat(2,minmax(240px,1fr)); }
@@ -844,6 +861,7 @@
     }
     .sheet-actions{ flex-direction:column; }
     .toast{ bottom:78px; }
+    .fab-wrap{ right:16px; bottom:74px; }
   }
   @media(max-width:520px){
     .auth__card{ padding:24px; }
@@ -975,6 +993,14 @@
   .cal-fill__lbl{ position:absolute; left:7px; top:50%; transform:translateY(-50%); font-size:10.5px; font-weight:800; letter-spacing:.005em; color:#fff; white-space:nowrap; pointer-events:none; z-index:3; text-shadow:0 1px 1.5px rgba(20,40,20,.28); }
   .cal-fill.offen .cal-fill__lbl{ color:currentColor; text-shadow:none; }
 
+  /* ----- Zeitraum-Auswahl per Ziehen/Antippen ----- */
+  .cal-c.daycell:not(.daycell--busy){ cursor:cell; }
+  .pcal-day.daycell:not(.daycell--busy){ cursor:cell; }
+  .daycell:not(.daycell--busy):hover{ box-shadow:inset 0 0 0 1.5px var(--green); }
+  .cal-c.daycell.sel{ background:var(--mint); box-shadow:inset 0 0 0 1.5px var(--green); }
+  .pcal-day.daycell.sel{ background:var(--mint); box-shadow:inset 0 0 0 2px var(--green); }
+  .daycell{ user-select:none; -webkit-user-select:none; }
+
   /* ----- Einzelkalender (Monats-Grid) ----- */
   .pcal-head{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:14px; }
   .pcal-person{ display:flex; align-items:center; gap:11px; }
@@ -1099,6 +1125,12 @@
 
 <div class="overlay hidden" id="modal"><div class="sheet" id="sheet"></div></div>
 <div class="toast" id="toast"><i data-lucide="check-circle-2"></i><span id="toastText"></span></div>
+
+<div class="fab-scrim" id="fabScrim" onclick="closeFab()"></div>
+<div class="fab-wrap" id="fabWrap">
+  <div class="fab-menu" id="fabMenu"></div>
+  <button class="fab" id="fab" onclick="toggleFab()" title="Schnell anlegen"><i data-lucide="plus" class="fab__plus"></i></button>
+</div>
 
 <script>
 const NAV = [
@@ -1229,6 +1261,8 @@ function showAuth(view){
 function login(){
   document.getElementById('auth').classList.add('hidden');
   document.getElementById('app').classList.remove('hidden');
+  document.body.classList.add('authed');
+  initCalDrag();
   renderNav();
   setView('heute');
 }
@@ -1256,7 +1290,50 @@ function setView(view){
   toggleMobile(false);
   icons();
   afterRender(view);
+  closeFab();
 }
+
+/* ---- Kontext-FAB: je nach View andere Schnell-Aktionen ---- */
+const FAB_ACTIONS = {
+  heute: [
+    {grp:'Schnell anlegen'},
+    {icon:'plane', label:'Abwesenheit eintragen', fn:'fabGo("team","urlaub");openAbsenceForm()'},
+    {icon:'map-pin', label:'Einsatz planen', fn:'fabGo("planung");toast("Einsatz planen – Plantafel")'},
+    {icon:'file-text', label:'Angebot anlegen', fn:'toast("Angebot anlegen folgt")'},
+  ],
+  team: [
+    {grp:'Abwesenheit'},
+    {icon:'thermometer', label:'Krankheit eintragen', fn:'fabGo("team","urlaub");openAbsenceForm(undefined,undefined,undefined,"krank")'},
+    {icon:'plane', label:'Urlaub eintragen', fn:'fabGo("team","urlaub");openAbsenceForm()'},
+    {grp:'Schnellfunktionen'},
+    {icon:'user-plus', label:'Mitarbeiter anlegen', fn:'toast("Mitarbeiter anlegen folgt")'},
+    {icon:'clock', label:'Zeiten ansehen', fn:'fabGo("team","zeit")'},
+  ],
+  planung: [
+    {grp:'Planung'},
+    {icon:'plus-square', label:'Auftrag anlegen', fn:'toast("Auftrag anlegen folgt")'},
+    {icon:'plane', label:'Abwesenheit eintragen', fn:'fabGo("team","urlaub");openAbsenceForm()'},
+  ],
+  kunden: [
+    {grp:'Neu anlegen'},
+    {icon:'user-round-plus', label:'Kunde anlegen', fn:'toast("Kunde anlegen folgt")'},
+    {icon:'receipt', label:'Rechnung anlegen', fn:'toast("Rechnung anlegen folgt")'},
+    {icon:'file-text', label:'Angebot anlegen', fn:'toast("Angebot anlegen folgt")'},
+  ],
+};
+let fabOpen = false;
+function renderFabMenu(){
+  const items = FAB_ACTIONS[currentView] || FAB_ACTIONS.heute;
+  document.getElementById('fabMenu').innerHTML = items.map(it =>
+    it.grp ? `<div class="fab-grouplabel">${it.grp}</div>`
+           : `<button class="fab-item" onclick="closeFab();${it.fn}"><span class="fab-item__ico"><i data-lucide="${it.icon}"></i></span>${it.label}</button>`
+  ).join('');
+  icons();
+}
+function toggleFab(){ fabOpen ? closeFab() : openFab(); }
+function openFab(){ fabOpen = true; renderFabMenu(); document.getElementById('fabWrap').classList.add('open'); document.getElementById('fabScrim').classList.add('show'); }
+function closeFab(){ fabOpen = false; const w = document.getElementById('fabWrap'); if(w) w.classList.remove('open'); const s = document.getElementById('fabScrim'); if(s) s.classList.remove('show'); }
+function fabGo(view, tab){ if(currentView !== view) setView(view); if(tab) teamTab(tab); }
 function toggleSidebar(){
   const app = document.getElementById('app');
   if(window.innerWidth <= 860){
@@ -1492,7 +1569,7 @@ function urlaubBody(){
   return calPerson ? personCalHTML(calPerson) : calendarHTML();
 }
 function urlaubTab(sub){ urlaubSub = sub; calPerson = null; renderUrlaub(); }
-function renderUrlaub(){ const host = document.getElementById('teamBody'); if(host){ host.innerHTML = urlaubView(); icons(); } }
+function renderUrlaub(){ const host = document.getElementById('teamBody'); if(host){ host.innerHTML = urlaubView(); icons(); initCalDrag(); pendStart = null; } }
 function refreshUrlaubBadge(){
   const tabs = document.querySelectorAll('#teamTabs .tab');
   const tab = tabs[2]; if(!tab) return;
@@ -1533,7 +1610,7 @@ function calendarHTML(){
         const lbl = lead ? `<span class="cal-fill__lbl">${tm.label}${a.status==='offen'?' · beantragt':''}</span>` : '';
         fill = `<span class="cal-fill ${tm.cls} ${offen} ${s?'s':''} ${en?'e':''} ${lead?'lead':''}" onclick="event.stopPropagation();openAbsence(${a.id})" title="${e.name} · ${tm.label}${a.status==='offen'?' (beantragt)':''}">${lbl}</span>`;
       }
-      row += `<div class="cal-c ${we?'we':''} ${today?'today':''}">${fill}</div>`;
+      row += `<div class="cal-c daycell ${a?'daycell--busy':''} ${we?'we':''} ${today?'today':''}" data-emp="${e.id}" data-iso="${iso}">${fill}</div>`;
     }
     return `<div class="cal-row">${row}</div>`;
   }).join('');
@@ -1543,12 +1620,53 @@ function calendarHTML(){
       <div class="cal-nav"><button class="iconbtn" onclick="calNav(-1)"><i data-lucide="chevron-left"></i></button><b>${MONTHS[calM]} ${calY}</b><button class="iconbtn" onclick="calNav(1)"><i data-lucide="chevron-right"></i></button><button class="mini-btn" onclick="calToday()">Heute</button></div>
       <div class="cal-legend"><span><i class="dot urlaub"></i>Urlaub</span><span><i class="dot krank"></i>Krank</span><span><i class="dot sonder"></i>Sonder</span><span><i class="dot offen"></i>beantragt</span></div>
     </div>
-    <div class="cal-hint"><i data-lucide="hand-pointer"></i> Auf einen <b>Namen</b> tippen = Einzelkalender · auf einen <b>Balken</b> tippen = Details &amp; Genehmigen</div>
+    <div class="cal-hint"><i data-lucide="hand-pointer"></i> <b>Namen</b> tippen = Einzelkalender · <b>Balken</b> tippen = Details · über <b>freie Tage ziehen</b> (oder Start + Ende tippen) = Abwesenheit eintragen</div>
     <div class="cal-scroll"><div class="cal" style="--days:${dim}"><div class="cal-row cal-headrow">${head}</div>${rows}</div></div>
   </div>`;
 }
 function calNav(delta){ const d = new Date(calY, calM+delta, 1); calY = d.getFullYear(); calM = d.getMonth(); renderUrlaub(); }
 function calToday(){ calY = Number(TODAY.slice(0,4)); calM = Number(TODAY.slice(5,7))-1; renderUrlaub(); }
+
+/* ---- Zeitraum per Ziehen ODER Antippen wählen (Team- & Einzelkalender) ---- */
+let calDragInit = false, dragEmp = null, dragFrom = null, dragTo = null, dragging = false, pendStart = null;
+function calCells(){ return Array.from(document.querySelectorAll('#teamBody .daycell')); }
+function calHighlight(emp, a, b){
+  const lo = a < b ? a : b, hi = a < b ? b : a;
+  calCells().forEach(c => {
+    const ok = c.dataset.emp === String(emp) && c.dataset.iso >= lo && c.dataset.iso <= hi && !c.classList.contains('daycell--busy');
+    c.classList.toggle('sel', ok);
+  });
+}
+function calClearSel(){ calCells().forEach(c => c.classList.remove('sel')); }
+function calFinish(emp, a, b){
+  const lo = a < b ? a : b, hi = a < b ? b : a;
+  calClearSel(); pendStart = null;
+  openAbsenceForm(Number(emp), lo, hi);
+}
+function initCalDrag(){
+  if(calDragInit) return; calDragInit = true;
+  document.addEventListener('pointerdown', e => {
+    const cell = e.target.closest && e.target.closest('.daycell');
+    if(!cell || cell.classList.contains('daycell--busy')) return;
+    dragEmp = cell.dataset.emp; dragFrom = cell.dataset.iso; dragTo = dragFrom; dragging = true;
+    calHighlight(dragEmp, dragFrom, dragTo);
+  });
+  document.addEventListener('pointermove', e => {
+    if(!dragging) return;
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    const dc = el && el.closest && el.closest('.daycell');
+    if(dc && dc.dataset.emp === dragEmp){ dragTo = dc.dataset.iso; calHighlight(dragEmp, dragFrom, dragTo); }
+  });
+  document.addEventListener('pointerup', () => {
+    if(!dragging) return; dragging = false;
+    if(dragFrom !== dragTo){ calFinish(dragEmp, dragFrom, dragTo); return; }   // gezogen
+    // einfacher Tipp → Zwei-Tipp-Modus
+    if(pendStart && pendStart.emp === dragEmp){ calFinish(dragEmp, pendStart.iso, dragFrom); return; }
+    pendStart = { emp: dragEmp, iso: dragFrom };
+    calClearSel(); calHighlight(dragEmp, dragFrom, dragFrom);
+    toast('Starttag gewählt – jetzt Endtag tippen');
+  });
+}
 
 /* ---- Einzelkalender pro Person ---- */
 function openPersonCal(id){ calPerson = id; urlaubSub = 'kalender'; activeTeamTab = 'urlaub'; closeSheet(); if(currentView !== 'team'){ setView('team'); } else { renderUrlaub(); } }
@@ -1570,7 +1688,7 @@ function personCalHTML(id){
     let cls = 'pcal-day' + (we ? ' we' : '') + (today ? ' today' : '');
     let tag = '';
     if(a){ const tm = typeMeta(a.type); cls += ` has ${tm.cls}` + (a.status === 'offen' ? ' off' : ''); if(iso === a.from || d === 1) tag = `<span class="pcal-day__tag">${tm.label}${a.status === 'offen' ? ' · beantragt' : ''}</span>`; }
-    cells += `<div class="${cls}" ${a ? `onclick="openAbsence(${a.id})"` : ''}><span class="pcal-day__n">${d}</span>${tag}</div>`;
+    cells += `<div class="${cls} daycell ${a?'daycell--busy':''}" data-emp="${id}" data-iso="${iso}" ${a ? `onclick="openAbsence(${a.id})"` : ''}><span class="pcal-day__n">${d}</span>${tag}</div>`;
   }
   const wdHead = ['Mo','Di','Mi','Do','Fr','Sa','So'].map(w => `<div class="pcal-wd">${w}</div>`).join('');
   const list = absences.filter(a => a.empId === id).sort((a,b) => b.from.localeCompare(a.from));
@@ -1669,9 +1787,13 @@ function deleteAbsence(id){ const i = absences.findIndex(x => x.id === id); if(i
 function afterAbsChange(){ renderUrlaub(); refreshUrlaubBadge(); }
 function viewAu(id){ const url = auImages[id]; if(!url) return; openSheet(`<div class="sheet__head"><div><div class="sheet__title">AU-Bescheinigung</div><div class="sheet__sub">Foto vom Mitarbeiter hochgeladen</div></div><button class="iconbtn sheet__close" onclick="openAbsence(${id})"><i data-lucide="x"></i></button></div><div class="sheet__body"><img src="${url}" alt="AU" style="width:100%;border-radius:10px;border:1px solid var(--line)"></div>`); }
 
-function openAbsenceForm(preEmp){
+function openAbsenceForm(preEmp, preFrom, preTo, preType){
   afAuData = null;
+  const ty = preType || 'urlaub';
+  const from = preFrom || TODAY;
+  const to = preTo || preFrom || TODAY;
   const opts = employees.map(e => `<option value="${e.id}" ${preEmp===e.id?'selected':''}>${e.name} · ${e.crew}</option>`).join('');
+  const seg = (t,l) => `<button type="button" class="segb ${ty===t?'on':''}" data-t="${t}" onclick="afType(this)">${l}</button>`;
   openSheet(`
     <div class="sheet__head">
       <span class="avatar" style="width:50px;height:50px;font-size:17px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="plane" style="width:22px;height:22px"></i></span>
@@ -1682,15 +1804,13 @@ function openAbsenceForm(preEmp){
       <div class="field"><label>Mitarbeiter</label><select id="afEmp" onchange="absencePreview()">${opts}</select></div>
       <div class="field"><label>Art</label>
         <div class="seg seg--type">
-          <button type="button" class="segb on" data-t="urlaub" onclick="afType(this)">Urlaub</button>
-          <button type="button" class="segb" data-t="krank" onclick="afType(this)">Krank</button>
-          <button type="button" class="segb" data-t="sonder" onclick="afType(this)">Sonderurlaub</button>
+          ${seg('urlaub','Urlaub')}${seg('krank','Krank')}${seg('sonder','Sonderurlaub')}
         </div>
-        <input type="hidden" id="afTypeVal" value="urlaub">
+        <input type="hidden" id="afTypeVal" value="${ty}">
       </div>
       <div class="fieldrow">
-        <div class="field"><label>Von</label><input type="date" id="afFrom" value="${TODAY}" onchange="absencePreview()"></div>
-        <div class="field"><label>Bis</label><input type="date" id="afTo" value="${TODAY}" onchange="absencePreview()"></div>
+        <div class="field"><label>Von</label><input type="date" id="afFrom" value="${from}" onchange="absencePreview()"></div>
+        <div class="field"><label>Bis</label><input type="date" id="afTo" value="${to}" onchange="absencePreview()"></div>
       </div>
       <div class="field"><label>Notiz (optional)</label><input id="afNote" placeholder="z. B. Brückentag, AU liegt vor ..."></div>
       <div class="field afau" id="afAuField" style="display:none">
@@ -1706,6 +1826,7 @@ function openAbsenceForm(preEmp){
         <button class="btn ghost" onclick="closeSheet()">Abbrechen</button>
       </div>
     </div>`);
+  if(ty === 'krank'){ const f = document.getElementById('afAuField'); if(f) f.style.display = ''; }
   absencePreview();
 }
 function afType(btn){ btn.parentNode.querySelectorAll('.segb').forEach(b => b.classList.remove('on')); btn.classList.add('on'); document.getElementById('afTypeVal').value = btn.dataset.t; const au = document.getElementById('afAuField'); if(au) au.style.display = btn.dataset.t === 'krank' ? '' : 'none'; absencePreview(); }
