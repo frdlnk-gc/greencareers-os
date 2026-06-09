@@ -79,13 +79,13 @@
     box-shadow:0 10px 24px rgba(22,163,74,.26);
   }
   .brandmark .lucide{ width:22px; height:22px; }
-  .brandname{ font-size:18px; font-weight:850; letter-spacing:-.02em; line-height:1.1; }
+  .brandname{ font-size:18px; font-weight:700; letter-spacing:-.02em; line-height:1.1; }
   .brandname small{ color:var(--green-2); font-size:16px; }
   .brandsub{ font-size:11px; color:var(--muted); margin-top:3px; }
   .auth h1{ font-family:'Fraunces',serif; font-size:29px; font-weight:600; letter-spacing:-.02em; line-height:1.08; }
   .auth .sub{ color:var(--muted); font-size:14px; line-height:1.5; margin:8px 0 22px; }
   .field{ margin-bottom:14px; }
-  .field label{ display:block; font-size:12px; font-weight:700; color:var(--ink-2); margin-bottom:6px; }
+  .field label{ display:block; font-size:12px; font-weight:600; color:var(--ink-2); margin-bottom:6px; }
   .field input{
     width:100%;
     border:1px solid var(--line);
@@ -98,7 +98,7 @@
   .field input:focus{ border-color:var(--green); background:#fff; box-shadow:0 0 0 3px rgba(22,163,74,.12); }
   .auth__row{ display:flex; align-items:center; justify-content:space-between; gap:14px; margin:2px 0 18px; font-size:12.5px; color:var(--muted); }
   .auth__chk{ display:flex; align-items:center; gap:7px; min-width:0; }
-  .auth a{ color:var(--green-2); text-decoration:none; font-weight:700; cursor:pointer; }
+  .auth a{ color:var(--green-2); text-decoration:none; font-weight:600; cursor:pointer; }
   .btn{
     display:inline-flex;
     align-items:center;
@@ -109,7 +109,7 @@
     padding:11px 15px;
     background:linear-gradient(135deg,var(--green),var(--green-2));
     color:#fff;
-    font-weight:800;
+    font-weight:600;
     font-size:14px;
     box-shadow:0 12px 24px rgba(22,163,74,.22);
     transition:transform .16s, box-shadow .16s, border-color .16s, background .16s;
@@ -117,7 +117,7 @@
   .btn:hover{ transform:translateY(-1px); box-shadow:0 16px 30px rgba(22,163,74,.30); }
   .btn.full{ width:100%; }
   .btn.ghost{ color:var(--ink); background:#fff; border:1px solid var(--line); box-shadow:none; }
-  .auth__back{ display:inline-flex; align-items:center; gap:7px; color:var(--muted); font-size:12.5px; font-weight:700; margin-bottom:16px; cursor:pointer; }
+  .auth__back{ display:inline-flex; align-items:center; gap:7px; color:var(--muted); font-size:12.5px; font-weight:600; margin-bottom:16px; cursor:pointer; }
   .auth__foot{ margin-top:18px; padding-top:16px; border-top:1px solid var(--line); display:flex; align-items:center; justify-content:space-between; gap:12px; color:var(--muted); font-size:11.5px; }
 
   /* Shell */
@@ -146,7 +146,7 @@
   .sidebrand__text span{ display:block; color:#7E8F83; font-size:10.5px; margin-top:2px; }
   .app.collapsed .sidebrand__text{ display:none; }
   .nav{ display:flex; flex-direction:column; gap:4px; padding-top:18px; }
-  .navlabel{ font-size:10px; font-weight:800; letter-spacing:.09em; text-transform:uppercase; color:#657568; padding:0 9px 5px; }
+  .navlabel{ font-size:10px; font-weight:600; letter-spacing:.09em; text-transform:uppercase; color:#657568; padding:0 9px 5px; }
   .app.collapsed .navlabel{ opacity:0; }
   .navitem{
     min-height:42px;
@@ -155,7 +155,7 @@
     border-radius:8px;
     color:var(--sidebar-text);
     font-size:13.5px;
-    font-weight:650;
+    font-weight:500;
     position:relative;
     transition:background .16s, color .16s;
   }
@@ -174,7 +174,7 @@
     background:var(--green);
     color:#fff;
     font-size:10.5px;
-    font-weight:850;
+    font-weight:700;
   }
   .app.collapsed .navitem{ justify-content:center; padding-inline:0; }
   .app.collapsed .navitem__label,.app.collapsed .navitem__badge{ display:none; }
@@ -202,7 +202,7 @@
     background:linear-gradient(135deg,#1FA855,var(--green-2));
     color:#fff;
     font-size:12px;
-    font-weight:850;
+    font-weight:700;
     flex-shrink:0;
   }
   .sideuser__text{ line-height:1.2; min-width:0; white-space:nowrap; overflow:hidden; }
@@ -238,7 +238,7 @@
     transition:background .16s, color .16s, border-color .16s;
   }
   .iconbtn:hover{ background:var(--mint); color:var(--green-2); border-color:#D7EBDD; }
-  .viewtitle{ display:flex; align-items:center; gap:8px; min-width:0; font-size:15px; font-weight:850; color:var(--ink); }
+  .viewtitle{ display:flex; align-items:center; gap:8px; min-width:0; font-size:15px; font-weight:700; color:var(--ink); }
   .viewtitle .lucide{ width:18px; height:18px; color:var(--green-2); }
   .topbar__spacer{ flex:1; }
   .weather-mini{
@@ -290,7 +290,7 @@
     border-radius:8px;
     padding:8px 11px;
     font-size:12px;
-    font-weight:750;
+    font-weight:600;
     white-space:nowrap;
   }
   .statusline .lucide{ width:15px; height:15px; }
@@ -335,8 +335,8 @@
     flex-shrink:0;
   }
   .kpi__icon .lucide{ width:17px; height:17px; }
-  .kpi__num{ margin-left:auto; font-size:27px; line-height:1; font-weight:900; letter-spacing:-.03em; color:var(--ink); }
-  .kpi__label{ margin-top:11px; font-size:13px; font-weight:800; color:var(--ink); }
+  .kpi__num{ margin-left:auto; font-size:27px; line-height:1; font-weight:700; letter-spacing:-.03em; color:var(--ink); }
+  .kpi__label{ margin-top:11px; font-size:13px; font-weight:600; color:var(--ink); }
   .kpi__sub{ margin-top:3px; color:var(--muted); font-size:11.5px; }
   .kpi.primary{ background:linear-gradient(135deg,var(--green),var(--green-2)); border-color:transparent; color:#fff; }
   .kpi.primary .kpi__icon{ background:rgba(255,255,255,.18); color:#fff; }
@@ -356,10 +356,10 @@
     padding:14px 15px 12px;
     border-bottom:1px solid var(--line);
     font-size:13.5px;
-    font-weight:850;
+    font-weight:700;
   }
   .panel__head .lucide{ width:16px; height:16px; color:var(--green-2); }
-  .panel__head .more{ margin-left:auto; color:var(--green-2); font-size:11.5px; font-weight:800; cursor:pointer; }
+  .panel__head .more{ margin-left:auto; color:var(--green-2); font-size:11.5px; font-weight:600; cursor:pointer; }
   .tasklist{ padding:6px; }
   .task{
     display:flex;
@@ -381,7 +381,7 @@
   }
   .task.hot .task__icon{ background:linear-gradient(135deg,var(--green),var(--green-2)); color:#fff; }
   .task__copy{ min-width:0; flex:1; }
-  .task__title{ display:block; font-size:13px; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .task__title{ display:block; font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .task__meta{ display:block; margin-top:2px; font-size:11.5px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .mini-btn{
     display:inline-flex; align-items:center; justify-content:center; gap:6px;
@@ -392,7 +392,7 @@
     background:#fff;
     color:var(--ink);
     font-size:12px;
-    font-weight:800;
+    font-weight:600;
     white-space:nowrap;
   }
   .mini-btn.primary{ color:#fff; background:var(--green); border-color:var(--green); }
@@ -418,7 +418,7 @@
     color:var(--muted);
     background:rgba(255,255,255,.42);
     font-size:12.5px;
-    font-weight:800;
+    font-weight:600;
   }
   .add-module .lucide{ width:16px; height:16px; color:var(--green-2); }
   .weather-card{ padding:15px; }
@@ -430,7 +430,7 @@
     color:var(--green-2);
     flex-shrink:0;
   }
-  .weather-card__temp{ font-size:26px; font-weight:900; letter-spacing:-.03em; }
+  .weather-card__temp{ font-size:26px; font-weight:700; letter-spacing:-.03em; }
   .weather-card__meta{ color:var(--muted); font-size:12px; margin-top:2px; }
   .weather-bar{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:14px; }
   .weather-bar div{ border:1px solid var(--line); border-radius:8px; padding:8px; font-size:11px; color:var(--muted); }
@@ -443,8 +443,8 @@
       linear-gradient(160deg,#14251B,#0B140D);
     border-color:#203426;
   }
-  .recruiting-panel__label{ display:flex; align-items:center; gap:7px; color:#9CE6B8; font-size:12px; font-weight:850; }
-  .recruiting-panel__role{ color:#fff; font-size:16px; font-weight:900; margin-top:10px; }
+  .recruiting-panel__label{ display:flex; align-items:center; gap:7px; color:#9CE6B8; font-size:12px; font-weight:700; }
+  .recruiting-panel__role{ color:#fff; font-size:16px; font-weight:700; margin-top:10px; }
   .recruiting-panel__grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:13px; }
   .recruiting-panel__metric{ background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.08); border-radius:8px; padding:10px; }
   .recruiting-panel__metric b{ display:block; color:#fff; font-size:24px; line-height:1; }
@@ -459,7 +459,7 @@
     padding:10px 11px;
     text-align:left;
     font-size:12.5px;
-    font-weight:850;
+    font-weight:700;
     box-shadow:var(--shadow);
   }
   .quick-grid button:hover{ border-color:#CDE7D4; }
@@ -497,7 +497,7 @@
     padding:8px 12px;
     color:var(--muted);
     font-size:12.5px;
-    font-weight:850;
+    font-weight:700;
   }
   .tab.on{ color:var(--ink); background:#fff; box-shadow:0 1px 1px rgba(20,30,20,.04); }
   .count{
@@ -510,7 +510,7 @@
     background:var(--mint);
     color:var(--green-2);
     font-size:10.5px;
-    font-weight:900;
+    font-weight:700;
   }
   .hint{
     display:flex;
@@ -523,7 +523,7 @@
     background:#F3FBF6;
     color:var(--green-2);
     font-size:12px;
-    font-weight:750;
+    font-weight:600;
   }
   .hint .lucide{ width:15px; height:15px; flex-shrink:0; }
 
@@ -542,7 +542,7 @@
     background:#F2F6F1;
   }
   .kanban-col.over{ outline:2px dashed var(--green); outline-offset:-4px; }
-  .kanban-head{ display:flex; align-items:center; gap:7px; padding:3px 3px 10px; font-size:12.5px; font-weight:900; }
+  .kanban-head{ display:flex; align-items:center; gap:7px; padding:3px 3px 10px; font-size:12.5px; font-weight:700; }
   .kanban-dot{ width:8px; height:8px; border-radius:999px; flex-shrink:0; }
   .kanban-head .count{ margin-left:auto; background:#fff; color:var(--muted); border:1px solid var(--line); }
   .candidate{
@@ -560,7 +560,7 @@
   .candidate:hover{ border-color:#CDE7D4; }
   .candidate.dragging{ opacity:.42; }
   .candidate__top{ display:flex; align-items:center; gap:9px; }
-  .candidate__name{ font-size:13px; font-weight:900; min-width:0; }
+  .candidate__name{ font-size:13px; font-weight:700; min-width:0; }
   .candidate__role{ color:var(--muted); font-size:11.5px; margin:7px 0; }
   .tagrow{ display:flex; gap:5px; flex-wrap:wrap; }
   .tag{
@@ -572,7 +572,7 @@
     background:#F0F3EF;
     color:#475448;
     font-size:10.5px;
-    font-weight:800;
+    font-weight:600;
   }
   .tag.green{ background:var(--mint); color:var(--green-2); }
   .candidate__meta{ display:flex; align-items:center; gap:6px; color:var(--muted); border-top:1px solid var(--line); margin-top:10px; padding-top:9px; font-size:11px; }
@@ -603,7 +603,7 @@
     padding:3px 9px;
     border-radius:999px;
     font-size:11px;
-    font-weight:850;
+    font-weight:700;
     white-space:nowrap;
   }
   .pill.g{ background:var(--mint); color:var(--green-2); }
@@ -626,7 +626,7 @@
     padding:9px;
     color:var(--muted);
     font-size:12px;
-    font-weight:900;
+    font-weight:700;
   }
   .crew{
     min-height:104px;
@@ -694,7 +694,7 @@
   .message__top{ display:flex; align-items:center; gap:8px; min-width:0; }
   .message__top b{ font-size:13.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .message__time{ margin-left:auto; flex-shrink:0; color:var(--muted); font-size:11px; }
-  .message__subject{ display:block; margin-top:4px; font-size:12.5px; font-weight:750; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .message__subject{ display:block; margin-top:4px; font-size:12.5px; font-weight:600; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .message__preview{ display:block; margin-top:3px; color:var(--muted); font-size:11.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
   /* Modal and toast */
@@ -728,14 +728,14 @@
     background:#fff;
     z-index:2;
   }
-  .sheet__title{ font-size:17px; font-weight:900; letter-spacing:-.01em; }
+  .sheet__title{ font-size:17px; font-weight:700; letter-spacing:-.01em; }
   .sheet__sub{ color:var(--muted); font-size:12.5px; margin-top:3px; }
   .sheet__close{ margin-left:auto; }
   .sheet__body{ padding:18px 20px 20px; }
   .detail-row{ display:flex; gap:14px; padding:11px 0; border-bottom:1px solid var(--line); font-size:13px; }
   .detail-row:last-child{ border-bottom:0; }
   .detail-row dt{ width:130px; flex-shrink:0; color:var(--muted); }
-  .detail-row dd{ font-weight:750; }
+  .detail-row dd{ font-weight:600; }
   .sheet-actions{ display:flex; gap:10px; margin-top:18px; }
   .toast{
     position:fixed;
@@ -756,7 +756,7 @@
     pointer-events:none;
     transition:opacity .22s, transform .22s;
     font-size:13px;
-    font-weight:800;
+    font-weight:600;
   }
   .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
   .toast .lucide{ width:16px; height:16px; color:#8DE8AE; }
@@ -770,11 +770,11 @@
   .fab-wrap.open .fab__plus{ transform:rotate(45deg); }
   .fab-menu{ display:flex; flex-direction:column; align-items:flex-end; gap:9px; max-height:0; overflow:hidden; opacity:0; transform:translateY(8px); transition:opacity .2s, transform .2s, max-height .2s; }
   .fab-wrap.open .fab-menu{ max-height:480px; opacity:1; transform:translateY(0); }
-  .fab-item{ display:flex; align-items:center; gap:10px; padding:10px 14px; border:1px solid var(--line); border-radius:11px; background:#fff; box-shadow:var(--shadow); color:var(--ink); font-size:13.5px; font-weight:750; cursor:pointer; white-space:nowrap; }
+  .fab-item{ display:flex; align-items:center; gap:10px; padding:10px 14px; border:1px solid var(--line); border-radius:11px; background:#fff; box-shadow:var(--shadow); color:var(--ink); font-size:13.5px; font-weight:600; cursor:pointer; white-space:nowrap; }
   .fab-item:hover{ background:var(--mint); border-color:var(--green); }
   .fab-item .lucide{ width:18px; height:18px; color:var(--green-2); }
   .fab-item__ico{ width:30px; height:30px; border-radius:8px; background:var(--mint); display:grid; place-items:center; flex-shrink:0; }
-  .fab-grouplabel{ align-self:flex-end; font-size:10.5px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:var(--muted-2); margin:5px 3px 0; }
+  .fab-grouplabel{ align-self:flex-end; font-size:10.5px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; color:var(--muted-2); margin:5px 3px 0; }
   .fab-scrim{ position:fixed; inset:0; z-index:255; background:rgba(18,33,24,.18); opacity:0; pointer-events:none; transition:opacity .2s; }
   .fab-scrim.show{ opacity:1; pointer-events:auto; }
 
@@ -843,7 +843,7 @@
       border-radius:8px;
       color:var(--muted);
       font-size:10.5px;
-      font-weight:850;
+      font-weight:700;
       position:relative;
     }
     .mobile-nav button.on{ color:var(--green-2); background:var(--mint); }
@@ -899,13 +899,13 @@
   .ustat__ic.blue{ background:var(--blue-soft); color:var(--blue); }
   .ustat__ic.amber{ background:var(--amber-soft); color:var(--amber); }
   .ustat__ic.green{ background:var(--mint); color:var(--green-2); }
-  .ustat__n{ font-size:21px; font-weight:850; line-height:1; }
-  .ustat__l{ font-size:12.5px; font-weight:750; color:var(--ink-2); margin-top:3px; }
+  .ustat__n{ font-size:21px; font-weight:700; line-height:1; }
+  .ustat__l{ font-size:12.5px; font-weight:600; color:var(--ink-2); margin-top:3px; }
   .ustat__s{ font-size:11px; color:var(--muted); margin-top:2px; }
 
   .usub{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px; }
   .seg{ display:inline-flex; gap:3px; padding:3px; background:var(--canvas-2); border:1px solid var(--line); border-radius:9px; }
-  .segb{ display:inline-flex; align-items:center; gap:6px; padding:7px 13px; border-radius:7px; font-size:13px; font-weight:750; color:var(--muted); transition:background .14s,color .14s; }
+  .segb{ display:inline-flex; align-items:center; gap:6px; padding:7px 13px; border-radius:7px; font-size:13px; font-weight:600; color:var(--muted); transition:background .14s,color .14s; }
   .segb:hover{ color:var(--ink); }
   .segb.on{ background:#fff; color:var(--ink); box-shadow:0 1px 2px rgba(20,30,20,.08); }
   .segb .count{ background:var(--green); color:#fff; }
@@ -917,14 +917,14 @@
   .cal-row{ display:grid; grid-template-columns:170px repeat(var(--days),minmax(30px,1fr)); }
   .cal-headrow{ position:sticky; top:0; z-index:3; }
   .cal-name{ position:sticky; left:0; z-index:2; display:flex; align-items:center; gap:9px; padding:7px 10px; background:#fff; border-bottom:1px solid var(--line); border-right:1px solid var(--line-2); }
-  .cal-name--h{ font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); background:var(--canvas); }
+  .cal-name--h{ font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); background:var(--canvas); }
   .cal-headrow .cal-name{ background:var(--canvas); }
   .cal-name .avatar{ width:26px; height:26px; font-size:10px; }
   .cal-name__t{ min-width:0; line-height:1.2; }
   .cal-name__t b{ font-size:12.5px; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .cal-name__t small{ font-size:10.5px; color:var(--muted); }
   .cal-h{ padding:5px 0; text-align:center; border-bottom:1px solid var(--line); border-right:1px solid var(--line); background:var(--canvas); }
-  .cal-h span{ display:block; font-size:9.5px; font-weight:700; color:var(--muted-2); text-transform:uppercase; }
+  .cal-h span{ display:block; font-size:9.5px; font-weight:600; color:var(--muted-2); text-transform:uppercase; }
   .cal-h b{ font-size:12px; }
   .cal-h.we{ background:#EFF2EE; }
   .cal-h.today{ background:var(--mint); color:var(--green-3); }
@@ -943,7 +943,7 @@
   .cal-fill.offen.e{ border-right:1.6px dashed currentColor; }
   .cal-top{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:12px; }
   .cal-nav{ display:flex; align-items:center; gap:6px; }
-  .cal-nav b{ min-width:128px; text-align:center; font-size:14.5px; font-weight:850; }
+  .cal-nav b{ min-width:128px; text-align:center; font-size:14.5px; font-weight:700; }
   .cal-nav .iconbtn{ width:32px; height:32px; }
   .cal-legend{ display:flex; gap:14px; flex-wrap:wrap; font-size:11.5px; color:var(--muted); font-weight:600; }
   .dot{ width:11px; height:11px; border-radius:3px; display:inline-block; margin-right:5px; vertical-align:-1px; }
@@ -960,7 +960,7 @@
   .req__top{ display:flex; align-items:center; gap:8px; }
   .req__top b{ font-size:13.5px; }
   .req__sub{ display:block; font-size:12px; color:var(--muted); margin-top:2px; }
-  .req__warn{ display:inline-flex; align-items:center; gap:5px; margin-top:5px; font-size:11.5px; font-weight:700; color:var(--amber); }
+  .req__warn{ display:inline-flex; align-items:center; gap:5px; margin-top:5px; font-size:11.5px; font-weight:600; color:var(--amber); }
   .req__warn .lucide{ width:13px; height:13px; }
   .req__side{ display:flex; align-items:center; gap:7px; flex-shrink:0; }
   .iconbtn.sm{ width:30px; height:30px; }
@@ -981,7 +981,7 @@
   .afprev{ background:var(--canvas); border:1px solid var(--line); border-radius:8px; padding:11px 13px; margin:4px 0 14px; font-size:13px; }
   .afprev.warn{ background:#FFFBF2; border-color:#F0DcA8; }
   .afprev__main b{ font-size:15px; }
-  .afprev__warn{ display:flex; align-items:center; gap:6px; margin-top:7px; font-weight:750; color:var(--amber); font-size:12.5px; }
+  .afprev__warn{ display:flex; align-items:center; gap:6px; margin-top:7px; font-weight:600; color:var(--amber); font-size:12.5px; }
   .afprev__warn .lucide{ width:14px; height:14px; }
   .afprev__hint{ margin-top:6px; font-size:11.5px; color:var(--muted); }
 
@@ -990,10 +990,10 @@
   .cal-name.clickable:hover{ background:var(--mint); }
   .cal-name__chev{ width:15px; height:15px; color:var(--muted-2); margin-left:auto; flex-shrink:0; }
   .cal-hint{ display:flex; align-items:center; gap:7px; margin:0 0 11px; padding:8px 11px; background:var(--canvas); border:1px solid var(--line); border-radius:9px; font-size:12px; color:var(--muted); }
-  .cal-hint b{ color:var(--ink-2); font-weight:750; }
+  .cal-hint b{ color:var(--ink-2); font-weight:600; }
   .cal-hint .lucide{ width:15px; height:15px; color:var(--green-2); flex-shrink:0; }
   .cal-fill.lead{ z-index:2; }
-  .cal-fill__lbl{ position:absolute; left:7px; top:50%; transform:translateY(-50%); font-size:10.5px; font-weight:800; letter-spacing:.005em; color:#fff; white-space:nowrap; pointer-events:none; z-index:3; text-shadow:0 1px 1.5px rgba(20,40,20,.28); }
+  .cal-fill__lbl{ position:absolute; left:7px; top:50%; transform:translateY(-50%); font-size:10.5px; font-weight:600; letter-spacing:.005em; color:#fff; white-space:nowrap; pointer-events:none; z-index:3; text-shadow:0 1px 1.5px rgba(20,40,20,.28); }
   .cal-fill.offen .cal-fill__lbl{ color:currentColor; text-shadow:none; }
 
   /* ----- Zeitraum-Auswahl per Ziehen/Antippen ----- */
@@ -1007,26 +1007,26 @@
   /* ----- Einzelkalender (Monats-Grid) ----- */
   .pcal-head{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:14px; }
   .pcal-person{ display:flex; align-items:center; gap:11px; }
-  .pcal-person__n{ font-size:16px; font-weight:850; }
+  .pcal-person__n{ font-size:16px; font-weight:700; }
   .pcal-person__s{ font-size:12.5px; color:var(--muted); }
   .pcal-head .btn{ margin-left:auto; }
-  .backlink{ display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:750; color:var(--green-2); padding:7px 11px; border:1px solid var(--line); border-radius:9px; background:#fff; }
+  .backlink{ display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:600; color:var(--green-2); padding:7px 11px; border:1px solid var(--line); border-radius:9px; background:#fff; }
   .backlink:hover{ background:var(--mint); }
   .backlink .lucide{ width:16px; height:16px; }
   .pcal-stats{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin-bottom:14px; }
   .pcal-stat{ background:var(--card); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); padding:13px 15px; }
-  .pcal-stat__n{ font-size:23px; font-weight:850; line-height:1; }
-  .pcal-stat__l{ font-size:12px; font-weight:700; color:var(--ink-2); margin-top:5px; }
+  .pcal-stat__n{ font-size:23px; font-weight:700; line-height:1; }
+  .pcal-stat__l{ font-size:12px; font-weight:600; color:var(--ink-2); margin-top:5px; }
   .pcal-stat__l small{ color:var(--muted); font-weight:600; }
   .pcal-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:6px; }
-  .pcal-wd{ text-align:center; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); padding:2px 0 4px; }
+  .pcal-wd{ text-align:center; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); padding:2px 0 4px; }
   .pcal-day{ position:relative; min-height:62px; border:1px solid var(--line); border-radius:9px; padding:6px 7px; background:#fff; }
   .pcal-day--pad{ border:none; background:transparent; }
   .pcal-day.we{ background:#F7F9F6; }
   .pcal-day.today{ border-color:var(--green); box-shadow:0 0 0 2px rgba(22,163,74,.16); }
-  .pcal-day__n{ font-size:12.5px; font-weight:750; color:var(--ink-2); }
+  .pcal-day__n{ font-size:12.5px; font-weight:600; color:var(--ink-2); }
   .pcal-day.today .pcal-day__n{ color:var(--green-3); }
-  .pcal-day__tag{ position:absolute; left:5px; right:5px; bottom:5px; font-size:10px; font-weight:800; color:#fff; padding:3px 5px; border-radius:6px; line-height:1.25; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .pcal-day__tag{ position:absolute; left:5px; right:5px; bottom:5px; font-size:10px; font-weight:600; color:#fff; padding:3px 5px; border-radius:6px; line-height:1.25; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .pcal-day.has{ cursor:pointer; }
   .pcal-day.has.urlaub{ background:color-mix(in srgb,#16A34A 13%,#fff); }
   .pcal-day.has.krank{ background:color-mix(in srgb,#C24141 13%,#fff); }
@@ -1039,11 +1039,11 @@
   .pcal-day.has.off.urlaub .pcal-day__tag{ color:#16A34A; }
   .pcal-day.has.off.krank .pcal-day__tag{ color:#C24141; }
   .pcal-day.has.off.sonder .pcal-day__tag{ color:#7C3AED; }
-  .pcal-listhead{ font-size:13px; font-weight:800; color:var(--ink-2); margin:20px 0 10px; }
+  .pcal-listhead{ font-size:13px; font-weight:600; color:var(--ink-2); margin:20px 0 10px; }
 
   /* ----- AU-Foto-Upload ----- */
-  .field .opt{ font-size:10.5px; font-weight:700; color:var(--muted); background:var(--canvas-2); border:1px solid var(--line); padding:1px 7px; border-radius:999px; margin-left:6px; vertical-align:1px; }
-  .upload__btn{ display:flex; align-items:center; justify-content:center; gap:8px; width:100%; padding:13px; border:1.6px dashed var(--green); border-radius:10px; background:var(--mint); color:var(--green-3); font-size:13.5px; font-weight:800; cursor:pointer; }
+  .field .opt{ font-size:10.5px; font-weight:600; color:var(--muted); background:var(--canvas-2); border:1px solid var(--line); padding:1px 7px; border-radius:999px; margin-left:6px; vertical-align:1px; }
+  .upload__btn{ display:flex; align-items:center; justify-content:center; gap:8px; width:100%; padding:13px; border:1.6px dashed var(--green); border-radius:10px; background:var(--mint); color:var(--green-3); font-size:13.5px; font-weight:600; cursor:pointer; }
   .upload__btn:hover{ background:#E1F3E8; }
   .upload__btn .lucide{ width:18px; height:18px; }
   .upload__hint{ display:flex; align-items:center; gap:6px; margin-top:7px; font-size:11.5px; color:var(--muted); }
@@ -1052,10 +1052,10 @@
   .aufile img{ width:46px; height:46px; object-fit:cover; border-radius:8px; flex-shrink:0; }
   .aufile__t{ min-width:0; line-height:1.3; }
   .aufile__t b{ font-size:12.5px; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .aufile__t small{ font-size:11px; color:var(--green-2); font-weight:700; }
+  .aufile__t small{ font-size:11px; color:var(--green-2); font-weight:600; }
   .aufile .iconbtn{ margin-left:auto; }
   .authumb{ width:50px; height:50px; object-fit:cover; border-radius:8px; border:1px solid var(--line); cursor:pointer; }
-  .aupin{ display:inline-flex; align-items:center; gap:4px; color:var(--muted); font-weight:700; }
+  .aupin{ display:inline-flex; align-items:center; gap:4px; color:var(--muted); font-weight:600; }
   .aupin .lucide{ width:13px; height:13px; }
 
   /* ===== Zeiterfassung ===== */
@@ -1064,20 +1064,20 @@
   .clockcard.running{ background:#fff; border:1.5px solid var(--green); }
   .clockcard.done{ background:var(--mint); border:1px solid var(--line); }
   .clockcard__top{ display:flex; align-items:center; justify-content:space-between; margin-bottom:4px; }
-  .clockcard__lbl{ display:inline-flex; align-items:center; gap:7px; font-size:12.5px; font-weight:800; letter-spacing:.01em; }
+  .clockcard__lbl{ display:inline-flex; align-items:center; gap:7px; font-size:12.5px; font-weight:600; letter-spacing:.01em; }
   .clockcard__lbl .lucide{ width:16px; height:16px; }
   .clockcard.in .clockcard__lbl{ color:#BFEFD0; }
-  .clockcard__time{ font-size:19px; font-weight:900; font-variant-numeric:tabular-nums; }
+  .clockcard__time{ font-size:19px; font-weight:700; font-variant-numeric:tabular-nums; }
   .clockcard__sub{ font-size:12.5px; opacity:.85; margin-bottom:13px; }
   .clockcard.in .clockcard__sub{ color:#D6F2E0; }
   .clockcard__site{ display:flex; align-items:center; gap:8px; font-size:15px; margin:2px 0 9px; }
   .clockcard__site .lucide{ width:17px; height:17px; color:var(--green-2); }
   .clockcard__meta{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-bottom:13px; }
-  .clockcard__since{ font-size:11.5px; color:var(--muted); font-weight:700; }
+  .clockcard__since{ font-size:11.5px; color:var(--muted); font-weight:600; }
   .clockcard__row{ display:flex; gap:9px; flex-wrap:wrap; }
-  .clockcard__ok{ display:inline-flex; align-items:center; gap:6px; margin-top:10px; font-size:12.5px; font-weight:800; color:var(--green-2); }
+  .clockcard__ok{ display:inline-flex; align-items:center; gap:6px; margin-top:10px; font-size:12.5px; font-weight:600; color:var(--green-2); }
   .clockcard__ok .lucide{ width:15px; height:15px; }
-  .clockbtn{ display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:12px 16px; border-radius:11px; font-size:14px; font-weight:850; cursor:pointer; border:1px solid transparent; }
+  .clockbtn{ display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:12px 16px; border-radius:11px; font-size:14px; font-weight:700; cursor:pointer; border:1px solid transparent; }
   .clockbtn .lucide{ width:17px; height:17px; }
   .clockbtn.go{ width:100%; background:#fff; color:var(--green-3); }
   .clockbtn.go:hover{ background:#F0FBF4; }
@@ -1085,11 +1085,11 @@
   .clockbtn.pause,.clockbtn.site,.clockbtn.proto{ background:var(--canvas); border-color:var(--line); color:var(--ink); }
   .clockbtn.proto{ width:100%; background:var(--green); color:#fff; border:none; }
   .clockbtn.pause:hover,.clockbtn.site:hover{ background:var(--mint); border-color:var(--green); }
-  .rz{ display:inline-flex; align-items:center; gap:5px; font-size:11.5px; font-weight:800; color:var(--green-3); background:var(--mint); padding:3px 9px; border-radius:999px; }
+  .rz{ display:inline-flex; align-items:center; gap:5px; font-size:11.5px; font-weight:600; color:var(--green-3); background:var(--mint); padding:3px 9px; border-radius:999px; }
   .rz .lucide{ width:13px; height:13px; }
   .rz.sm{ padding:2px 7px; font-size:11px; }
   .rz.done{ color:#1D6FE0; background:#EAF1FE; }
-  .geo{ display:inline-flex; align-items:center; gap:5px; font-size:11.5px; font-weight:800; padding:3px 9px; border-radius:999px; }
+  .geo{ display:inline-flex; align-items:center; gap:5px; font-size:11.5px; font-weight:600; padding:3px 9px; border-radius:999px; }
   .geo .lucide{ width:13px; height:13px; }
   .geo.ok{ color:var(--green-3); background:var(--mint); }
   .geo.warn{ color:#B45309; background:#FEF3E2; }
@@ -1123,7 +1123,7 @@
   .sitepick__txt b{ font-size:14.5px; }
   .sitepick__txt small{ font-size:12px; color:var(--muted); }
   .sitepick__chips{ display:flex; gap:10px; margin-top:3px; }
-  .sitepick__chips span{ display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:750; color:var(--green-3); }
+  .sitepick__chips span{ display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:600; color:var(--green-3); }
   .sitepick__chips .lucide{ width:13px; height:13px; }
   .sitepick > .lucide{ width:18px; height:18px; color:var(--muted-2); flex-shrink:0; }
   .addrrow{ display:flex; align-items:center; gap:11px; width:100%; text-align:left; padding:12px 13px; border:1px solid var(--line); border-radius:11px; background:var(--canvas); cursor:pointer; margin-bottom:13px; }
@@ -1134,12 +1134,12 @@
   .addrrow small{ font-size:11.5px; color:var(--muted); }
   .addrrow__nav{ width:18px; height:18px; color:var(--green-2); }
   .taskbox{ border:1px solid var(--line); border-radius:11px; padding:11px 13px; margin-bottom:13px; background:#fff; }
-  .taskbox__h{ display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:850; margin-bottom:7px; }
+  .taskbox__h{ display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:700; margin-bottom:7px; }
   .taskbox__h .lucide{ width:15px; height:15px; color:var(--green-2); }
   .taskline{ display:flex; align-items:center; gap:5px; font-size:13px; padding:3px 0; color:var(--ink); }
   .taskline .lucide{ width:15px; height:15px; color:var(--green); }
   .load{ border:1px solid var(--line); border-radius:11px; padding:11px 13px; margin-bottom:13px; background:#FAFEFB; }
-  .load__h{ display:flex; flex-wrap:wrap; align-items:center; gap:7px; font-size:12.5px; font-weight:850; margin-bottom:8px; }
+  .load__h{ display:flex; flex-wrap:wrap; align-items:center; gap:7px; font-size:12.5px; font-weight:700; margin-bottom:8px; }
   .load__h .lucide{ width:15px; height:15px; color:var(--green-2); }
   .load__h small{ font-weight:600; color:var(--muted); font-size:11px; }
   .loaditem{ display:flex; align-items:center; gap:10px; padding:7px 0; font-size:13px; cursor:pointer; border-top:1px solid var(--line); }
@@ -1152,15 +1152,15 @@
   .rztoggle__txt b .lucide{ width:15px; height:15px; color:var(--green-2); }
   .rztoggle__txt small{ font-size:11.5px; color:var(--muted); }
   .geonote{ display:flex; align-items:flex-start; gap:8px; padding:11px 13px; background:var(--mint); border-radius:10px; font-size:12px; color:var(--green-3); line-height:1.45; margin-bottom:4px; }
-  .geonote b{ font-weight:850; }
+  .geonote b{ font-weight:700; }
   .geonote .lucide{ width:16px; height:16px; flex-shrink:0; margin-top:1px; }
   .protobox{ border:1px solid var(--line); border-radius:11px; padding:12px 13px; margin:4px 0 6px; background:#FAFEFB; }
   .protobox.empty2,.protobox.empty2 .lucide{ color:var(--muted); }
   .protobox.empty2{ display:flex; align-items:center; gap:8px; font-size:12.5px; }
-  .protobox__h{ display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:850; margin-bottom:6px; }
+  .protobox__h{ display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:700; margin-bottom:6px; }
   .protobox__h .lucide{ width:15px; height:15px; color:var(--green-2); }
   .protobox__txt{ font-size:13px; line-height:1.5; }
-  .protodmg{ display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin-top:9px; padding-top:9px; border-top:1px solid var(--line); font-size:12.5px; font-weight:750; color:#B45309; }
+  .protodmg{ display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin-top:9px; padding-top:9px; border-top:1px solid var(--line); font-size:12.5px; font-weight:600; color:#B45309; }
   .protodmg .lucide{ width:15px; height:15px; }
   .protodmg img{ width:54px; height:54px; object-fit:cover; border-radius:8px; }
   .voicewrap{ position:relative; }
@@ -1186,6 +1186,36 @@
   .dmgfields{ margin-top:11px; display:flex; flex-direction:column; gap:9px; }
   .dmgfields input[type=text],.dmgfields input:not([type]){ width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:9px; font:inherit; font-size:13.5px; box-sizing:border-box; }
   .upload__btn.sm{ padding:10px; font-size:12.5px; }
+  /* ---- Kundenkartei ---- */
+  .btn.sm{ padding:9px 13px; font-size:12.5px; }
+  .clink{ color:var(--green-2); font-weight:600; cursor:pointer; text-decoration:underline; text-underline-offset:2px; }
+  .cust-site{ border:1px solid var(--line); border-radius:12px; padding:12px 13px; margin-bottom:11px; background:var(--canvas); }
+  .cust-site__top{ display:flex; flex-wrap:wrap; align-items:baseline; gap:6px 10px; margin-bottom:9px; }
+  .cust-site__top b{ display:inline-flex; align-items:center; gap:7px; font-size:13.5px; }
+  .cust-site__top b .lucide{ width:15px; height:15px; color:var(--green-2); }
+  .cust-site__top span{ font-size:11.5px; color:var(--muted); }
+  .cust-crew{ display:flex; flex-direction:column; gap:7px; margin-bottom:10px; }
+  .crow{ display:flex; align-items:center; gap:10px; width:100%; text-align:left; padding:8px 10px; border:1px solid var(--line); border-radius:9px; background:#fff; cursor:pointer; }
+  .crow:hover{ border-color:var(--green); }
+  .crow .avatar{ width:30px; height:30px; font-size:11px; }
+  .crow__main{ display:flex; flex-direction:column; min-width:0; flex:1; }
+  .crow__main b{ font-size:12.5px; }
+  .crow__main small{ font-size:11px; color:var(--muted); }
+  .crow__st{ font-size:11.5px; color:var(--muted); white-space:nowrap; }
+  .crow__live{ display:inline-flex; align-items:center; gap:5px; color:var(--green-2); font-weight:600; }
+  .cust-empty{ font-size:12.5px; color:var(--muted); padding:9px 11px; border:1px dashed var(--line); border-radius:9px; margin-bottom:10px; }
+  .timeline{ display:flex; flex-direction:column; gap:0; }
+  .tl-item{ display:flex; gap:11px; padding-bottom:14px; position:relative; }
+  .tl-item:not(:last-child)::before{ content:''; position:absolute; left:13px; top:28px; bottom:0; width:1.5px; background:var(--line); }
+  .tl-ico{ flex:0 0 27px; width:27px; height:27px; border-radius:50%; display:grid; place-items:center; background:#F0F3EF; color:#5A685D; z-index:1; }
+  .tl-ico .lucide{ width:14px; height:14px; }
+  .tl-ico.wa{ background:#E6F7EC; color:#16A34A; }
+  .tl-ico.mail{ background:var(--blue-soft); color:var(--blue); }
+  .tl-ico.web{ background:var(--violet-soft); color:var(--violet); }
+  .tl-ico.tel{ background:var(--amber-soft); color:var(--amber); }
+  .tl-body{ flex:1; min-width:0; padding-top:3px; }
+  .tl-text{ font-size:12.5px; color:var(--ink); line-height:1.4; }
+  .tl-date{ font-size:11px; color:var(--muted-2); margin-top:2px; }
 </style>
 </head>
 <body>
@@ -1343,16 +1373,16 @@ function resetAbsences(){
 const NOW = '11:12';
 // Baustellen = aktive Kunden-Einsatzorte (mit Adresse, Geo, Aufgaben & Material zum Beladen)
 const sites = [
-  {id:'s1', customer:'Familie Brandt', label:'Pflaster Brandt', addr:'Hauptstr. 12, 22926 Ahrensburg', lat:53.6745, lng:10.2389,
+  {id:'s1', customerId:'c1', customer:'Familie Brandt', label:'Pflaster Brandt', addr:'Hauptstr. 12, 22926 Ahrensburg', lat:53.6745, lng:10.2389,
    tasks:['Pflasterfläche 60 m² verlegen','Randsteine setzen','Fläche abrütteln'],
    material:['Pflastersteine grau · 3 Paletten','Splitt 0/5 · 1 t','Randsteine · 40 lfm','Rüttelplatte','Kantenschneider']},
-  {id:'s2', customer:'Garten Schmidt', label:'Garten Schmidt', addr:'Am Wäldchen 4, 22846 Norderstedt', lat:53.7065, lng:10.0112,
+  {id:'s2', customerId:'c2', customer:'Familie Schmidt', label:'Garten Schmidt', addr:'Am Wäldchen 4, 22846 Norderstedt', lat:53.7065, lng:10.0112,
    tasks:['Beet ausheben','Mutterboden auffüllen','Rollrasen verlegen'],
    material:['Rollrasen · 120 m²','Mutterboden · 4 m³','Beeteinfassung · 30 lfm','Spaten, Rechen, Schubkarre']},
-  {id:'s3', customer:'Herr Petersen', label:'Hecke Petersen', addr:'Dorfstr. 8, 22359 Volksdorf', lat:53.6512, lng:10.1789,
+  {id:'s3', customerId:'c3', customer:'Herr Petersen', label:'Hecke Petersen', addr:'Dorfstr. 8, 22359 Volksdorf', lat:53.6512, lng:10.1789,
    tasks:['Hecke auf 1,80 m schneiden','Schnittgut häckseln & abfahren'],
    material:['Heckenschere','Astschere','Häcksler','Anhänger']},
-  {id:'s0', customer:'Bauhof / Werkstatt', label:'Bauhof', addr:'Gewerbestr. 5, 22844 Norderstedt', lat:53.7012, lng:9.9842,
+  {id:'s0', customerId:null, customer:'Bauhof / Werkstatt', label:'Bauhof', addr:'Gewerbestr. 5, 22844 Norderstedt', lat:53.7012, lng:9.9842,
    tasks:['Maschinen warten','Material kommissionieren'], material:[]},
 ];
 // Stempel-Einträge heute · in/out HH:MM · ruest = Rüstzeit (Beladen+Anfahrt) · dist km zur Baustelle · geoOk = vor Ort
@@ -1389,18 +1419,56 @@ const crews = [
   {id:'k3', label:'Kolonne 3', meta:'3 Mann'},
 ];
 const inbox = [
-  {id:1,ch:'wa',from:'Familie Brandt',sub:'Gartenneuanlage gewünscht',pre:'Hallo, wir möchten unseren Garten neu anlegen lassen. Können Sie kurzfristig vorbeikommen?',time:'vor 20 Min.',unread:true},
-  {id:2,ch:'mail',from:'Stadtwerke Nord',sub:'Ausschreibung Grünpflege 2026/27',pre:'Sehr geehrte Damen und Herren, anbei die Unterlagen zur Ausschreibung.',time:'vor 1 Std.',unread:true},
-  {id:3,ch:'tel',from:'Herr Petersen',sub:'Rückruf erbeten - Heckenschnitt',pre:'Verpasster Anruf · Mailbox: wegen dem Heckenschnitt im Juni.',time:'vor 2 Std.',unread:true},
-  {id:4,ch:'web',from:'Anja Bauer',sub:'Anfrage über Website',pre:'Terrasse pflastern, ca. 40 m², Wunschtermin im Juli.',time:'gestern',unread:false},
-  {id:5,ch:'wa',from:'Klaus Möller',sub:'Frage zu Angebot',pre:'Passt der Termin am Freitag noch für die Besichtigung?',time:'gestern',unread:false},
+  {id:1,ch:'wa',customerId:'c1',from:'Familie Brandt',sub:'Gartenneuanlage gewünscht',pre:'Hallo, wir möchten unseren Garten neu anlegen lassen. Können Sie kurzfristig vorbeikommen?',time:'vor 20 Min.',unread:true},
+  {id:2,ch:'mail',customerId:'c4',from:'Stadtwerke Nord',sub:'Ausschreibung Grünpflege 2026/27',pre:'Sehr geehrte Damen und Herren, anbei die Unterlagen zur Ausschreibung.',time:'vor 1 Std.',unread:true},
+  {id:3,ch:'tel',customerId:'c3',from:'Herr Petersen',sub:'Rückruf erbeten - Heckenschnitt',pre:'Verpasster Anruf · Mailbox: wegen dem Heckenschnitt im Juni.',time:'vor 2 Std.',unread:true},
+  {id:4,ch:'web',customerId:'c5',from:'Anja Bauer',sub:'Anfrage über Website',pre:'Terrasse pflastern, ca. 40 m², Wunschtermin im Juli.',time:'gestern',unread:false},
+  {id:5,ch:'wa',customerId:'c6',from:'Klaus Möller',sub:'Frage zu Angebot',pre:'Passt der Termin am Freitag noch für die Besichtigung?',time:'gestern',unread:false},
 ];
+// Kundenstamm – jeder Kunde hängt an Baustellen (sites), Anfragen (inbox) & Verlauf zusammen
 const customers = [
-  {name:'Familie Brandt',city:'Ahrensburg',type:['Neukunde','b'],project:'Gartenneuanlage',value:'~ 18.500 €',status:['Anfrage','a']},
-  {name:'Stadtwerke Nord',city:'Hamburg',type:['Bestand','g'],project:'Grünpflege Rahmenvertrag',value:'42.000 € / Jahr',status:['Aktiv','g']},
-  {name:'Herr Petersen',city:'Volksdorf',type:['Bestand','g'],project:'Heckenschnitt jährlich',value:'1.200 €',status:['Aktiv','g']},
-  {name:'Anja Bauer',city:'Pinneberg',type:['Neukunde','b'],project:'Terrasse pflastern',value:'~ 9.000 €',status:['Angebot','a']},
-  {name:'Klaus Möller',city:'Reinbek',type:['Bestand','g'],project:'Mauerbau + Beet',value:'6.400 €',status:['Aktiv','g']},
+  {id:'c1', name:'Familie Brandt', contact:'Sabine Brandt', city:'Ahrensburg',
+   addr:'Hauptstr. 12, 22926 Ahrensburg', phone:'04102 445566', email:'s.brandt@web.de',
+   type:'Bestand', since:'2024', value:'14.200 € offen', status:['Aktiv','g'],
+   history:[
+     {date:'03.06.2026', ch:'wa',   text:'Neue Anfrage: Gartenneuanlage gewünscht'},
+     {date:'12.05.2026', ch:'note', text:'Pflasterarbeiten Einfahrt beauftragt · 14.200 €'},
+     {date:'28.04.2026', ch:'tel',  text:'Aufmaß-Termin vor Ort vereinbart'},
+   ]},
+  {id:'c2', name:'Familie Schmidt', contact:'Markus Schmidt', city:'Norderstedt',
+   addr:'Am Wäldchen 4, 22846 Norderstedt', phone:'040 5267788', email:'m.schmidt@gmx.de',
+   type:'Bestand', since:'2023', value:'21.800 €', status:['Aktiv','g'],
+   history:[
+     {date:'02.06.2026', ch:'note', text:'Neuanlage gestartet · Kolonne 1 vor Ort'},
+     {date:'15.05.2026', ch:'mail', text:'Angebot Gartenneuanlage angenommen'},
+   ]},
+  {id:'c3', name:'Herr Petersen', contact:'Klaus Petersen', city:'Volksdorf',
+   addr:'Dorfstr. 8, 22359 Volksdorf', phone:'040 6039922', email:'petersen@t-online.de',
+   type:'Bestand', since:'2021', value:'1.200 € / Jahr', status:['Aktiv','g'],
+   history:[
+     {date:'03.06.2026', ch:'tel',  text:'Rückruf erbeten · Heckenschnitt Juni'},
+     {date:'10.06.2025', ch:'note', text:'Heckenschnitt jährlich · Wartungsvertrag'},
+   ]},
+  {id:'c4', name:'Stadtwerke Nord', contact:'Dr. Reimers', city:'Hamburg',
+   addr:'Überseering 30, 22297 Hamburg', phone:'040 808000', email:'vergabe@stadtwerke-nord.de',
+   type:'Bestand', since:'2022', value:'42.000 € / Jahr', status:['Aktiv','g'],
+   history:[
+     {date:'03.06.2026', ch:'mail', text:'Ausschreibung Grünpflege 2026/27 eingegangen'},
+     {date:'01.01.2026', ch:'note', text:'Rahmenvertrag Grünpflege läuft'},
+   ]},
+  {id:'c5', name:'Anja Bauer', contact:'Anja Bauer', city:'Pinneberg',
+   addr:'Rosenweg 5, 25421 Pinneberg', phone:'04101 332211', email:'anja.bauer@web.de',
+   type:'Neukunde', since:'2026', value:'~ 9.000 €', status:['Angebot','a'],
+   history:[
+     {date:'02.06.2026', ch:'web',  text:'Website-Anfrage: Terrasse pflastern, ca. 40 m²'},
+   ]},
+  {id:'c6', name:'Klaus Möller', contact:'Klaus Möller', city:'Reinbek',
+   addr:'Buchenallee 2, 21465 Reinbek', phone:'040 7228899', email:'k.moeller@gmx.de',
+   type:'Bestand', since:'2023', value:'6.400 €', status:['Aktiv','g'],
+   history:[
+     {date:'02.06.2026', ch:'wa',   text:'Frage zu Angebot · Besichtigung Freitag?'},
+     {date:'20.05.2026', ch:'note', text:'Mauerbau + Beet angefragt'},
+   ]},
 ];
 
 let currentView = 'heute';
@@ -1600,10 +1668,10 @@ const VIEWS = {
     </div>`,
 
   kunden: () => `
-    <div class="pagehead"><div><h2>Kunden</h2><p>Anfragen aus WhatsApp, E-Mail, Telefon und Website plus Kundenliste.</p></div></div>
+    <div class="pagehead"><div><h2>Kunden</h2><p>Anfragen aus WhatsApp, E-Mail, Telefon &amp; Website – und der komplette Kundenstamm mit Baustellen, Team vor Ort und Verlauf.</p></div></div>
     <div class="tabs" id="customerTabs">
       ${customerTabButton('anfragen','Anfragen-Inbox',inbox.filter(m => m.unread).length,activeCustomerTab)}
-      ${customerTabButton('liste','Kundenliste',customers.length,activeCustomerTab)}
+      ${customerTabButton('liste','Kundenstamm',customers.length,activeCustomerTab)}
     </div>
     <div id="customerBody"></div>`,
 };
@@ -1923,7 +1991,7 @@ function openAbsence(id){
         ${a.note?`<div class="detail-row"><dt>Notiz</dt><dd>${a.note}</dd></div>`:''}
         ${a.au?`<div class="detail-row"><dt>AU-Bescheinigung</dt><dd>${auImages[a.id]?`<img class="authumb" src="${auImages[a.id]}" alt="AU" onclick="viewAu(${a.id})" title="Größer ansehen">`:`<span class="aupin"><i data-lucide="paperclip"></i> ${a.au}</span>`}</dd></div>`:''}
         ${a.type==='urlaub'?`<div class="detail-row"><dt>Resturlaub</dt><dd>${vacInfo(a.empId).rest} Tage übrig</dd></div>`:''}
-        ${warn?`<div class="detail-row"><dt>Hinweis</dt><dd style="color:var(--amber);font-weight:750"><i data-lucide="alert-triangle" style="width:14px;height:14px;vertical-align:-2px"></i> ${warn}</dd></div>`:''}
+        ${warn?`<div class="detail-row"><dt>Hinweis</dt><dd style="color:var(--amber);font-weight:600"><i data-lucide="alert-triangle" style="width:14px;height:14px;vertical-align:-2px"></i> ${warn}</dd></div>`:''}
       </dl>
       <div class="sheet-actions">
         ${a.status === 'offen'
@@ -2051,10 +2119,22 @@ function customerTab(tab){
 }
 const CUSTOMERS = {
   anfragen: () => `<div class="inbox">${inbox.map(messageCard).join('')}</div>`,
-  liste: () => `<div class="panel table-wrap"><table><thead><tr><th>Kunde</th><th>Ort</th><th>Typ</th><th>Projekt</th><th>Wert</th><th>Status</th></tr></thead><tbody>
-    ${customers.map(c => `<tr class="clickable" onclick="toast('Kundenakte folgt')"><td><span class="person-cell"><span class="avatar">${initials(c.name)}</span>${c.name}</span></td><td>${c.city}</td><td><span class="pill ${c.type[1]}">${c.type[0]}</span></td><td>${c.project}</td><td>${c.value}</td><td><span class="pill ${c.status[1]}">${c.status[0]}</span></td></tr>`).join('')}
+  liste: () => `<div class="panel table-wrap"><table><thead><tr><th>Kunde</th><th>Ort</th><th>Typ</th><th>Baustelle heute</th><th>Wert</th><th>Status</th></tr></thead><tbody>
+    ${customers.map(c => {
+      const sts = sitesForCustomer(c.id);
+      const crew = sts.flatMap(s => crewOnSite(s.id));
+      const baustelle = sts.length ? `${sts[0].label}${crew.length ? ` · <b style="color:var(--green-2)">${crew.length} vor Ort</b>` : ''}` : '<span style="color:var(--muted-2)">—</span>';
+      return `<tr class="clickable" onclick="openCustomer('${c.id}')"><td><span class="person-cell"><span class="avatar">${initials(c.name)}</span>${c.name}</span></td><td>${c.city}</td><td><span class="pill ${c.type === 'Neukunde' ? 'b' : 'n'}">${c.type}</span></td><td>${baustelle}</td><td>${c.value}</td><td><span class="pill ${c.status[1]}">${c.status[0]}</span></td></tr>`;
+    }).join('')}
   </tbody></table></div>`,
 };
+/* ---- Kunden-Querverbindungen (Team ↔ Kunden) ---- */
+function customer(id){ return customers.find(c => c.id === id); }
+function sitesForCustomer(id){ return sites.filter(s => s.customerId === id); }
+function requestsForCustomer(id){ return inbox.filter(m => m.customerId === id); }
+function crewOnSite(siteId){ return timeEntries.filter(e => e.siteId === siteId && !e.out); }
+function entriesOnSite(siteId){ return timeEntries.filter(e => e.siteId === siteId); }
+function empEntryToday(empId){ return timeEntries.find(e => e.empId === empId); }
 function messageCard(m){
   const channel = {wa:['WhatsApp','message-circle'],mail:['E-Mail','mail'],tel:['Telefon','phone'],web:['Website','globe']}[m.ch];
   return `<button class="message ${m.unread ? 'unread' : ''}" onclick="openMessage(${m.id})">
@@ -2383,7 +2463,7 @@ function clockCard(){
     <div class="clockcard__meta">${geoBadge(myEntry)}${myEntry.ruest?`<span class="rz"><i data-lucide="truck"></i> mit Rüstzeit</span>`:''}<span class="clockcard__since">seit ${myEntry.in} Uhr${myEntry.pauseMin?` · ${myEntry.pauseMin} Min Pause`:''}</span></div>
     <div class="clockcard__row">
       <button class="clockbtn pause" onclick="myPause()"><i data-lucide="coffee"></i> Pause +30</button>
-      <button class="clockbtn site" onclick="openSiteSheet('${s.id}')"><i data-lucide="folder-open"></i> Kundenkartei</button>
+      <button class="clockbtn site" onclick="openSiteSheet('${s.id}')"><i data-lucide="package"></i> Baustelle &amp; Material</button>
       <button class="clockbtn stop" onclick="myClockOut()"><i data-lucide="square"></i> Ausstempeln</button>
     </div>
   </div>`;
@@ -2478,12 +2558,12 @@ function openTimeEntry(id){
       <dl>
         <div class="detail-row"><dt>Baustelle</dt><dd>${s.customer} · ${s.label}</dd></div>
         <div class="detail-row"><dt>Zeit</dt><dd>${e.in}${e.out?' – '+e.out:' – läuft'} Uhr · <b>${hoursStr(min)}</b>${e.pauseMin?` · ${e.pauseMin} Min Pause`:''}</dd></div>
-        <div class="detail-row"><dt>Standort</dt><dd>${e.geoOk?`<span style="color:var(--green-2);font-weight:800"><i data-lucide="map-pin" style="width:14px;height:14px;vertical-align:-2px"></i> vor Ort bestätigt · ${distStr(e.dist)} zur Baustelle</span>`:`<span style="color:var(--amber);font-weight:800"><i data-lucide="alert-triangle" style="width:14px;height:14px;vertical-align:-2px"></i> ${distStr(e.dist)} von der Baustelle entfernt – bitte prüfen</span>`}</dd></div>
+        <div class="detail-row"><dt>Standort</dt><dd>${e.geoOk?`<span style="color:var(--green-2);font-weight:600"><i data-lucide="map-pin" style="width:14px;height:14px;vertical-align:-2px"></i> vor Ort bestätigt · ${distStr(e.dist)} zur Baustelle</span>`:`<span style="color:var(--amber);font-weight:600"><i data-lucide="alert-triangle" style="width:14px;height:14px;vertical-align:-2px"></i> ${distStr(e.dist)} von der Baustelle entfernt – bitte prüfen</span>`}</dd></div>
         <div class="detail-row"><dt>Adresse</dt><dd>${s.addr}</dd></div>
       </dl>
       ${p ? `<div class="protobox"><div class="protobox__h"><i data-lucide="clipboard-check"></i> Tagesprotokoll</div><div class="protobox__txt">${p.text||'—'}</div>${p.photos.length?`<div class="protogrid">${p.photos.map(src=>`<img src="${src}" alt="Baustelle">`).join('')}</div>`:''}${p.damageText?`<div class="protodmg"><i data-lucide="alert-octagon"></i> Schaden: ${p.damageText}${p.damagePhoto?`<img src="${p.damagePhoto}" alt="Schaden">`:''}</div>`:''}</div>` : `<div class="protobox empty2"><i data-lucide="clipboard-list"></i> Noch kein Tagesprotokoll abgegeben.</div>`}
       <div class="sheet-actions">
-        <button class="btn ghost" style="flex:1" onclick="openSiteSheet('${s.id}')"><i data-lucide="folder-open"></i> Kundenkartei</button>
+        <button class="btn ghost" style="flex:1" onclick="${s.customerId?`openCustomer('${s.customerId}')`:`openSiteSheet('${s.id}')`}"><i data-lucide="folder-open"></i> Kundenkartei</button>
         <button class="btn ghost" style="flex:1" onclick="toast('Mitarbeiter anrufen')"><i data-lucide="phone"></i> Anrufen</button>
       </div>
     </div>`);
@@ -2501,7 +2581,54 @@ function openSiteSheet(siteId){
       <button class="addrrow" onclick="toast('Route in Karten öffnen')"><i data-lucide="map-pin"></i><span><b>${s.addr}</b><small>Tippen für Route</small></span><i data-lucide="navigation" class="addrrow__nav"></i></button>
       ${s.tasks.length?`<div class="taskbox"><div class="taskbox__h"><i data-lucide="list-checks"></i> Aufgaben</div>${s.tasks.map(t=>`<div class="taskline"><i data-lucide="dot"></i> ${t}</div>`).join('')}</div>`:''}
       ${s.material.length?`<div class="taskbox"><div class="taskbox__h"><i data-lucide="package"></i> Material</div>${s.material.map(m=>`<div class="taskline"><i data-lucide="dot"></i> ${m}</div>`).join('')}</div>`:''}
-      <div class="sheet-actions"><button class="btn ghost" style="flex:1" onclick="closeSheet();setView('kunden')"><i data-lucide="external-link"></i> Im Kundenmodul öffnen</button></div>
+      <div class="sheet-actions"><button class="btn ghost" style="flex:1" onclick="${s.customerId?`openCustomer('${s.customerId}')`:`closeSheet();setView('kunden')`}"><i data-lucide="folder-open"></i> Kundenkartei öffnen</button></div>
+    </div>`);
+}
+/* ---- Kundenkartei: echter Kunde mit Baustellen, Team vor Ort, Anfragen & Verlauf ---- */
+function openCustomer(custId){
+  const c = customer(custId); if(!c) return;
+  const sts = sitesForCustomer(custId);
+  const reqs = requestsForCustomer(custId);
+  const chIco = {wa:'message-circle',mail:'mail',tel:'phone',web:'globe',note:'sticky-note'};
+  const sitesHtml = sts.length ? sts.map(s => {
+    const crew = entriesOnSite(s.id);
+    const crewHtml = crew.length ? crew.map(e => {
+      const em = emp(e.empId);
+      return `<button class="crow" onclick="closeSheet();teamTab('zeit');setTimeout(()=>openTimeEntry(${e.id}),70)">
+        <span class="avatar">${initials(em.name)}</span>
+        <span class="crow__main"><b>${em.name}</b><small>${em.role} · ${em.crew}</small></span>
+        <span class="crow__st">${e.out?`<span class="pill n">fertig</span>`:`<span class="crow__live"><span class="dotlive"></span> läuft</span>`}</span>
+      </button>`;
+    }).join('') : `<div class="cust-empty">Heute niemand auf dieser Baustelle eingeteilt.</div>`;
+    return `<div class="cust-site">
+      <div class="cust-site__top"><b><i data-lucide="hard-hat"></i> ${s.label}</b><span>${s.addr}</span></div>
+      <div class="cust-crew">${crewHtml}</div>
+      <button class="btn ghost sm" onclick="openSiteSheet('${s.id}')"><i data-lucide="package"></i> Baustelle &amp; Material · ${s.tasks.length} Aufg. · ${s.material.length} Mat.</button>
+    </div>`;
+  }).join('') : `<div class="cust-empty">Aktuell keine aktive Baustelle.</div>`;
+  openSheet(`
+    <div class="sheet__head">
+      <span class="avatar" style="width:50px;height:50px;font-size:17px">${initials(c.name)}</span>
+      <div><div class="sheet__title">${c.name}</div><div class="sheet__sub">${c.contact} · ${c.city}</div></div>
+      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+    </div>
+    <div class="sheet__body">
+      <div class="tagrow" style="margin-bottom:12px"><span class="pill ${c.type === 'Neukunde' ? 'b' : 'n'}">${c.type}</span><span class="pill ${c.status[1]}">${c.status[0]}</span><span class="pill n">Kunde seit ${c.since}</span></div>
+      <button class="addrrow" onclick="toast('Route in Karten öffnen')"><i data-lucide="map-pin"></i><span><b>${c.addr}</b><small>Tippen für Route</small></span><i data-lucide="navigation" class="addrrow__nav"></i></button>
+      <dl>
+        <div class="detail-row"><dt>Telefon</dt><dd><a href="tel:${c.phone.replace(/\s/g,'')}" style="color:var(--green-2);text-decoration:none">${c.phone}</a></dd></div>
+        <div class="detail-row"><dt>E-Mail</dt><dd>${c.email}</dd></div>
+        <div class="detail-row"><dt>Auftragswert</dt><dd><b>${c.value}</b></dd></div>
+      </dl>
+      <div class="zsec-h" style="margin-top:18px"><b>Aktive Baustellen</b><span>${sts.length} · Team vor Ort heute</span></div>
+      ${sitesHtml}
+      ${reqs.length ? `<div class="zsec-h" style="margin-top:18px"><b>Offene Anfragen</b><span>${reqs.length} im Posteingang</span></div><div class="inbox">${reqs.map(messageCard).join('')}</div>` : ''}
+      <div class="zsec-h" style="margin-top:18px"><b>Verlauf</b><span>letzte Aktivitäten</span></div>
+      <div class="timeline">${c.history.map(h => `<div class="tl-item"><span class="tl-ico ${h.ch}"><i data-lucide="${chIco[h.ch] || 'circle'}"></i></span><div class="tl-body"><div class="tl-text">${h.text}</div><div class="tl-date">${h.date}</div></div></div>`).join('')}</div>
+      <div class="sheet-actions">
+        <button class="btn" style="flex:1" onclick="toast('Anruf wird gestartet')"><i data-lucide="phone"></i> Anrufen</button>
+        <button class="btn ghost" style="flex:1" onclick="toast('Angebot wird erstellt')"><i data-lucide="file-plus"></i> Angebot</button>
+      </div>
     </div>`);
 }
 
@@ -2600,6 +2727,7 @@ function openEmployee(id){
     <div class="sheet__body">
       <dl>
         <div class="detail-row"><dt>Status</dt><dd><span class="pill ${empStatus(e.id)[1]}">${empStatus(e.id)[0]}</span></dd></div>
+        ${(() => { const te = empEntryToday(e.id); const s = te && site(te.siteId); return te ? `<div class="detail-row"><dt>Heute auf Baustelle</dt><dd>${s.customerId ? `<span class="clink" onclick="closeSheet();openCustomer('${s.customerId}')">${s.customer} · ${s.label}</span>` : `${s.customer}`} <small style="color:var(--muted)">· ${te.in}${te.out ? '–' + te.out : ' · läuft'}</small></dd></div>` : ''; })()}
         <div class="detail-row"><dt>Telefon</dt><dd>${e.phone}</dd></div>
         <div class="detail-row"><dt>Im Betrieb seit</dt><dd>${e.since}</dd></div>
         <div class="detail-row"><dt>Urlaub ${new Date(TODAY).getFullYear()}</dt><dd>${vacInfo(e.id).taken} genommen · ${vacInfo(e.id).planned} geplant · <b>${vacInfo(e.id).rest} Rest</b> (von ${e.annual})</dd></div>
@@ -2623,12 +2751,12 @@ function openMessage(id){
       <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body">
-      <div style="font-size:14px;font-weight:900;margin-bottom:10px">${msg.sub}</div>
+      <div style="font-size:14px;font-weight:700;margin-bottom:10px">${msg.sub}</div>
       <div style="border:1px solid var(--line);border-radius:8px;background:#F7FAF6;padding:13px;font-size:13px;line-height:1.55">${msg.pre}</div>
       <div class="field" style="margin-top:15px"><label>Antwort</label><input placeholder="Antwort schreiben..." /></div>
       <div class="sheet-actions">
         <button class="btn" style="flex:1" onclick="closeSheet();toast('Antwort gesendet')">Antworten</button>
-        <button class="btn ghost" style="flex:1" onclick="closeSheet();toast('Als Kunde angelegt')">Zu Kunden</button>
+        <button class="btn ghost" style="flex:1" onclick="${msg.customerId?`openCustomer('${msg.customerId}')`:`closeSheet();toast('Als Kunde angelegt')`}"><i data-lucide="folder-open"></i> Kundenkartei</button>
       </div>
     </div>`);
 }
