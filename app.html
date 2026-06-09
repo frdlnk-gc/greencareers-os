@@ -7,646 +7,1978 @@
 <script src="https://unpkg.com/lucide@latest"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap" rel="stylesheet" />
 <style>
   :root{
-    --accent:#16A34A; --accent2:#0E7A43; --accentSoft:#EAF7EF;
-    --text:#17231A; --muted:#6A7A6E; --line:#E9ECE8; --card:#fff;
-    --canvas: radial-gradient(820px 340px at 100% -12%, rgba(22,163,74,.10), transparent 58%), radial-gradient(640px 300px at -6% 112%, rgba(22,163,74,.08), transparent 60%), linear-gradient(180deg,#FBFDFB 0%,#F2F6F2 100%);
-    --sb:#15241A; --sbText:#A9B8AC; --sbMuted:#6E7E72;
-    --shadow:0 1px 2px rgba(20,30,20,.05),0 8px 22px rgba(20,30,20,.05);
-    --radius:14px;
+    --green:#16A34A;
+    --green-2:#0E7A43;
+    --green-3:#0B5F36;
+    --mint:#EAF7EF;
+    --mint-2:#F3FBF6;
+    --ink:#17231A;
+    --ink-2:#243126;
+    --muted:#6A7A6E;
+    --muted-2:#8A978D;
+    --line:#E2E8E1;
+    --line-2:#D4DDD3;
+    --card:#FFFFFF;
+    --canvas:#F6F9F5;
+    --canvas-2:#EDF4ED;
+    --sidebar:#122118;
+    --sidebar-2:#182C20;
+    --sidebar-text:#AEBDB2;
+    --amber:#B7791F;
+    --amber-soft:#FEF3E2;
+    --blue:#2563EB;
+    --blue-soft:#EAF0FE;
+    --violet:#7C3AED;
+    --violet-soft:#F1EAFE;
+    --red:#C24141;
+    --red-soft:#FDECEC;
+    --radius:8px;
+    --shadow:0 1px 1px rgba(20,30,20,.04),0 12px 30px rgba(18,33,24,.07);
+    --shadow-strong:0 18px 60px rgba(10,22,13,.24);
   }
   *{ box-sizing:border-box; margin:0; padding:0; }
-  html,body{ height:100%; }
-  body{ font-family:'Inter',system-ui,sans-serif; background:#0F1B0F; color:var(--text); -webkit-font-smoothing:antialiased; }
-  .lucide{ width:1em; height:1em; }
-  button{ font-family:inherit; cursor:pointer; border:none; background:none; color:inherit; }
-  input{ font-family:inherit; }
-  ::-webkit-scrollbar{ width:9px; height:9px; } ::-webkit-scrollbar-thumb{ background:#c8d0c8; border-radius:9px; }
-
-  /* ============ LOGIN ============ */
-  .auth{ min-height:100vh; display:grid; place-items:center; padding:24px;
-    background: radial-gradient(900px 500px at 80% -10%, rgba(22,163,74,.22), transparent 55%), linear-gradient(160deg,#13251A,#0A140C); }
-  .auth__card{ width:100%; max-width:410px; background:#fff; border-radius:20px; padding:34px 32px; box-shadow:0 30px 70px rgba(0,0,0,.4); }
-  .auth__logo{ display:flex; align-items:center; gap:11px; margin-bottom:22px; }
-  .auth__logo .m{ width:42px; height:42px; border-radius:11px; background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff; display:grid; place-items:center; }
-  .auth__logo .n{ font-size:18px; font-weight:800; letter-spacing:-.01em; }
-  .auth__logo .n small{ color:var(--accent2); }
-  .auth h1{ font-family:'Fraunces',serif; font-weight:500; font-size:25px; letter-spacing:-.02em; }
-  .auth p.sub{ font-size:13.5px; color:var(--muted); margin-top:5px; margin-bottom:22px; }
-  .field{ margin-bottom:14px; }
-  .field label{ display:block; font-size:12.5px; font-weight:600; margin-bottom:6px; color:var(--text); }
-  .field input{ width:100%; padding:12px 14px; border:1px solid var(--line); border-radius:11px; font-size:14px; outline:none; transition:.15s; }
-  .field input:focus{ border-color:var(--accent); box-shadow:0 0 0 3px var(--accentSoft); }
-  .btn{ width:100%; padding:13px; border-radius:11px; font-size:14.5px; font-weight:700; background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff; box-shadow:0 10px 24px rgba(22,163,74,.28); transition:.15s; }
-  .btn:hover{ transform:translateY(-1px); box-shadow:0 14px 30px rgba(22,163,74,.36); }
-  .btn.ghost{ background:#fff; color:var(--text); border:1px solid var(--line); box-shadow:none; }
-  .auth__row{ display:flex; justify-content:space-between; align-items:center; margin:4px 0 18px; font-size:12.5px; }
-  .auth__row a{ color:var(--accent2); font-weight:600; text-decoration:none; cursor:pointer; }
-  .auth__chk{ display:flex; align-items:center; gap:7px; color:var(--muted); }
-  .auth__foot{ text-align:center; font-size:11.5px; color:var(--muted); margin-top:18px; }
-  .auth__back{ display:inline-flex; align-items:center; gap:6px; font-size:12.5px; color:var(--muted); margin-bottom:14px; cursor:pointer; }
+  html,body{ min-height:100%; }
+  body{ font-family:'Inter',system-ui,sans-serif; color:var(--ink); background:var(--sidebar); -webkit-font-smoothing:antialiased; }
+  button,input{ font:inherit; }
+  button{ border:0; background:none; color:inherit; cursor:pointer; }
+  input{ color:var(--ink); }
+  .lucide{ width:1em; height:1em; stroke-width:2; }
   .hidden{ display:none !important; }
+  ::-webkit-scrollbar{ width:9px; height:9px; }
+  ::-webkit-scrollbar-thumb{ background:#C7D1C7; border-radius:999px; }
+  ::-webkit-scrollbar-track{ background:transparent; }
 
-  /* ============ APP SHELL ============ */
-  .app{ display:flex; height:100vh; background:var(--sb); }
-  .sb{ width:230px; flex-shrink:0; background:var(--sb); color:var(--sbText); display:flex; flex-direction:column; padding:16px 12px; transition:width .22s ease; }
-  .app.collapsed .sb{ width:74px; }
-  .sb__brand{ display:flex; align-items:center; gap:11px; padding:6px 8px 16px; }
-  .sb__brand .m{ width:38px; height:38px; border-radius:10px; background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff; display:grid; place-items:center; flex-shrink:0; }
-  .sb__brand .t{ line-height:1.15; white-space:nowrap; overflow:hidden; }
-  .sb__brand .t b{ font-size:14px; color:#fff; }
-  .sb__brand .t small{ display:block; font-size:10.5px; color:var(--sbMuted); }
-  .app.collapsed .sb__brand .t{ display:none; }
-  .sb__nav{ display:flex; flex-direction:column; gap:3px; margin-top:6px; }
-  .sb__nl{ font-size:10.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--sbMuted); padding:8px 10px 6px; white-space:nowrap; }
-  .app.collapsed .sb__nl{ opacity:0; }
-  .ni{ display:flex; align-items:center; gap:12px; padding:11px; border-radius:10px; font-size:13.5px; font-weight:500; color:var(--sbText); cursor:pointer; transition:.13s; white-space:nowrap; }
-  .ni .lucide{ width:18px; height:18px; flex-shrink:0; }
-  .ni:hover{ background:rgba(255,255,255,.05); }
-  .ni.on{ background:rgba(255,255,255,.11); color:#fff; }
-  .ni .cnt{ margin-left:auto; font-size:11px; font-weight:700; background:var(--accent); color:#fff; border-radius:999px; padding:1px 7px; }
-  .ni .lab{ overflow:hidden; }
-  .app.collapsed .ni .lab,.app.collapsed .ni .cnt{ display:none; }
-  .app.collapsed .ni{ justify-content:center; }
-  .sb__foot{ margin-top:auto; display:flex; flex-direction:column; gap:10px; }
-  .sb__pwr{ font-size:11px; color:var(--sbMuted); text-align:center; padding:9px; border-top:1px solid rgba(255,255,255,.07); display:flex; align-items:center; justify-content:center; gap:5px; white-space:nowrap; }
-  .sb__pwr .lucide{ width:12px; height:12px; color:var(--accent); }
-  .sb__pwr b{ color:#B7C3B3; }
-  .app.collapsed .sb__pwr span{ display:none; }
-  .sb__user{ display:flex; align-items:center; gap:9px; padding:5px 6px; cursor:pointer; border-radius:9px; }
-  .sb__user:hover{ background:rgba(255,255,255,.05); }
-  .sb__ava{ width:32px; height:32px; border-radius:8px; background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff; display:grid; place-items:center; font-size:12px; font-weight:700; flex-shrink:0; }
-  .sb__user .t{ line-height:1.2; white-space:nowrap; overflow:hidden; }
-  .sb__user .t b{ font-size:12.5px; color:#fff; font-weight:600; }
-  .sb__user .t small{ display:block; font-size:11px; color:var(--sbMuted); }
-  .app.collapsed .sb__user .t{ display:none; }
-
-  .main{ flex:1; display:flex; flex-direction:column; min-width:0; background:#fff; border-radius:16px 0 0 16px; overflow:hidden; }
-  .top{ height:60px; display:flex; align-items:center; gap:12px; padding:0 22px; border-bottom:1px solid var(--line); background:rgba(255,255,255,.8); backdrop-filter:blur(8px); flex-shrink:0; }
-  .top .burger{ width:36px; height:36px; border-radius:9px; display:grid; place-items:center; color:var(--muted); }
-  .top .burger:hover{ background:var(--accentSoft); color:var(--accent); }
-  .top .ttl{ font-size:16px; font-weight:700; }
-  .top .ttl .lucide{ width:18px; height:18px; vertical-align:-3px; color:var(--accent); margin-right:6px; }
-  .top .sp{ flex:1; }
-  .wmini{ display:flex; align-items:center; gap:9px; background:#fff; border:1px solid var(--line); border-radius:10px; padding:6px 12px 6px 8px; font-size:11.5px; color:var(--muted); }
-  .wmini .wt{ width:30px; height:30px; border-radius:8px; background:var(--accentSoft); color:var(--accent); display:grid; place-items:center; }
-  .wmini b{ color:var(--text); }
-  .bell{ width:38px; height:38px; border-radius:9px; border:1px solid var(--line); background:#fff; display:grid; place-items:center; position:relative; color:var(--muted); }
-  .bell::after{ content:''; position:absolute; top:8px; right:8px; width:7px; height:7px; border-radius:50%; background:var(--accent); border:2px solid #fff; }
-  .body{ flex:1; overflow:auto; padding:22px; background:var(--canvas); }
-
-  /* mobile bottom nav */
-  .mnav{ display:none; }
-
-  /* ============ COMMON COMPONENTS ============ */
-  .hello h2{ font-family:'Fraunces',serif; font-weight:500; font-size:27px; letter-spacing:-.02em; line-height:1.06; }
-  .hello h2 em{ font-style:italic; color:var(--accent2); }
-  .hello p{ font-size:13px; color:var(--muted); margin-top:5px; }
-  .pagehead{ display:flex; align-items:flex-end; gap:14px; margin-bottom:18px; flex-wrap:wrap; }
-  .pagehead h2{ font-family:'Fraunces',serif; font-weight:500; font-size:24px; letter-spacing:-.02em; }
-  .pagehead p{ font-size:13px; color:var(--muted); margin-top:3px; }
-  .pagehead .sp{ flex:1; }
-
-  .kpi{ background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:15px 16px; box-shadow:var(--shadow); }
-  .kpi .kr{ display:flex; align-items:center; gap:10px; }
-  .kpi .ki{ width:34px; height:34px; border-radius:9px; background:var(--accentSoft); color:var(--accent); display:grid; place-items:center; }
-  .kpi .ki .lucide{ width:17px; height:17px; }
-  .kpi .num{ margin-left:auto; font-size:24px; font-weight:800; }
-  .kpi .lab{ font-size:12.5px; font-weight:600; margin-top:9px; }
-  .kpi .sub{ font-size:11px; color:var(--muted); margin-top:2px; }
-  .kpi.acc{ background:linear-gradient(135deg,var(--accent),var(--accent2)); border-color:transparent; color:#fff; box-shadow:0 14px 34px rgba(22,163,74,.2); }
-  .kpi.acc .ki{ background:rgba(255,255,255,.2); color:#fff; }
-  .kpi.acc .sub{ color:rgba(255,255,255,.85); }
-  .kpi.clk{ cursor:pointer; transition:.15s; } .kpi.clk:hover{ transform:translateY(-2px); box-shadow:0 16px 36px rgba(20,40,25,.12); }
-
-  .panel{ background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:16px 17px; box-shadow:var(--shadow); }
-  .ph{ display:flex; align-items:center; gap:9px; font-size:13.5px; font-weight:700; margin-bottom:12px; }
-  .ph .lucide{ width:16px; height:16px; color:var(--accent); }
-  .ph .more{ margin-left:auto; font-size:11.5px; font-weight:600; color:var(--accent2); cursor:pointer; }
-  .task{ display:flex; align-items:center; gap:12px; padding:11px; border-radius:11px; transition:.15s; cursor:pointer; }
-  .task+.task{ margin-top:4px; }
-  .task:hover{ background:#F5F8F4; }
-  .task.hot{ background:var(--accentSoft); }
-  .ti{ width:34px; height:34px; border-radius:9px; display:grid; place-items:center; background:#EFF3EF; color:var(--accent); flex-shrink:0; }
-  .ti .lucide{ width:16px; height:16px; }
-  .task.hot .ti{ background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff; }
-  .tt{ min-width:0; flex:1; } .tt .a{ font-size:13px; font-weight:600; } .tt .b{ font-size:11.5px; color:var(--muted); }
-  .tb{ font-size:12px; font-weight:600; padding:7px 14px; border-radius:999px; border:1px solid var(--line); background:#fff; color:var(--text); flex-shrink:0; }
-  .tb.p{ background:var(--accent); color:#fff; border-color:transparent; }
-
-  .reco{ background:linear-gradient(155deg,#16251A,#0C160C); color:#E6F1E7; border-radius:var(--radius); padding:17px; box-shadow:var(--shadow); }
-  .reco .rh{ display:flex; align-items:center; gap:8px; font-size:12px; font-weight:700; color:#fff; }
-  .reco .rh .lucide{ width:15px; height:15px; color:var(--accent); }
-  .reco .rs{ font-size:14px; font-weight:700; color:#fff; margin:9px 0 12px; }
-  .reco .rg{ display:flex; gap:10px; }
-  .reco .rb{ flex:1; background:rgba(255,255,255,.06); border-radius:10px; padding:10px; }
-  .reco .rb .n{ font-size:20px; font-weight:800; color:#fff; } .reco .rb .n.g{ color:var(--accent); }
-  .reco .rb .l{ font-size:10.5px; color:#9AA89D; }
-  .reco .rcta{ margin-top:13px; text-align:center; background:var(--accent); color:#fff; font-weight:700; font-size:12.5px; border-radius:999px; padding:11px; cursor:pointer; }
-
-  .qa{ display:grid; grid-template-columns:1fr 1fr; gap:9px; }
-  .qa button{ display:flex; align-items:center; gap:9px; font-size:12.5px; font-weight:600; color:var(--text); background:#fff; border:1px solid var(--line); border-radius:11px; padding:12px; box-shadow:var(--shadow); }
-  .qa button .lucide{ width:17px; height:17px; color:var(--accent); }
-  .qa button:hover{ border-color:var(--accent); }
-
-  .grid2{ display:grid; grid-template-columns:1.65fr 1fr; gap:14px; align-items:start; }
-  .rail{ display:flex; flex-direction:column; gap:13px; }
-  .modhint{ display:flex; align-items:center; gap:9px; font-size:12px; color:var(--accent2); background:var(--accentSoft); border:1px solid color-mix(in srgb,var(--accent) 20%,#fff); border-radius:11px; padding:9px 13px; margin:14px 0; }
-  .modhint .lucide{ width:15px; height:15px; }
-  .mod{ position:relative; } .mod .grip{ position:absolute; top:9px; right:11px; color:#C4CCC4; font-size:13px; cursor:grab; }
-  .mod.drag{ opacity:.4; } .mod.over{ outline:2px dashed var(--accent); outline-offset:3px; border-radius:var(--radius); }
-  .addmod{ border:1.5px dashed #C9D3C8; border-radius:var(--radius); padding:14px; text-align:center; font-size:12px; font-weight:600; color:var(--muted); display:flex; align-items:center; justify-content:center; gap:7px; cursor:pointer; }
-  .addmod .lucide{ width:15px; height:15px; color:var(--accent); }
-
-  /* ====== Tabs (Team / Kunden) ====== */
-  .tabs{ display:flex; gap:5px; background:#EEF2ED; border:1px solid var(--line); border-radius:12px; padding:4px; margin-bottom:18px; width:fit-content; flex-wrap:wrap; }
-  .tab{ font-size:12.5px; font-weight:600; color:var(--muted); padding:8px 15px; border-radius:9px; }
-  .tab.on{ background:#fff; color:var(--text); box-shadow:var(--shadow); }
-  .tab .cnt{ font-size:10.5px; background:var(--accentSoft); color:var(--accent); border-radius:999px; padding:1px 6px; margin-left:5px; }
-
-  /* ====== Kanban ====== */
-  .kan{ display:grid; grid-template-columns:repeat(4,1fr); gap:13px; align-items:start; }
-  .kcol{ background:#F3F6F2; border:1px solid var(--line); border-radius:13px; padding:11px; min-height:200px; }
-  .kcol.over{ outline:2px dashed var(--accent); outline-offset:-2px; }
-  .kch{ display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:700; margin-bottom:11px; padding:0 3px; }
-  .kch .d{ width:8px; height:8px; border-radius:50%; }
-  .kch .c{ margin-left:auto; font-size:11px; color:var(--muted); background:#fff; border:1px solid var(--line); border-radius:999px; padding:1px 8px; }
-  .kcard{ background:#fff; border:1px solid var(--line); border-radius:11px; padding:12px; box-shadow:var(--shadow); cursor:grab; margin-bottom:9px; }
-  .kcard.drag{ opacity:.4; }
-  .kcard .knm{ font-size:13px; font-weight:700; display:flex; align-items:center; gap:8px; }
-  .kcard .kav{ width:28px; height:28px; border-radius:8px; background:var(--accentSoft); color:var(--accent2); display:grid; place-items:center; font-size:11px; font-weight:700; }
-  .kcard .krole{ font-size:11.5px; color:var(--muted); margin:7px 0; }
-  .kcard .kmeta{ display:flex; gap:6px; flex-wrap:wrap; }
-  .ktag{ font-size:10.5px; font-weight:600; background:#F0F3EF; color:#4A5A4C; border-radius:6px; padding:3px 7px; }
-  .ktag.g{ background:var(--accentSoft); color:var(--accent2); }
-  .kcard .kbot{ display:flex; align-items:center; gap:7px; margin-top:10px; padding-top:10px; border-top:1px solid var(--line); font-size:11px; color:var(--muted); }
-
-  /* ====== Tables ====== */
-  .tbl{ width:100%; border-collapse:collapse; font-size:13px; }
-  .tbl th{ text-align:left; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); padding:11px 14px; border-bottom:1px solid var(--line); }
-  .tbl td{ padding:12px 14px; border-bottom:1px solid var(--line); }
-  .tbl tr:last-child td{ border-bottom:0; }
-  .tbl tr.clk{ cursor:pointer; } .tbl tr.clk:hover td{ background:#F6F8F5; }
-  .ava2{ display:inline-grid; place-items:center; width:28px; height:28px; border-radius:7px; background:var(--accentSoft); color:var(--accent2); font-size:11px; font-weight:700; margin-right:9px; vertical-align:-9px; }
-  .pill{ font-size:11px; font-weight:700; padding:3px 10px; border-radius:999px; display:inline-block; }
-  .pill.g{ background:var(--accentSoft); color:var(--accent2); } .pill.a{ background:#FEF3E2; color:#B7791F; } .pill.r{ background:#FDECEC; color:#C44; } .pill.b{ background:#EAF0FE; color:#2563EB; } .pill.n{ background:#F0F3EF; color:#5A6A5C; }
-
-  /* ====== Plantafel ====== */
-  .plan{ display:grid; grid-template-columns:140px repeat(5,1fr); gap:8px; min-width:820px; }
-  .pcell{ background:#F3F6F2; border:1px solid var(--line); border-radius:11px; padding:9px; min-height:96px; }
-  .pcell.over{ outline:2px dashed var(--accent); outline-offset:-2px; }
-  .phdr{ font-size:12px; font-weight:700; padding:9px; text-align:center; color:var(--muted); }
-  .prow0{ display:flex; align-items:center; gap:9px; background:#15241A; color:#fff; border-radius:11px; padding:11px; font-size:12.5px; font-weight:700; }
-  .prow0 .pi{ width:30px; height:30px; border-radius:8px; background:rgba(255,255,255,.12); display:grid; place-items:center; }
-  .pjob{ background:#fff; border:1px solid var(--line); border-left:3px solid var(--jc,#16A34A); border-radius:9px; padding:9px; box-shadow:var(--shadow); cursor:grab; margin-bottom:7px; }
-  .pjob.drag{ opacity:.4; }
-  .pjob .pj1{ font-size:12px; font-weight:700; } .pjob .pj2{ font-size:10.5px; color:var(--muted); margin-top:2px; }
-
-  /* ====== Inbox ====== */
-  .inbox{ display:grid; grid-template-columns:1fr; gap:10px; }
-  .msg{ display:flex; gap:13px; background:#fff; border:1px solid var(--line); border-radius:13px; padding:14px 15px; box-shadow:var(--shadow); cursor:pointer; transition:.15s; }
-  .msg:hover{ border-color:var(--accent); }
-  .msg.unread{ border-left:3px solid var(--accent); }
-  .msg .ch{ width:38px; height:38px; border-radius:10px; display:grid; place-items:center; flex-shrink:0; }
-  .msg .ch .lucide{ width:18px; height:18px; }
-  .ch.wa{ background:#E7F8EE; color:#1FA855; } .ch.mail{ background:#EAF0FE; color:#2563EB; } .ch.tel{ background:#FEF3E2; color:#B7791F; } .ch.web{ background:#F1EAFE; color:#7C3AED; }
-  .msg .mc{ flex:1; min-width:0; }
-  .msg .m1{ display:flex; align-items:center; gap:8px; } .msg .m1 b{ font-size:13.5px; } .msg .m1 .t{ margin-left:auto; font-size:11px; color:var(--muted); }
-  .msg .m2{ font-size:12.5px; color:var(--text); margin-top:3px; } .msg .m3{ font-size:11.5px; color:var(--muted); margin-top:3px; }
-
-  /* ====== Modal ====== */
-  .ov{ position:fixed; inset:0; background:rgba(15,27,15,.55); backdrop-filter:blur(3px); display:grid; place-items:center; z-index:200; padding:20px; }
-  .ov.hidden{ display:none; }
-  .sheet{ width:100%; max-width:520px; background:#fff; border-radius:18px; box-shadow:0 30px 70px rgba(0,0,0,.35); max-height:88vh; overflow:auto; }
-  .sheet__h{ display:flex; align-items:center; gap:13px; padding:20px 22px; border-bottom:1px solid var(--line); position:sticky; top:0; background:#fff; }
-  .sheet__h .x{ margin-left:auto; width:34px; height:34px; border-radius:9px; display:grid; place-items:center; color:var(--muted); }
-  .sheet__h .x:hover{ background:#F0F3EF; }
-  .sheet__b{ padding:20px 22px; }
-  .bigava{ width:52px; height:52px; border-radius:13px; background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff; display:grid; place-items:center; font-size:18px; font-weight:700; }
-  .drow{ display:flex; gap:12px; padding:11px 0; border-bottom:1px solid var(--line); font-size:13px; }
-  .drow:last-child{ border:0; } .drow .dk{ width:130px; color:var(--muted); flex-shrink:0; } .drow .dv{ font-weight:600; }
-
-  /* ====== Toast ====== */
-  .toast{ position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px); background:#15241A; color:#fff; padding:12px 18px; border-radius:11px; font-size:13px; font-weight:600; box-shadow:0 18px 40px rgba(0,0,0,.3); opacity:0; pointer-events:none; transition:.25s; z-index:300; display:flex; align-items:center; gap:9px; }
-  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
-  .toast .lucide{ width:16px; height:16px; color:var(--accent); }
-
-  /* ====== Responsive ====== */
-  @media(max-width:860px){
-    .main{ border-radius:0; }
-    .sb{ position:fixed; left:0; top:0; bottom:0; z-index:150; transform:translateX(-100%); transition:transform .22s; box-shadow:0 0 50px rgba(0,0,0,.4); }
-    .app.mopen .sb{ transform:translateX(0); }
-    .app.collapsed .sb{ width:230px; }
-    .scrim{ position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:140; }
-    .scrim.hidden{ display:none; }
-    .body{ padding:16px 14px 86px; }
-    .grid2{ grid-template-columns:1fr; }
-    .kan{ grid-template-columns:1fr; }
-    .wmini{ display:none; }
-    .mnav{ display:flex; position:fixed; bottom:0; left:0; right:0; height:64px; background:#fff; border-top:1px solid var(--line); z-index:120; padding:6px 6px env(safe-area-inset-bottom); }
-    .mnav button{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; font-size:10.5px; font-weight:600; color:var(--muted); border-radius:10px; position:relative; }
-    .mnav button .lucide{ width:20px; height:20px; }
-    .mnav button.on{ color:var(--accent); }
-    .mnav button .cnt{ position:absolute; top:4px; right:50%; transform:translateX(16px); font-size:9px; background:var(--accent); color:#fff; border-radius:999px; padding:0 5px; line-height:15px; }
-    .tabs{ width:100%; overflow:auto; }
+  /* Login */
+  .auth{
+    min-height:100vh;
+    display:grid;
+    place-items:center;
+    padding:22px;
+    background:
+      radial-gradient(820px 440px at 86% 0%, rgba(22,163,74,.24), transparent 58%),
+      radial-gradient(620px 380px at 10% 100%, rgba(37,99,235,.12), transparent 55%),
+      linear-gradient(145deg,#101D15 0%,#0B140D 100%);
   }
+  .auth__card{
+    width:min(100%,430px);
+    background:#fff;
+    border:1px solid rgba(255,255,255,.65);
+    border-radius:12px;
+    padding:30px;
+    box-shadow:var(--shadow-strong);
+  }
+  .auth__brand{ display:flex; align-items:center; gap:12px; margin-bottom:24px; }
+  .brandmark{
+    width:42px; height:42px; border-radius:10px;
+    display:grid; place-items:center;
+    background:linear-gradient(135deg,var(--green),var(--green-2));
+    color:#fff;
+    box-shadow:0 10px 24px rgba(22,163,74,.26);
+  }
+  .brandmark .lucide{ width:22px; height:22px; }
+  .brandname{ font-size:18px; font-weight:850; letter-spacing:-.02em; line-height:1.1; }
+  .brandname small{ color:var(--green-2); font-size:16px; }
+  .brandsub{ font-size:11px; color:var(--muted); margin-top:3px; }
+  .auth h1{ font-family:'Fraunces',serif; font-size:29px; font-weight:600; letter-spacing:-.02em; line-height:1.08; }
+  .auth .sub{ color:var(--muted); font-size:14px; line-height:1.5; margin:8px 0 22px; }
+  .field{ margin-bottom:14px; }
+  .field label{ display:block; font-size:12px; font-weight:700; color:var(--ink-2); margin-bottom:6px; }
+  .field input{
+    width:100%;
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:12px 13px;
+    background:#FBFDFB;
+    outline:none;
+    transition:border-color .16s, box-shadow .16s, background .16s;
+  }
+  .field input:focus{ border-color:var(--green); background:#fff; box-shadow:0 0 0 3px rgba(22,163,74,.12); }
+  .auth__row{ display:flex; align-items:center; justify-content:space-between; gap:14px; margin:2px 0 18px; font-size:12.5px; color:var(--muted); }
+  .auth__chk{ display:flex; align-items:center; gap:7px; min-width:0; }
+  .auth a{ color:var(--green-2); text-decoration:none; font-weight:700; cursor:pointer; }
+  .btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    min-height:42px;
+    border-radius:8px;
+    padding:11px 15px;
+    background:linear-gradient(135deg,var(--green),var(--green-2));
+    color:#fff;
+    font-weight:800;
+    font-size:14px;
+    box-shadow:0 12px 24px rgba(22,163,74,.22);
+    transition:transform .16s, box-shadow .16s, border-color .16s, background .16s;
+  }
+  .btn:hover{ transform:translateY(-1px); box-shadow:0 16px 30px rgba(22,163,74,.30); }
+  .btn.full{ width:100%; }
+  .btn.ghost{ color:var(--ink); background:#fff; border:1px solid var(--line); box-shadow:none; }
+  .auth__back{ display:inline-flex; align-items:center; gap:7px; color:var(--muted); font-size:12.5px; font-weight:700; margin-bottom:16px; cursor:pointer; }
+  .auth__foot{ margin-top:18px; padding-top:16px; border-top:1px solid var(--line); display:flex; align-items:center; justify-content:space-between; gap:12px; color:var(--muted); font-size:11.5px; }
+
+  /* Shell */
+  .app{ min-height:100vh; height:100vh; display:flex; background:var(--sidebar); overflow:hidden; }
+  .sidebar{
+    width:252px;
+    flex:0 0 252px;
+    display:flex;
+    flex-direction:column;
+    padding:14px 12px;
+    color:var(--sidebar-text);
+    background:
+      linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,0) 24%),
+      var(--sidebar);
+    transition:width .22s ease, flex-basis .22s ease, transform .22s ease;
+  }
+  .app.collapsed .sidebar{ width:76px; flex-basis:76px; }
+  .sidebrand{
+    display:flex; align-items:center; gap:11px;
+    padding:7px 8px 16px;
+    border-bottom:1px solid rgba(255,255,255,.07);
+  }
+  .sidebrand .brandmark{ width:38px; height:38px; border-radius:8px; box-shadow:none; flex-shrink:0; }
+  .sidebrand__text{ min-width:0; line-height:1.2; white-space:nowrap; overflow:hidden; }
+  .sidebrand__text b{ color:#fff; font-size:14px; }
+  .sidebrand__text span{ display:block; color:#7E8F83; font-size:10.5px; margin-top:2px; }
+  .app.collapsed .sidebrand__text{ display:none; }
+  .nav{ display:flex; flex-direction:column; gap:4px; padding-top:18px; }
+  .navlabel{ font-size:10px; font-weight:800; letter-spacing:.09em; text-transform:uppercase; color:#657568; padding:0 9px 5px; }
+  .app.collapsed .navlabel{ opacity:0; }
+  .navitem{
+    min-height:42px;
+    display:flex; align-items:center; gap:11px;
+    padding:10px 11px;
+    border-radius:8px;
+    color:var(--sidebar-text);
+    font-size:13.5px;
+    font-weight:650;
+    position:relative;
+    transition:background .16s, color .16s;
+  }
+  .navitem:hover{ background:rgba(255,255,255,.055); color:#fff; }
+  .navitem.on{ background:#F3FBF6; color:#102217; }
+  .navitem .lucide{ width:18px; height:18px; flex-shrink:0; }
+  .navitem__label{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .navitem__badge{
+    margin-left:auto;
+    min-width:20px;
+    height:20px;
+    display:inline-grid;
+    place-items:center;
+    border-radius:999px;
+    padding:0 6px;
+    background:var(--green);
+    color:#fff;
+    font-size:10.5px;
+    font-weight:850;
+  }
+  .app.collapsed .navitem{ justify-content:center; padding-inline:0; }
+  .app.collapsed .navitem__label,.app.collapsed .navitem__badge{ display:none; }
+  .sidefoot{ margin-top:auto; display:flex; flex-direction:column; gap:10px; }
+  .powered{
+    display:flex; align-items:center; justify-content:center; gap:6px;
+    padding:11px 7px;
+    border-top:1px solid rgba(255,255,255,.07);
+    color:#7E8F83;
+    font-size:11px;
+    text-align:center;
+  }
+  .powered .lucide{ width:13px; height:13px; color:var(--green); }
+  .powered b{ color:#B9C8BC; }
+  .sideuser{
+    display:flex; align-items:center; gap:10px;
+    padding:8px;
+    border-radius:8px;
+    cursor:pointer;
+  }
+  .sideuser:hover{ background:rgba(255,255,255,.055); }
+  .avatar{
+    width:32px; height:32px; border-radius:8px;
+    display:inline-grid; place-items:center;
+    background:linear-gradient(135deg,#1FA855,var(--green-2));
+    color:#fff;
+    font-size:12px;
+    font-weight:850;
+    flex-shrink:0;
+  }
+  .sideuser__text{ line-height:1.2; min-width:0; white-space:nowrap; overflow:hidden; }
+  .sideuser__text b{ color:#fff; font-size:12.5px; }
+  .sideuser__text span{ display:block; color:#7E8F83; font-size:11px; margin-top:2px; }
+  .app.collapsed .powered span,.app.collapsed .sideuser__text{ display:none; }
+
+  .main{
+    flex:1;
+    min-width:0;
+    display:flex;
+    flex-direction:column;
+    background:#fff;
+    border-radius:14px 0 0 14px;
+    overflow:hidden;
+  }
+  .topbar{
+    height:62px;
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:0 20px;
+    border-bottom:1px solid var(--line);
+    background:rgba(255,255,255,.88);
+    backdrop-filter:blur(12px);
+    flex-shrink:0;
+  }
+  .iconbtn{
+    width:38px; height:38px; border-radius:8px;
+    display:grid; place-items:center;
+    border:1px solid transparent;
+    color:var(--muted);
+    transition:background .16s, color .16s, border-color .16s;
+  }
+  .iconbtn:hover{ background:var(--mint); color:var(--green-2); border-color:#D7EBDD; }
+  .viewtitle{ display:flex; align-items:center; gap:8px; min-width:0; font-size:15px; font-weight:850; color:var(--ink); }
+  .viewtitle .lucide{ width:18px; height:18px; color:var(--green-2); }
+  .topbar__spacer{ flex:1; }
+  .weather-mini{
+    display:flex; align-items:center; gap:9px;
+    min-height:38px;
+    padding:6px 10px 6px 7px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    background:#fff;
+    color:var(--muted);
+    font-size:11.5px;
+    line-height:1.22;
+  }
+  .weather-mini .bubble{ width:28px; height:28px; border-radius:7px; display:grid; place-items:center; background:var(--mint); color:var(--green-2); }
+  .weather-mini b{ color:var(--ink); }
+  .bell{ position:relative; }
+  .bell::after{
+    content:'';
+    position:absolute;
+    top:8px; right:8px;
+    width:7px; height:7px;
+    border-radius:999px;
+    background:var(--green);
+    border:2px solid #fff;
+  }
+  .content{
+    flex:1;
+    overflow:auto;
+    padding:22px;
+    background:
+      radial-gradient(820px 340px at 100% -10%, rgba(22,163,74,.10), transparent 58%),
+      linear-gradient(180deg,var(--canvas),var(--canvas-2));
+  }
+  .mobile-nav{ display:none; }
+  .scrim{ display:none; }
+
+  /* Components */
+  .hello{ display:flex; align-items:flex-end; gap:16px; justify-content:space-between; margin-bottom:14px; }
+  .hello h2{ font-family:'Fraunces',serif; font-size:31px; line-height:1.05; font-weight:600; letter-spacing:-.025em; }
+  .hello h2 em{ color:var(--green-2); font-style:italic; }
+  .hello p{ margin-top:6px; color:var(--muted); font-size:13px; }
+  .statusline{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    color:var(--green-2);
+    background:#F3FBF6;
+    border:1px solid #DCEFE2;
+    border-radius:8px;
+    padding:8px 11px;
+    font-size:12px;
+    font-weight:750;
+    white-space:nowrap;
+  }
+  .statusline .lucide{ width:15px; height:15px; }
+  .dashboard{
+    display:grid;
+    grid-template-columns:minmax(0,1.62fr) minmax(300px,.92fr);
+    gap:14px;
+    align-items:start;
+  }
+  .module-lane{ display:flex; flex-direction:column; gap:12px; min-height:80px; }
+  .module-card{ position:relative; }
+  .module-card.dragging{ opacity:.42; }
+  .module-card.over{ outline:2px dashed var(--green); outline-offset:3px; border-radius:var(--radius); }
+  .grip{
+    position:absolute;
+    top:9px; right:10px;
+    width:24px; height:24px;
+    display:grid; place-items:center;
+    border-radius:7px;
+    color:#AAB5AB;
+    cursor:grab;
+    z-index:2;
+  }
+  .grip:hover{ background:#F0F5EF; color:var(--green-2); }
+  .kpi-grid{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+  .kpi{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:15px;
+    box-shadow:var(--shadow);
+    min-width:0;
+  }
+  .kpi.clickable{ cursor:pointer; transition:transform .16s, box-shadow .16s, border-color .16s; }
+  .kpi.clickable:hover{ transform:translateY(-1px); border-color:#CDE7D4; box-shadow:0 16px 34px rgba(18,33,24,.10); }
+  .kpi__top{ display:flex; align-items:center; gap:10px; }
+  .kpi__icon{
+    width:34px; height:34px; border-radius:8px;
+    display:grid; place-items:center;
+    background:var(--mint);
+    color:var(--green-2);
+    flex-shrink:0;
+  }
+  .kpi__icon .lucide{ width:17px; height:17px; }
+  .kpi__num{ margin-left:auto; font-size:27px; line-height:1; font-weight:900; letter-spacing:-.03em; color:var(--ink); }
+  .kpi__label{ margin-top:11px; font-size:13px; font-weight:800; color:var(--ink); }
+  .kpi__sub{ margin-top:3px; color:var(--muted); font-size:11.5px; }
+  .kpi.primary{ background:linear-gradient(135deg,var(--green),var(--green-2)); border-color:transparent; color:#fff; }
+  .kpi.primary .kpi__icon{ background:rgba(255,255,255,.18); color:#fff; }
+  .kpi.primary .kpi__num,.kpi.primary .kpi__label{ color:#fff; }
+  .kpi.primary .kpi__sub{ color:rgba(255,255,255,.82); }
+  .panel{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+  }
+  .panel.pad{ padding:15px; }
+  .panel__head{
+    display:flex;
+    align-items:center;
+    gap:9px;
+    padding:14px 15px 12px;
+    border-bottom:1px solid var(--line);
+    font-size:13.5px;
+    font-weight:850;
+  }
+  .panel__head .lucide{ width:16px; height:16px; color:var(--green-2); }
+  .panel__head .more{ margin-left:auto; color:var(--green-2); font-size:11.5px; font-weight:800; cursor:pointer; }
+  .tasklist{ padding:6px; }
+  .task{
+    display:flex;
+    align-items:center;
+    gap:11px;
+    padding:10px;
+    border-radius:8px;
+    cursor:pointer;
+    transition:background .16s;
+  }
+  .task:hover{ background:#F5F8F4; }
+  .task.hot{ background:var(--mint); }
+  .task__icon{
+    width:34px; height:34px; border-radius:8px;
+    display:grid; place-items:center;
+    background:#EFF3EF;
+    color:var(--green-2);
+    flex-shrink:0;
+  }
+  .task.hot .task__icon{ background:linear-gradient(135deg,var(--green),var(--green-2)); color:#fff; }
+  .task__copy{ min-width:0; flex:1; }
+  .task__title{ display:block; font-size:13px; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .task__meta{ display:block; margin-top:2px; font-size:11.5px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .mini-btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:6px;
+    min-height:32px;
+    padding:7px 11px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    background:#fff;
+    color:var(--ink);
+    font-size:12px;
+    font-weight:800;
+    white-space:nowrap;
+  }
+  .mini-btn.primary{ color:#fff; background:var(--green); border-color:var(--green); }
+  .mini-btn .lucide{ width:14px; height:14px; }
+  .daymap{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; padding:14px; }
+  .daymap__item{
+    border:1px solid var(--line);
+    border-radius:8px;
+    background:#FBFDFB;
+    padding:10px;
+    min-height:70px;
+  }
+  .daymap__item b{ display:block; font-size:12px; }
+  .daymap__item span{ display:block; color:var(--muted); font-size:11px; margin-top:4px; line-height:1.35; }
+  .add-module{
+    min-height:50px;
+    border:1.5px dashed #C5D2C5;
+    border-radius:var(--radius);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    color:var(--muted);
+    background:rgba(255,255,255,.42);
+    font-size:12.5px;
+    font-weight:800;
+  }
+  .add-module .lucide{ width:16px; height:16px; color:var(--green-2); }
+  .weather-card{ padding:15px; }
+  .weather-card__main{ display:flex; align-items:center; gap:12px; }
+  .weather-card__icon{
+    width:44px; height:44px; border-radius:9px;
+    display:grid; place-items:center;
+    background:linear-gradient(135deg,#E9F7FF,#EAF7EF);
+    color:var(--green-2);
+    flex-shrink:0;
+  }
+  .weather-card__temp{ font-size:26px; font-weight:900; letter-spacing:-.03em; }
+  .weather-card__meta{ color:var(--muted); font-size:12px; margin-top:2px; }
+  .weather-bar{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:14px; }
+  .weather-bar div{ border:1px solid var(--line); border-radius:8px; padding:8px; font-size:11px; color:var(--muted); }
+  .weather-bar b{ display:block; color:var(--ink); font-size:12px; margin-bottom:2px; }
+  .recruiting-panel{
+    padding:15px;
+    color:#EAF4EA;
+    background:
+      linear-gradient(135deg,rgba(22,163,74,.22),rgba(37,99,235,.08)),
+      linear-gradient(160deg,#14251B,#0B140D);
+    border-color:#203426;
+  }
+  .recruiting-panel__label{ display:flex; align-items:center; gap:7px; color:#9CE6B8; font-size:12px; font-weight:850; }
+  .recruiting-panel__role{ color:#fff; font-size:16px; font-weight:900; margin-top:10px; }
+  .recruiting-panel__grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:13px; }
+  .recruiting-panel__metric{ background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.08); border-radius:8px; padding:10px; }
+  .recruiting-panel__metric b{ display:block; color:#fff; font-size:24px; line-height:1; }
+  .recruiting-panel__metric span{ color:#9DAEA1; font-size:10.5px; display:block; margin-top:4px; }
+  .quick-grid{ display:grid; grid-template-columns:1fr 1fr; gap:9px; }
+  .quick-grid button{
+    display:flex; align-items:center; gap:9px;
+    min-height:44px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    background:#fff;
+    padding:10px 11px;
+    text-align:left;
+    font-size:12.5px;
+    font-weight:850;
+    box-shadow:var(--shadow);
+  }
+  .quick-grid button:hover{ border-color:#CDE7D4; }
+  .quick-grid .lucide{ width:17px; height:17px; color:var(--green-2); flex-shrink:0; }
+  .pagehead{
+    display:flex;
+    align-items:flex-end;
+    gap:14px;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    margin-bottom:16px;
+  }
+  .pagehead h2{ font-size:24px; letter-spacing:-.02em; line-height:1.1; }
+  .pagehead p{ color:var(--muted); font-size:13px; margin-top:5px; }
+  .tabs{
+    display:flex;
+    gap:5px;
+    align-items:center;
+    width:fit-content;
+    max-width:100%;
+    padding:4px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    background:#EEF3ED;
+    margin-bottom:16px;
+    overflow:auto;
+  }
+  .tab{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    min-height:34px;
+    white-space:nowrap;
+    border-radius:7px;
+    padding:8px 12px;
+    color:var(--muted);
+    font-size:12.5px;
+    font-weight:850;
+  }
+  .tab.on{ color:var(--ink); background:#fff; box-shadow:0 1px 1px rgba(20,30,20,.04); }
+  .count{
+    min-width:18px;
+    height:18px;
+    display:inline-grid;
+    place-items:center;
+    border-radius:999px;
+    padding:0 6px;
+    background:var(--mint);
+    color:var(--green-2);
+    font-size:10.5px;
+    font-weight:900;
+  }
+  .hint{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-bottom:13px;
+    padding:9px 11px;
+    border:1px solid #DCEFE2;
+    border-radius:8px;
+    background:#F3FBF6;
+    color:var(--green-2);
+    font-size:12px;
+    font-weight:750;
+  }
+  .hint .lucide{ width:15px; height:15px; flex-shrink:0; }
+
+  /* Kanban */
+  .kanban{
+    display:grid;
+    grid-template-columns:repeat(4,minmax(210px,1fr));
+    gap:12px;
+    align-items:start;
+  }
+  .kanban-col{
+    min-height:210px;
+    padding:10px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    background:#F2F6F1;
+  }
+  .kanban-col.over{ outline:2px dashed var(--green); outline-offset:-4px; }
+  .kanban-head{ display:flex; align-items:center; gap:7px; padding:3px 3px 10px; font-size:12.5px; font-weight:900; }
+  .kanban-dot{ width:8px; height:8px; border-radius:999px; flex-shrink:0; }
+  .kanban-head .count{ margin-left:auto; background:#fff; color:var(--muted); border:1px solid var(--line); }
+  .candidate{
+    display:block;
+    width:100%;
+    text-align:left;
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:11px;
+    margin-bottom:9px;
+    box-shadow:0 1px 1px rgba(20,30,20,.035);
+    cursor:grab;
+  }
+  .candidate:hover{ border-color:#CDE7D4; }
+  .candidate.dragging{ opacity:.42; }
+  .candidate__top{ display:flex; align-items:center; gap:9px; }
+  .candidate__name{ font-size:13px; font-weight:900; min-width:0; }
+  .candidate__role{ color:var(--muted); font-size:11.5px; margin:7px 0; }
+  .tagrow{ display:flex; gap:5px; flex-wrap:wrap; }
+  .tag{
+    display:inline-flex;
+    align-items:center;
+    min-height:21px;
+    padding:3px 7px;
+    border-radius:6px;
+    background:#F0F3EF;
+    color:#475448;
+    font-size:10.5px;
+    font-weight:800;
+  }
+  .tag.green{ background:var(--mint); color:var(--green-2); }
+  .candidate__meta{ display:flex; align-items:center; gap:6px; color:var(--muted); border-top:1px solid var(--line); margin-top:10px; padding-top:9px; font-size:11px; }
+  .candidate__meta .lucide{ width:13px; height:13px; }
+
+  /* Tables */
+  .table-wrap{ overflow:auto; border-radius:8px; }
+  table{ width:100%; border-collapse:collapse; font-size:13px; min-width:680px; }
+  th{
+    text-align:left;
+    color:var(--muted);
+    font-size:10.5px;
+    letter-spacing:.045em;
+    text-transform:uppercase;
+    padding:11px 13px;
+    border-bottom:1px solid var(--line);
+    background:#FBFDFB;
+  }
+  td{ padding:12px 13px; border-bottom:1px solid var(--line); vertical-align:middle; }
+  tr:last-child td{ border-bottom:0; }
+  tr.clickable{ cursor:pointer; }
+  tr.clickable:hover td{ background:#F7FAF6; }
+  .person-cell{ display:flex; align-items:center; gap:9px; min-width:190px; }
+  .pill{
+    display:inline-flex;
+    align-items:center;
+    min-height:22px;
+    padding:3px 9px;
+    border-radius:999px;
+    font-size:11px;
+    font-weight:850;
+    white-space:nowrap;
+  }
+  .pill.g{ background:var(--mint); color:var(--green-2); }
+  .pill.a{ background:var(--amber-soft); color:var(--amber); }
+  .pill.r{ background:var(--red-soft); color:var(--red); }
+  .pill.b{ background:var(--blue-soft); color:var(--blue); }
+  .pill.v{ background:var(--violet-soft); color:var(--violet); }
+  .pill.n{ background:#F0F3EF; color:#5A685D; }
+
+  /* Planning */
+  .plan-wrap{ overflow:auto; }
+  .plan-grid{
+    display:grid;
+    grid-template-columns:154px repeat(5,minmax(132px,1fr));
+    gap:8px;
+    min-width:900px;
+  }
+  .plan-day{
+    text-align:center;
+    padding:9px;
+    color:var(--muted);
+    font-size:12px;
+    font-weight:900;
+  }
+  .crew{
+    min-height:104px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:12px;
+    border-radius:8px;
+    color:#fff;
+    background:linear-gradient(160deg,var(--sidebar-2),var(--sidebar));
+  }
+  .crew__icon{ width:32px; height:32px; border-radius:8px; display:grid; place-items:center; background:rgba(255,255,255,.10); flex-shrink:0; }
+  .crew b{ display:block; font-size:13px; }
+  .crew span{ display:block; color:#A8B7AB; font-size:11px; margin-top:3px; }
+  .plan-cell{
+    min-height:104px;
+    padding:8px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    background:#F2F6F1;
+  }
+  .plan-cell.over{ outline:2px dashed var(--green); outline-offset:-4px; }
+  .job{
+    border:1px solid var(--line);
+    border-left:4px solid var(--job-color,var(--green));
+    border-radius:8px;
+    background:#fff;
+    padding:9px;
+    margin-bottom:7px;
+    box-shadow:0 1px 1px rgba(20,30,20,.035);
+    cursor:grab;
+  }
+  .job.dragging{ opacity:.42; }
+  .job b{ display:block; font-size:12px; }
+  .job span{ display:block; margin-top:3px; color:var(--muted); font-size:10.5px; line-height:1.3; }
+
+  /* Inbox */
+  .inbox{ display:grid; gap:10px; }
+  .message{
+    display:flex;
+    gap:12px;
+    width:100%;
+    text-align:left;
+    padding:13px;
+    border:1px solid var(--line);
+    border-left-width:3px;
+    border-left-color:transparent;
+    border-radius:8px;
+    background:#fff;
+    box-shadow:var(--shadow);
+  }
+  .message:hover{ border-color:#CDE7D4; border-left-color:var(--green); }
+  .message.unread{ border-left-color:var(--green); }
+  .channel{
+    width:38px; height:38px; border-radius:8px;
+    display:grid; place-items:center;
+    flex-shrink:0;
+  }
+  .channel .lucide{ width:18px; height:18px; }
+  .channel.wa{ background:#E7F8EE; color:#1FA855; }
+  .channel.mail{ background:var(--blue-soft); color:var(--blue); }
+  .channel.tel{ background:var(--amber-soft); color:var(--amber); }
+  .channel.web{ background:var(--violet-soft); color:var(--violet); }
+  .message__body{ min-width:0; flex:1; }
+  .message__top{ display:flex; align-items:center; gap:8px; min-width:0; }
+  .message__top b{ font-size:13.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .message__time{ margin-left:auto; flex-shrink:0; color:var(--muted); font-size:11px; }
+  .message__subject{ display:block; margin-top:4px; font-size:12.5px; font-weight:750; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .message__preview{ display:block; margin-top:3px; color:var(--muted); font-size:11.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+  /* Modal and toast */
+  .overlay{
+    position:fixed;
+    inset:0;
+    z-index:220;
+    display:grid;
+    place-items:center;
+    padding:18px;
+    background:rgba(12,23,13,.56);
+    backdrop-filter:blur(4px);
+  }
+  .overlay.hidden{ display:none; }
+  .sheet{
+    width:min(100%,540px);
+    max-height:88vh;
+    overflow:auto;
+    background:#fff;
+    border-radius:10px;
+    box-shadow:var(--shadow-strong);
+  }
+  .sheet__head{
+    display:flex;
+    align-items:center;
+    gap:13px;
+    padding:18px 20px;
+    border-bottom:1px solid var(--line);
+    position:sticky;
+    top:0;
+    background:#fff;
+    z-index:2;
+  }
+  .sheet__title{ font-size:17px; font-weight:900; letter-spacing:-.01em; }
+  .sheet__sub{ color:var(--muted); font-size:12.5px; margin-top:3px; }
+  .sheet__close{ margin-left:auto; }
+  .sheet__body{ padding:18px 20px 20px; }
+  .detail-row{ display:flex; gap:14px; padding:11px 0; border-bottom:1px solid var(--line); font-size:13px; }
+  .detail-row:last-child{ border-bottom:0; }
+  .detail-row dt{ width:130px; flex-shrink:0; color:var(--muted); }
+  .detail-row dd{ font-weight:750; }
+  .sheet-actions{ display:flex; gap:10px; margin-top:18px; }
+  .toast{
+    position:fixed;
+    left:50%;
+    bottom:24px;
+    z-index:300;
+    display:flex;
+    align-items:center;
+    gap:9px;
+    max-width:min(92vw,520px);
+    padding:12px 16px;
+    border-radius:8px;
+    background:#122118;
+    color:#fff;
+    box-shadow:var(--shadow-strong);
+    transform:translateX(-50%) translateY(18px);
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .22s, transform .22s;
+    font-size:13px;
+    font-weight:800;
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+  .toast .lucide{ width:16px; height:16px; color:#8DE8AE; }
+
+  @media(max-width:1080px){
+    .dashboard{ grid-template-columns:1fr; }
+    .kanban{ grid-template-columns:repeat(2,minmax(240px,1fr)); }
+  }
+  @media(max-width:860px){
+    .app{ height:100dvh; min-height:100dvh; background:#fff; }
+    .sidebar{
+      position:fixed;
+      inset:0 auto 0 0;
+      z-index:180;
+      width:min(86vw,292px);
+      flex-basis:auto;
+      transform:translateX(-104%);
+      box-shadow:0 20px 80px rgba(0,0,0,.35);
+    }
+    .app.mopen .sidebar{ transform:translateX(0); }
+    .app.collapsed .sidebar{ width:min(86vw,292px); }
+    .app.collapsed .sidebrand__text,.app.collapsed .navitem__label,.app.collapsed .navitem__badge,.app.collapsed .powered span,.app.collapsed .sideuser__text{ display:block; }
+    .app.collapsed .navitem{ justify-content:flex-start; padding:10px 11px; }
+    .app.collapsed .powered{ display:flex; }
+    .scrim{
+      display:block;
+      position:fixed;
+      inset:0;
+      z-index:170;
+      background:rgba(0,0,0,.42);
+    }
+    .scrim.hidden{ display:none !important; }
+    .main{ border-radius:0; }
+    .topbar{ padding:0 14px; height:58px; }
+    .viewtitle{ font-size:14px; }
+    .weather-mini{ display:none; }
+    .content{ padding:16px 14px 84px; }
+    .hello{ display:block; }
+    .hello h2{ font-size:28px; }
+    .statusline{ margin-top:12px; white-space:normal; align-items:flex-start; }
+    .kpi-grid{ grid-template-columns:1fr; }
+    .daymap{ grid-template-columns:1fr; }
+    .kanban{ grid-template-columns:1fr; }
+    .tabs{ width:100%; }
+    .task{ align-items:flex-start; }
+    .task__title,.task__meta{ white-space:normal; }
+    .task .mini-btn{ display:none; }
+    .quick-grid{ grid-template-columns:1fr 1fr; }
+    .mobile-nav{
+      display:flex;
+      position:fixed;
+      left:0; right:0; bottom:0;
+      z-index:150;
+      min-height:66px;
+      padding:6px 6px max(6px,env(safe-area-inset-bottom));
+      background:rgba(255,255,255,.96);
+      border-top:1px solid var(--line);
+      backdrop-filter:blur(14px);
+    }
+    .mobile-nav button{
+      flex:1;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      gap:3px;
+      border-radius:8px;
+      color:var(--muted);
+      font-size:10.5px;
+      font-weight:850;
+      position:relative;
+    }
+    .mobile-nav button.on{ color:var(--green-2); background:var(--mint); }
+    .mobile-nav .lucide{ width:20px; height:20px; }
+    .mobile-nav .navitem__badge{
+      display:grid;
+      position:absolute;
+      top:5px;
+      right:50%;
+      transform:translateX(18px);
+      min-width:16px;
+      height:16px;
+      font-size:9px;
+      padding:0 5px;
+    }
+    .sheet-actions{ flex-direction:column; }
+    .toast{ bottom:78px; }
+  }
+  @media(max-width:520px){
+    .auth__card{ padding:24px; }
+    .auth__row{ align-items:flex-start; flex-direction:column; gap:10px; }
+    .quick-grid{ grid-template-columns:1fr; }
+    .message{ padding:12px; gap:10px; }
+    .message__top{ flex-wrap:wrap; }
+    .message__time{ width:100%; margin-left:0; }
+    .detail-row{ display:block; }
+    .detail-row dt{ width:auto; margin-bottom:4px; }
+    .ustat{ grid-template-columns:1fr; }
+    .usub{ flex-direction:column; align-items:stretch; }
+    .usub .btn{ width:100%; }
+    .fieldrow{ grid-template-columns:1fr; }
+    .req{ flex-direction:column; align-items:stretch; gap:10px; }
+    .req__side{ justify-content:flex-end; }
+  }
+  /* ===== Urlaub & Krank ===== */
+  .ustat{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-bottom:14px; }
+  .ustat__card{ display:flex; align-items:center; gap:13px; padding:14px 15px; background:var(--card); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); }
+  .ustat__card.warn{ border-color:#F0DcA8; background:linear-gradient(180deg,#FFFDF6,#fff); }
+  .ustat__ic{ width:40px; height:40px; border-radius:10px; display:grid; place-items:center; flex-shrink:0; }
+  .ustat__ic .lucide{ width:20px; height:20px; }
+  .ustat__ic.blue{ background:var(--blue-soft); color:var(--blue); }
+  .ustat__ic.amber{ background:var(--amber-soft); color:var(--amber); }
+  .ustat__ic.green{ background:var(--mint); color:var(--green-2); }
+  .ustat__n{ font-size:21px; font-weight:850; line-height:1; }
+  .ustat__l{ font-size:12.5px; font-weight:750; color:var(--ink-2); margin-top:3px; }
+  .ustat__s{ font-size:11px; color:var(--muted); margin-top:2px; }
+
+  .usub{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px; }
+  .seg{ display:inline-flex; gap:3px; padding:3px; background:var(--canvas-2); border:1px solid var(--line); border-radius:9px; }
+  .segb{ display:inline-flex; align-items:center; gap:6px; padding:7px 13px; border-radius:7px; font-size:13px; font-weight:750; color:var(--muted); transition:background .14s,color .14s; }
+  .segb:hover{ color:var(--ink); }
+  .segb.on{ background:#fff; color:var(--ink); box-shadow:0 1px 2px rgba(20,30,20,.08); }
+  .segb .count{ background:var(--green); color:#fff; }
+  .seg--type{ display:flex; width:100%; }
+  .seg--type .segb{ flex:1; justify-content:center; }
+
+  .cal-scroll{ overflow-x:auto; margin:0 -3px; padding:0 3px; }
+  .cal{ min-width:max-content; }
+  .cal-row{ display:grid; grid-template-columns:170px repeat(var(--days),minmax(30px,1fr)); }
+  .cal-headrow{ position:sticky; top:0; z-index:3; }
+  .cal-name{ position:sticky; left:0; z-index:2; display:flex; align-items:center; gap:9px; padding:7px 10px; background:#fff; border-bottom:1px solid var(--line); border-right:1px solid var(--line-2); }
+  .cal-name--h{ font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); background:var(--canvas); }
+  .cal-headrow .cal-name{ background:var(--canvas); }
+  .cal-name .avatar{ width:26px; height:26px; font-size:10px; }
+  .cal-name__t{ min-width:0; line-height:1.2; }
+  .cal-name__t b{ font-size:12.5px; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .cal-name__t small{ font-size:10.5px; color:var(--muted); }
+  .cal-h{ padding:5px 0; text-align:center; border-bottom:1px solid var(--line); border-right:1px solid var(--line); background:var(--canvas); }
+  .cal-h span{ display:block; font-size:9.5px; font-weight:700; color:var(--muted-2); text-transform:uppercase; }
+  .cal-h b{ font-size:12px; }
+  .cal-h.we{ background:#EFF2EE; }
+  .cal-h.today{ background:var(--mint); color:var(--green-3); }
+  .cal-h.today b{ color:var(--green-3); }
+  .cal-c{ position:relative; height:38px; border-bottom:1px solid var(--line); border-right:1px solid var(--line); }
+  .cal-c.we{ background:#F7F9F6; }
+  .cal-c.today{ background:rgba(22,163,74,.06); }
+  .cal-fill{ position:absolute; top:7px; bottom:7px; left:0; right:0; color:var(--green); background:currentColor; cursor:pointer; }
+  .cal-fill.urlaub{ color:#16A34A; }
+  .cal-fill.krank{ color:#C24141; }
+  .cal-fill.sonder{ color:#7C3AED; }
+  .cal-fill.s{ left:3px; border-top-left-radius:6px; border-bottom-left-radius:6px; }
+  .cal-fill.e{ right:3px; border-top-right-radius:6px; border-bottom-right-radius:6px; }
+  .cal-fill.offen{ background:color-mix(in srgb, currentColor 16%, transparent); border-top:1.6px dashed currentColor; border-bottom:1.6px dashed currentColor; }
+  .cal-fill.offen.s{ border-left:1.6px dashed currentColor; }
+  .cal-fill.offen.e{ border-right:1.6px dashed currentColor; }
+  .cal-top{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:12px; }
+  .cal-nav{ display:flex; align-items:center; gap:6px; }
+  .cal-nav b{ min-width:128px; text-align:center; font-size:14.5px; font-weight:850; }
+  .cal-nav .iconbtn{ width:32px; height:32px; }
+  .cal-legend{ display:flex; gap:14px; flex-wrap:wrap; font-size:11.5px; color:var(--muted); font-weight:600; }
+  .dot{ width:11px; height:11px; border-radius:3px; display:inline-block; margin-right:5px; vertical-align:-1px; }
+  .dot.urlaub{ background:#16A34A; }
+  .dot.krank{ background:#C24141; }
+  .dot.sonder{ background:#7C3AED; }
+  .dot.offen{ background:color-mix(in srgb,#16A34A 16%,transparent); border:1.6px dashed #16A34A; }
+
+  .reqlist{ display:flex; flex-direction:column; gap:8px; }
+  .req{ display:flex; align-items:center; gap:12px; padding:11px 13px; background:var(--card); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); }
+  .req__main{ display:flex; align-items:center; gap:11px; flex:1; min-width:0; text-align:left; }
+  .req__main .avatar{ width:38px; height:38px; }
+  .req__txt{ min-width:0; }
+  .req__top{ display:flex; align-items:center; gap:8px; }
+  .req__top b{ font-size:13.5px; }
+  .req__sub{ display:block; font-size:12px; color:var(--muted); margin-top:2px; }
+  .req__warn{ display:inline-flex; align-items:center; gap:5px; margin-top:5px; font-size:11.5px; font-weight:700; color:var(--amber); }
+  .req__warn .lucide{ width:13px; height:13px; }
+  .req__side{ display:flex; align-items:center; gap:7px; flex-shrink:0; }
+  .iconbtn.sm{ width:30px; height:30px; }
+  .mini-btn.danger{ color:var(--red); border-color:#E6CFCF; }
+  .mini-btn.danger:hover{ background:var(--red-soft); }
+
+  .vbar{ height:8px; border-radius:999px; background:var(--canvas-2); overflow:hidden; }
+  .vbar span{ display:block; height:100%; border-radius:999px; background:var(--green); }
+  .vbar span.hot{ background:var(--amber); }
+
+  .empty{ display:flex; flex-direction:column; align-items:center; gap:10px; padding:46px 20px; color:var(--muted); text-align:center; }
+  .empty .lucide{ width:30px; height:30px; color:var(--line-2); }
+
+  .fieldrow{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .field select{ width:100%; border:1px solid var(--line); border-radius:8px; padding:11px 12px; background:#FBFDFB; outline:none; }
+  .field select:focus{ border-color:var(--green); background:#fff; box-shadow:0 0 0 3px rgba(22,163,74,.12); }
+  .field input[type=date]{ width:100%; }
+  .afprev{ background:var(--canvas); border:1px solid var(--line); border-radius:8px; padding:11px 13px; margin:4px 0 14px; font-size:13px; }
+  .afprev.warn{ background:#FFFBF2; border-color:#F0DcA8; }
+  .afprev__main b{ font-size:15px; }
+  .afprev__warn{ display:flex; align-items:center; gap:6px; margin-top:7px; font-weight:750; color:var(--amber); font-size:12.5px; }
+  .afprev__warn .lucide{ width:14px; height:14px; }
+  .afprev__hint{ margin-top:6px; font-size:11.5px; color:var(--muted); }
 </style>
 </head>
 <body>
-
-<!-- ================= LOGIN ================= -->
 <div class="auth" id="auth">
-  <div class="auth__card">
-    <!-- view: login -->
-    <div id="vLogin">
-      <div class="auth__logo"><span class="m"><i data-lucide="leaf"></i></span><span class="n">GreenCareers <small>OS</small></span></div>
+  <section class="auth__card">
+    <div id="loginView">
+      <div class="auth__brand">
+        <span class="brandmark"><i data-lucide="leaf"></i></span>
+        <div>
+          <div class="brandname">GreenCareers <small>OS</small></div>
+          <div class="brandsub">Betriebssoftware für GaLaBau</div>
+        </div>
+      </div>
       <h1>Willkommen zurück</h1>
-      <p class="sub">Melde dich an, um dein Betriebs-Dashboard zu öffnen.</p>
-      <div class="field"><label>E-Mail</label><input id="liMail" type="email" placeholder="georg@mueller-galabau.de" value="georg@mueller-galabau.de" /></div>
-      <div class="field"><label>Passwort</label><input id="liPass" type="password" placeholder="••••••••" value="demo1234" /></div>
-      <div class="auth__row"><label class="auth__chk"><input type="checkbox" checked /> Angemeldet bleiben</label><a onclick="authView('reset')">Passwort vergessen?</a></div>
-      <button class="btn" onclick="doLogin()">Anmelden</button>
-      <div class="auth__foot">Geschützter Bereich · GreenCareers OS</div>
+      <p class="sub">Melde dich an und öffne das Cockpit für Müller GaLaBau.</p>
+      <div class="field"><label for="email">E-Mail</label><input id="email" type="email" value="georg@mueller-galabau.de" autocomplete="email" /></div>
+      <div class="field"><label for="password">Passwort</label><input id="password" type="password" value="demo1234" autocomplete="current-password" /></div>
+      <div class="auth__row">
+        <label class="auth__chk"><input type="checkbox" checked /> Angemeldet bleiben</label>
+        <a onclick="showAuth('reset')">Passwort vergessen?</a>
+      </div>
+      <button class="btn full" onclick="login()">Anmelden</button>
+      <div class="auth__foot"><span>Demo-Zugang</span><span>georg@mueller-galabau.de</span></div>
     </div>
-    <!-- view: reset -->
-    <div id="vReset" class="hidden">
-      <span class="auth__back" onclick="authView('login')"><i data-lucide="arrow-left"></i> Zurück</span>
+    <div id="resetView" class="hidden">
+      <span class="auth__back" onclick="showAuth('login')"><i data-lucide="arrow-left"></i> Zurück</span>
       <h1>Passwort zurücksetzen</h1>
-      <p class="sub">Gib deine E-Mail ein — wir senden dir einen Link zum Zurücksetzen.</p>
-      <div class="field"><label>E-Mail</label><input type="email" placeholder="georg@mueller-galabau.de" /></div>
-      <button class="btn" onclick="authView('sent')">Link senden</button>
+      <p class="sub">Gib deine E-Mail ein. Wir schicken dir einen Link zum Zurücksetzen.</p>
+      <div class="field"><label for="resetEmail">E-Mail</label><input id="resetEmail" type="email" value="georg@mueller-galabau.de" /></div>
+      <button class="btn full" onclick="showAuth('sent')">Link senden</button>
     </div>
-    <!-- view: sent -->
-    <div id="vSent" class="hidden" style="text-align:center">
-      <div style="width:56px;height:56px;border-radius:50%;background:var(--accentSoft);color:var(--accent);display:grid;place-items:center;margin:8px auto 16px"><i data-lucide="mail-check" style="width:26px;height:26px"></i></div>
-      <h1>E-Mail unterwegs</h1>
-      <p class="sub">Wir haben dir einen Link zum Zurücksetzen geschickt. Schau in dein Postfach.</p>
-      <button class="btn ghost" onclick="authView('login')">Zurück zum Login</button>
+    <div id="sentView" class="hidden">
+      <span class="brandmark" style="margin-bottom:16px"><i data-lucide="mail-check"></i></span>
+      <h1>Link gesendet</h1>
+      <p class="sub">Schau in dein Postfach. Der Login-Link ist gleich da.</p>
+      <button class="btn ghost full" onclick="showAuth('login')">Zurück zum Login</button>
     </div>
-  </div>
+  </section>
 </div>
 
-<!-- ================= APP ================= -->
 <div class="app hidden" id="app">
   <div class="scrim hidden" id="scrim" onclick="toggleMobile(false)"></div>
-  <aside class="sb">
-    <div class="sb__brand"><span class="m"><i data-lucide="leaf"></i></span><div class="t"><b>Müller GaLaBau</b><small>Garten- &amp; Landschaftsbau</small></div></div>
-    <nav class="sb__nav" id="sbNav"></nav>
-    <div class="sb__foot">
-      <div class="sb__pwr"><i data-lucide="leaf"></i><span>läuft auf <b>GreenCareers OS</b></span></div>
-      <div class="sb__user" onclick="toast('Profil &amp; Einstellungen folgen')"><span class="sb__ava">GM</span><div class="t"><b>Georg Müller</b><small>Inhaber</small></div></div>
+  <aside class="sidebar">
+    <div class="sidebrand">
+      <span class="brandmark"><i data-lucide="leaf"></i></span>
+      <div class="sidebrand__text"><b>Müller GaLaBau</b><span>Garten- &amp; Landschaftsbau</span></div>
+    </div>
+    <nav class="nav" id="sideNav"></nav>
+    <div class="sidefoot">
+      <div class="powered"><i data-lucide="leaf"></i><span>läuft auf <b>GreenCareers OS</b></span></div>
+      <button class="sideuser" onclick="toast('Profil & Einstellungen folgen')">
+        <span class="avatar">GM</span>
+        <span class="sideuser__text"><b>Georg Müller</b><span>Inhaber</span></span>
+      </button>
     </div>
   </aside>
-  <div class="main">
-    <header class="top">
-      <button class="burger" onclick="toggleSidebar()"><i data-lucide="panel-left"></i></button>
-      <div class="ttl" id="topTitle"><i data-lucide="layout-dashboard"></i> Heute</div>
-      <span class="sp"></span>
-      <div class="wmini"><span class="wt"><i data-lucide="cloud-sun"></i></span><div style="line-height:1.25"><div><b>21°C</b> · Hamburg</div><div style="font-size:10.5px">trocken — guter Arbeitstag</div></div></div>
-      <button class="bell" onclick="toast('Keine neuen Benachrichtigungen')"><i data-lucide="bell"></i></button>
+  <main class="main">
+    <header class="topbar">
+      <button class="iconbtn" onclick="toggleSidebar()" title="Navigation"><i data-lucide="panel-left"></i></button>
+      <div class="viewtitle" id="viewTitle"></div>
+      <span class="topbar__spacer"></span>
+      <div class="weather-mini"><span class="bubble"><i data-lucide="cloud-sun"></i></span><span><b>21°C</b> · Hamburg<br />trocken - guter Arbeitstag</span></div>
+      <button class="iconbtn bell" onclick="toast('Keine neuen Benachrichtigungen')" title="Benachrichtigungen"><i data-lucide="bell"></i></button>
     </header>
-    <div class="body" id="view"></div>
-  </div>
-  <nav class="mnav" id="mnav"></nav>
+    <section class="content" id="view"></section>
+  </main>
+  <nav class="mobile-nav" id="mobileNav"></nav>
 </div>
 
-<div class="ov hidden" id="modal"><div class="sheet" id="sheet"></div></div>
+<div class="overlay hidden" id="modal"><div class="sheet" id="sheet"></div></div>
 <div class="toast" id="toast"><i data-lucide="check-circle-2"></i><span id="toastText"></span></div>
 
 <script>
-/* ============ DATA ============ */
 const NAV = [
-  ['heute','layout-dashboard','Heute',''],
-  ['team','users','Team','2'],
-  ['planung','calendar-range','Planung',''],
-  ['kunden','handshake','Kunden','5'],
+  {id:'heute', label:'Heute', icon:'layout-dashboard', badge:''},
+  {id:'team', label:'Team', icon:'users', badge:'2'},
+  {id:'planung', label:'Planung', icon:'calendar-range', badge:''},
+  {id:'kunden', label:'Kunden', icon:'handshake', badge:'5'},
 ];
+
 const applicants = {
   neu: [
-    {id:1,name:'Daniel Hoffmann',role:'Landschaftsgärtner',tags:['Führerschein','3 J. Erfahrung'],meta:'Beworben heute · WhatsApp'},
-    {id:2,name:'Erik Lindqvist',role:'Geselle GaLaBau',tags:['Umzug möglich'],meta:'Beworben gestern · Web'},
+    {id:1,name:'Daniel Hoffmann',role:'Landschaftsgärtner',tags:['Führerschein','3 J. Erfahrung'],meta:'Beworben heute · WhatsApp',source:'WhatsApp',available:'ab sofort'},
+    {id:2,name:'Erik Lindqvist',role:'Geselle GaLaBau',tags:['Umzug möglich'],meta:'Beworben gestern · Web',source:'Web',available:'in 4 Wochen'},
   ],
   quali: [
-    {id:3,name:'Thomas Krause',role:'Vorarbeiter',tags:['Führerschein BE','Bagger'],meta:'Vom Bot qualifiziert',hot:true},
-    {id:4,name:'Murat Yilmaz',role:'Pflasterer',tags:['10 J. Erfahrung'],meta:'Vom Bot qualifiziert',hot:true},
+    {id:3,name:'Thomas Krause',role:'Vorarbeiter',tags:['Führerschein BE','Bagger'],meta:'Vom Bot qualifiziert',source:'WhatsApp-Bot',available:'ab sofort',hot:true},
+    {id:4,name:'Murat Yilmaz',role:'Pflasterer',tags:['10 J. Erfahrung'],meta:'Vom Bot qualifiziert',source:'WhatsApp-Bot',available:'ab 15.06.',hot:true},
   ],
   gespraech: [
-    {id:5,name:'Lukas Berger',role:'Azubi GaLaBau',tags:['Probetag 14.06.'],meta:'Termin vereinbart'},
+    {id:5,name:'Lukas Berger',role:'Azubi GaLaBau',tags:['Probetag 14.06.'],meta:'Termin vereinbart',source:'Web',available:'Sommer 2026'},
   ],
   eingestellt: [
-    {id:6,name:'Jonas Weber',role:'Landschaftsgärtner',tags:['Start 01.07.'],meta:'Vertrag unterschrieben'},
+    {id:6,name:'Jonas Weber',role:'Landschaftsgärtner',tags:['Start 01.07.'],meta:'Vertrag unterschrieben',source:'Empfehlung',available:'01.07.'},
   ],
 };
-const KCOLS = [['neu','Neu','#9AA59B'],['quali','Qualifiziert · anrufen','#16A34A'],['gespraech','Im Gespräch','#2563EB'],['eingestellt','Eingestellt','#7C3AED']];
+const kanbanCols = [
+  {id:'neu', label:'Neu', color:'#9AA59B'},
+  {id:'quali', label:'Qualifiziert · anrufen', color:'#16A34A'},
+  {id:'gespraech', label:'Im Gespräch', color:'#2563EB'},
+  {id:'eingestellt', label:'Eingestellt', color:'#7C3AED'},
+];
 const employees = [
-  {id:1,name:'Sven Albrecht',role:'Vorarbeiter',kol:'Kolonne 1',tel:'0171 2345678',since:'2019',status:['Aktiv','g'],urlaub:'12 / 30'},
-  {id:2,name:'Mehmet Kaya',role:'Pflasterer',kol:'Kolonne 2',tel:'0152 9876543',since:'2021',status:['Aktiv','g'],urlaub:'8 / 28'},
-  {id:3,name:'Tim Schulz',role:'Landschaftsgärtner',kol:'Kolonne 3',tel:'0176 4455667',since:'2022',status:['Aktiv','g'],urlaub:'19 / 28'},
-  {id:4,name:'Ali Demir',role:'Geselle',kol:'Kolonne 2',tel:'0163 1122334',since:'2020',status:['Krank','r'],urlaub:'5 / 28'},
-  {id:5,name:'Lukas Berger',role:'Azubi',kol:'Kolonne 1',tel:'0151 7788990',since:'2024',status:['Urlaub','a'],urlaub:'2 / 26'},
+  {id:1,name:'Sven Albrecht',role:'Vorarbeiter',crew:'Kolonne 1',phone:'0171 2345678',since:'2019',annual:30},
+  {id:2,name:'Mehmet Kaya',role:'Pflasterer',crew:'Kolonne 2',phone:'0152 9876543',since:'2021',annual:28},
+  {id:3,name:'Tim Schulz',role:'Landschaftsgärtner',crew:'Kolonne 3',phone:'0176 4455667',since:'2022',annual:28},
+  {id:4,name:'Ali Demir',role:'Geselle',crew:'Kolonne 2',phone:'0163 1122334',since:'2020',annual:28},
+  {id:5,name:'Lukas Berger',role:'Azubi',crew:'Kolonne 1',phone:'0151 7788990',since:'2024',annual:26},
+  {id:6,name:'Jonas Weber',role:'Landschaftsgärtner',crew:'Kolonne 3',phone:'0170 5566778',since:'2023',annual:28},
+  {id:7,name:'Peter Krause',role:'Vorarbeiter',crew:'Kolonne 3',phone:'0172 9988776',since:'2018',annual:30},
+  {id:8,name:'Marek Nowak',role:'Pflasterer',crew:'Kolonne 2',phone:'0159 4433221',since:'2022',annual:28},
+  {id:9,name:'Finn Hansen',role:'Geselle',crew:'Kolonne 1',phone:'0162 1212343',since:'2023',annual:28},
+  {id:10,name:'Stefan Vogt',role:'Maschinist',crew:'Kolonne 3',phone:'0177 7676545',since:'2017',annual:30},
 ];
-const urlaub = [
-  {name:'Sven Albrecht',type:['Urlaub','b'],von:'08.07.',bis:'19.07.',tage:'10 Tage',status:['Offen','a']},
-  {name:'Lukas Berger',type:['Urlaub','b'],von:'03.06.',bis:'07.06.',tage:'5 Tage',status:['Genehmigt','g']},
-  {name:'Ali Demir',type:['Krank','r'],von:'03.06.',bis:'—',tage:'AU liegt vor',status:['Aktiv','r']},
-  {name:'Tim Schulz',type:['Urlaub','b'],von:'12.08.',bis:'23.08.',tage:'10 Tage',status:['Offen','a']},
+// Prototyp-„Heute" = Mittwoch, 3. Juni 2026 (passt zum Cockpit-Gruß)
+const TODAY = '2026-06-03';
+// Abwesenheiten: type urlaub|krank|sonder · status offen|genehmigt|abgelehnt · ISO-Datum, to inklusive ('' = offen/laufend)
+const DEFAULT_ABSENCES = [
+  {id:1, empId:4, type:'krank',  from:'2026-06-02', to:'',           note:'AU liegt vor (bis 12.06.)', status:'genehmigt'},
+  {id:2, empId:9, type:'krank',  from:'2026-06-09', to:'2026-06-11', note:'Erkältung',                 status:'genehmigt'},
+  {id:3, empId:2, type:'urlaub', from:'2026-06-04', to:'2026-06-05', note:'Brückentage',               status:'genehmigt'},
+  {id:4, empId:5, type:'urlaub', from:'2026-06-15', to:'2026-06-19', note:'',                          status:'genehmigt'},
+  {id:5, empId:8, type:'sonder', from:'2026-06-11', to:'2026-06-12', note:'Umzug',                      status:'genehmigt'},
+  {id:6, empId:3, type:'urlaub', from:'2026-06-22', to:'2026-06-26', note:'Familienurlaub',            status:'offen'},
+  {id:7, empId:10,type:'urlaub', from:'2026-06-23', to:'2026-06-25', note:'',                          status:'offen'},
+  {id:8, empId:1, type:'urlaub', from:'2026-07-06', to:'2026-07-17', note:'Sommerurlaub',              status:'offen'},
+  {id:9, empId:7, type:'urlaub', from:'2026-08-10', to:'2026-08-21', note:'',                          status:'genehmigt'},
 ];
-const zeit = [
-  {name:'Sven Albrecht',ein:'06:58',aus:'—',std:'5,2 h',ort:'Garten Schmidt',status:['Läuft','g']},
-  {name:'Mehmet Kaya',ein:'06:31',aus:'—',std:'5,7 h',ort:'Pflaster Brandt',status:['Läuft','g']},
-  {name:'Tim Schulz',ein:'07:45',aus:'—',std:'4,4 h',ort:'Hecke Petersen',status:['Läuft','g']},
-  {name:'Jonas Weber',ein:'07:02',aus:'15:30',std:'8,0 h',ort:'Bauhof',status:['Fertig','n']},
+let absences = loadAbsences();
+let absSeq = absences.reduce((m,a) => Math.max(m, a.id), 0) + 1;
+function loadAbsences(){
+  try{
+    const raw = localStorage.getItem('gcos_absences_v1');
+    if(raw){ const parsed = JSON.parse(raw); if(Array.isArray(parsed)) return parsed; }
+  }catch(e){}
+  return DEFAULT_ABSENCES.map(a => ({...a}));
+}
+function saveAbsences(){
+  try{ localStorage.setItem('gcos_absences_v1', JSON.stringify(absences)); }catch(e){}
+}
+function resetAbsences(){
+  absences = DEFAULT_ABSENCES.map(a => ({...a}));
+  absSeq = absences.reduce((m,a) => Math.max(m, a.id), 0) + 1;
+  saveAbsences();
+  teamTab('urlaub');
+  toast('Demo-Daten zurückgesetzt');
+}
+const times = [
+  {name:'Sven Albrecht',in:'06:58',out:'-',hours:'5,2 h',site:'Garten Schmidt',status:['Läuft','g']},
+  {name:'Mehmet Kaya',in:'06:31',out:'-',hours:'5,7 h',site:'Pflaster Brandt',status:['Läuft','g']},
+  {name:'Tim Schulz',in:'07:45',out:'-',hours:'4,4 h',site:'Hecke Petersen',status:['Läuft','g']},
+  {name:'Jonas Weber',in:'07:02',out:'15:30',hours:'8,0 h',site:'Bauhof',status:['Fertig','n']},
 ];
-const plantafel = {
-  k1: { neu:[{t:'Garten Schmidt',o:'Norderstedt · Neuanlage',c:'#16A34A'}], di:[{t:'Garten Schmidt',o:'Norderstedt',c:'#16A34A'}], mi:[{t:'Pflege Stadtpark',o:'Hamburg-Nord',c:'#2563EB'}], do:[], fr:[{t:'Hecke Voss',o:'Pinneberg',c:'#7C3AED'}] },
-  k2: { neu:[{t:'Pflaster Brandt',o:'Ahrensburg',c:'#B7791F'}], di:[{t:'Pflaster Brandt',o:'Ahrensburg',c:'#B7791F'}], mi:[{t:'Pflaster Brandt',o:'Ahrensburg',c:'#B7791F'}], do:[{t:'Mauer Köhler',o:'Reinbek',c:'#16A34A'}], fr:[] },
-  k3: { neu:[{t:'Hecke Petersen',o:'Volksdorf',c:'#7C3AED'}], di:[], mi:[{t:'Rasen Sülldorf',o:'Hamburg-West',c:'#16A34A'}], do:[{t:'Rasen Sülldorf',o:'Hamburg-West',c:'#16A34A'}], fr:[{t:'Pflege Tour',o:'Diverse',c:'#2563EB'}] },
+const plan = {
+  k1:{neu:[{t:'Garten Schmidt',o:'Norderstedt · Neuanlage',c:'#16A34A'}],di:[{t:'Garten Schmidt',o:'Norderstedt',c:'#16A34A'}],mi:[{t:'Pflege Stadtpark',o:'Hamburg-Nord',c:'#2563EB'}],do:[],fr:[{t:'Hecke Voss',o:'Pinneberg',c:'#7C3AED'}]},
+  k2:{neu:[{t:'Pflaster Brandt',o:'Ahrensburg',c:'#B7791F'}],di:[{t:'Pflaster Brandt',o:'Ahrensburg',c:'#B7791F'}],mi:[{t:'Pflaster Brandt',o:'Ahrensburg',c:'#B7791F'}],do:[{t:'Mauer Köhler',o:'Reinbek',c:'#16A34A'}],fr:[]},
+  k3:{neu:[{t:'Hecke Petersen',o:'Volksdorf',c:'#7C3AED'}],di:[],mi:[{t:'Rasen Sülldorf',o:'Hamburg-West',c:'#16A34A'}],do:[{t:'Rasen Sülldorf',o:'Hamburg-West',c:'#16A34A'}],fr:[{t:'Pflege Tour',o:'Diverse',c:'#2563EB'}]},
 };
-const PDAYS=[['neu','Heute · Mi'],['di','Do'],['mi','Fr'],['do','Mo'],['fr','Di']];
-const PKOL=[['k1','Kolonne 1','3 Mann'],['k2','Kolonne 2','2 Mann'],['k3','Kolonne 3','3 Mann']];
+const days = [
+  {id:'neu', label:'Heute · Mi'},
+  {id:'di', label:'Do'},
+  {id:'mi', label:'Fr'},
+  {id:'do', label:'Mo'},
+  {id:'fr', label:'Di'},
+];
+const crews = [
+  {id:'k1', label:'Kolonne 1', meta:'3 Mann'},
+  {id:'k2', label:'Kolonne 2', meta:'2 Mann'},
+  {id:'k3', label:'Kolonne 3', meta:'3 Mann'},
+];
 const inbox = [
-  {id:1,ch:'wa',from:'Familie Brandt',sub:'Gartenneuanlage gewünscht',pre:'Hallo, wir möchten unseren Garten neu anlegen lassen. Können Sie…',time:'vor 20 Min.',unread:true},
-  {id:2,ch:'mail',from:'Stadtwerke Nord',sub:'Ausschreibung Grünpflege 2026/27',pre:'Sehr geehrte Damen und Herren, anbei die Unterlagen zur…',time:'vor 1 Std.',unread:true},
-  {id:3,ch:'tel',from:'Herr Petersen',sub:'Rückruf erbeten — Heckenschnitt',pre:'Verpasster Anruf · Mailbox: „…wegen dem Heckenschnitt…"',time:'vor 2 Std.',unread:true},
+  {id:1,ch:'wa',from:'Familie Brandt',sub:'Gartenneuanlage gewünscht',pre:'Hallo, wir möchten unseren Garten neu anlegen lassen. Können Sie kurzfristig vorbeikommen?',time:'vor 20 Min.',unread:true},
+  {id:2,ch:'mail',from:'Stadtwerke Nord',sub:'Ausschreibung Grünpflege 2026/27',pre:'Sehr geehrte Damen und Herren, anbei die Unterlagen zur Ausschreibung.',time:'vor 1 Std.',unread:true},
+  {id:3,ch:'tel',from:'Herr Petersen',sub:'Rückruf erbeten - Heckenschnitt',pre:'Verpasster Anruf · Mailbox: wegen dem Heckenschnitt im Juni.',time:'vor 2 Std.',unread:true},
   {id:4,ch:'web',from:'Anja Bauer',sub:'Anfrage über Website',pre:'Terrasse pflastern, ca. 40 m², Wunschtermin im Juli.',time:'gestern',unread:false},
   {id:5,ch:'wa',from:'Klaus Möller',sub:'Frage zu Angebot',pre:'Passt der Termin am Freitag noch für die Besichtigung?',time:'gestern',unread:false},
 ];
-const kunden = [
-  {name:'Familie Brandt',ort:'Ahrensburg',typ:['Neukunde','b'],proj:'Gartenneuanlage',wert:'~ 18.500 €',status:['Anfrage','a']},
-  {name:'Stadtwerke Nord',ort:'Hamburg',typ:['Bestand','g'],proj:'Grünpflege Rahmenvertrag',wert:'42.000 € / Jahr',status:['Aktiv','g']},
-  {name:'Herr Petersen',ort:'Volksdorf',typ:['Bestand','g'],proj:'Heckenschnitt jährlich',wert:'1.200 €',status:['Aktiv','g']},
-  {name:'Anja Bauer',ort:'Pinneberg',typ:['Neukunde','b'],proj:'Terrasse pflastern',wert:'~ 9.000 €',status:['Angebot','a']},
-  {name:'Klaus Möller',ort:'Reinbek',typ:['Bestand','g'],proj:'Mauerbau + Beet',wert:'6.400 €',status:['Aktiv','g']},
+const customers = [
+  {name:'Familie Brandt',city:'Ahrensburg',type:['Neukunde','b'],project:'Gartenneuanlage',value:'~ 18.500 €',status:['Anfrage','a']},
+  {name:'Stadtwerke Nord',city:'Hamburg',type:['Bestand','g'],project:'Grünpflege Rahmenvertrag',value:'42.000 € / Jahr',status:['Aktiv','g']},
+  {name:'Herr Petersen',city:'Volksdorf',type:['Bestand','g'],project:'Heckenschnitt jährlich',value:'1.200 €',status:['Aktiv','g']},
+  {name:'Anja Bauer',city:'Pinneberg',type:['Neukunde','b'],project:'Terrasse pflastern',value:'~ 9.000 €',status:['Angebot','a']},
+  {name:'Klaus Möller',city:'Reinbek',type:['Bestand','g'],project:'Mauerbau + Beet',value:'6.400 €',status:['Aktiv','g']},
 ];
 
-/* ============ AUTH ============ */
-function authView(v){ ['login','reset','sent'].forEach(x=>document.getElementById('v'+x.charAt(0).toUpperCase()+x.slice(1)).classList.toggle('hidden',x!==v)); icons(); }
-function doLogin(){
+let currentView = 'heute';
+let activeTeamTab = 'bewerber';
+let activeCustomerTab = 'anfragen';
+let toastTimer;
+let draggedModule = null;
+let draggedCandidate = null;
+let draggedJob = null;
+let dragClickBlockUntil = 0;
+
+function showAuth(view){
+  ['login','reset','sent'].forEach(id => document.getElementById(`${id}View`).classList.toggle('hidden', id !== view));
+  icons();
+}
+function login(){
   document.getElementById('auth').classList.add('hidden');
   document.getElementById('app').classList.remove('hidden');
-  renderNav(); setView('heute'); icons();
+  renderNav();
+  setView('heute');
 }
-
-/* ============ NAV / SHELL ============ */
-let current='heute';
 function renderNav(){
-  document.getElementById('sbNav').innerHTML = `<span class="sb__nl">Übersicht</span>` + NAV.map(n=>
-    `<div class="ni ${n[0]===current?'on':''}" onclick="setView('${n[0]}')"><i data-lucide="${n[1]}"></i><span class="lab">${n[2]}</span>${n[3]?`<span class="cnt">${n[3]}</span>`:''}</div>`).join('');
-  document.getElementById('mnav').innerHTML = NAV.map(n=>
-    `<button class="${n[0]===current?'on':''}" onclick="setView('${n[0]}')"><i data-lucide="${n[1]}"></i>${n[2]}${n[3]?`<span class="cnt">${n[3]}</span>`:''}</button>`).join('');
+  const html = '<span class="navlabel">Übersicht</span>' + NAV.map(item => navButton(item,'side')).join('');
+  document.getElementById('sideNav').innerHTML = html;
+  document.getElementById('mobileNav').innerHTML = NAV.map(item => navButton(item,'mobile')).join('');
+  icons();
 }
-function setView(v){ current=v; renderNav();
-  const meta=NAV.find(n=>n[0]===v);
-  document.getElementById('topTitle').innerHTML = `<i data-lucide="${meta[1]}"></i> ${meta[2]}`;
-  document.getElementById('view').innerHTML = VIEWS[v]();
-  document.getElementById('view').scrollTop=0;
-  toggleMobile(false); icons(); afterRender(v);
+function navButton(item,mode){
+  const active = item.id === currentView ? 'on' : '';
+  const badge = item.badge ? `<span class="navitem__badge">${item.badge}</span>` : '';
+  if(mode === 'mobile'){
+    return `<button class="${active}" onclick="setView('${item.id}')"><i data-lucide="${item.icon}"></i><span>${item.label}</span>${badge}</button>`;
+  }
+  return `<button class="navitem ${active}" onclick="setView('${item.id}')"><i data-lucide="${item.icon}"></i><span class="navitem__label">${item.label}</span>${badge}</button>`;
 }
-function toggleSidebar(){ const a=document.getElementById('app'); if(window.innerWidth<=860){ toggleMobile(!a.classList.contains('mopen')); } else { a.classList.toggle('collapsed'); } }
-function toggleMobile(open){ const a=document.getElementById('app'); a.classList.toggle('mopen',open); document.getElementById('scrim').classList.toggle('hidden',!open); }
+function setView(view){
+  currentView = view;
+  const item = NAV.find(n => n.id === view);
+  renderNav();
+  document.getElementById('viewTitle').innerHTML = `<i data-lucide="${item.icon}"></i><span>${item.label}</span>`;
+  document.getElementById('view').innerHTML = VIEWS[view]();
+  document.getElementById('view').scrollTop = 0;
+  toggleMobile(false);
+  icons();
+  afterRender(view);
+}
+function toggleSidebar(){
+  const app = document.getElementById('app');
+  if(window.innerWidth <= 860){
+    toggleMobile(!app.classList.contains('mopen'));
+  }else{
+    app.classList.toggle('collapsed');
+  }
+}
+function toggleMobile(open){
+  const app = document.getElementById('app');
+  if(!app) return;
+  app.classList.toggle('mopen',open);
+  document.getElementById('scrim').classList.toggle('hidden',!open);
+}
 
-/* ============ SHARED BLOCKS ============ */
-function kpi(ic,n,l,s,acc,onclick){return `<div class="kpi ${acc?'acc':''} ${onclick?'clk':''}" ${onclick?`onclick="${onclick}"`:''}><div class="kr"><span class="ki"><i data-lucide="${ic}"></i></span><span class="num">${n}</span></div><div class="lab">${l}</div>${s?`<div class="sub">${s}</div>`:''}</div>`;}
+function kpi(icon,num,label,sub,primary,onClick){
+  return `<button class="kpi ${primary ? 'primary' : ''} ${onClick ? 'clickable' : ''}" ${onClick ? `onclick="${onClick}"` : ''}>
+    <div class="kpi__top"><span class="kpi__icon"><i data-lucide="${icon}"></i></span><span class="kpi__num">${num}</span></div>
+    <div class="kpi__label">${label}</div>
+    <div class="kpi__sub">${sub}</div>
+  </button>`;
+}
+function panelHead(icon,title,more){
+  return `<div class="panel__head"><i data-lucide="${icon}"></i>${title}${more ? `<span class="more" onclick="${more.action}">${more.label}</span>` : ''}</div>`;
+}
+function moduleWrap(html, extra=''){
+  return `<div class="module-card ${extra}" draggable="true"><span class="grip" title="Ziehen"><i data-lucide="grip-vertical"></i></span>${html}</div>`;
+}
 
-/* ============ VIEWS ============ */
 const VIEWS = {
-  heute: ()=>`
-    <div class="hello"><h2>Guten Morgen, <em>Georg</em></h2><p>Mittwoch, 3. Juni 2026 · KW 23 · 11 Mitarbeiter im Einsatz</p></div>
-    <div class="modhint"><i data-lucide="move"></i> Dein Cockpit: Module per Drag &amp; Drop anordnen — leg dir oben, was für <b>dich</b> am wichtigsten ist.</div>
-    <div class="grid2">
-      <div style="display:flex;flex-direction:column;gap:13px" id="modcol">
-        <div class="mod" draggable="true" style="display:grid;grid-template-columns:1fr 1fr;gap:13px"><span class="grip">⠿</span>
-          ${kpi('phone-call',2,'Bewerber anrufen','vom Bot qualifiziert',1,"setView('team')")}
-          ${kpi('inbox',5,'Neue Anfragen','WhatsApp · Mail · Tel.',0,"setView('kunden')")}
-        </div>
-        <div class="mod" draggable="true">
-          <div class="panel"><div class="ph"><i data-lucide="list-checks"></i> Das ist heute wichtig <span class="more" onclick="toast('Alle Aufgaben')">Alle ansehen</span></div>
-            <div class="task hot" onclick="setView('team')"><span class="ti"><i data-lucide="phone"></i></span><div class="tt"><div class="a">2 qualifizierte Bewerber anrufen</div><div class="b">Thomas K. (Vorarbeiter) · Murat Y. (Pflasterer)</div></div><button class="tb p">Öffnen</button></div>
-            <div class="task" onclick="setView('kunden')"><span class="ti"><i data-lucide="message-circle"></i></span><div class="tt"><div class="a">Anfrage Familie Brandt beantworten</div><div class="b">Gartenneuanlage · WhatsApp · vor 20 Min.</div></div><button class="tb">Öffnen</button></div>
-            <div class="task" onclick="setView('team')"><span class="ti"><i data-lucide="calendar-clock"></i></span><div class="tt"><div class="a">Urlaubsantrag Sven prüfen</div><div class="b">KW 28 — Überschneidung mit Lukas</div></div><button class="tb">Öffnen</button></div>
+  heute: () => `
+    <div class="hello">
+      <div><h2>Guten Morgen, <em>Georg</em></h2><p>Mittwoch, 3. Juni 2026 · KW 23 · 11 Mitarbeiter im Einsatz</p></div>
+      <div class="statusline"><i data-lucide="move"></i> Module per Drag &amp; Drop anordnen</div>
+    </div>
+    <div class="dashboard">
+      <div class="module-lane" id="mainModules">
+        ${moduleWrap(`<div class="kpi-grid">
+          ${kpi('phone-call','2','Bewerber anrufen','vom Bot qualifiziert',true,"setView('team')")}
+          ${kpi('inbox','5','Neue Anfragen','WhatsApp · Mail · Tel.',false,"setView('kunden')")}
+        </div>`)}
+        ${moduleWrap(`<div class="panel">
+          ${panelHead('list-checks','Das ist heute wichtig',{label:'Alle ansehen',action:"toast('Alle Aufgaben geöffnet')"})}
+          <div class="tasklist">
+            <div class="task hot" onclick="setView('team')"><span class="task__icon"><i data-lucide="phone"></i></span><span class="task__copy"><span class="task__title">2 qualifizierte Bewerber anrufen</span><span class="task__meta">Thomas K. (Vorarbeiter) · Murat Y. (Pflasterer)</span></span><button class="mini-btn primary">Öffnen</button></div>
+            <div class="task" onclick="setView('kunden')"><span class="task__icon"><i data-lucide="message-circle"></i></span><span class="task__copy"><span class="task__title">Anfrage Familie Brandt beantworten</span><span class="task__meta">Gartenneuanlage · WhatsApp · vor 20 Min.</span></span><button class="mini-btn">Öffnen</button></div>
+            <div class="task" onclick="teamTab('urlaub');urlaubTab('antraege')"><span class="task__icon"><i data-lucide="calendar-clock"></i></span><span class="task__copy"><span class="task__title">3 Urlaubsanträge prüfen</span><span class="task__meta">u. a. Tim &amp; Stefan · Überschneidung in Kolonne 3</span></span><button class="mini-btn">Prüfen</button></div>
           </div>
-        </div>
-        <div class="addmod" onclick="toast('Modul-Auswahl folgt')"><i data-lucide="plus"></i> Modul hinzufügen</div>
+        </div>`)}
+        ${moduleWrap(`<div class="panel">
+          ${panelHead('route','Baustellenlage heute')}
+          <div class="daymap">
+            <div class="daymap__item"><b>Kolonne 1</b><span>Garten Schmidt · Neuanlage läuft nach Plan</span></div>
+            <div class="daymap__item"><b>Kolonne 2</b><span>Pflaster Brandt · Material 14:00 Uhr prüfen</span></div>
+            <div class="daymap__item"><b>Kolonne 3</b><span>Hecke Petersen · Abschlussfotos fehlen</span></div>
+          </div>
+        </div>`)}
+        <button class="add-module" onclick="toast('Modul-Auswahl folgt')"><i data-lucide="plus"></i> Modul hinzufügen</button>
       </div>
-      <div class="rail" id="railcol">
-        <div class="mod" draggable="true"><div class="panel" style="padding:15px"><div style="display:flex;align-items:center;gap:11px"><span class="ti"><i data-lucide="cloud-sun"></i></span><div><div style="font-size:20px;font-weight:800">21°C</div><div style="font-size:11.5px;color:var(--muted)">Hamburg · trocken · guter Arbeitstag</div></div></div></div></div>
-        <div class="mod" draggable="true"><div class="reco"><div class="rh"><i data-lucide="sparkles"></i> Ihre Recruiting-Suche</div><div class="rs">Landschaftsgärtner (m/w/d)</div><div class="rg"><div class="rb"><div class="n">7</div><div class="l">Bewerber / Monat</div></div><div class="rb"><div class="n g">2</div><div class="l">qualifiziert</div></div></div><div class="rcta" onclick="setView('team')">Bewerber ansehen</div></div></div>
-        <div class="mod" draggable="true"><div class="qa">
-          <button onclick="setView('team')"><i data-lucide="user-plus"></i>Mitarbeiter</button>
+      <div class="module-lane" id="railModules">
+        ${moduleWrap(`<div class="panel weather-card">
+          <div class="weather-card__main"><span class="weather-card__icon"><i data-lucide="cloud-sun"></i></span><div><div class="weather-card__temp">21°C</div><div class="weather-card__meta">Hamburg · trocken - guter Arbeitstag</div></div></div>
+          <div class="weather-bar"><div><b>Wind</b>12 km/h</div><div><b>Regen</b>0%</div><div><b>UV</b>mittel</div></div>
+        </div>`)}
+        ${moduleWrap(`<div class="panel recruiting-panel">
+          <div class="recruiting-panel__label"><i data-lucide="sparkles"></i> Recruiting-Suche</div>
+          <div class="recruiting-panel__role">Landschaftsgärtner (m/w/d)</div>
+          <div class="recruiting-panel__grid"><div class="recruiting-panel__metric"><b>7</b><span>Bewerber / Monat</span></div><div class="recruiting-panel__metric"><b>2</b><span>qualifiziert</span></div></div>
+          <button class="btn full" style="margin-top:13px;box-shadow:none" onclick="setView('team')">Bewerber ansehen</button>
+        </div>`)}
+        ${moduleWrap(`<div class="quick-grid">
+          <button onclick="teamTab('mitarbeiter')"><i data-lucide="user-plus"></i>Mitarbeiter</button>
           <button onclick="setView('planung')"><i data-lucide="calendar-plus"></i>Einsatz</button>
           <button onclick="setView('kunden')"><i data-lucide="file-plus"></i>Angebot</button>
           <button onclick="teamTab('zeit')"><i data-lucide="clock"></i>Zeiten</button>
-        </div></div>
+        </div>`)}
       </div>
     </div>`,
 
-  team: ()=>`
-    <div class="pagehead"><div><h2>Team</h2><p>Recruiting, Mitarbeiter, Urlaub &amp; Zeiten an einem Ort.</p></div><div class="sp"></div></div>
+  team: () => `
+    <div class="pagehead"><div><h2>Team</h2><p>Recruiting, Mitarbeiter, Urlaub &amp; Zeiten an einem Ort.</p></div></div>
     <div class="tabs" id="teamTabs">
-      <div class="tab on" onclick="teamTab('bewerber')">Bewerber <span class="cnt">${applicants.neu.length+applicants.quali.length}</span></div>
-      <div class="tab" onclick="teamTab('mitarbeiter')">Mitarbeiter <span class="cnt">${employees.length}</span></div>
-      <div class="tab" onclick="teamTab('urlaub')">Urlaub &amp; Krank</div>
-      <div class="tab" onclick="teamTab('zeit')">Zeiterfassung</div>
+      ${tabButton('bewerber','Bewerber',applicants.neu.length + applicants.quali.length,activeTeamTab)}
+      ${tabButton('mitarbeiter','Mitarbeiter',employees.length,activeTeamTab)}
+      ${tabButton('urlaub','Urlaub & Krank',absences.filter(a => a.status === 'offen').length || '',activeTeamTab)}
+      ${tabButton('zeit','Zeiterfassung','',activeTeamTab)}
     </div>
     <div id="teamBody"></div>`,
 
-  planung: ()=>`
-    <div class="pagehead"><div><h2>Plantafel</h2><p>Wer arbeitet wann wo — Aufträge per Drag &amp; Drop auf Kolonnen &amp; Tage ziehen.</p></div><div class="sp"></div><button class="tb p" onclick="toast('Neuer Auftrag folgt')">+ Auftrag</button></div>
-    <div class="panel" style="overflow:auto">
-      <div class="plan" id="plan">
+  planung: () => `
+    <div class="pagehead">
+      <div><h2>Plantafel</h2><p>Kolonnen, Wochentage und Aufträge. Karten lassen sich auf andere Zellen ziehen.</p></div>
+      <button class="mini-btn primary" onclick="toast('Neuer Auftrag folgt')"><i data-lucide="plus"></i> Auftrag</button>
+    </div>
+    <div class="panel pad plan-wrap">
+      <div class="plan-grid" id="planGrid">
         <div></div>
-        ${PDAYS.map(d=>`<div class="phdr">${d[1]}</div>`).join('')}
-        ${PKOL.map(k=>`
-          <div class="prow0"><span class="pi"><i data-lucide="truck"></i></span><div>${k[1]}<div style="font-size:10.5px;color:#9FB3A2;font-weight:500">${k[2]}</div></div></div>
-          ${PDAYS.map(d=>`<div class="pcell" data-kol="${k[0]}" data-day="${d[0]}">${(plantafel[k[0]][d[0]]||[]).map((j,ji)=>`<div class="pjob" draggable="true" data-kol="${k[0]}" data-day="${d[0]}" data-i="${ji}" style="--jc:${j.c}"><div class="pj1">${j.t}</div><div class="pj2">${j.o}</div></div>`).join('')}</div>`).join('')}
+        ${days.map(day => `<div class="plan-day">${day.label}</div>`).join('')}
+        ${crews.map(crew => `
+          <div class="crew"><span class="crew__icon"><i data-lucide="truck"></i></span><div><b>${crew.label}</b><span>${crew.meta}</span></div></div>
+          ${days.map(day => `<div class="plan-cell" data-crew="${crew.id}" data-day="${day.id}">
+            ${(plan[crew.id][day.id] || []).map((job,index) => `<div class="job" draggable="true" data-crew="${crew.id}" data-day="${day.id}" data-index="${index}" style="--job-color:${job.c}"><b>${job.t}</b><span>${job.o}</span></div>`).join('')}
+          </div>`).join('')}
         `).join('')}
       </div>
     </div>`,
 
-  kunden: ()=>`
-    <div class="pagehead"><div><h2>Kunden</h2><p>Alle Anfragen aus allen Kanälen — plus deine Kundenliste.</p></div><div class="sp"></div></div>
-    <div class="tabs" id="kundenTabs">
-      <div class="tab on" onclick="kundenTab('anfragen')">Anfragen-Inbox <span class="cnt">${inbox.filter(m=>m.unread).length}</span></div>
-      <div class="tab" onclick="kundenTab('liste')">Kundenliste <span class="cnt">${kunden.length}</span></div>
+  kunden: () => `
+    <div class="pagehead"><div><h2>Kunden</h2><p>Anfragen aus WhatsApp, E-Mail, Telefon und Website plus Kundenliste.</p></div></div>
+    <div class="tabs" id="customerTabs">
+      ${customerTabButton('anfragen','Anfragen-Inbox',inbox.filter(m => m.unread).length,activeCustomerTab)}
+      ${customerTabButton('liste','Kundenliste',customers.length,activeCustomerTab)}
     </div>
-    <div id="kundenBody"></div>`,
+    <div id="customerBody"></div>`,
 };
 
-/* ============ TEAM SUB-VIEWS ============ */
-function teamTab(t){
-  if(current!=='team'){ setView('team'); }
-  setTimeout(()=>{
-    document.querySelectorAll('#teamTabs .tab').forEach((el,i)=>el.classList.toggle('on',['bewerber','mitarbeiter','urlaub','zeit'][i]===t));
-    document.getElementById('teamBody').innerHTML = TEAM[t]();
-    icons(); if(t==='bewerber') wireKanban();
-  },0);
+function tabButton(id,label,count,active){
+  return `<button class="tab ${active === id ? 'on' : ''}" onclick="teamTab('${id}')">${label}${count !== '' ? `<span class="count">${count}</span>` : ''}</button>`;
 }
+function customerTabButton(id,label,count,active){
+  return `<button class="tab ${active === id ? 'on' : ''}" onclick="customerTab('${id}')">${label}<span class="count">${count}</span></button>`;
+}
+
+function teamTab(tab){
+  activeTeamTab = tab;
+  if(currentView !== 'team'){
+    setView('team');
+    return;
+  }
+  document.querySelectorAll('#teamTabs .tab').forEach(btn => btn.classList.remove('on'));
+  const order = ['bewerber','mitarbeiter','urlaub','zeit'];
+  const index = order.indexOf(tab);
+  if(index >= 0) document.querySelectorAll('#teamTabs .tab')[index].classList.add('on');
+  document.getElementById('teamBody').innerHTML = TEAM[tab]();
+  icons();
+  if(tab === 'bewerber') wireKanban();
+}
+
 const TEAM = {
-  bewerber: ()=>`
-    <div class="modhint"><i data-lucide="sparkles"></i> Bewerber vom <b>WhatsApp-Bot vorqualifiziert</b> landen direkt in „Qualifiziert · anrufen". Karten per Drag &amp; Drop verschieben.</div>
-    <div class="kan" id="kanban">
-      ${KCOLS.map(c=>`<div class="kcol" data-col="${c[0]}">
-        <div class="kch"><span class="d" style="background:${c[2]}"></span>${c[1]}<span class="c">${applicants[c[0]].length}</span></div>
-        ${applicants[c[0]].map(a=>`<div class="kcard" draggable="true" data-id="${a.id}" data-col="${c[0]}" onclick="openApplicant(${a.id})">
-          <div class="knm"><span class="kav">${ini(a.name)}</span>${a.name}</div>
-          <div class="krole">${a.role}</div>
-          <div class="kmeta">${a.tags.map(t=>`<span class="ktag ${a.hot?'g':''}">${t}</span>`).join('')}</div>
-          <div class="kbot"><i data-lucide="${a.hot?'phone':'clock'}" style="width:13px;height:13px"></i> ${a.meta}</div>
-        </div>`).join('')}
-      </div>`).join('')}
+  bewerber: () => `
+    <div class="hint"><i data-lucide="sparkles"></i> Bewerber vom WhatsApp-Bot vorqualifiziert landen direkt in „Qualifiziert · anrufen".</div>
+    <div class="kanban" id="kanban">
+      ${kanbanCols.map(col => `<section class="kanban-col" data-col="${col.id}">
+        <div class="kanban-head"><span class="kanban-dot" style="background:${col.color}"></span>${col.label}<span class="count">${applicants[col.id].length}</span></div>
+        ${applicants[col.id].map(candidateCard).join('')}
+      </section>`).join('')}
     </div>`,
-  mitarbeiter: ()=>`<div class="panel" style="padding:0;overflow:hidden">
-      <table class="tbl"><thead><tr><th>Mitarbeiter</th><th>Funktion</th><th>Kolonne</th><th>Telefon</th><th>Status</th><th>Urlaub</th></tr></thead><tbody>
-      ${employees.map(e=>`<tr class="clk" onclick="openEmployee(${e.id})"><td><span class="ava2">${ini(e.name)}</span>${e.name}</td><td>${e.role}</td><td>${e.kol}</td><td>${e.tel}</td><td><span class="pill ${e.status[1]}">${e.status[0]}</span></td><td>${e.urlaub}</td></tr>`).join('')}
-      </tbody></table></div>`,
-  urlaub: ()=>`<div class="panel" style="padding:0;overflow:hidden">
-      <table class="tbl"><thead><tr><th>Mitarbeiter</th><th>Art</th><th>Von</th><th>Bis</th><th>Dauer</th><th>Status</th></tr></thead><tbody>
-      ${urlaub.map(u=>`<tr><td><span class="ava2">${ini(u.name)}</span>${u.name}</td><td><span class="pill ${u.type[1]}">${u.type[0]}</span></td><td>${u.von}</td><td>${u.bis}</td><td>${u.tage}</td><td>${u.status[0]==='Offen'?`<button class="tb p" style="padding:5px 12px" onclick="toast('Antrag genehmigt')">Genehmigen</button>`:`<span class="pill ${u.status[1]}">${u.status[0]}</span>`}</td></tr>`).join('')}
-      </tbody></table></div>`,
-  zeit: ()=>`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:13px;margin-bottom:14px">
-      ${kpi('users',11,'Eingestempelt','aktuell im Einsatz',1)}${kpi('clock',9,'Ø Stunden','heute pro Kopf')}${kpi('check-circle-2',1,'Feierabend','heute fertig')}</div>
-    <div class="panel" style="padding:0;overflow:hidden">
-      <table class="tbl"><thead><tr><th>Mitarbeiter</th><th>Einstempeln</th><th>Ausstempeln</th><th>Stunden</th><th>Baustelle</th><th>Status</th></tr></thead><tbody>
-      ${zeit.map(z=>`<tr><td><span class="ava2">${ini(z.name)}</span>${z.name}</td><td>${z.ein}</td><td>${z.aus}</td><td>${z.std}</td><td>${z.ort}</td><td><span class="pill ${z.status[1]}">${z.status[0]}</span></td></tr>`).join('')}
-      </tbody></table></div>`,
+  mitarbeiter: () => `<div class="panel table-wrap"><table><thead><tr><th>Name</th><th>Funktion</th><th>Kolonne</th><th>Telefon</th><th>Status</th><th>Resturlaub</th></tr></thead><tbody>
+    ${employees.map(e => { const s = empStatus(e.id); const v = vacInfo(e.id); return `<tr class="clickable" onclick="openEmployee(${e.id})"><td><span class="person-cell"><span class="avatar">${initials(e.name)}</span>${e.name}</span></td><td>${e.role}</td><td>${e.crew}</td><td>${e.phone}</td><td><span class="pill ${s[1]}">${s[0]}</span></td><td><b>${v.rest}</b> <span style="color:var(--muted)">/ ${e.annual}</span></td></tr>`; }).join('')}
+  </tbody></table></div>`,
+  urlaub: () => urlaubView(),
+  zeit: () => `<div class="kpi-grid" style="grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:14px">
+      ${kpi('users','11','Eingestempelt','aktuell im Einsatz',true)}
+      ${kpi('timer','9','Ø Stunden','heute pro Kopf',false)}
+      ${kpi('check-circle-2','1','Feierabend','heute fertig',false)}
+    </div>
+    <div class="panel table-wrap"><table><thead><tr><th>Mitarbeiter</th><th>Einstempeln</th><th>Ausstempeln</th><th>Stunden</th><th>Baustelle</th><th>Status</th></tr></thead><tbody>
+      ${times.map(t => `<tr><td><span class="person-cell"><span class="avatar">${initials(t.name)}</span>${t.name}</span></td><td>${t.in}</td><td>${t.out}</td><td>${t.hours}</td><td>${t.site}</td><td><span class="pill ${t.status[1]}">${t.status[0]}</span></td></tr>`).join('')}
+    </tbody></table></div>`,
 };
 
-/* ============ KUNDEN SUB-VIEWS ============ */
-function kundenTab(t){
-  document.querySelectorAll('#kundenTabs .tab').forEach((el,i)=>el.classList.toggle('on',['anfragen','liste'][i]===t));
-  document.getElementById('kundenBody').innerHTML = KUNDEN[t](); icons();
+/* ===================== URLAUB & KRANK ===================== */
+let urlaubSub = 'kalender';
+let calY = Number(TODAY.slice(0,4));
+let calM = Number(TODAY.slice(5,7)) - 1;
+const MONTHS = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+const WD = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+
+function dParse(s){ const p = s.split('-').map(Number); return new Date(p[0], p[1]-1, p[2]); }
+function dISO(dt){ return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0'); }
+function dDE(s){ if(!s) return 'offen'; const p = s.split('-'); return p[2]+'.'+p[1]+'.'+p[0]; }
+function dDEs(s){ if(!s) return 'offen'; const p = s.split('-'); return p[2]+'.'+p[1]+'.'; }
+function isWeekend(dt){ const g = dt.getDay(); return g === 0 || g === 6; }
+function workdays(from,to){ if(!from || !to) return 0; let n = 0; const end = dParse(to); for(let dt = dParse(from); dt <= end; dt.setDate(dt.getDate()+1)){ if(!isWeekend(dt)) n++; } return n; }
+function emp(id){ return employees.find(e => e.id === id); }
+function effTo(a){ return a.to || TODAY; }
+function covers(a,iso){ return a.from <= iso && iso <= effTo(a); }
+function rangesOverlap(s1,e1,s2,e2){ return s1 <= e2 && s2 <= e1; }
+function weekRange(iso){ const dt = dParse(iso); const day = (dt.getDay()+6)%7; const mon = new Date(dt); mon.setDate(dt.getDate()-day); const sun = new Date(mon); sun.setDate(mon.getDate()+6); return [dISO(mon), dISO(sun)]; }
+function isoWeek(dt){ const d = new Date(Date.UTC(dt.getFullYear(),dt.getMonth(),dt.getDate())); const day = (d.getUTCDay()+6)%7; d.setUTCDate(d.getUTCDate()-day+3); const ft = new Date(Date.UTC(d.getUTCFullYear(),0,4)); const fd = (ft.getUTCDay()+6)%7; ft.setUTCDate(ft.getUTCDate()-fd+3); return 1+Math.round((d-ft)/(7*864e5)); }
+
+function vacInfo(id){
+  let taken = 0, planned = 0;
+  absences.forEach(a => {
+    if(a.empId !== id || a.type !== 'urlaub' || a.status !== 'genehmigt') return;
+    const wd = workdays(a.from, a.to);
+    if(a.from <= TODAY) taken += wd; else planned += wd;
+  });
+  const e = emp(id);
+  return { taken, planned, rest: Math.max(0, (e ? e.annual : 0) - taken - planned) };
 }
-const KUNDEN = {
-  anfragen: ()=>`<div class="inbox">${inbox.map(m=>`<div class="msg ${m.unread?'unread':''}" onclick="openMsg(${m.id})">
-      <span class="ch ${m.ch}"><i data-lucide="${{wa:'message-circle',mail:'mail',tel:'phone',web:'globe'}[m.ch]}"></i></span>
-      <div class="mc"><div class="m1"><b>${m.from}</b><span class="pill ${m.unread?'g':'n'}" style="font-size:9.5px;padding:2px 7px">${{wa:'WhatsApp',mail:'E-Mail',tel:'Telefon',web:'Website'}[m.ch]}</span><span class="t">${m.time}</span></div>
-      <div class="m2">${m.sub}</div><div class="m3">${m.pre}</div></div></div>`).join('')}</div>`,
-  liste: ()=>`<div class="panel" style="padding:0;overflow:hidden">
-      <table class="tbl"><thead><tr><th>Kunde</th><th>Ort</th><th>Typ</th><th>Projekt</th><th>Wert</th><th>Status</th></tr></thead><tbody>
-      ${kunden.map(k=>`<tr class="clk" onclick="toast('Kundenakte folgt')"><td><span class="ava2">${ini(k.name)}</span>${k.name}</td><td>${k.ort}</td><td><span class="pill ${k.typ[1]}">${k.typ[0]}</span></td><td>${k.proj}</td><td>${k.wert}</td><td><span class="pill ${k.status[1]}">${k.status[0]}</span></td></tr>`).join('')}
-      </tbody></table></div>`,
+function empStatus(id){
+  const a = absences.find(x => x.empId === id && x.status === 'genehmigt' && covers(x, TODAY));
+  if(!a) return ['Aktiv','g'];
+  return { krank:['Krank','r'], urlaub:['Urlaub','b'], sonder:['Sonderurlaub','v'] }[a.type];
+}
+function typeMeta(t){ return {
+  urlaub:{label:'Urlaub', icon:'palmtree', cls:'urlaub', pill:'b'},
+  krank:{label:'Krank', icon:'thermometer', cls:'krank', pill:'r'},
+  sonder:{label:'Sonderurlaub', icon:'star', cls:'sonder', pill:'v'},
+}[t]; }
+function statusMeta(s){ return { offen:['Offen','a'], genehmigt:['Genehmigt','g'], abgelehnt:['Abgelehnt','n'] }[s]; }
+function conflictWarn(a){
+  const list = absences.filter(x => x.id !== a.id && x.status !== 'abgelehnt' && x.empId !== a.empId && rangesOverlap(x.from, effTo(x), a.from, effTo(a)));
+  if(!list.length) return '';
+  const crew = emp(a.empId).crew;
+  const same = list.filter(x => emp(x.empId).crew === crew);
+  if(same.length) return `${same.length+1} aus ${crew} gleichzeitig abwesend`;
+  if(list.length >= 2) return `${list.length+1} Mitarbeiter im selben Zeitraum abwesend`;
+  return '';
+}
+function openCount(){ return absences.filter(a => a.status === 'offen').length; }
+
+function urlaubView(){
+  return `
+    ${urlaubStats()}
+    <div class="usub">
+      <div class="seg">
+        <button class="segb ${urlaubSub==='kalender'?'on':''}" onclick="urlaubTab('kalender')">Kalender</button>
+        <button class="segb ${urlaubSub==='antraege'?'on':''}" onclick="urlaubTab('antraege')">Anträge${openCount()?`<span class="count">${openCount()}</span>`:''}</button>
+        <button class="segb ${urlaubSub==='resturlaub'?'on':''}" onclick="urlaubTab('resturlaub')">Resturlaub</button>
+      </div>
+      <button class="btn" onclick="openAbsenceForm()"><i data-lucide="plus"></i> Abwesenheit erfassen</button>
+    </div>
+    <div id="urlaubBody">${urlaubBody()}</div>`;
+}
+function urlaubBody(){
+  if(urlaubSub === 'antraege') return antraegeHTML();
+  if(urlaubSub === 'resturlaub') return resturlaubHTML();
+  return calendarHTML();
+}
+function urlaubTab(sub){ urlaubSub = sub; renderUrlaub(); }
+function renderUrlaub(){ const host = document.getElementById('teamBody'); if(host){ host.innerHTML = urlaubView(); icons(); } }
+function refreshUrlaubBadge(){
+  const tabs = document.querySelectorAll('#teamTabs .tab');
+  const tab = tabs[2]; if(!tab) return;
+  let c = tab.querySelector('.count');
+  if(openCount()){ if(!c){ c = document.createElement('span'); c.className = 'count'; tab.appendChild(c); } c.textContent = openCount(); }
+  else if(c){ c.remove(); }
+}
+
+function urlaubStats(){
+  const away = absences.filter(a => a.status === 'genehmigt' && covers(a, TODAY));
+  const url = away.filter(a => a.type === 'urlaub').length;
+  const kr = away.filter(a => a.type === 'krank').length;
+  const so = away.filter(a => a.type === 'sonder').length;
+  const [ws, we] = weekRange(TODAY);
+  const weekAway = new Set(absences.filter(a => a.status === 'genehmigt' && rangesOverlap(a.from, effTo(a), ws, we)).map(a => a.empId)).size;
+  const open = openCount();
+  return `<div class="ustat">
+    <div class="ustat__card"><span class="ustat__ic blue"><i data-lucide="user-minus"></i></span><div><div class="ustat__n">${away.length}</div><div class="ustat__l">heute abwesend</div><div class="ustat__s">${url} Urlaub · ${kr} krank${so?` · ${so} Sonder`:''}</div></div></div>
+    <div class="ustat__card ${open?'warn':''}"><span class="ustat__ic amber"><i data-lucide="inbox"></i></span><div><div class="ustat__n">${open}</div><div class="ustat__l">offene Anträge</div><div class="ustat__s">${open?'warten auf Freigabe':'alles bearbeitet'}</div></div></div>
+    <div class="ustat__card"><span class="ustat__ic green"><i data-lucide="calendar-check"></i></span><div><div class="ustat__n">${weekAway}</div><div class="ustat__l">diese Woche unterwegs</div><div class="ustat__s">KW ${isoWeek(dParse(TODAY))}</div></div></div>
+  </div>`;
+}
+
+function calendarHTML(){
+  const dim = new Date(calY, calM+1, 0).getDate();
+  let head = '<div class="cal-name cal-name--h">Mitarbeiter</div>';
+  for(let d = 1; d <= dim; d++){ const dt = new Date(calY, calM, d); const we = isWeekend(dt); const today = dISO(dt) === TODAY; head += `<div class="cal-h ${we?'we':''} ${today?'today':''}"><span>${WD[dt.getDay()]}</span><b>${d}</b></div>`; }
+  const rows = employees.map(e => {
+    let row = `<div class="cal-name"><span class="avatar">${initials(e.name)}</span><span class="cal-name__t"><b>${e.name}</b><small>${e.crew}</small></span></div>`;
+    for(let d = 1; d <= dim; d++){
+      const dt = new Date(calY, calM, d); const iso = dISO(dt); const we = isWeekend(dt); const today = iso === TODAY;
+      const a = absences.find(x => x.empId === e.id && x.status !== 'abgelehnt' && covers(x, iso));
+      let fill = '';
+      if(a){ const tm = typeMeta(a.type); const s = iso === a.from; const en = iso === effTo(a); const offen = a.status === 'offen' ? 'offen' : ''; fill = `<span class="cal-fill ${tm.cls} ${offen} ${s?'s':''} ${en?'e':''}" onclick="event.stopPropagation();openAbsence(${a.id})" title="${e.name} · ${tm.label}${a.status==='offen'?' (beantragt)':''}"></span>`; }
+      row += `<div class="cal-c ${we?'we':''} ${today?'today':''}">${fill}</div>`;
+    }
+    return `<div class="cal-row">${row}</div>`;
+  }).join('');
+  return `
+  <div class="panel pad">
+    <div class="cal-top">
+      <div class="cal-nav"><button class="iconbtn" onclick="calNav(-1)"><i data-lucide="chevron-left"></i></button><b>${MONTHS[calM]} ${calY}</b><button class="iconbtn" onclick="calNav(1)"><i data-lucide="chevron-right"></i></button><button class="mini-btn" onclick="calToday()">Heute</button></div>
+      <div class="cal-legend"><span><i class="dot urlaub"></i>Urlaub</span><span><i class="dot krank"></i>Krank</span><span><i class="dot sonder"></i>Sonder</span><span><i class="dot offen"></i>beantragt</span></div>
+    </div>
+    <div class="cal-scroll"><div class="cal" style="--days:${dim}"><div class="cal-row cal-headrow">${head}</div>${rows}</div></div>
+  </div>`;
+}
+function calNav(delta){ const d = new Date(calY, calM+delta, 1); calY = d.getFullYear(); calM = d.getMonth(); renderUrlaub(); }
+function calToday(){ calY = Number(TODAY.slice(0,4)); calM = Number(TODAY.slice(5,7))-1; renderUrlaub(); }
+
+function antraegeHTML(){
+  const sorted = [...absences].sort((a,b) => (a.status==='offen'?0:1) - (b.status==='offen'?0:1) || a.from.localeCompare(b.from));
+  if(!sorted.length) return `<div class="empty"><i data-lucide="calendar-x"></i><div>Noch keine Abwesenheiten erfasst.</div></div>`;
+  return `<div class="reqlist">${sorted.map(reqRow).join('')}</div>`;
+}
+function reqRow(a){
+  const e = emp(a.empId); const tm = typeMeta(a.type); const sm = statusMeta(a.status);
+  const dur = a.type === 'krank' ? (a.to ? `${workdays(a.from,a.to)} AT` : 'laufend') : `${workdays(a.from,a.to)} AT`;
+  const warn = a.status !== 'abgelehnt' ? conflictWarn(a) : '';
+  return `<div class="req">
+    <button class="req__main" onclick="openAbsence(${a.id})">
+      <span class="avatar">${initials(e.name)}</span>
+      <span class="req__txt">
+        <span class="req__top"><b>${e.name}</b><span class="pill ${tm.pill}">${tm.label}</span></span>
+        <span class="req__sub">${dDEs(a.from)}–${a.to?dDEs(a.to):'offen'} · ${dur}${a.note?` · ${a.note}`:''}</span>
+        ${warn?`<span class="req__warn"><i data-lucide="alert-triangle"></i> ${warn}</span>`:''}
+      </span>
+    </button>
+    <div class="req__side">
+      ${a.status === 'offen'
+        ? `<button class="mini-btn primary" onclick="approveAbsence(${a.id})"><i data-lucide="check"></i> Genehmigen</button><button class="mini-btn danger" onclick="rejectAbsence(${a.id})">Ablehnen</button>`
+        : `<span class="pill ${sm[1]}">${sm[0]}</span><button class="iconbtn sm" onclick="openAbsence(${a.id})"><i data-lucide="chevron-right"></i></button>`}
+    </div>
+  </div>`;
+}
+
+function resturlaubHTML(){
+  return `<div class="panel table-wrap"><table><thead><tr><th>Mitarbeiter</th><th>Anspruch</th><th>Genommen</th><th>Geplant</th><th>Rest</th><th style="min-width:150px">Auslastung</th></tr></thead><tbody>
+    ${employees.map(e => { const v = vacInfo(e.id); const used = v.taken + v.planned; const pct = Math.min(100, Math.round(used / e.annual * 100)); return `<tr>
+      <td><span class="person-cell"><span class="avatar">${initials(e.name)}</span>${e.name}</span></td>
+      <td>${e.annual}</td><td>${v.taken}</td><td>${v.planned}</td><td><b>${v.rest}</b></td>
+      <td><div class="vbar"><span class="${pct>=85?'hot':''}" style="width:${pct}%"></span></div></td>
+    </tr>`; }).join('')}
+  </tbody></table></div>`;
+}
+
+function openAbsence(id){
+  const a = absences.find(x => x.id === id); if(!a) return;
+  const e = emp(a.empId); const tm = typeMeta(a.type); const sm = statusMeta(a.status);
+  const dur = a.type === 'krank' ? (a.to ? `${workdays(a.from,a.to)} Arbeitstage` : 'laufend (AU)') : `${workdays(a.from,a.to)} Arbeitstage`;
+  const warn = a.status !== 'abgelehnt' ? conflictWarn(a) : '';
+  openSheet(`
+    <div class="sheet__head">
+      <span class="avatar" style="width:50px;height:50px;font-size:17px">${initials(e.name)}</span>
+      <div><div class="sheet__title">${e.name}</div><div class="sheet__sub">${e.role} · ${e.crew}</div></div>
+      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+    </div>
+    <div class="sheet__body">
+      <div class="tagrow" style="margin-bottom:12px"><span class="pill ${tm.pill}">${tm.label}</span><span class="pill ${sm[1]}">${sm[0]}</span></div>
+      <dl>
+        <div class="detail-row"><dt>Zeitraum</dt><dd>${dDE(a.from)} – ${a.to?dDE(a.to):'offen'}</dd></div>
+        <div class="detail-row"><dt>Dauer</dt><dd>${dur}</dd></div>
+        ${a.note?`<div class="detail-row"><dt>Notiz</dt><dd>${a.note}</dd></div>`:''}
+        ${a.type==='urlaub'?`<div class="detail-row"><dt>Resturlaub</dt><dd>${vacInfo(a.empId).rest} Tage übrig</dd></div>`:''}
+        ${warn?`<div class="detail-row"><dt>Hinweis</dt><dd style="color:var(--amber);font-weight:750"><i data-lucide="alert-triangle" style="width:14px;height:14px;vertical-align:-2px"></i> ${warn}</dd></div>`:''}
+      </dl>
+      <div class="sheet-actions">
+        ${a.status === 'offen'
+          ? `<button class="btn" style="flex:1" onclick="approveAbsence(${a.id});closeSheet()"><i data-lucide="check"></i> Genehmigen</button><button class="btn ghost" style="flex:1" onclick="rejectAbsence(${a.id});closeSheet()">Ablehnen</button>`
+          : `<button class="btn ghost" style="flex:1" onclick="deleteAbsence(${a.id});closeSheet()"><i data-lucide="trash-2"></i> Eintrag löschen</button>`}
+      </div>
+    </div>`);
+}
+function approveAbsence(id){ const a = absences.find(x => x.id === id); if(!a) return; a.status = 'genehmigt'; saveAbsences(); afterAbsChange(); toast(`${emp(a.empId).name}: genehmigt`); }
+function rejectAbsence(id){ const a = absences.find(x => x.id === id); if(!a) return; a.status = 'abgelehnt'; saveAbsences(); afterAbsChange(); toast(`${emp(a.empId).name}: abgelehnt`); }
+function deleteAbsence(id){ const i = absences.findIndex(x => x.id === id); if(i < 0) return; const n = emp(absences[i].empId).name; absences.splice(i,1); saveAbsences(); afterAbsChange(); toast(`${n}: Eintrag gelöscht`); }
+function afterAbsChange(){ renderUrlaub(); refreshUrlaubBadge(); }
+
+function openAbsenceForm(preEmp){
+  const opts = employees.map(e => `<option value="${e.id}" ${preEmp===e.id?'selected':''}>${e.name} · ${e.crew}</option>`).join('');
+  openSheet(`
+    <div class="sheet__head">
+      <span class="avatar" style="width:50px;height:50px;font-size:17px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="plane" style="width:22px;height:22px"></i></span>
+      <div><div class="sheet__title">Abwesenheit erfassen</div><div class="sheet__sub">Urlaub, Krankheit oder Sonderurlaub</div></div>
+      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+    </div>
+    <div class="sheet__body">
+      <div class="field"><label>Mitarbeiter</label><select id="afEmp" onchange="absencePreview()">${opts}</select></div>
+      <div class="field"><label>Art</label>
+        <div class="seg seg--type">
+          <button type="button" class="segb on" data-t="urlaub" onclick="afType(this)">Urlaub</button>
+          <button type="button" class="segb" data-t="krank" onclick="afType(this)">Krank</button>
+          <button type="button" class="segb" data-t="sonder" onclick="afType(this)">Sonderurlaub</button>
+        </div>
+        <input type="hidden" id="afTypeVal" value="urlaub">
+      </div>
+      <div class="fieldrow">
+        <div class="field"><label>Von</label><input type="date" id="afFrom" value="${TODAY}" onchange="absencePreview()"></div>
+        <div class="field"><label>Bis</label><input type="date" id="afTo" value="${TODAY}" onchange="absencePreview()"></div>
+      </div>
+      <div class="field"><label>Notiz (optional)</label><input id="afNote" placeholder="z. B. Brückentag, AU liegt vor ..."></div>
+      <div id="afPreview" class="afprev"></div>
+      <div class="sheet-actions">
+        <button class="btn" style="flex:1" onclick="submitAbsence()"><i data-lucide="check"></i> Eintragen</button>
+        <button class="btn ghost" onclick="closeSheet()">Abbrechen</button>
+      </div>
+    </div>`);
+  absencePreview();
+}
+function afType(btn){ btn.parentNode.querySelectorAll('.segb').forEach(b => b.classList.remove('on')); btn.classList.add('on'); document.getElementById('afTypeVal').value = btn.dataset.t; absencePreview(); }
+function absencePreview(){
+  const host = document.getElementById('afPreview'); if(!host) return;
+  const empId = Number(document.getElementById('afEmp').value);
+  const type = document.getElementById('afTypeVal').value;
+  const from = document.getElementById('afFrom').value;
+  const to = document.getElementById('afTo').value;
+  if(!from || !to || to < from){ host.className = 'afprev warn'; host.innerHTML = `<div class="afprev__warn"><i data-lucide="alert-triangle"></i> Bitte gültigen Zeitraum wählen (Bis darf nicht vor Von liegen).</div>`; icons(); return; }
+  const wd = workdays(from, to);
+  const warn = conflictWarn({id:-1, empId, type, from, to, status:'offen'});
+  const lbl = type === 'urlaub' ? 'Urlaubstag(e)' : type === 'krank' ? 'Krankheitstag(e)' : 'Sondertag(e)';
+  let extra = '';
+  if(type === 'urlaub'){ const after = vacInfo(empId).rest - wd; extra = ` · Resturlaub danach: <b>${after}</b> Tage${after < 0 ? ' — überzogen!' : ''}`; }
+  host.className = 'afprev' + (warn ? ' warn' : '');
+  host.innerHTML = `<div class="afprev__main"><b>${wd}</b> ${lbl} (Mo–Fr gezählt)${extra}</div>${warn?`<div class="afprev__warn"><i data-lucide="alert-triangle"></i> ${warn}</div>`:''}<div class="afprev__hint">${type==='krank'?'Krankmeldung wird sofort eingetragen.':'Wird als Antrag „offen" angelegt — Genehmigung erforderlich.'}</div>`;
+  icons();
+}
+function submitAbsence(){
+  const empId = Number(document.getElementById('afEmp').value);
+  const type = document.getElementById('afTypeVal').value;
+  const from = document.getElementById('afFrom').value;
+  const to = document.getElementById('afTo').value;
+  const note = document.getElementById('afNote').value.trim();
+  if(!from || !to || to < from){ toast('Bitte gültigen Zeitraum wählen'); return; }
+  const status = type === 'krank' ? 'genehmigt' : 'offen';
+  absences.push({ id: absSeq++, empId, type, from, to, note, status });
+  saveAbsences();
+  closeSheet();
+  urlaubSub = type === 'krank' ? 'kalender' : 'antraege';
+  activeTeamTab = 'urlaub';
+  if(currentView !== 'team'){ setView('team'); } else { renderUrlaub(); refreshUrlaubBadge(); }
+  toast(`${emp(empId).name}: ${typeMeta(type).label} eingetragen`);
+}
+
+function candidateCard(a){
+  return `<button class="candidate" draggable="true" data-id="${a.id}" data-col="${findCandidateCol(a.id)}" onclick="openApplicant(${a.id})">
+    <span class="candidate__top"><span class="avatar">${initials(a.name)}</span><span class="candidate__name">${a.name}</span></span>
+    <span class="candidate__role">${a.role}</span>
+    <span class="tagrow">${a.tags.map(tag => `<span class="tag ${a.hot ? 'green' : ''}">${tag}</span>`).join('')}</span>
+    <span class="candidate__meta"><i data-lucide="${a.hot ? 'phone' : 'clock'}"></i>${a.meta}</span>
+  </button>`;
+}
+
+function customerTab(tab){
+  activeCustomerTab = tab;
+  if(currentView !== 'kunden'){
+    setView('kunden');
+    return;
+  }
+  document.querySelectorAll('#customerTabs .tab').forEach(btn => btn.classList.remove('on'));
+  document.querySelectorAll('#customerTabs .tab')[tab === 'anfragen' ? 0 : 1].classList.add('on');
+  document.getElementById('customerBody').innerHTML = CUSTOMERS[tab]();
+  icons();
+}
+const CUSTOMERS = {
+  anfragen: () => `<div class="inbox">${inbox.map(messageCard).join('')}</div>`,
+  liste: () => `<div class="panel table-wrap"><table><thead><tr><th>Kunde</th><th>Ort</th><th>Typ</th><th>Projekt</th><th>Wert</th><th>Status</th></tr></thead><tbody>
+    ${customers.map(c => `<tr class="clickable" onclick="toast('Kundenakte folgt')"><td><span class="person-cell"><span class="avatar">${initials(c.name)}</span>${c.name}</span></td><td>${c.city}</td><td><span class="pill ${c.type[1]}">${c.type[0]}</span></td><td>${c.project}</td><td>${c.value}</td><td><span class="pill ${c.status[1]}">${c.status[0]}</span></td></tr>`).join('')}
+  </tbody></table></div>`,
 };
-
-/* ============ after render hooks ============ */
-function afterRender(v){
-  if(v==='team') teamTab('bewerber');
-  if(v==='kunden') kundenTab('anfragen');
-  if(v==='planung') wirePlan();
-  if(v==='heute') wireMods();
+function messageCard(m){
+  const channel = {wa:['WhatsApp','message-circle'],mail:['E-Mail','mail'],tel:['Telefon','phone'],web:['Website','globe']}[m.ch];
+  return `<button class="message ${m.unread ? 'unread' : ''}" onclick="openMessage(${m.id})">
+    <span class="channel ${m.ch}"><i data-lucide="${channel[1]}"></i></span>
+    <span class="message__body">
+      <span class="message__top"><b>${m.from}</b><span class="pill ${m.unread ? 'g' : 'n'}">${channel[0]}</span><span class="message__time">${m.time}</span></span>
+      <span class="message__subject">${m.sub}</span>
+      <span class="message__preview">${m.pre}</span>
+    </span>
+  </button>`;
 }
 
-/* ============ Kanban drag&drop ============ */
+function afterRender(view){
+  if(view === 'heute') wireModules();
+  if(view === 'team') teamTab(activeTeamTab);
+  if(view === 'planung') wirePlan();
+  if(view === 'kunden') customerTab(activeCustomerTab);
+}
+
+function wireModules(){
+  document.querySelectorAll('.module-card').forEach(card => {
+    card.addEventListener('dragstart', e => {
+      draggedModule = card;
+      card.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    card.addEventListener('dragend', () => {
+      card.classList.remove('dragging');
+      document.querySelectorAll('.module-card.over').forEach(el => el.classList.remove('over'));
+      draggedModule = null;
+    });
+    card.addEventListener('dragover', e => {
+      if(!draggedModule || draggedModule === card) return;
+      e.preventDefault();
+      card.classList.add('over');
+    });
+    card.addEventListener('dragleave', () => card.classList.remove('over'));
+    card.addEventListener('drop', e => {
+      e.preventDefault();
+      card.classList.remove('over');
+      if(!draggedModule || draggedModule === card) return;
+      const lane = card.closest('.module-lane');
+      const rect = card.getBoundingClientRect();
+      const after = e.clientY > rect.top + rect.height / 2;
+      lane.insertBefore(draggedModule, after ? card.nextSibling : card);
+      toast('Cockpit angepasst');
+    });
+  });
+  document.querySelectorAll('.module-lane').forEach(lane => {
+    lane.addEventListener('dragover', e => {
+      if(draggedModule) e.preventDefault();
+    });
+    lane.addEventListener('drop', e => {
+      if(!draggedModule || e.target.closest('.module-card')) return;
+      e.preventDefault();
+      lane.insertBefore(draggedModule, lane.querySelector('.add-module') || null);
+      toast('Cockpit angepasst');
+    });
+  });
+  wireModulePointerDrag();
+}
+
 function wireKanban(){
-  let dragEl=null;
-  document.querySelectorAll('#kanban .kcard').forEach(c=>{
-    c.addEventListener('dragstart',()=>{ dragEl=c; c.classList.add('drag'); });
-    c.addEventListener('dragend',()=>{ c.classList.remove('drag'); dragEl=null; });
-  });
-  document.querySelectorAll('#kanban .kcol').forEach(col=>{
-    col.addEventListener('dragover',e=>{ e.preventDefault(); col.classList.add('over'); });
-    col.addEventListener('dragleave',()=>col.classList.remove('over'));
-    col.addEventListener('drop',e=>{ e.preventDefault(); col.classList.remove('over'); if(!dragEl)return;
-      const from=dragEl.dataset.col, to=col.dataset.col, id=+dragEl.dataset.id;
-      if(from===to)return;
-      const idx=applicants[from].findIndex(a=>a.id===id); const [a]=applicants[from].splice(idx,1);
-      a.hot = (to==='quali'); applicants[to].push(a);
-      teamTab('bewerber'); toast(`${a.name} → ${KCOLS.find(c=>c[0]===to)[1]}`);
+  document.querySelectorAll('.candidate').forEach(card => {
+    card.addEventListener('dragstart', e => {
+      draggedCandidate = card;
+      card.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    card.addEventListener('dragend', () => {
+      card.classList.remove('dragging');
+      document.querySelectorAll('.kanban-col.over').forEach(el => el.classList.remove('over'));
+      draggedCandidate = null;
     });
   });
+  document.querySelectorAll('.kanban-col').forEach(col => {
+    col.addEventListener('dragover', e => {
+      e.preventDefault();
+      col.classList.add('over');
+    });
+    col.addEventListener('dragleave', () => col.classList.remove('over'));
+    col.addEventListener('drop', e => {
+      e.preventDefault();
+      col.classList.remove('over');
+      if(!draggedCandidate) return;
+      const from = draggedCandidate.dataset.col;
+      const to = col.dataset.col;
+      if(from === to) return;
+      const id = Number(draggedCandidate.dataset.id);
+      const fromList = applicants[from];
+      const index = fromList.findIndex(a => a.id === id);
+      if(index < 0) return;
+      const [candidate] = fromList.splice(index,1);
+      candidate.hot = to === 'quali';
+      applicants[to].push(candidate);
+      teamTab('bewerber');
+      toast(`${candidate.name} verschoben`);
+    });
+  });
+  wireCandidatePointerDrag();
 }
 
-/* ============ Plantafel drag&drop ============ */
 function wirePlan(){
-  let dragInfo=null;
-  document.querySelectorAll('#plan .pjob').forEach(j=>{
-    j.addEventListener('dragstart',()=>{ dragInfo={kol:j.dataset.kol,day:j.dataset.day,i:+j.dataset.i}; j.classList.add('drag'); });
-    j.addEventListener('dragend',()=>j.classList.remove('drag'));
+  document.querySelectorAll('.job').forEach(job => {
+    job.addEventListener('dragstart', e => {
+      draggedJob = {crew:job.dataset.crew, day:job.dataset.day, index:Number(job.dataset.index)};
+      job.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    job.addEventListener('dragend', () => job.classList.remove('dragging'));
   });
-  document.querySelectorAll('#plan .pcell').forEach(cell=>{
-    cell.addEventListener('dragover',e=>{ e.preventDefault(); cell.classList.add('over'); });
-    cell.addEventListener('dragleave',()=>cell.classList.remove('over'));
-    cell.addEventListener('drop',e=>{ e.preventDefault(); cell.classList.remove('over'); if(!dragInfo)return;
-      const job=plantafel[dragInfo.kol][dragInfo.day].splice(dragInfo.i,1)[0];
-      plantafel[cell.dataset.kol][cell.dataset.day].push(job);
-      setView('planung'); toast(`„${job.t}" verschoben`);
+  document.querySelectorAll('.plan-cell').forEach(cell => {
+    cell.addEventListener('dragover', e => {
+      e.preventDefault();
+      cell.classList.add('over');
+    });
+    cell.addEventListener('dragleave', () => cell.classList.remove('over'));
+    cell.addEventListener('drop', e => {
+      e.preventDefault();
+      cell.classList.remove('over');
+      if(!draggedJob) return;
+      const job = plan[draggedJob.crew][draggedJob.day].splice(draggedJob.index,1)[0];
+      plan[cell.dataset.crew][cell.dataset.day].push(job);
+      draggedJob = null;
+      setView('planung');
+      toast(`${job.t} verschoben`);
+    });
+  });
+  wireJobPointerDrag();
+}
+
+function wireModulePointerDrag(){
+  document.querySelectorAll('.module-card .grip').forEach(handle => {
+    handle.addEventListener('pointerdown', event => {
+      if(event.button !== 0) return;
+      const card = handle.closest('.module-card');
+      const start = {x:event.clientX, y:event.clientY};
+      let moved = false;
+      card.classList.add('dragging');
+      const onMove = moveEvent => {
+        if(Math.abs(moveEvent.clientX - start.x) + Math.abs(moveEvent.clientY - start.y) > 8) moved = true;
+      };
+      const onUp = upEvent => {
+        document.removeEventListener('pointermove', onMove);
+        document.removeEventListener('pointerup', onUp);
+        card.classList.remove('dragging');
+        if(!moved) return;
+        dragClickBlockUntil = Date.now() + 250;
+        const target = document.elementFromPoint(upEvent.clientX, upEvent.clientY);
+        const targetCard = target && target.closest('.module-card');
+        const lane = target && target.closest('.module-lane');
+        if(targetCard && targetCard !== card){
+          const rect = targetCard.getBoundingClientRect();
+          const after = upEvent.clientY > rect.top + rect.height / 2;
+          targetCard.closest('.module-lane').insertBefore(card, after ? targetCard.nextSibling : targetCard);
+          toast('Cockpit angepasst');
+        }else if(lane && lane !== card.closest('.module-lane')){
+          lane.insertBefore(card, lane.querySelector('.add-module') || null);
+          toast('Cockpit angepasst');
+        }
+      };
+      document.addEventListener('pointermove', onMove);
+      document.addEventListener('pointerup', onUp);
     });
   });
 }
 
-/* ============ Heute module drag&drop ============ */
-function wireMods(){
-  ['modcol','railcol'].forEach(colId=>{
-    const col=document.getElementById(colId); if(!col)return; let dragEl=null;
-    col.querySelectorAll('.mod').forEach(m=>{
-      m.addEventListener('dragstart',()=>{ dragEl=m; m.classList.add('drag'); });
-      m.addEventListener('dragend',()=>{ m.classList.remove('drag'); dragEl=null; });
-      m.addEventListener('dragover',e=>{ e.preventDefault(); if(m!==dragEl) m.classList.add('over'); });
-      m.addEventListener('dragleave',()=>m.classList.remove('over'));
-      m.addEventListener('drop',e=>{ e.preventDefault(); m.classList.remove('over'); if(!dragEl||m===dragEl)return;
-        const rect=m.getBoundingClientRect(); const after=e.clientY > rect.top+rect.height/2;
-        col.insertBefore(dragEl, after?m.nextSibling:m); toast('Cockpit angepasst');
-      });
+function wireCandidatePointerDrag(){
+  document.querySelectorAll('.candidate').forEach(card => {
+    card.addEventListener('pointerdown', event => {
+      if(event.button !== 0) return;
+      const start = {x:event.clientX, y:event.clientY};
+      let moved = false;
+      card.classList.add('dragging');
+      const onMove = moveEvent => {
+        if(Math.abs(moveEvent.clientX - start.x) + Math.abs(moveEvent.clientY - start.y) > 8) moved = true;
+      };
+      const onUp = upEvent => {
+        document.removeEventListener('pointermove', onMove);
+        document.removeEventListener('pointerup', onUp);
+        card.classList.remove('dragging');
+        if(!moved) return;
+        dragClickBlockUntil = Date.now() + 250;
+        const target = document.elementFromPoint(upEvent.clientX, upEvent.clientY);
+        const col = target && target.closest('.kanban-col');
+        if(!col) return;
+        moveCandidate(Number(card.dataset.id), card.dataset.col, col.dataset.col);
+      };
+      document.addEventListener('pointermove', onMove);
+      document.addEventListener('pointerup', onUp);
     });
   });
 }
 
-/* ============ Modals ============ */
+function wireJobPointerDrag(){
+  document.querySelectorAll('.job').forEach(jobEl => {
+    jobEl.addEventListener('pointerdown', event => {
+      if(event.button !== 0) return;
+      const start = {x:event.clientX, y:event.clientY};
+      let moved = false;
+      jobEl.classList.add('dragging');
+      const onMove = moveEvent => {
+        if(Math.abs(moveEvent.clientX - start.x) + Math.abs(moveEvent.clientY - start.y) > 8) moved = true;
+      };
+      const onUp = upEvent => {
+        document.removeEventListener('pointermove', onMove);
+        document.removeEventListener('pointerup', onUp);
+        jobEl.classList.remove('dragging');
+        if(!moved) return;
+        dragClickBlockUntil = Date.now() + 250;
+        const target = document.elementFromPoint(upEvent.clientX, upEvent.clientY);
+        const cell = target && target.closest('.plan-cell');
+        if(!cell) return;
+        moveJob(jobEl.dataset.crew, jobEl.dataset.day, Number(jobEl.dataset.index), cell.dataset.crew, cell.dataset.day);
+      };
+      document.addEventListener('pointermove', onMove);
+      document.addEventListener('pointerup', onUp);
+    });
+  });
+}
+
+function moveCandidate(id, from, to){
+  if(!from || !to || from === to) return;
+  const fromList = applicants[from];
+  const index = fromList.findIndex(a => a.id === id);
+  if(index < 0) return;
+  const [candidate] = fromList.splice(index,1);
+  candidate.hot = to === 'quali';
+  applicants[to].push(candidate);
+  teamTab('bewerber');
+  toast(`${candidate.name} verschoben`);
+}
+
+function moveJob(fromCrew, fromDay, index, toCrew, toDay){
+  if(!fromCrew || !fromDay || !toCrew || !toDay) return;
+  const job = plan[fromCrew][fromDay].splice(index,1)[0];
+  if(!job) return;
+  plan[toCrew][toDay].push(job);
+  setView('planung');
+  toast(`${job.t} verschoben`);
+}
+
 function openApplicant(id){
-  let a; for(const k in applicants){ const f=applicants[k].find(x=>x.id===id); if(f){a=f;break;} }
-  if(!a)return;
-  sheet(`<div class="sheet__h"><span class="bigava">${ini(a.name)}</span><div><div style="font-size:17px;font-weight:800">${a.name}</div><div style="font-size:12.5px;color:var(--muted)">${a.role}</div></div><span class="x" onclick="closeModal()"><i data-lucide="x"></i></span></div>
-    <div class="sheet__b">
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">${a.tags.map(t=>`<span class="ktag g">${t}</span>`).join('')}</div>
-      <div class="drow"><div class="dk">Status</div><div class="dv">${a.meta}</div></div>
-      <div class="drow"><div class="dk">Quelle</div><div class="dv">WhatsApp-Recruiting · GreenCareers</div></div>
-      <div class="drow"><div class="dk">Vorqualifikation</div><div class="dv">Bot-Score 87 / 100 · alle Kriterien erfüllt</div></div>
-      <div class="drow"><div class="dk">Verfügbar ab</div><div class="dv">sofort</div></div>
-      <div style="display:flex;gap:10px;margin-top:18px">
-        <button class="btn" style="flex:1" onclick="closeModal();toast('Anruf wird gestartet…')"><i data-lucide="phone" style="width:15px;height:15px;vertical-align:-2px"></i> Jetzt anrufen</button>
-        <button class="btn ghost" style="flex:1" onclick="closeModal();toast('Zum Probetag eingeladen')">Probetag</button>
+  if(Date.now() < dragClickBlockUntil) return;
+  const candidate = findCandidate(id);
+  if(!candidate) return;
+  openSheet(`
+    <div class="sheet__head">
+      <span class="avatar" style="width:50px;height:50px;font-size:17px">${initials(candidate.name)}</span>
+      <div><div class="sheet__title">${candidate.name}</div><div class="sheet__sub">${candidate.role}</div></div>
+      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+    </div>
+    <div class="sheet__body">
+      <div class="tagrow" style="margin-bottom:12px">${candidate.tags.map(tag => `<span class="tag green">${tag}</span>`).join('')}</div>
+      <dl>
+        <div class="detail-row"><dt>Status</dt><dd>${candidate.meta}</dd></div>
+        <div class="detail-row"><dt>Quelle</dt><dd>${candidate.source}</dd></div>
+        <div class="detail-row"><dt>Vorqualifikation</dt><dd>Bot-Score 87 / 100 · alle Kriterien erfüllt</dd></div>
+        <div class="detail-row"><dt>Verfügbarkeit</dt><dd>${candidate.available}</dd></div>
+      </dl>
+      <div class="sheet-actions">
+        <button class="btn" style="flex:1" onclick="closeSheet();toast('Anruf wird gestartet')"><i data-lucide="phone"></i> Jetzt anrufen</button>
+        <button class="btn ghost" style="flex:1" onclick="closeSheet();toast('Probetag angelegt')"><i data-lucide="calendar-plus"></i> Probetag</button>
       </div>
     </div>`);
 }
 function openEmployee(id){
-  const e=employees.find(x=>x.id===id); if(!e)return;
-  sheet(`<div class="sheet__h"><span class="bigava">${ini(e.name)}</span><div><div style="font-size:17px;font-weight:800">${e.name}</div><div style="font-size:12.5px;color:var(--muted)">${e.role} · ${e.kol}</div></div><span class="x" onclick="closeModal()"><i data-lucide="x"></i></span></div>
-    <div class="sheet__b">
-      <div class="drow"><div class="dk">Status</div><div class="dv"><span class="pill ${e.status[1]}">${e.status[0]}</span></div></div>
-      <div class="drow"><div class="dk">Telefon</div><div class="dv">${e.tel}</div></div>
-      <div class="drow"><div class="dk">Im Betrieb seit</div><div class="dv">${e.since}</div></div>
-      <div class="drow"><div class="dk">Urlaub</div><div class="dv">${e.urlaub} Tage genommen</div></div>
-      <div class="drow"><div class="dk">Dokumente</div><div class="dv">Vertrag · Führerschein · Bescheinigungen</div></div>
-      <div style="display:flex;gap:10px;margin-top:18px">
-        <button class="btn" style="flex:1" onclick="closeModal();toast('Personalakte folgt')">Akte öffnen</button>
-        <button class="btn ghost" style="flex:1" onclick="closeModal();teamTab('zeit')">Zeiten</button>
+  const e = employees.find(item => item.id === id);
+  if(!e) return;
+  openSheet(`
+    <div class="sheet__head">
+      <span class="avatar" style="width:50px;height:50px;font-size:17px">${initials(e.name)}</span>
+      <div><div class="sheet__title">${e.name}</div><div class="sheet__sub">${e.role} · ${e.crew}</div></div>
+      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+    </div>
+    <div class="sheet__body">
+      <dl>
+        <div class="detail-row"><dt>Status</dt><dd><span class="pill ${empStatus(e.id)[1]}">${empStatus(e.id)[0]}</span></dd></div>
+        <div class="detail-row"><dt>Telefon</dt><dd>${e.phone}</dd></div>
+        <div class="detail-row"><dt>Im Betrieb seit</dt><dd>${e.since}</dd></div>
+        <div class="detail-row"><dt>Urlaub ${new Date(TODAY).getFullYear()}</dt><dd>${vacInfo(e.id).taken} genommen · ${vacInfo(e.id).planned} geplant · <b>${vacInfo(e.id).rest} Rest</b> (von ${e.annual})</dd></div>
+        <div class="detail-row"><dt>Dokumente</dt><dd>Vertrag · Führerschein · Bescheinigungen</dd></div>
+      </dl>
+      <div class="sheet-actions">
+        <button class="btn" style="flex:1" onclick="closeSheet();teamTab('urlaub');openAbsenceForm(${e.id})"><i data-lucide="plane"></i> Abwesenheit erfassen</button>
+        <button class="btn ghost" style="flex:1" onclick="closeSheet();teamTab('zeit')">Zeiten</button>
       </div>
     </div>`);
 }
-function openMsg(id){
-  const m=inbox.find(x=>x.id===id); if(!m)return; m.unread=false;
-  const chName={wa:'WhatsApp',mail:'E-Mail',tel:'Telefon',web:'Website'}[m.ch];
-  sheet(`<div class="sheet__h"><span class="ch ${m.ch}" style="width:44px;height:44px"><i data-lucide="${{wa:'message-circle',mail:'mail',tel:'phone',web:'globe'}[m.ch]}"></i></span><div><div style="font-size:17px;font-weight:800">${m.from}</div><div style="font-size:12.5px;color:var(--muted)">${chName} · ${m.time}</div></div><span class="x" onclick="closeModal()"><i data-lucide="x"></i></span></div>
-    <div class="sheet__b">
-      <div style="font-size:14px;font-weight:700;margin-bottom:10px">${m.sub}</div>
-      <div style="background:#F5F8F4;border:1px solid var(--line);border-radius:12px;padding:14px;font-size:13px;line-height:1.6;color:var(--text)">${m.pre}</div>
-      <div class="field" style="margin-top:16px"><label>Antwort</label><input placeholder="Antwort schreiben…" /></div>
-      <div style="display:flex;gap:10px;margin-top:6px">
-        <button class="btn" style="flex:1" onclick="closeModal();toast('Antwort gesendet')">Antworten</button>
-        <button class="btn ghost" style="flex:1" onclick="closeModal();toast('Als Kunde angelegt')">Zu Kunden</button>
+function openMessage(id){
+  const msg = inbox.find(item => item.id === id);
+  if(!msg) return;
+  msg.unread = false;
+  const channel = {wa:['WhatsApp','message-circle'],mail:['E-Mail','mail'],tel:['Telefon','phone'],web:['Website','globe']}[msg.ch];
+  openSheet(`
+    <div class="sheet__head">
+      <span class="channel ${msg.ch}" style="width:48px;height:48px"><i data-lucide="${channel[1]}"></i></span>
+      <div><div class="sheet__title">${msg.from}</div><div class="sheet__sub">${channel[0]} · ${msg.time}</div></div>
+      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+    </div>
+    <div class="sheet__body">
+      <div style="font-size:14px;font-weight:900;margin-bottom:10px">${msg.sub}</div>
+      <div style="border:1px solid var(--line);border-radius:8px;background:#F7FAF6;padding:13px;font-size:13px;line-height:1.55">${msg.pre}</div>
+      <div class="field" style="margin-top:15px"><label>Antwort</label><input placeholder="Antwort schreiben..." /></div>
+      <div class="sheet-actions">
+        <button class="btn" style="flex:1" onclick="closeSheet();toast('Antwort gesendet')">Antworten</button>
+        <button class="btn ghost" style="flex:1" onclick="closeSheet();toast('Als Kunde angelegt')">Zu Kunden</button>
       </div>
     </div>`);
 }
-function sheet(html){ document.getElementById('sheet').innerHTML=html; document.getElementById('modal').classList.remove('hidden'); icons(); }
-function closeModal(){ document.getElementById('modal').classList.add('hidden'); if(current==='kunden')kundenTab('anfragen'); }
-document.getElementById('modal').addEventListener('click',e=>{ if(e.target.id==='modal')closeModal(); });
+function openSheet(html){
+  document.getElementById('sheet').innerHTML = html;
+  document.getElementById('modal').classList.remove('hidden');
+  icons();
+}
+function closeSheet(){
+  document.getElementById('modal').classList.add('hidden');
+  if(currentView === 'kunden') customerTab(activeCustomerTab);
+}
+document.getElementById('modal').addEventListener('click', event => {
+  if(event.target.id === 'modal') closeSheet();
+});
+document.addEventListener('keydown', event => {
+  if(event.key === 'Escape') closeSheet();
+});
 
-/* ============ utils ============ */
-function ini(n){ return n.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase(); }
-let toastT;
-function toast(msg){ const t=document.getElementById('toast'); document.getElementById('toastText').innerHTML=msg; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),2400); }
-function icons(){ if(window.lucide) lucide.createIcons(); }
+function findCandidate(id){
+  for(const col of Object.keys(applicants)){
+    const candidate = applicants[col].find(item => item.id === id);
+    if(candidate) return candidate;
+  }
+  return null;
+}
+function findCandidateCol(id){
+  for(const col of Object.keys(applicants)){
+    if(applicants[col].some(item => item.id === id)) return col;
+  }
+  return '';
+}
+function initials(name){
+  return name.split(' ').map(part => part[0]).slice(0,2).join('').toUpperCase();
+}
+function toast(message){
+  const toastEl = document.getElementById('toast');
+  document.getElementById('toastText').textContent = message;
+  toastEl.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2300);
+  icons();
+}
+function icons(){
+  if(window.lucide) lucide.createIcons();
+}
 icons();
 </script>
 </body>
