@@ -1348,6 +1348,156 @@
   .tl-body{ flex:1; min-width:0; padding-top:3px; }
   .tl-text{ font-size:12.5px; color:var(--ink); line-height:1.4; }
   .tl-date{ font-size:11px; color:var(--muted-2); margin-top:2px; }
+
+  /* ===== Brain-Pill (Topbar) ===== */
+  .brainpill{ display:inline-flex; align-items:center; gap:7px; height:36px; padding:0 13px; border-radius:999px; font-size:13px; font-weight:700; color:#fff; background:linear-gradient(135deg,#7C3AED,#2563EB); box-shadow:0 6px 16px rgba(76,40,160,.28); }
+  .brainpill .lucide{ width:16px; height:16px; }
+  .brainpill:hover{ transform:translateY(-1px); }
+  @media(max-width:560px){ .brainpill span{ display:none; } .brainpill{ padding:0; width:36px; justify-content:center; } }
+
+  /* ===== Consent-Gate (AVV/DSGVO) ===== */
+  .gate{ position:fixed; inset:0; z-index:500; display:grid; place-items:center; padding:18px;
+    background:radial-gradient(700px 420px at 50% -10%, rgba(22,163,74,.18), transparent 60%), rgba(10,20,13,.62); backdrop-filter:blur(3px); }
+  .gate__card{ width:min(100%,520px); max-height:92vh; overflow:auto; background:#fff; border-radius:18px; box-shadow:var(--shadow-strong); }
+  .gate__top{ padding:22px 22px 0; }
+  .gate__paid{ display:inline-flex; align-items:center; gap:7px; font-size:12px; font-weight:700; color:var(--green-2); background:var(--mint); border:1px solid #CDEBD8; padding:6px 11px; border-radius:999px; }
+  .gate__paid .lucide{ width:15px; height:15px; }
+  .gate__h{ font-size:20px; font-weight:800; letter-spacing:-.01em; margin:14px 0 5px; }
+  .gate__sub{ font-size:13px; color:var(--muted); line-height:1.5; }
+  .gate__body{ padding:16px 22px 22px; }
+  .consent-row{ display:flex; gap:12px; align-items:flex-start; padding:13px; border:1px solid var(--line); border-radius:12px; margin-bottom:9px; cursor:pointer; transition:border-color .14s, background .14s; }
+  .consent-row:hover{ border-color:var(--line-2); }
+  .consent-row.on{ border-color:var(--green); background:var(--mint-2); }
+  .consent-box{ flex:0 0 22px; width:22px; height:22px; border-radius:7px; border:2px solid var(--line-2); display:grid; place-items:center; margin-top:1px; color:#fff; transition:all .14s; }
+  .consent-row.on .consent-box{ background:var(--green); border-color:var(--green); }
+  .consent-box .lucide{ width:14px; height:14px; opacity:0; }
+  .consent-row.on .consent-box .lucide{ opacity:1; }
+  .consent-txt{ flex:1; min-width:0; }
+  .consent-txt b{ display:block; font-size:13.5px; }
+  .consent-txt small{ display:block; font-size:11.5px; color:var(--muted); margin-top:2px; line-height:1.45; }
+  .consent-view{ font-size:11.5px; font-weight:700; color:var(--green-2); margin-top:5px; display:inline-flex; align-items:center; gap:4px; }
+  .consent-audit{ display:flex; align-items:flex-start; gap:8px; font-size:11.5px; color:var(--muted-2); background:var(--canvas); border-radius:10px; padding:10px 12px; margin:4px 0 14px; line-height:1.5; }
+  .consent-audit .lucide{ width:14px; height:14px; flex-shrink:0; margin-top:1px; }
+  .doc{ font-size:12.5px; line-height:1.6; color:var(--ink-2); }
+  .doc h4{ font-size:13px; margin:14px 0 5px; color:var(--ink); }
+  .doc p{ margin-bottom:9px; }
+  .doc ul{ margin:0 0 9px 17px; }
+  .doc li{ margin-bottom:3px; }
+  .gate__back{ display:inline-flex; align-items:center; gap:6px; font-size:12.5px; font-weight:600; color:var(--muted); margin-bottom:6px; }
+
+  /* ===== Finanzen ===== */
+  .fin-kpis{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:13px; margin-bottom:16px; }
+  @media(max-width:880px){ .fin-kpis{ grid-template-columns:repeat(2,1fr); } }
+  .fin-kpi{ background:#fff; border:1px solid var(--line); border-radius:14px; padding:15px; box-shadow:var(--shadow); }
+  .fin-kpi__ic{ width:34px; height:34px; border-radius:9px; display:grid; place-items:center; background:var(--mint); color:var(--green-2); margin-bottom:11px; }
+  .fin-kpi__ic .lucide{ width:18px; height:18px; }
+  .fin-kpi.warn .fin-kpi__ic{ background:var(--red-soft); color:var(--red); }
+  .fin-kpi.blue .fin-kpi__ic{ background:var(--blue-soft); color:var(--blue); }
+  .fin-kpi__num{ font-size:21px; font-weight:800; letter-spacing:-.02em; }
+  .fin-kpi__lbl{ font-size:12px; color:var(--muted); margin-top:2px; }
+  .num{ font-variant-numeric:tabular-nums; }
+  td.right, th.right{ text-align:right; }
+  .doc-table{ width:100%; }
+  .inv-items{ border:1px solid var(--line); border-radius:12px; overflow:hidden; margin-bottom:6px; }
+  .inv-item{ display:grid; grid-template-columns:1fr 56px 60px 84px 30px; gap:7px; align-items:center; padding:9px; border-bottom:1px solid var(--line); }
+  .inv-item:last-child{ border-bottom:0; }
+  .inv-item input{ width:100%; border:1px solid var(--line); border-radius:8px; padding:8px 9px; background:#FBFDFB; font-size:12.5px; outline:none; }
+  .inv-item input:focus{ border-color:var(--green); background:#fff; box-shadow:0 0 0 3px rgba(22,163,74,.1); }
+  .inv-item__del{ display:grid; place-items:center; width:30px; height:30px; border-radius:8px; color:var(--muted-2); }
+  .inv-item__del:hover{ background:var(--red-soft); color:var(--red); }
+  .inv-itemhead{ display:grid; grid-template-columns:1fr 56px 60px 84px 30px; gap:7px; padding:0 9px 6px; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; color:var(--muted-2); }
+  .inv-totals{ margin-top:13px; border-top:1px solid var(--line); padding-top:12px; }
+  .inv-totals__row{ display:flex; justify-content:space-between; font-size:13px; padding:3px 0; color:var(--muted); }
+  .inv-totals__row.grand{ font-size:16px; font-weight:800; color:var(--ink); margin-top:5px; padding-top:9px; border-top:1px solid var(--line); }
+  .inv-doc{ border:1px solid var(--line); border-radius:12px; padding:16px; background:#fff; }
+  .inv-doc__head{ display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:14px; }
+  .inv-doc__no{ font-size:12px; color:var(--muted); }
+  .inv-doc__cust{ font-size:14px; font-weight:700; margin-top:3px; }
+
+  /* ===== Markt (Community) ===== */
+  .market-members{ display:inline-flex; align-items:center; gap:7px; font-size:12.5px; font-weight:600; color:var(--green-2); background:var(--mint); border:1px solid #CDEBD8; padding:7px 12px; border-radius:999px; }
+  .market-members .lucide{ width:15px; height:15px; }
+  .composer{ display:flex; gap:11px; align-items:center; background:#fff; border:1px solid var(--line); border-radius:14px; padding:13px; box-shadow:var(--shadow); margin-bottom:14px; }
+  .composer__in{ flex:1; text-align:left; color:var(--muted-2); background:var(--canvas); border:1px solid var(--line); border-radius:10px; padding:11px 13px; font-size:13px; }
+  .composer__in:hover{ border-color:var(--line-2); }
+  .composer__btn{ display:inline-flex; align-items:center; gap:6px; font-size:12.5px; font-weight:700; color:var(--green-2); padding:9px 12px; border-radius:10px; background:var(--mint); white-space:nowrap; }
+  .composer__btn.sell{ color:var(--amber); background:var(--amber-soft); }
+  .composer__btn .lucide{ width:15px; height:15px; }
+  @media(max-width:620px){ .composer__btn span{ display:none; } }
+  .feed{ display:flex; flex-direction:column; gap:13px; }
+  .post{ background:#fff; border:1px solid var(--line); border-radius:14px; padding:15px; box-shadow:var(--shadow); }
+  .post__head{ display:flex; align-items:center; gap:11px; margin-bottom:10px; }
+  .post__av{ width:40px; height:40px; border-radius:11px; display:grid; place-items:center; color:#fff; font-weight:800; font-size:14px; flex-shrink:0; }
+  .post__who b{ font-size:13.5px; display:flex; align-items:center; gap:5px; }
+  .post__who b .lucide{ width:14px; height:14px; color:var(--green); }
+  .post__who small{ font-size:11.5px; color:var(--muted-2); }
+  .post__type{ margin-left:auto; font-size:10.5px; font-weight:700; padding:4px 9px; border-radius:999px; }
+  .post__type.frage{ background:var(--blue-soft); color:var(--blue); }
+  .post__type.tipp{ background:var(--mint); color:var(--green-2); }
+  .post__type.markt{ background:var(--amber-soft); color:var(--amber); }
+  .post__text{ font-size:13.5px; line-height:1.55; color:var(--ink-2); }
+  .post__tags{ display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+  .post__tag{ font-size:11px; font-weight:600; color:var(--muted); background:var(--canvas-2); border-radius:999px; padding:3px 9px; }
+  .post__sale{ display:flex; gap:13px; margin-top:4px; }
+  @media(max-width:540px){ .post__sale{ flex-direction:column; } }
+  .post__img{ width:150px; height:110px; border-radius:11px; display:grid; place-items:center; color:#fff; flex-shrink:0; }
+  @media(max-width:540px){ .post__img{ width:100%; height:130px; } }
+  .post__img .lucide{ width:38px; height:38px; opacity:.85; }
+  .post__saleinfo{ flex:1; min-width:0; display:flex; flex-direction:column; align-items:flex-start; gap:4px; }
+  .post__saleinfo > strong{ font-size:14px; }
+  .post__saleinfo .btn{ margin-top:6px; }
+  .post__price{ font-size:19px; font-weight:800; color:var(--ink); letter-spacing:-.02em; }
+  .post__cond{ font-size:12px; color:var(--muted); margin-top:2px; }
+  .post__foot{ display:flex; align-items:center; gap:6px; margin-top:13px; padding-top:12px; border-top:1px solid var(--line); }
+  .post__act{ display:inline-flex; align-items:center; gap:6px; font-size:12.5px; font-weight:600; color:var(--muted); padding:7px 11px; border-radius:9px; }
+  .post__act:hover{ background:var(--canvas); color:var(--ink); }
+  .post__act.on{ color:var(--green-2); }
+  .post__act .lucide{ width:15px; height:15px; }
+  .post__act.buy{ margin-left:auto; color:#fff; background:var(--green); }
+  .post__act.buy:hover{ background:var(--green-2); }
+
+  /* ===== Brain (Chat) ===== */
+  .brain-head{ background:linear-gradient(135deg,#7C3AED,#2563EB); }
+  .brain-chips{ display:flex; flex-wrap:wrap; gap:7px; margin-bottom:12px; }
+  .brain-chip{ font-size:12px; font-weight:600; color:var(--ink-2); background:var(--canvas); border:1px solid var(--line); border-radius:999px; padding:8px 12px; text-align:left; }
+  .brain-chip:hover{ border-color:var(--violet); color:var(--violet); }
+  .brain-msgs{ display:flex; flex-direction:column; gap:11px; min-height:120px; max-height:46vh; overflow:auto; padding:4px 2px; margin-bottom:12px; }
+  .bmsg{ display:flex; gap:9px; max-width:90%; }
+  .bmsg__av{ width:28px; height:28px; border-radius:8px; display:grid; place-items:center; color:#fff; flex-shrink:0; background:linear-gradient(135deg,#7C3AED,#2563EB); }
+  .bmsg__av .lucide{ width:15px; height:15px; }
+  .bmsg__txt{ font-size:13px; line-height:1.55; background:var(--canvas); border:1px solid var(--line); border-radius:13px; border-top-left-radius:4px; padding:10px 13px; color:var(--ink-2); }
+  .bmsg__txt b{ color:var(--ink); }
+  .bmsg.me{ align-self:flex-end; flex-direction:row-reverse; }
+  .bmsg.me .bmsg__txt{ background:var(--green); border-color:var(--green); color:#fff; border-radius:13px; border-top-right-radius:4px; }
+  .bmsg.me .bmsg__av{ background:#0E7A43; }
+  .brain-input{ display:flex; gap:8px; align-items:center; }
+  .brain-input input{ flex:1; border:1px solid var(--line); border-radius:11px; padding:12px 13px; background:#FBFDFB; outline:none; font-size:13px; }
+  .brain-input input:focus{ border-color:var(--violet); box-shadow:0 0 0 3px rgba(124,58,237,.12); }
+  .brain-send{ width:42px; height:42px; border-radius:11px; display:grid; place-items:center; color:#fff; background:linear-gradient(135deg,#7C3AED,#2563EB); flex-shrink:0; }
+  .brain-mic{ width:42px; height:42px; border-radius:11px; display:grid; place-items:center; color:var(--muted); background:var(--canvas); border:1px solid var(--line); flex-shrink:0; }
+  .brain-mic.rec{ color:#fff; background:var(--red); border-color:var(--red); animation:micpulse 1.1s infinite; }
+  @keyframes micpulse{ 0%,100%{ box-shadow:0 0 0 0 rgba(194,65,65,.4); } 50%{ box-shadow:0 0 0 7px rgba(194,65,65,0); } }
+  .brain-typing{ display:inline-flex; gap:3px; }
+  .brain-typing span{ width:6px; height:6px; border-radius:50%; background:var(--muted-2); animation:btype 1s infinite; }
+  .brain-typing span:nth-child(2){ animation-delay:.15s; } .brain-typing span:nth-child(3){ animation-delay:.3s; }
+  @keyframes btype{ 0%,60%,100%{ opacity:.3; transform:translateY(0); } 30%{ opacity:1; transform:translateY(-3px); } }
+  .brain-head{ display:flex; align-items:center; gap:12px; padding:18px 20px; background:linear-gradient(135deg,#7C3AED,#2563EB); color:#fff; margin:-2px -2px 16px; border-top-left-radius:18px; border-top-right-radius:18px; }
+  .brain-head .sheet__title{ color:#fff; }
+  .brain-head .sheet__sub{ color:rgba(255,255,255,.82); }
+  .brain-head .sheet__close{ color:#fff; background:rgba(255,255,255,.16); }
+  .brain-head .sheet__close:hover{ background:rgba(255,255,255,.28); }
+  .brain-av{ width:46px; height:46px; border-radius:13px; display:grid; place-items:center; background:rgba(255,255,255,.18); flex-shrink:0; }
+  .brain-av .lucide{ width:22px; height:22px; }
+  .bmsg__txt{ overflow-wrap:anywhere; }
+  .inv-doc__row{ display:flex; justify-content:space-between; gap:14px; font-size:13px; padding:5px 0; border-bottom:1px solid var(--line); }
+  .inv-doc__row:last-child{ border-bottom:0; }
+  .inv-doc__row span:first-child{ color:var(--muted); flex-shrink:0; }
+  .inv-doc__row span:last-child, .inv-doc__row strong{ text-align:right; }
+  .composer__photo{ display:flex; align-items:center; gap:8px; justify-content:center; font-size:12.5px; font-weight:600; color:var(--muted); background:var(--canvas); border:1px dashed var(--line-2); border-radius:11px; padding:14px; cursor:pointer; margin-bottom:6px; }
+  .composer__photo:hover{ border-color:var(--violet); color:var(--violet); }
+  .composer__photo .lucide{ width:17px; height:17px; }
+  .post__me{ font-size:10px; font-weight:700; color:var(--green-2); background:var(--mint); border-radius:5px; padding:1px 6px; margin-left:2px; }
+  .btn.is-disabled{ opacity:.5; pointer-events:none; }
 </style>
 </head>
 <body>
@@ -1411,6 +1561,7 @@
       <div class="viewtitle" id="viewTitle"></div>
       <span class="topbar__spacer"></span>
       <div class="weather-mini"><span class="bubble"><i data-lucide="cloud-sun"></i></span><span><b>21°C</b> · Hamburg<br />trocken - guter Arbeitstag</span></div>
+      <button class="brainpill" id="brainPill" onclick="openBrain()" title="GreenCareers Brain"><i data-lucide="sparkles"></i><span>Brain</span></button>
       <button class="rolepill" id="rolePill" onclick="openRoleSwitch()" title="Ansicht wechseln"></button>
       <button class="iconbtn bell" onclick="toast('Keine neuen Benachrichtigungen')" title="Benachrichtigungen"><i data-lucide="bell"></i></button>
     </header>
@@ -1421,6 +1572,7 @@
 </div>
 
 <div class="overlay hidden" id="modal"><div class="sheet" id="sheet"></div></div>
+<div class="gate hidden" id="gate"><div class="gate__card" id="gateCard"></div></div>
 <div class="toast" id="toast"><i data-lucide="check-circle-2"></i><span id="toastText"></span></div>
 
 <div class="fab-scrim" id="fabScrim" onclick="closeFab()"></div>
@@ -1435,6 +1587,8 @@ const NAV = [
   {id:'team', label:'Team', icon:'users', badge:'2'},
   {id:'planung', label:'Planung', icon:'calendar-range', badge:''},
   {id:'kunden', label:'Kunden', icon:'handshake', badge:'5'},
+  {id:'finanzen', label:'Finanzen', icon:'receipt-euro', badge:''},
+  {id:'markt', label:'Markt', icon:'store', badge:''},
 ];
 
 const applicants = {
@@ -1642,8 +1796,10 @@ function absentToday(id){ return absences.find(x => x.empId === id && x.status =
 let viewRole = 'admin';   // welche Rolle ich gerade ansehe (Inhaber kann durchschalten)
 let viewEmpId = 1;        // bei Mitarbeiter-Ansicht: welcher Mitarbeiter (Default Sven Albrecht)
 
+const CONSENT_VERSION = 'v1.2';   // Versionierung: bei Änderung muss neu bestätigt werden
 const DEFAULT_SETTINGS = {
   onboarded: false,
+  consent: null,       // {version, acceptedAt, by, items:{avv,datenschutz,agb,vollmacht}} – DSGVO-Einwilligung
   company: {name:'Müller GaLaBau', owner:'Georg Müller', email:'georg@mueller-galabau.de', start:'06:30'},
   ruestzeit: true,     // Rüstzeit (Beladen + Anfahrt) sichtbar & wird mitgezählt
   geo: true,           // Standortnachweis beim Stempeln
@@ -1687,6 +1843,8 @@ function accountMeta(a){ return {active:['Aktiv','g','check-circle-2'], invited:
 let currentView = 'heute';
 let activeTeamTab = 'bewerber';
 let activeCustomerTab = 'anfragen';
+let activeFinTab = 'uebersicht';
+let activeMarktTab = 'feed';
 let toastTimer;
 let draggedModule = null;
 let draggedCandidate = null;
@@ -1703,7 +1861,8 @@ function login(){
   document.body.classList.add('authed');
   initCalDrag();
   applyRole();
-  maybeOnboard(); // Testversion: Onboarding bei jedem Login zeigen
+  // Reihenfolge nach „Kauf erfolgreich": 1) AVV/DSGVO bestätigen  2) Einrichtung  3) Tour
+  openConsentGate(); // Testversion: Einwilligung bei jedem Login zeigen
 }
 // Welche Navigationspunkte sieht die aktuelle Rolle?
 function navForRole(){
@@ -1714,6 +1873,8 @@ function navForRole(){
       NAV.find(n => n.id === 'planung'),
     ];
   }
+  // Personalverwaltung: alles außer Finanzen (Umsätze/Rechnungen bleiben beim Inhaber)
+  if(viewRole === 'buero') return NAV.filter(n => n.id !== 'finanzen');
   return NAV;
 }
 function renderNav(){
@@ -1822,7 +1983,22 @@ function openSettings(){
       ${permRow('mitarbeiter','requestAbsence','Urlaub beantragen','Eigene Abwesenheits-Anträge stellen.')}
       ${permRow('mitarbeiter','clockSelf','Selbst stempeln','Eigene Zeiten per Handy erfassen.')}
 
-      <button class="btn ghost btn--block" onclick="closeSheet();startOnboarding()"><i data-lucide="wand-2"></i> Einrichtungs-Assistent erneut starten</button>
+      <div class="setsec">Verträge &amp; Datenschutz</div>
+      ${s.consent ? `<div class="consent-audit" style="margin-bottom:12px"><i data-lucide="shield-check"></i>
+        <span>AVV, Datenschutz &amp; AGB bestätigt am <strong>${new Date(s.consent.acceptedAt).toLocaleDateString('de-DE',{day:'2-digit',month:'long',year:'numeric'})}</strong> durch ${s.consent.by} · Version ${s.consent.version}. Revisionssicher dokumentiert.</span></div>`
+        : `<p class="sheet-note"><i data-lucide="alert-triangle"></i> Noch keine Einwilligung dokumentiert.</p>`}
+      <div class="fieldrow">
+        <button class="btn ghost sm" style="flex:1" onclick="viewDoc('avv')"><i data-lucide="file-text"></i> AVV lesen</button>
+        <button class="btn ghost sm" style="flex:1" onclick="viewDoc('datenschutz')"><i data-lucide="file-text"></i> Datenschutz</button>
+        <button class="btn ghost sm" style="flex:1" onclick="viewDoc('agb')"><i data-lucide="file-text"></i> AGB</button>
+      </div>
+      <p class="sheet-note" style="margin-top:10px"><i data-lucide="user-check"></i> Betroffenenrechte (Art. 15–20 DSGVO): Daten deiner Mitarbeiter/Kunden exportieren oder löschen.</p>
+      <div class="fieldrow">
+        <button class="btn ghost sm" style="flex:1" onclick="toast('Datenexport wird erstellt (Demo)')"><i data-lucide="download"></i> Daten exportieren</button>
+        <button class="btn ghost sm danger" style="flex:1" onclick="toast('Löschung anstoßen – im Live-Produkt mit Bestätigung')"><i data-lucide="trash-2"></i> Daten löschen</button>
+      </div>
+
+      <button class="btn ghost btn--block" style="margin-top:16px" onclick="closeSheet();startOnboarding()"><i data-lucide="wand-2"></i> Einrichtungs-Assistent erneut starten</button>
     </div>`);
 }
 function toggleSetting(key){ settings[key] = !settings[key]; saveSettings(); refreshSettings(); rerenderCurrent(); }
@@ -1927,9 +2103,10 @@ function finishOnboarding(){
 
 // ---- Software-Tour (geführte Kurz-Tour, jederzeit per X schließbar) ----
 const TOUR_STEPS = [
-  { sel:['#sideNav','#mobileNav'], title:'Deine vier Bereiche', text:'Heute, Team, Planung und Kunden – dein ganzer Betrieb in vier Klicks. Hier wechselst du den Bereich.' },
+  { sel:['#sideNav','#mobileNav'], title:'Dein ganzer Betrieb', text:'Heute, Team, Planung, Kunden, Finanzen und Markt – alles in einem Tool. Hier wechselst du den Bereich.' },
   { sel:['.add-module'], title:'Cockpit selbst bauen', text:'Mit „Modul hinzufügen“ holst du dir Umsatz, Geburtstage, Lager und mehr direkt auf die Startseite.' },
-  { sel:['#fab'], title:'Schnell anlegen', text:'Mitarbeiter, Einsatz oder Angebot – mit dem Plus legst du von überall in Sekunden neu an.' },
+  { sel:['#brainPill'], title:'GreenCareers Brain', text:'Dein KI-Assistent für alle Fragen – Rechnung, Steuer, Personal, Kalkulation. Per Chat oder Sprache, jederzeit.' },
+  { sel:['#fab'], title:'Schnell anlegen', text:'Mitarbeiter, Einsatz, Rechnung oder Angebot – mit dem Plus legst du von überall in Sekunden neu an.' },
   { sel:['#rolePill'], title:'Ansicht wechseln', text:'Sieh die App als Inhaber, Personalverwaltung oder Mitarbeiter – ideal zum Ausprobieren.' },
 ];
 let tourIdx = 0;
@@ -2035,7 +2212,7 @@ const FAB_ACTIONS = {
     {grp:'Schnell anlegen'},
     {icon:'plane', label:'Abwesenheit eintragen', fn:'fabGo("team","urlaub");openAbsenceForm()'},
     {icon:'map-pin', label:'Einsatz planen', fn:'fabGo("planung");toast("Einsatz planen – Plantafel")'},
-    {icon:'file-text', label:'Angebot anlegen', fn:'toast("Angebot anlegen folgt")'},
+    {icon:'file-text', label:'Angebot anlegen', fn:'openInvoiceForm("angebot")'},
   ],
   team: [
     {grp:'Abwesenheit'},
@@ -2053,8 +2230,18 @@ const FAB_ACTIONS = {
   kunden: [
     {grp:'Neu anlegen'},
     {icon:'user-round-plus', label:'Kunde anlegen', fn:'toast("Kunde anlegen folgt")'},
-    {icon:'receipt', label:'Rechnung anlegen', fn:'toast("Rechnung anlegen folgt")'},
-    {icon:'file-text', label:'Angebot anlegen', fn:'toast("Angebot anlegen folgt")'},
+    {icon:'receipt', label:'Rechnung anlegen', fn:'openInvoiceForm("rechnung")'},
+    {icon:'file-text', label:'Angebot anlegen', fn:'openInvoiceForm("angebot")'},
+  ],
+  finanzen: [
+    {grp:'Neu anlegen'},
+    {icon:'receipt', label:'Rechnung schreiben', fn:'openInvoiceForm("rechnung")'},
+    {icon:'file-text', label:'Angebot schreiben', fn:'openInvoiceForm("angebot")'},
+  ],
+  markt: [
+    {grp:'Im Netzwerk teilen'},
+    {icon:'help-circle', label:'Frage stellen', fn:'openMarktForm("frage")'},
+    {icon:'tag', label:'Etwas verkaufen', fn:'openMarktForm("markt")'},
   ],
 };
 // Mitarbeiter-FAB: nur eigene Schnellaktionen
@@ -2193,6 +2380,26 @@ const VIEWS = {
       ${customerTabButton('liste','Kundenstamm',customers.length,activeCustomerTab)}
     </div>
     <div id="customerBody"></div>`,
+
+  finanzen: () => `
+    <div class="pagehead">
+      <div><h2>Finanzen</h2><p>Angebote schreiben, Rechnungen stellen, offene Posten im Blick – alles ohne zweites Programm.</p></div>
+      <button class="mini-btn primary" onclick="openInvoiceForm('rechnung')"><i data-lucide="plus"></i> Rechnung</button>
+    </div>
+    <div class="tabs" id="finTabs">
+      ${finTabList().map(t => `<button class="tab ${activeFinTab===t.id?'on':''}" data-ftab="${t.id}" onclick="finTab('${t.id}')">${t.label}${t.count!==''?`<span class="count">${t.count}</span>`:''}</button>`).join('')}
+    </div>
+    <div id="finBody"></div>`,
+
+  markt: () => `
+    <div class="pagehead">
+      <div><h2>Markt</h2><p>Das Netzwerk für GaLaBau-Betriebe: Schwarmwissen, Tipps und Maschinen-Marktplatz – nur unter verifizierten Kollegen.</p></div>
+      <span class="market-members"><i data-lucide="badge-check"></i> 187 verifizierte Betriebe</span>
+    </div>
+    <div class="tabs" id="marktTabs">
+      ${marktTabList().map(t => `<button class="tab ${activeMarktTab===t.id?'on':''}" data-mtab="${t.id}" onclick="marktTab('${t.id}')">${t.label}${t.count!==''?`<span class="count">${t.count}</span>`:''}</button>`).join('')}
+    </div>
+    <div id="marktBody"></div>`,
 };
 
 function teamTabList(){
@@ -2400,6 +2607,603 @@ function addFreeModule(id){
 }
 function removeModule(id){ addedModules.delete(id); setView('heute'); toast('Modul entfernt'); }
 function upsellModule(id){ const m = moduleMeta(id); toast(`${m.name}: kostenpflichtig (${m.price} €/Monat) – bald freischaltbar`); }
+
+/* ===================== SHARED HELPERS ===================== */
+function eur(n){ return (Number(n)||0).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' €'; }
+function addDays(iso, n){ const d = dParse(iso); d.setDate(d.getDate()+n); return dISO(d); }
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function shade(hex, amt){ // amt negativ = dunkler
+  const h = hex.replace('#',''); const num = parseInt(h.length===3 ? h.split('').map(x=>x+x).join('') : h, 16);
+  let r=(num>>16)+amt, g=((num>>8)&0xff)+amt, b=(num&0xff)+amt;
+  r=Math.max(0,Math.min(255,r)); g=Math.max(0,Math.min(255,g)); b=Math.max(0,Math.min(255,b));
+  return '#'+((1<<24)+(r<<16)+(g<<8)+b).toString(16).slice(1); }
+
+/* ===================== CONSENT-GATE (AVV / DSGVO Self-Checkout) ===================== */
+const CONSENT_ITEMS = [
+  {key:'avv', doc:'avv', label:'Auftragsverarbeitungsvertrag (AVV)',
+   sub:'Nach Art. 28 DSGVO. Du beauftragst GreenCareers OS, Personal-, Zeit- und Kundendaten in deinem Auftrag zu verarbeiten.', required:true},
+  {key:'datenschutz', doc:'datenschutz', label:'Datenschutz &amp; Gesundheitsdaten (Art. 9)',
+   sub:'Verarbeitung von Krank-/Urlaubsdaten erfolgt ausschließlich automatisiert in deinem System – kein GreenCareers-Mitarbeiter sieht Personalien.', required:true},
+  {key:'agb', doc:'agb', label:'Allgemeine Geschäftsbedingungen',
+   sub:'Nutzungsbedingungen für GreenCareers OS.', required:true},
+  {key:'vollmacht', doc:null, label:'Ich bin befugt, diese Verträge für den Betrieb abzuschließen',
+   sub:'Du bestätigst, dass du Inhaber oder bevollmächtigt bist.', required:true},
+];
+let consentState = { avv:false, datenschutz:false, agb:false, vollmacht:false };
+
+function openConsentGate(){
+  // Wenn bereits in aktueller Version eingewilligt: Gate überspringen (im echten Produkt)
+  if(settings.consent && settings.consent.version === CONSENT_VERSION){ maybeOnboard(); return; }
+  consentState = { avv:false, datenschutz:false, agb:false, vollmacht:false };
+  const gate = document.getElementById('gate');
+  gate.classList.remove('hidden');
+  renderConsentGate();
+}
+function consentAllChecked(){ return CONSENT_ITEMS.every(i => consentState[i.key]); }
+function toggleConsent(key){ consentState[key] = !consentState[key]; renderConsentGate(); }
+function renderConsentGate(){
+  const card = document.getElementById('gateCard');
+  const now = new Date();
+  const stamp = now.toLocaleDateString('de-DE',{day:'2-digit',month:'long',year:'numeric'}) + ', ' + now.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}) + ' Uhr';
+  const ready = consentAllChecked();
+  card.innerHTML = `
+    <div class="gate__top">
+      <span class="gate__paid"><i data-lucide="badge-check"></i> Zahlung erfolgreich · Tarif „Betrieb" aktiv</span>
+    </div>
+    <div class="gate__h">Nur noch ein Schritt: Einrichtung freischalten</div>
+    <div class="gate__sub">Bevor echte Personal- und Kundendaten verarbeitet werden, brauchen wir deine Bestätigung. Das ist gesetzlich vorgeschrieben (DSGVO) – läuft komplett digital, kein Termin nötig.</div>
+    <div class="gate__body">
+      ${CONSENT_ITEMS.map(it => `
+        <label class="consent-row ${consentState[it.key]?'on':''}" onclick="toggleConsent('${it.key}')">
+          <span class="consent-box">${consentState[it.key]?'<i data-lucide="check"></i>':''}</span>
+          <span class="consent-txt">
+            <strong>${it.label}</strong>
+            <span>${it.sub}</span>
+            ${it.doc ? `<a class="consent-view" onclick="event.stopPropagation(); viewDoc('${it.doc}')"><i data-lucide="file-text"></i> Vertrag lesen</a>` : ''}
+          </span>
+        </label>`).join('')}
+      <div class="consent-audit">
+        <i data-lucide="shield-check"></i>
+        <span>Dokumentierter Nachweis: <strong>${settings.company?.name || 'Müller GaLaBau'}</strong> · ${settings.company?.email || 'georg@mueller-galabau.de'} · Version ${CONSENT_VERSION} · ${stamp}. Diese Bestätigung wird revisionssicher gespeichert.</span>
+      </div>
+      <button class="btn full ${ready?'':'is-disabled'}" ${ready?'':'disabled'} onclick="acceptConsent()">
+        <i data-lucide="lock-open"></i> ${ready ? 'Bestätigen &amp; Einrichtung starten' : 'Bitte alle Punkte bestätigen'}
+      </button>
+    </div>`;
+  icons();
+}
+function acceptConsent(){
+  if(!consentAllChecked()) return;
+  settings.consent = {
+    version: CONSENT_VERSION,
+    acceptedAt: new Date().toISOString(),
+    by: settings.company?.email || 'georg@mueller-galabau.de',
+    company: settings.company?.name || 'Müller GaLaBau',
+    items: Object.assign({}, consentState),
+  };
+  saveSettings();
+  document.getElementById('gate').classList.add('hidden');
+  toast('Einwilligung dokumentiert – Nachweis gespeichert');
+  setTimeout(maybeOnboard, 220);
+}
+function viewDoc(doc){
+  openSheet(`
+    <div class="sheet__head">
+      <span class="avatar" style="width:46px;height:46px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="file-text" style="width:20px;height:20px"></i></span>
+      <div><div class="sheet__title">${DOC_TITLES[doc]}</div><div class="sheet__sub">Version ${CONSENT_VERSION} · Stand 06/2026</div></div>
+      <button class="sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+    </div>
+    <div class="sheet__body"><div class="doc">${DOCS[doc]}</div></div>`);
+}
+
+/* ===================== FINANZEN (Angebote + Rechnungen) ===================== */
+let invSeq = 94;
+const invoices = [
+  {id:'r1', kind:'rechnung', no:'RE-2026-0091', customerId:'c2', title:'Gartenneuanlage – 1. Teilrechnung',
+   date:'2026-05-15', due:'2026-05-29', vat:19, status:'bezahlt',
+   items:[ {name:'Erdarbeiten & Modellierung', qty:1, unit:'pausch.', price:3200},
+           {name:'Pflanzarbeiten inkl. Material', qty:1, unit:'pausch.', price:4850},
+           {name:'Rollrasen verlegen', qty:180, unit:'m²', price:9.5} ]},
+  {id:'r2', kind:'rechnung', no:'RE-2026-0092', customerId:'c1', title:'Pflasterarbeiten Einfahrt',
+   date:'2026-05-28', due:'2026-06-11', vat:19, status:'offen',
+   items:[ {name:'Pflasterfläche herstellen', qty:64, unit:'m²', price:89},
+           {name:'Randsteine setzen', qty:38, unit:'lfm', price:24},
+           {name:'Anfahrt & Geräteeinsatz', qty:1, unit:'pausch.', price:420} ]},
+  {id:'r3', kind:'rechnung', no:'RE-2026-0090', customerId:'c3', title:'Heckenschnitt & Pflege Mai',
+   date:'2026-05-06', due:'2026-05-20', vat:19, status:'ueberfaellig',
+   items:[ {name:'Heckenschnitt (3 Einsätze)', qty:3, unit:'Einsatz', price:180},
+           {name:'Grünschnitt-Entsorgung', qty:1, unit:'pausch.', price:140} ]},
+  {id:'a1', kind:'angebot', no:'AN-2026-0042', customerId:'c4', title:'Grünpflege Rahmenvertrag 2026/27',
+   date:'2026-06-04', due:'2026-06-30', vat:19, status:'versendet',
+   items:[ {name:'Grünpflege Außenanlagen (mtl.)', qty:12, unit:'Monat', price:2850},
+           {name:'Baumkontrolle & -pflege', qty:1, unit:'Jahr', price:3400} ]},
+  {id:'a2', kind:'angebot', no:'AN-2026-0043', customerId:'c5', title:'Terrasse & Sichtschutz',
+   date:'2026-06-02', due:'2026-06-20', vat:19, status:'entwurf',
+   items:[ {name:'Terrassendielen WPC verlegen', qty:32, unit:'m²', price:115},
+           {name:'Sichtschutz-Elemente montieren', qty:8, unit:'Stk', price:240} ]},
+  {id:'a3', kind:'angebot', no:'AN-2026-0041', customerId:'c1', title:'Gartenneuanlage Hinterhof',
+   date:'2026-05-30', due:'2026-06-15', vat:19, status:'angenommen',
+   items:[ {name:'Planung & Aufmaß', qty:1, unit:'pausch.', price:480},
+           {name:'Erd- & Pflanzarbeiten', qty:1, unit:'pausch.', price:8900} ]},
+];
+function invNet(inv){ return inv.items.reduce((s,i)=> s + i.qty*i.price, 0); }
+function invVatAmt(inv){ return invNet(inv) * inv.vat/100; }
+function invGross(inv){ return invNet(inv) + invVatAmt(inv); }
+const INV_STATUS = {
+  entwurf:    {label:'Entwurf',     cls:'n'},
+  versendet:  {label:'Versendet',   cls:'b'},
+  angenommen: {label:'Angenommen',  cls:'g'},
+  offen:      {label:'Offen',       cls:'a'},
+  bezahlt:    {label:'Bezahlt',     cls:'g'},
+  ueberfaellig:{label:'Überfällig', cls:'r'},
+  abgelehnt:  {label:'Abgelehnt',   cls:'n'},
+};
+function invStatusPill(s){ const m = INV_STATUS[s] || INV_STATUS.entwurf; return `<span class="pill ${m.cls}">${m.label}</span>`; }
+function finTabList(){
+  const ang = invoices.filter(i=>i.kind==='angebot').length;
+  const rec = invoices.filter(i=>i.kind==='rechnung').length;
+  return [ {id:'uebersicht', label:'Übersicht', count:''},
+           {id:'angebote', label:'Angebote', count:ang},
+           {id:'rechnungen', label:'Rechnungen', count:rec} ];
+}
+function finTab(tab){
+  activeFinTab = tab;
+  document.querySelectorAll('#finTabs .tab').forEach(b => b.classList.toggle('on', b.dataset.ftab === tab));
+  const body = document.getElementById('finBody');
+  if(body) body.innerHTML = FIN[tab] ? FIN[tab]() : '';
+  icons();
+}
+const FIN = {
+  uebersicht: () => {
+    const offen = invoices.filter(i=>i.kind==='rechnung' && (i.status==='offen'||i.status==='ueberfaellig'));
+    const offenSum = offen.reduce((s,i)=> s+invGross(i), 0);
+    const ueberf = invoices.filter(i=>i.status==='ueberfaellig');
+    const ueberfSum = ueberf.reduce((s,i)=> s+invGross(i), 0);
+    const monat = invoices.filter(i=>i.kind==='rechnung' && i.status==='bezahlt' && i.date>='2026-05-01');
+    const monatSum = monat.reduce((s,i)=> s+invGross(i), 0);
+    const offeneAngebote = invoices.filter(i=>i.kind==='angebot' && (i.status==='versendet'||i.status==='entwurf'));
+    const angebotSum = offeneAngebote.reduce((s,i)=> s+invGross(i), 0);
+    return `
+      <div class="fin-kpis">
+        <div class="fin-kpi blue"><span class="fin-kpi__ic"><i data-lucide="file-clock"></i></span><div class="fin-kpi__num num">${eur(offenSum)}</div><div class="fin-kpi__lbl">Offene Rechnungen · ${offen.length} Posten</div></div>
+        <div class="fin-kpi warn"><span class="fin-kpi__ic"><i data-lucide="alert-triangle"></i></span><div class="fin-kpi__num num">${eur(ueberfSum)}</div><div class="fin-kpi__lbl">Überfällig · ${ueberf.length} Posten · mahnen</div></div>
+        <div class="fin-kpi"><span class="fin-kpi__ic"><i data-lucide="check-circle"></i></span><div class="fin-kpi__num num">${eur(monatSum)}</div><div class="fin-kpi__lbl">Bezahlt im Mai · ${monat.length} Rechnungen</div></div>
+        <div class="fin-kpi"><span class="fin-kpi__ic"><i data-lucide="file-text"></i></span><div class="fin-kpi__num num">${eur(angebotSum)}</div><div class="fin-kpi__lbl">Offene Angebote · ${offeneAngebote.length} versendet</div></div>
+      </div>
+      <div class="panel">
+        <div class="panel__head"><h3>Zu erledigen</h3></div>
+        ${ueberf.length || offen.length ? `<div class="table-wrap"><table>
+          <thead><tr><th>Rechnung</th><th>Kunde</th><th class="right">Betrag</th><th>Fällig</th><th>Status</th><th></th></tr></thead>
+          <tbody>${[...ueberf, ...offen.filter(i=>i.status!=='ueberfaellig')].map(inv=>`
+            <tr onclick="openInvoice('${inv.id}')" style="cursor:pointer">
+              <td><strong>${inv.no}</strong></td>
+              <td>${customer(inv.customerId)?.name || '–'}</td>
+              <td class="right">${eur(invGross(inv))}</td>
+              <td>${dDE(inv.due)}</td>
+              <td>${invStatusPill(inv.status)}</td>
+              <td class="right"><button class="btn sm ghost" onclick="event.stopPropagation(); brainInvoiceHelp('${inv.id}')"><i data-lucide="sparkles"></i> Mahnung?</button></td>
+            </tr>`).join('')}</tbody></table></div>`
+          : `<p class="empty">Alles bezahlt – keine offenen Posten. 🎉</p>`}
+      </div>`;
+  },
+  angebote: () => finTable('angebot', 'angebot'),
+  rechnungen: () => finTable('rechnung', 'rechnung'),
+};
+function finTable(kind, btnKind){
+  const list = invoices.filter(i=>i.kind===kind).sort((a,b)=> b.date.localeCompare(a.date));
+  const title = kind==='angebot' ? 'Angebote' : 'Rechnungen';
+  return `
+    <div class="panel">
+      <div class="panel__head"><h3>${title}</h3>
+        <button class="mini-btn primary" onclick="openInvoiceForm('${btnKind}')"><i data-lucide="plus"></i> ${kind==='angebot'?'Angebot':'Rechnung'}</button></div>
+      ${list.length ? `<div class="table-wrap"><table>
+        <thead><tr><th>Nr.</th><th>Kunde</th><th>Bezeichnung</th><th class="right">Brutto</th><th>Datum</th><th>Status</th></tr></thead>
+        <tbody>${list.map(inv=>`
+          <tr onclick="openInvoice('${inv.id}')" style="cursor:pointer">
+            <td><strong>${inv.no}</strong></td>
+            <td>${customer(inv.customerId)?.name || '–'}</td>
+            <td>${inv.title}</td>
+            <td class="right">${eur(invGross(inv))}</td>
+            <td>${dDE(inv.date)}</td>
+            <td>${invStatusPill(inv.status)}</td>
+          </tr>`).join('')}</tbody></table></div>`
+        : `<p class="empty">Noch keine ${title}.</p>`}
+    </div>`;
+}
+function invActions(inv){
+  const a = [];
+  if(inv.kind==='angebot'){
+    if(inv.status==='entwurf') a.push(`<button class="btn" style="flex:1" onclick="setInvStatus('${inv.id}','versendet')"><i data-lucide="send"></i> Versenden</button>`);
+    if(inv.status==='versendet') a.push(`<button class="btn" style="flex:1" onclick="setInvStatus('${inv.id}','angenommen')"><i data-lucide="check"></i> Angenommen</button>`);
+    if(inv.status==='angenommen') a.push(`<button class="btn" style="flex:1" onclick="convertToInvoice('${inv.id}')"><i data-lucide="receipt"></i> In Rechnung umwandeln</button>`);
+  } else {
+    if(inv.status==='offen'||inv.status==='ueberfaellig') a.push(`<button class="btn" style="flex:1" onclick="setInvStatus('${inv.id}','bezahlt')"><i data-lucide="check-circle"></i> Als bezahlt markieren</button>`);
+    if(inv.status==='entwurf') a.push(`<button class="btn" style="flex:1" onclick="setInvStatus('${inv.id}','offen')"><i data-lucide="send"></i> Versenden</button>`);
+  }
+  a.push(`<button class="btn ghost" onclick="toast('PDF-Export folgt')"><i data-lucide="download"></i> PDF</button>`);
+  return `<div class="sheet-actions">${a.join('')}</div>`;
+}
+function openInvoice(id){
+  const inv = invoices.find(i=>i.id===id); if(!inv) return;
+  const c = customer(inv.customerId);
+  openSheet(`
+    <div class="sheet__head">
+      <span class="avatar" style="width:46px;height:46px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="${inv.kind==='angebot'?'file-text':'receipt'}" style="width:20px;height:20px"></i></span>
+      <div><div class="sheet__title">${inv.no}</div><div class="sheet__sub">${inv.kind==='angebot'?'Angebot':'Rechnung'} · ${invStatusPill(inv.status)}</div></div>
+      <button class="sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+    </div>
+    <div class="sheet__body">
+      <div class="inv-doc">
+        <div class="inv-doc__row"><span>Kunde</span><strong>${c?.name||'–'}</strong></div>
+        <div class="inv-doc__row"><span>Anschrift</span><span>${c?.addr||'–'}</span></div>
+        <div class="inv-doc__row"><span>Bezeichnung</span><span>${inv.title}</span></div>
+        <div class="inv-doc__row"><span>Datum</span><span>${dDE(inv.date)}</span></div>
+        <div class="inv-doc__row"><span>${inv.kind==='angebot'?'Gültig bis':'Fällig bis'}</span><span>${dDE(inv.due)}</span></div>
+      </div>
+      <div class="table-wrap" style="margin-top:14px"><table>
+        <thead><tr><th>Position</th><th class="right">Menge</th><th class="right">Einzel</th><th class="right">Gesamt</th></tr></thead>
+        <tbody>${inv.items.map(it=>`<tr><td>${it.name}</td><td class="right">${it.qty} ${it.unit}</td><td class="right">${eur(it.price)}</td><td class="right">${eur(it.qty*it.price)}</td></tr>`).join('')}</tbody>
+      </table></div>
+      <div class="inv-totals">
+        <div class="inv-totals__row"><span>Netto</span><span class="num">${eur(invNet(inv))}</span></div>
+        <div class="inv-totals__row"><span>zzgl. ${inv.vat}% MwSt.</span><span class="num">${eur(invVatAmt(inv))}</span></div>
+        <div class="inv-totals__row grand"><span>Gesamt</span><span class="num">${eur(invGross(inv))}</span></div>
+      </div>
+      <p class="sheet-note" style="margin-top:12px"><i data-lucide="sparkles"></i> Unsicher bei MwSt., Pflichtangaben oder Mahnung? <a onclick="brainInvoiceHelp('${inv.id}')" style="color:var(--green);font-weight:700;cursor:pointer">Frag das Brain</a></p>
+      ${invActions(inv)}
+    </div>`);
+}
+function setInvStatus(id, status){
+  const inv = invoices.find(i=>i.id===id); if(!inv) return;
+  inv.status = status; closeSheet();
+  toast(`Status: ${INV_STATUS[status].label}`);
+  if(currentView==='finanzen') finTab(activeFinTab);
+}
+function convertToInvoice(id){
+  const ang = invoices.find(i=>i.id===id); if(!ang) return;
+  invSeq++;
+  const re = { id:'r'+invSeq, kind:'rechnung', no:`RE-2026-${String(invSeq).padStart(4,'0')}`,
+    customerId:ang.customerId, title:ang.title, date:dISO(new Date()), due:addDays(dISO(new Date()),14),
+    vat:ang.vat, status:'offen', items:ang.items.map(i=>Object.assign({},i)) };
+  invoices.push(re); ang.status='angenommen'; closeSheet();
+  toast('Rechnung erstellt aus Angebot');
+  if(currentView==='finanzen'){ activeFinTab='rechnungen'; finTab('rechnungen'); }
+  setTimeout(()=>openInvoice(re.id), 280);
+}
+
+/* ----- Angebot/Rechnung-Formular ----- */
+let invDraft = null;
+function openInvoiceForm(kind){
+  if(currentView!=='finanzen' && !can('finanzen')){ /* erlaubt für admin */ }
+  invDraft = { kind, customerId: customers[0].id, title:'', vat:19,
+    date: dISO(new Date()), due: addDays(dISO(new Date()), kind==='angebot'?14:14),
+    items:[ {name:'', qty:1, unit:'pausch.', price:0} ] };
+  renderInvoiceForm();
+}
+function renderInvoiceForm(){
+  const d = invDraft; if(!d) return;
+  openSheet(`
+    <div class="sheet__head">
+      <span class="avatar" style="width:46px;height:46px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="${d.kind==='angebot'?'file-text':'receipt'}" style="width:20px;height:20px"></i></span>
+      <div><div class="sheet__title">Neues ${d.kind==='angebot'?'Angebot':'Rechnung'}</div><div class="sheet__sub">Positionen erfassen – Summe rechnet automatisch</div></div>
+      <button class="sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+    </div>
+    <div class="sheet__body">
+      <div class="fieldrow">
+        <label class="field"><span>Kunde</span>
+          <select onchange="invDraft.customerId=this.value">${customers.map(c=>`<option value="${c.id}" ${c.id===d.customerId?'selected':''}>${c.name}</option>`).join('')}</select></label>
+        <label class="field"><span>${d.kind==='angebot'?'Gültig bis':'Fällig bis'}</span>
+          <input type="date" value="${d.due}" onchange="invDraft.due=this.value"></label>
+      </div>
+      <label class="field"><span>Bezeichnung</span>
+        <input type="text" placeholder="z. B. Pflasterarbeiten Einfahrt" value="${escapeHtml(d.title)}" oninput="invDraft.title=this.value"></label>
+      <div class="inv-itemhead"><span>Position</span><span>Menge</span><span>Einheit</span><span>Einzel €</span><span></span></div>
+      <div class="inv-items" id="invItems">${d.items.map((it,idx)=>invItemRow(it,idx)).join('')}</div>
+      <button class="btn ghost btn--block" onclick="invAddItem()"><i data-lucide="plus"></i> Position hinzufügen</button>
+      <div class="fieldrow" style="margin-top:12px">
+        <label class="field"><span>MwSt.-Satz</span>
+          <select onchange="invDraft.vat=Number(this.value); invRecalc()">
+            <option value="19" ${d.vat===19?'selected':''}>19 % (Regelsatz)</option>
+            <option value="7" ${d.vat===7?'selected':''}>7 % (ermäßigt)</option>
+            <option value="0" ${d.vat===0?'selected':''}>0 % (Kleinunternehmer §19)</option>
+          </select></label>
+      </div>
+      <div class="inv-totals" id="invDraftTotals">${invTotalsHtml()}</div>
+      <p class="sheet-note"><i data-lucide="sparkles"></i> MwSt.-Frage? <a onclick="openBrain('Wie weise ich die MwSt. auf der Rechnung korrekt aus?')" style="color:var(--green);font-weight:700;cursor:pointer">Brain fragen</a></p>
+      <div class="sheet-actions">
+        <button class="btn" style="flex:1" onclick="submitInvoice(true)"><i data-lucide="send"></i> ${d.kind==='angebot'?'Speichern & versenden':'Speichern & stellen'}</button>
+        <button class="btn ghost" onclick="submitInvoice(false)">Als Entwurf</button>
+      </div>
+    </div>`);
+}
+function invItemRow(it, idx){
+  return `<div class="inv-item" data-idx="${idx}">
+    <input type="text" placeholder="Leistung / Position" value="${escapeHtml(it.name)}" oninput="invDraft.items[${idx}].name=this.value">
+    <input type="number" step="0.01" placeholder="1" value="${it.qty}" oninput="invDraft.items[${idx}].qty=Number(this.value)||0; invRecalc()">
+    <input type="text" placeholder="Stk" value="${escapeHtml(it.unit)}" oninput="invDraft.items[${idx}].unit=this.value">
+    <input type="number" step="0.01" placeholder="0,00" value="${it.price}" oninput="invDraft.items[${idx}].price=Number(this.value)||0; invRecalc()">
+    ${invDraft.items.length>1?`<button class="inv-item__del" onclick="invDelItem(${idx})"><i data-lucide="trash-2"></i></button>`:'<span></span>'}
+  </div>`;
+}
+function invDraftNet(){ return invDraft.items.reduce((s,i)=> s + (i.qty*i.price), 0); }
+function invTotalsHtml(){
+  const net = invDraftNet(); const vat = net*invDraft.vat/100;
+  return `<div class="inv-totals__row"><span>Netto</span><span class="num">${eur(net)}</span></div>
+    <div class="inv-totals__row"><span>zzgl. ${invDraft.vat}% MwSt.</span><span class="num">${eur(vat)}</span></div>
+    <div class="inv-totals__row grand"><span>Gesamt</span><span class="num">${eur(net+vat)}</span></div>`;
+}
+function invRecalc(){ const el=document.getElementById('invDraftTotals'); if(el) el.innerHTML=invTotalsHtml(); }
+function invAddItem(){ invDraft.items.push({name:'',qty:1,unit:'pausch.',price:0}); renderInvoiceForm(); }
+function invDelItem(idx){ invDraft.items.splice(idx,1); renderInvoiceForm(); }
+function submitInvoice(send){
+  const d = invDraft; if(!d) return;
+  if(!d.title.trim()){ toast('Bitte Bezeichnung eingeben'); return; }
+  invSeq++;
+  const prefix = d.kind==='angebot' ? 'AN' : 'RE';
+  const status = d.kind==='angebot' ? (send?'versendet':'entwurf') : (send?'offen':'entwurf');
+  const inv = { id:(d.kind==='angebot'?'a':'r')+invSeq, kind:d.kind,
+    no:`${prefix}-2026-${String(invSeq).padStart(4,'0')}`, customerId:d.customerId,
+    title:d.title.trim(), date:dISO(new Date()), due:d.due, vat:d.vat, status,
+    items:d.items.filter(i=>i.name.trim()).map(i=>Object.assign({},i)) };
+  if(!inv.items.length){ toast('Mindestens eine Position nötig'); return; }
+  invoices.push(inv); invDraft=null; closeSheet();
+  toast(`${d.kind==='angebot'?'Angebot':'Rechnung'} gespeichert`);
+  if(currentView==='finanzen'){ activeFinTab = d.kind==='angebot'?'angebote':'rechnungen'; finTab(activeFinTab); }
+  setTimeout(()=>openInvoice(inv.id), 280);
+}
+function brainInvoiceHelp(id){
+  const inv = invoices.find(i=>i.id===id);
+  closeSheet();
+  setTimeout(()=> openBrain(inv && inv.status==='ueberfaellig'
+    ? `Die Rechnung ${inv.no} ist überfällig. Wie schreibe ich eine korrekte Mahnung?`
+    : `Was muss alles auf einer Rechnung stehen, damit sie rechtlich gültig ist?`), 260);
+}
+
+/* ===================== MARKT (Community + Marktplatz) ===================== */
+let marktSeq = 200;
+const marktPosts = [
+  {id:'m1', type:'frage', who:'Stefan Brück', firm:'Brück Garten- & Landschaftsbau', city:'Lüneburg', color:'#16A34A', when:'vor 2 Std.',
+   text:'Wie kalkuliert ihr aktuell den lfm Naturstein-Mauer? Komme bei den Materialpreisen kaum noch hin. Steine + Mörtel + Fundament – was nehmt ihr pro lfm?',
+   tags:['Kalkulation','Naturstein'], likes:12, comments:8},
+  {id:'m2', type:'markt', who:'Andrea Voss', firm:'Voss GaLaBau', city:'Buchholz', color:'#7C3AED', when:'vor 4 Std.',
+   text:'Wir steigen auf größere Maschinen um – Radlader abzugeben.', sale:{item:'Radlader Kramer 5055', price:'18.900 € VB', cond:'Bj. 2019, 2.400 Bh, top gepflegt, Schaufel + Palettengabel', img:'radlader'},
+   tags:['Maschine','Radlader'], likes:5, comments:3},
+  {id:'m3', type:'tipp', who:'Georg Müller', firm:'Müller GaLaBau', city:'Hamburg', color:'#0E7A43', when:'vor 1 Tag', me:true,
+   text:'Kleiner Tipp gegen Personalmangel: Wir nehmen seit 3 Monaten Bewerber über einen WhatsApp-Bot vorqualifiziert rein – Quote hat sich verdoppelt. Frag mich gern, wie wir das aufgesetzt haben.',
+   tags:['Recruiting','Erfahrung'], likes:23, comments:14},
+  {id:'m4', type:'frage', who:'Mehmet Yıldız', firm:'Yıldız Außenanlagen', city:'Norderstedt', color:'#B7791F', when:'vor 1 Tag',
+   text:'Hat jemand Erfahrung mit dem neuen Mähroboter-Service als Zusatzgeschäft im Winter? Lohnt sich das oder ist das nur Aufwand?',
+   tags:['Geschäftsmodell','Wartung'], likes:9, comments:11},
+  {id:'m5', type:'markt', who:'Klaus Reimer', firm:'Reimer Gartengestaltung', city:'Pinneberg', color:'#2563EB', when:'vor 2 Tagen',
+   text:'Restposten abzugeben – muss Platz im Lager machen.', sale:{item:'Granit-Pflaster grau 8/11', price:'12 €/m² (Restposten)', cond:'ca. 140 m² vorhanden, neuwertig, Selbstabholung Pinneberg', img:'pflaster'},
+   tags:['Material','Pflaster'], likes:7, comments:4},
+];
+function marktTabList(){
+  return [ {id:'feed', label:'Feed', count:''},
+           {id:'marktplatz', label:'Marktplatz', count:marktPosts.filter(p=>p.type==='markt').length},
+           {id:'fragen', label:'Fragen', count:marktPosts.filter(p=>p.type==='frage').length} ];
+}
+function marktTab(tab){
+  activeMarktTab = tab;
+  document.querySelectorAll('#marktTabs .tab').forEach(b => b.classList.toggle('on', b.dataset.mtab === tab));
+  const body = document.getElementById('marktBody');
+  if(body) body.innerHTML = MARKT[tab] ? MARKT[tab]() : '';
+  icons();
+}
+const MARKT = {
+  feed: () => marktComposer() + `<div class="feed">${marktPosts.map(postCard).join('')}</div>`,
+  marktplatz: () => marktComposer('markt') + `<div class="feed">${marktPosts.filter(p=>p.type==='markt').map(postCard).join('') || '<p class="empty">Noch keine Anzeigen.</p>'}</div>`,
+  fragen: () => marktComposer('frage') + `<div class="feed">${marktPosts.filter(p=>p.type==='frage').map(postCard).join('') || '<p class="empty">Noch keine Fragen.</p>'}</div>`,
+};
+function marktComposer(type){
+  const me = settings.company?.name || 'Müller GaLaBau';
+  return `<div class="composer">
+    <span class="avatar" style="width:42px;height:42px;background:linear-gradient(135deg,var(--green),var(--green-2))">${initials(me)}</span>
+    <button class="composer__in" onclick="openMarktForm('${type==='markt'?'markt':'frage'}')">${type==='markt'?'Gerät oder Material anbieten…':'Frage an die Community oder Tipp teilen…'}</button>
+    <button class="composer__btn sell" onclick="openMarktForm('markt')" title="Verkaufen"><i data-lucide="tag"></i><span>Verkaufen</span></button>
+  </div>`;
+}
+const POST_TYPE = {
+  frage: {label:'Frage', icon:'help-circle', cls:'b'},
+  tipp:  {label:'Tipp',  icon:'lightbulb',   cls:'g'},
+  markt: {label:'Verkauf', icon:'tag',       cls:'v'},
+};
+const SALE_IMG = {
+  radlader:'linear-gradient(135deg,#fde68a,#f59e0b)',
+  pflaster:'linear-gradient(135deg,#d1d5db,#9ca3af)',
+};
+function postCard(p){
+  const t = POST_TYPE[p.type] || POST_TYPE.frage;
+  return `<div class="post">
+    <div class="post__head">
+      <span class="post__av" style="background:linear-gradient(135deg,${p.color},${shade(p.color,-28)})">${initials(p.who)}</span>
+      <div class="post__who"><b>${p.firm}${p.me?' <span class="post__me">Du</span>':''}</b><small>${p.who} · ${p.city} · ${p.when}</small></div>
+      <span class="post__type ${p.type}">${t.label}</span>
+    </div>
+    <div class="post__text">${escapeHtml(p.text)}</div>
+    ${p.sale ? `<div class="post__sale">
+      <div class="post__img" style="background:${SALE_IMG[p.sale.img]||'linear-gradient(135deg,#e5e7eb,#cbd5e1)'}"><i data-lucide="image"></i></div>
+      <div class="post__saleinfo">
+        <strong>${p.sale.item}</strong>
+        <span class="post__price">${p.sale.price}</span>
+        <span class="post__cond">${p.sale.cond}</span>
+        <button class="btn sm" onclick="toast('Nachricht an ${p.firm} – Chat folgt')"><i data-lucide="message-circle"></i> Anfragen</button>
+      </div>
+    </div>` : ''}
+    <div class="post__tags">${p.tags.map(t=>`<span class="post__tag">#${t}</span>`).join('')}</div>
+    <div class="post__foot">
+      <button class="post__act" onclick="marktLike('${p.id}')"><i data-lucide="thumbs-up"></i> ${p.likes}</button>
+      <button class="post__act" onclick="toast('Kommentare folgen')"><i data-lucide="message-square"></i> ${p.comments}</button>
+      <button class="post__act" onclick="toast('Geteilt im Netzwerk')"><i data-lucide="share-2"></i> Teilen</button>
+    </div>
+  </div>`;
+}
+function marktLike(id){
+  const p = marktPosts.find(x=>x.id===id); if(!p) return;
+  p.likes++; marktTab(activeMarktTab);
+}
+let marktDraft = null;
+function openMarktForm(type){
+  marktDraft = { type: type==='markt'?'markt':'frage', text:'', tags:'',
+    sale:{ item:'', price:'', cond:'' } };
+  renderMarktForm();
+}
+function renderMarktForm(){
+  const d = marktDraft; if(!d) return;
+  const isSale = d.type==='markt';
+  openSheet(`
+    <div class="sheet__head">
+      <span class="avatar" style="width:46px;height:46px;background:linear-gradient(135deg,var(--violet,#7C3AED),#2563EB)"><i data-lucide="${isSale?'tag':'help-circle'}" style="width:20px;height:20px"></i></span>
+      <div><div class="sheet__title">${isSale?'Gerät / Material anbieten':'Frage oder Tipp posten'}</div><div class="sheet__sub">Sichtbar für 187 verifizierte Betriebe</div></div>
+      <button class="sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+    </div>
+    <div class="sheet__body">
+      <div class="seg" style="display:flex;gap:8px;margin-bottom:14px">
+        <button class="btn ${d.type==='frage'?'':'ghost'} sm" style="flex:1" onclick="marktDraft.type='frage'; renderMarktForm()"><i data-lucide="help-circle"></i> Frage/Tipp</button>
+        <button class="btn ${d.type==='markt'?'':'ghost'} sm" style="flex:1" onclick="marktDraft.type='markt'; renderMarktForm()"><i data-lucide="tag"></i> Verkaufen</button>
+      </div>
+      <label class="field"><span>${isSale?'Beschreibung':'Deine Frage / dein Tipp'}</span>
+        <textarea rows="4" placeholder="${isSale?'z. B. Grund für Verkauf, Zustand…':'z. B. Wie kalkuliert ihr…?'}" oninput="marktDraft.text=this.value">${escapeHtml(d.text)}</textarea></label>
+      ${isSale ? `
+        <label class="field"><span>Artikel</span><input type="text" placeholder="z. B. Radlader Kramer 5055" value="${escapeHtml(d.sale.item)}" oninput="marktDraft.sale.item=this.value"></label>
+        <div class="fieldrow">
+          <label class="field"><span>Preis</span><input type="text" placeholder="z. B. 18.900 € VB" value="${escapeHtml(d.sale.price)}" oninput="marktDraft.sale.price=this.value"></label>
+        </div>
+        <label class="field"><span>Zustand / Details</span><input type="text" placeholder="z. B. Bj. 2019, 2.400 Bh" value="${escapeHtml(d.sale.cond)}" oninput="marktDraft.sale.cond=this.value"></label>
+        <div class="composer__photo" onclick="toast('Foto-Upload folgt')"><i data-lucide="camera"></i> Fotos hinzufügen</div>
+      ` : ''}
+      <label class="field"><span>Schlagworte (mit Komma)</span><input type="text" placeholder="z. B. Kalkulation, Naturstein" value="${escapeHtml(d.tags)}" oninput="marktDraft.tags=this.value"></label>
+      <div class="sheet-actions">
+        <button class="btn" style="flex:1" onclick="submitMarkt()"><i data-lucide="send"></i> Im Netzwerk posten</button>
+        <button class="btn ghost" onclick="closeSheet()">Abbrechen</button>
+      </div>
+    </div>`);
+}
+function submitMarkt(){
+  const d = marktDraft; if(!d) return;
+  if(!d.text.trim()){ toast('Bitte Text eingeben'); return; }
+  if(d.type==='markt' && !d.sale.item.trim()){ toast('Bitte Artikel angeben'); return; }
+  marktSeq++;
+  const me = settings.company?.name || 'Müller GaLaBau';
+  const post = { id:'m'+marktSeq, type:d.type, who: settings.company?.owner || 'Georg Müller',
+    firm: me, city: settings.company?.city || 'Hamburg', color:'#0E7A43', when:'gerade eben', me:true,
+    text:d.text.trim(), likes:0, comments:0,
+    tags: d.tags.split(',').map(s=>s.trim()).filter(Boolean) };
+  if(d.type==='markt') post.sale = { item:d.sale.item.trim(), price:d.sale.price.trim()||'VB', cond:d.sale.cond.trim(), img:'' };
+  marktPosts.unshift(post); marktDraft=null; closeSheet();
+  toast('Im Netzwerk gepostet');
+  if(currentView==='markt') marktTab(activeMarktTab);
+}
+
+/* ===================== GREENCAREERS BRAIN (Claude-Assistent) ===================== */
+let brainMsgs = [];
+let brainRec = null;
+const BRAIN_CHIPS = [
+  'Wie weise ich die MwSt. korrekt aus?',
+  'Was muss auf eine Rechnung?',
+  'Mitarbeiter will Urlaub – muss ich genehmigen?',
+  'Wie kalkuliere ich Pflasterarbeiten?',
+  'Krankmeldung – was muss ich beachten?',
+];
+function openBrain(prefill){
+  if(!brainMsgs.length){
+    brainMsgs = [{ role:'bot', text:'Moin Georg! Ich bin dein GreenCareers Brain. Frag mich alles rund um deinen Betrieb – Rechnung, Steuer, Personal, Kalkulation, Recht. Ich antworte in Handwerker-Klartext.' }];
+  }
+  renderBrain();
+  if(prefill){ setTimeout(()=> brainSend(prefill), 200); }
+}
+function renderBrain(){
+  openSheet(`
+    <div class="brain-head">
+      <span class="brain-av"><i data-lucide="sparkles"></i></span>
+      <div><div class="sheet__title">GreenCareers Brain</div><div class="sheet__sub">Dein KI-Assistent · powered by Claude</div></div>
+      <button class="sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+    </div>
+    <div class="brain-chips">${BRAIN_CHIPS.map(c=>`<button class="brain-chip" onclick="brainSend('${c.replace(/'/g,"\\'")}')">${c}</button>`).join('')}</div>
+    <div class="brain-msgs" id="brainMsgs">${brainMsgs.map(brainBubble).join('')}</div>
+    <div class="brain-input">
+      <button class="brain-mic" id="brainMic" onclick="brainVoice()" title="Sprechen"><i data-lucide="mic"></i></button>
+      <input type="text" id="brainText" placeholder="Frag dein Brain…" onkeydown="if(event.key==='Enter'){brainSend(this.value); this.value='';}">
+      <button class="brain-send" onclick="const t=document.getElementById('brainText'); brainSend(t.value); t.value='';"><i data-lucide="arrow-up"></i></button>
+    </div>`);
+  scrollBrain();
+}
+function brainBubble(m){
+  if(m.typing) return `<div class="bmsg" id="bTyping"><div class="brain-typing"><span></span><span></span><span></span></div></div>`;
+  return `<div class="bmsg ${m.role==='me'?'me':''}">${m.role==='bot'?'<span class="bmsg__av"><i data-lucide="sparkles"></i></span>':''}<div class="bmsg__txt">${m.text}</div></div>`;
+}
+function renderBrainMsgs(){ const el=document.getElementById('brainMsgs'); if(el){ el.innerHTML = brainMsgs.map(brainBubble).join(''); icons(); scrollBrain(); } }
+function scrollBrain(){ const el=document.getElementById('brainMsgs'); if(el) setTimeout(()=>{ el.scrollTop = el.scrollHeight; }, 20); }
+function brainSend(text){
+  text = (text||'').trim(); if(!text) return;
+  brainMsgs.push({role:'me', text:escapeHtml(text)});
+  brainMsgs.push({role:'bot', typing:true});
+  renderBrainMsgs();
+  setTimeout(()=>{
+    brainMsgs = brainMsgs.filter(m=>!m.typing);
+    brainMsgs.push({role:'bot', text:brainAnswer(text)});
+    renderBrainMsgs();
+  }, 750);
+}
+function brainAnswer(q){
+  const s = q.toLowerCase();
+  if(/(mwst|umsatzsteuer|steuer ausweisen|19\s?%|7\s?%)/.test(s))
+    return `Auf der Rechnung musst du die <strong>MwSt. separat ausweisen</strong>:<br>• <strong>Netto-Betrag</strong> (Summe ohne Steuer)<br>• <strong>Steuersatz</strong> – im GaLaBau i.d.R. <strong>19 %</strong> (7 % nur bei bestimmten Pflanzenlieferungen)<br>• <strong>Steuerbetrag</strong> in €<br>• <strong>Brutto</strong> (Netto + Steuer)<br><br>Wichtig: deine <strong>Steuernummer oder USt-IdNr.</strong> muss drauf. Kleinunternehmer (§19) weisen <strong>keine</strong> MwSt. aus und schreiben den Hinweis „Gemäß §19 UStG wird keine Umsatzsteuer berechnet". Beim neuen Angebot/Rechnung-Formular kannst du den Satz direkt auswählen.`;
+  if(/(was muss.*rechnung|pflichtangaben|gültige rechnung|rechnung schreiben|rechnung.*stehen)/.test(s))
+    return `Eine Rechnung ist nur gültig mit diesen <strong>Pflichtangaben (§14 UStG)</strong>:<br>1. Vollständiger Name + Anschrift von dir <em>und</em> Kunde<br>2. Deine <strong>Steuernummer / USt-IdNr.</strong><br>3. <strong>Rechnungsdatum</strong><br>4. Fortlaufende, einmalige <strong>Rechnungsnummer</strong><br>5. <strong>Leistung + Menge</strong> (was, wie viel)<br>6. <strong>Leistungsdatum</strong> bzw. -zeitraum<br>7. <strong>Netto, Steuersatz, Steuerbetrag, Brutto</strong><br><br>GreenCareers OS füllt Nummer, Datum und Summen automatisch – du musst nur Kunde + Positionen eintragen.`;
+  if(/(urlaub.*genehmig|urlaub.*ablehn|kein urlaub|urlaub verweiger|urlaubsantrag)/.test(s))
+    return `Kurz: <strong>Nein, du musst nicht jeden Urlaub genehmigen</strong> – aber du brauchst einen Grund.<br><br>Nach §7 BUrlG richtest du Urlaub nach den Wünschen des Mitarbeiters, <em>außer</em> es stehen <strong>dringende betriebliche Gründe</strong> entgegen (z. B. Großbaustelle, mehrere wollen gleichzeitig, Hochsaison) oder Urlaubswünsche anderer mit Vorrang (z. B. Schulkinder).<br><br>Praxis: Ablehnung schriftlich begründen. Komplett verweigern darfst du nicht – der gesetzliche Mindesturlaub <strong>muss</strong> im Jahr gewährt werden. Im Tab „Urlaub &amp; Krank" siehst du, wer schon eingeplant ist – das ist deine Begründung.`;
+  if(/(pflaster|kalkulier|kalkulation|m²|quadratmeter|preis.*berechn)/.test(s))
+    return `Pflaster kalkulierst du am besten <strong>pro m²</strong> und rechnest in 3 Blöcken:<br>• <strong>Material</strong>: Pflastersteine + Schotter/Splitt + Randsteine (Einkaufspreis × Fläche + Verschnitt ~5 %)<br>• <strong>Lohn</strong>: Aushub, Verdichten, Verlegen – als Faustwert <strong>0,8–1,2 Std/m²</strong> × dein Stundenverrechnungssatz<br>• <strong>Geräte/Anfahrt</strong>: Rüttelplatte, Bagger, Container, Anfahrt pauschal<br><br>Realistischer Endpreis je nach Region oft <strong>80–120 €/m²</strong>. Leg im Angebot je eine Position für Fläche, Randsteine und Anfahrt an – dann ist es für den Kunden nachvollziehbar.`;
+  if(/(krank|krankmeldung|krankschreibung|au-bescheinigung|gesundheit)/.test(s))
+    return `Bei Krankmeldung gilt:<br>• Mitarbeiter muss sich <strong>unverzüglich</strong> melden (vor Arbeitsbeginn)<br>• Ab <strong>dem 4. Krankheitstag</strong> brauchst du eine AU (Arbeitsunfähigkeitsbescheinigung) – du darfst sie aber auch <strong>ab Tag 1</strong> verlangen<br>• <strong>Entgeltfortzahlung</strong>: bis zu 6 Wochen voller Lohn (§3 EFZG)<br><br>Datenschutz: Den <em>Grund</em> der Krankheit darfst du nicht erfragen – nur die Dauer. In GreenCareers OS trägst du nur „krank von–bis" ein, keine Diagnose. Das ist bewusst DSGVO-konform gebaut.`;
+  if(/(avv|auftragsverarbeit|dsgvo|datenschutz|datenpanne)/.test(s))
+    return `Den <strong>AVV (Auftragsverarbeitungsvertrag)</strong> hast du beim Einrichten schon digital bestätigt – der ist dokumentiert und liegt unter <em>Einstellungen → Verträge &amp; Datenschutz</em>.<br><br>Wichtig für dich als Betrieb: Du bist <strong>Verantwortlicher</strong> für die Daten deiner Mitarbeiter, GreenCareers verarbeitet sie nur in deinem Auftrag. Gesundheitsdaten (krank) werden nur automatisiert verarbeitet, kein GreenCareers-Mitarbeiter sieht sie. Bei einer Datenpanne hast du <strong>72 Std.</strong> Meldefrist – sag mir Bescheid, dann gehen wir das durch.`;
+  if(/(angebot|kostenvoranschlag|offerte)/.test(s))
+    return `Ein Angebot bindet dich erstmal nicht – aber sei genau. Pack rein: <strong>klare Leistungsbeschreibung</strong>, Einzelpreise, Netto/MwSt/Brutto, <strong>Gültigkeitsdauer</strong> (z. B. 14 Tage) und Zahlungsziel. Über „+ Angebot" legst du es an; wird es angenommen, wandelst du es mit einem Klick in eine Rechnung um – Positionen werden übernommen.`;
+  return `Gute Frage. Ich helfe dir bei allem rund um <strong>Rechnung &amp; Steuer, Personal &amp; Urlaub, Kalkulation, Recht und DSGVO</strong>. Stell die Frage gern konkret – z. B. „Wie viel MwSt. auf Pflanzen?" oder „Darf ein Azubi alleine auf die Baustelle?". <br><br><em>(Im Live-Produkt bin ich direkt an Claude angebunden und ziehe deine echten Betriebsdaten heran.)</em>`;
+}
+function brainVoice(){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const mic = document.getElementById('brainMic');
+  if(!SR){ toast('Spracheingabe in diesem Browser nicht verfügbar'); return; }
+  if(brainRec){ brainRec.stop(); brainRec=null; if(mic) mic.classList.remove('rec'); return; }
+  brainRec = new SR(); brainRec.lang='de-DE'; brainRec.interimResults=false;
+  if(mic) mic.classList.add('rec');
+  brainRec.onresult = (e)=>{ const t = e.results[0][0].transcript; brainSend(t); };
+  brainRec.onerror = ()=>{ toast('Spracheingabe abgebrochen'); };
+  brainRec.onend = ()=>{ if(mic) mic.classList.remove('rec'); brainRec=null; };
+  brainRec.start();
+  toast('Sprich jetzt…');
+}
+
+/* ===================== RECHTS-DOKUMENTE (Vorschau-Texte) ===================== */
+const DOC_TITLES = { avv:'Auftragsverarbeitungsvertrag (AVV)', datenschutz:'Datenschutz & Gesundheitsdaten', agb:'Allgemeine Geschäftsbedingungen' };
+const DOCS = {
+  avv: `<p><strong>Auftragsverarbeitungsvertrag gemäß Art. 28 DSGVO</strong></p>
+    <p>zwischen dem Betrieb (nachfolgend „Verantwortlicher") und GreenCareers OS (nachfolgend „Auftragsverarbeiter").</p>
+    <p><strong>§1 Gegenstand & Dauer.</strong> Der Auftragsverarbeiter verarbeitet personenbezogene Daten (Mitarbeiter-, Zeiterfassungs- und Kundendaten) ausschließlich im Auftrag und nach Weisung des Verantwortlichen, für die Laufzeit der Nutzung der Software.</p>
+    <p><strong>§2 Art der Daten.</strong> Stammdaten, Kontaktdaten, Arbeitszeiten, Abwesenheiten (inkl. Krankheitszeiten als Gesundheitsdaten nach Art. 9 DSGVO – nur Zeitraum, keine Diagnose), Kunden- und Auftragsdaten.</p>
+    <p><strong>§3 Technische & organisatorische Maßnahmen.</strong> Verschlüsselung (TLS, at-rest), Mandantentrennung (Row-Level-Security), Rollen- & Rechtekonzept, Audit-Log, EU-Hosting (Frankfurt), tägliche verschlüsselte Backups.</p>
+    <p><strong>§4 Unterauftragsverarbeiter.</strong> Hosting (EU-Region), E-Mail-Versand und Fehler-Monitoring; jeweils mit eigenem AVV und EU-/DSGVO-Konformität.</p>
+    <p><strong>§5 Betroffenenrechte & Löschung.</strong> Der Auftragsverarbeiter unterstützt bei Auskunft, Berichtigung, Export und Löschung. Daten werden nach Zweckwegfall bzw. Aufbewahrungsfrist gelöscht/anonymisiert.</p>
+    <p><strong>§6 Meldepflicht.</strong> Datenpannen werden unverzüglich (Unterstützung der 72-Stunden-Frist nach Art. 33) gemeldet.</p>
+    <p style="color:var(--muted);font-size:13px">Mustertext zur Produktdemonstration – im Live-Betrieb anwaltlich final geprüft.</p>`,
+  datenschutz: `<p><strong>Datenschutz & Gesundheitsdaten</strong></p>
+    <p>GreenCareers OS verarbeitet Daten nach den Grundsätzen der Datensparsamkeit und Zweckbindung (Art. 5 DSGVO).</p>
+    <p><strong>Gesundheitsdaten (Art. 9).</strong> Krankheitszeiten werden ausschließlich als Zeitraum („krank von–bis") erfasst – ohne Diagnose. Die Verarbeitung erfolgt vollautomatisiert in deinem Mandanten; kein GreenCareers-Mitarbeiter erhält Einblick in Personalien.</p>
+    <p><strong>Standortdaten.</strong> Beim Stempeln wird – sofern aktiviert – ein einmaliger Standort-Nachweis erzeugt, KEINE Dauerortung.</p>
+    <p><strong>Zugriff.</strong> Rollen- & Rechtekonzept (Admin / Personalverwaltung / Mitarbeiter). Mitarbeiter sehen nur eigene Daten.</p>
+    <p><strong>Betroffenenrechte.</strong> Auskunft, Berichtigung, Export und Löschung sind als Funktion abbildbar (Einstellungen → Verträge & Datenschutz).</p>
+    <p style="color:var(--muted);font-size:13px">Mustertext zur Produktdemonstration.</p>`,
+  agb: `<p><strong>Allgemeine Geschäftsbedingungen</strong></p>
+    <p><strong>§1 Leistung.</strong> GreenCareers OS stellt eine Betriebssoftware für GaLaBau-Betriebe bereit (Personal, Zeiterfassung, Planung, Kunden, Finanzen, Markt).</p>
+    <p><strong>§2 Nutzung.</strong> Die Nutzung erfolgt im gewählten Tarif. Der Kunde ist für die Richtigkeit seiner eingegebenen Daten verantwortlich.</p>
+    <p><strong>§3 Verfügbarkeit.</strong> Angestrebt werden 99,9 % Verfügbarkeit; Wartungsfenster werden angekündigt.</p>
+    <p><strong>§4 Haftung.</strong> Keine Rechtsberatung. Die Brain-Antworten sind Orientierung, kein Ersatz für Steuerberater/Anwalt.</p>
+    <p><strong>§5 Kündigung.</strong> Monatlich kündbar; Datenexport vor Löschung möglich.</p>
+    <p style="color:var(--muted);font-size:13px">Mustertext zur Produktdemonstration.</p>`,
+};
 
 /* ===================== URLAUB & KRANK ===================== */
 let urlaubSub = 'kalender';
@@ -2896,6 +3700,8 @@ function afterRender(view){
   if(view === 'team') teamTab(activeTeamTab);
   if(view === 'planung') wirePlan();
   if(view === 'kunden') customerTab(activeCustomerTab);
+  if(view === 'finanzen') finTab(activeFinTab);
+  if(view === 'markt') marktTab(activeMarktTab);
 }
 
 function wireModules(){
