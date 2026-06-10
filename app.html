@@ -534,16 +534,26 @@
 
   /* Kanban */
   .kanban{
-    display:grid;
-    grid-template-columns:repeat(4,minmax(210px,1fr));
-    gap:12px;
-    align-items:start;
+    display:flex;
+    gap:14px;
+    align-items:flex-start;
+    overflow-x:auto;
+    overflow-y:visible;
+    padding:2px 2px 14px;
+    scroll-snap-type:x proximity;
+    -webkit-overflow-scrolling:touch;
   }
+  .kanban::-webkit-scrollbar{ height:9px; }
+  .kanban::-webkit-scrollbar-thumb{ background:#D4DDD3; border-radius:999px; }
+  .kanban::-webkit-scrollbar-track{ background:transparent; }
   .kanban-col{
-    min-height:210px;
+    flex:0 0 272px;
+    width:272px;
+    scroll-snap-align:start;
+    min-height:240px;
     padding:10px;
     border:1px solid var(--line);
-    border-radius:8px;
+    border-radius:10px;
     background:#F2F6F1;
   }
   .kanban-col.over{ outline:2px dashed var(--green); outline-offset:-4px; }
@@ -1004,7 +1014,6 @@
 
   @media(max-width:1080px){
     .dashboard{ grid-template-columns:1fr; }
-    .kanban{ grid-template-columns:repeat(2,minmax(240px,1fr)); }
   }
   @media(max-width:860px){
     .app{ height:100dvh; min-height:100dvh; background:#fff; }
@@ -1040,7 +1049,7 @@
     .statusline{ margin-top:12px; white-space:normal; align-items:flex-start; }
     .kpi-grid{ grid-template-columns:1fr; }
     .daymap{ grid-template-columns:1fr; }
-    .kanban{ grid-template-columns:1fr; }
+    .kanban-col{ flex-basis:84vw; width:84vw; max-width:300px; }
     .tabs{ width:100%; }
     .task{ align-items:flex-start; }
     .task__title,.task__meta{ white-space:normal; }
@@ -2826,7 +2835,6 @@ const FAB_ACTIONS = {
   ],
   recruiting: [
     {grp:'Recruiting'},
-    {icon:'upload', label:'Bewerber hochladen', fn:'openApplicantUpload()'},
     {icon:'sliders-horizontal', label:'Status anpassen', fn:'openStageManager()'},
   ],
   team: [
@@ -2986,7 +2994,6 @@ const VIEWS = {
       <div><h2>Recruiting</h2><p>Deine Bewerber-Pipeline aus GreenCareers – vom Eingang bis zur Einstellung an einem Ort.</p></div>
       <div class="pagehead__actions">
         <button class="mini-btn" onclick="openStageManager()" title="Status-Spalten anpassen"><i data-lucide="sliders-horizontal"></i> Status</button>
-        <button class="mini-btn primary" onclick="openApplicantUpload()"><i data-lucide="upload"></i> Bewerber hochladen</button>
       </div>
     </div>
     <div class="bewerber-bar">
@@ -6173,8 +6180,10 @@ function openApplicant(id){
       <div class="sheet-actions">${chatBtn}</div>
     </div>`);
 }
-/* ===================== BEWERBER HOCHLADEN ===================== */
-// Manueller Upload (Indeed/Meta/…). Bekannte Felder vorbefüllen – der Bot fragt danach nur das Fehlende ab.
+/* ===================== BEWERBER HOCHLADEN (NUR GreenCareers-Backend) ===================== */
+// WICHTIG: Im Kunden-OS NICHT verfügbar. Bewerber werden von GreenCareers im internen Backend
+// aus Indeed/Meta hochgeladen und dem jeweiligen Kunden zugeordnet – tauchen dann automatisch
+// in dessen Recruiting-Board auf. Diese Funktionen bilden diesen Backend-Upload ab.
 let uploadDraft = null;
 function openApplicantUpload(){
   uploadDraft = {name:'',phone:'',email:'',source:'Indeed',jobId:'',branche:'',beruf:'',ort:''};
