@@ -17,6 +17,7 @@
     --mint-2:#F3FBF6;
     --ink:#17231A;
     --ink-2:#243126;
+    --text:#17231A;
     --muted:#6A7A6E;
     --muted-2:#8A978D;
     --line:#E2E8E1;
@@ -985,6 +986,8 @@
   /* ----- Kontext-FAB (Schnell anlegen) ----- */
   .fab-wrap{ position:fixed; right:24px; bottom:24px; z-index:260; display:none; flex-direction:column; align-items:flex-end; gap:12px; }
   body.authed .fab-wrap{ display:flex; }
+  /* FAB ausblenden, solange ein Sheet/Modal offen ist – verdeckt sonst die Aktionen */
+  body.authed #modal:not(.hidden) ~ .fab-wrap{ display:none; }
   .fab{ width:54px; height:54px; border:none; border-radius:50%; background:linear-gradient(135deg,var(--green),var(--green-2)); color:#fff; box-shadow:0 8px 22px rgba(14,122,67,.4); cursor:pointer; display:grid; place-items:center; transition:transform .2s; }
   .fab:hover{ transform:scale(1.06); }
   .fab__plus{ width:26px; height:26px; transition:transform .25s; }
@@ -1098,6 +1101,10 @@
     .message__time{ width:100%; margin-left:0; }
     .detail-row{ display:block; }
     .detail-row dt{ width:auto; margin-bottom:4px; }
+    .detail-row dd{ word-break:break-word; }
+    .contactrow{ flex-direction:column; }
+    .contactbtn{ min-width:0; width:100%; }
+    .contactbtn span, .contactbtn{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .ustat{ grid-template-columns:1fr; }
     .usub{ flex-direction:column; align-items:stretch; }
     .usub .btn{ width:100%; }
@@ -2059,13 +2066,13 @@ const applicants = [
    letter:'Hallo, ich habe 3 Jahre als Landschaftsgärtner gearbeitet und suche eine neue Stelle in der Nähe von Ahrensburg. Führerschein BE ist vorhanden.',
    comments:[],
    pq:{branche:'Garten- & Landschaftsbau',beruf:'Landschaftsgärtner',erfahrung:3,gehalt:'',verfuegbar:'ab sofort',ort:'Ahrensburg'},
-   pqStatus:'offen', botScore:null,
+   pqStatus:'laufend', botScore:null,
    role:'Landschaftsgärtner',tags:['Führerschein BE','3 J. Erfahrung'],available:'ab sofort',hot:false},
   {id:2,name:'Erik Lindqvist',phone:'0151 2233445',email:'erik.l@gmail.com',jobId:null,source:'Indeed',date:'Gestern, 16:40', stage:'neu',
    letter:'Bewerbung als Geselle im GaLaBau. Bin umzugsbereit und kann kurzfristig anfangen.',
    comments:[],
    pq:{branche:'',beruf:'Geselle GaLaBau',erfahrung:null,gehalt:'',verfuegbar:'in 4 Wochen',ort:''},
-   pqStatus:'offen', botScore:null,
+   pqStatus:'laufend', botScore:null,
    role:'Geselle GaLaBau',tags:['Umzug möglich'],available:'in 4 Wochen',hot:false},
   {id:3,name:'Thomas Krause',phone:'0170 9988771',email:'t.krause@gmx.de',jobId:'j3',source:'WhatsApp',date:'Heute, 07:02', stage:'inbearb',
    letter:'',
@@ -6112,9 +6119,7 @@ function openApplicant(id){
   // Abgleich Vorqual ↔ Stelle (nur wenn Stelle zugewiesen)
   const expOk = j && p.erfahrung != null ? p.erfahrung >= j.expMin : null;
   const brancheOk = j && p.branche ? p.branche === j.branche : null;
-  const pqDoneBtn = a.pqStatus === 'fertig'
-    ? `<button class="btn ghost" style="flex:1" onclick="startBotPrequal(${id})"><i data-lucide="refresh-cw"></i> Vorqual. erneut</button>`
-    : `<button class="btn" style="flex:1" onclick="startBotPrequal(${id})"><i data-lucide="message-circle"></i> ${a.pqStatus==='laufend'?'BewerberBot fortsetzen':'BewerberBot starten'}</button>`;
+  const chatBtn = `<button class="btn ghost" style="flex:1" onclick="viewBotChat(${id})"><i data-lucide="message-circle"></i> WhatsApp-Verlauf</button>`;
   openSheet(`
     <div class="sheet__head">
       <span class="avatar" style="width:50px;height:50px;font-size:17px">${initials(a.name)}</span>
@@ -6145,7 +6150,7 @@ function openApplicant(id){
         <a class="contactbtn" href="mailto:${a.email||''}"><i data-lucide="mail"></i> ${a.email||'—'}</a>
       </div>
 
-      <div class="setsec">Vorqualifizierung ${j?`<span class="setsec__hint">Abgleich mit „${j.title}"</span>`:''}</div>
+      <div class="setsec">Vorqualifizierung <span class="setsec__hint">${j?`Abgleich mit „${j.title}"`:'läuft automatisch bei jeder Bewerbung'}</span></div>
       <dl>
         ${pqRow('Branche', p.branche, brancheOk)}
         ${pqRow('Beruf / Position', p.beruf)}
@@ -6161,11 +6166,11 @@ function openApplicant(id){
       <div class="setsec">Interne Kommentare <span class="setsec__hint">nur fürs Team sichtbar</span></div>
       <div id="commentBox">${commentsHtml(a)}</div>
 
-      <div class="sheet-actions" style="margin-top:6px">${pqDoneBtn}</div>
-      <div class="sheet-actions">
-        <button class="btn ghost" style="flex:1" onclick="closeSheet();toast('Anruf wird gestartet')"><i data-lucide="phone"></i> Anrufen</button>
+      <div class="sheet-actions" style="margin-top:6px">
+        <button class="btn" style="flex:1" onclick="closeSheet();toast('Anruf wird gestartet')"><i data-lucide="phone"></i> Anrufen</button>
         <button class="btn ghost" style="flex:1" onclick="closeSheet();toast('Probetag angelegt')"><i data-lucide="calendar-plus"></i> Probetag</button>
       </div>
+      <div class="sheet-actions">${chatBtn}</div>
     </div>`);
 }
 /* ===================== BEWERBER HOCHLADEN ===================== */
@@ -6265,6 +6270,33 @@ function pqTags(a){
 }
 let botSession = null;
 let botTokenSeq = 1;
+// Read-only: zeigt den WhatsApp-Verlauf. Fertig = rekonstruierter Verlauf,
+// sonst läuft die (automatische) Vorqualifizierung sichtbar weiter.
+function viewBotChat(id){
+  const a = findCandidate(id); if(!a) return;
+  if(a.pqStatus === 'fertig') showBotTranscript(a);
+  else startBotPrequal(id);
+}
+// Rekonstruiert den Chatverlauf aus den gespeicherten Vorqual-Daten.
+function botTranscript(a){
+  const first = a.name.split(' ')[0];
+  const msgs = [
+    {who:'bot', text:`Hi ${first} 👋 Ich bin der BewerberBot von Müller GaLaBau. Ich stelle dir kurz ein paar Fragen, dann meldet sich das Team bei dir. Passt das?`},
+    {who:'in', text:'Klar, leg los 🙂'},
+  ];
+  BOT_FIELDS.forEach(f => {
+    const v = a.pq[f];
+    if(v === '' || v == null) return;
+    msgs.push({who:'bot', text:BOT_Q[f]});
+    msgs.push({who:'in', text: f==='erfahrung' ? `${v} Jahre` : String(v)});
+  });
+  msgs.push({who:'bot', text:'Top, danke dir! ✅ Ich hab alles notiert – das Team von Müller GaLaBau meldet sich zeitnah bei dir.'});
+  return msgs;
+}
+function showBotTranscript(a){
+  botSession = {id:a.id, token:-99, msgs:botTranscript(a), queue:[], idx:0, done:true};
+  renderBotSheet();
+}
 function startBotPrequal(id){
   const a = findCandidate(id); if(!a) return;
   const queue = BOT_FIELDS.filter(f => { const val=a.pq[f]; return val===''||val==null; });
@@ -6313,7 +6345,7 @@ function finishBot(token){
 function botFootHtml(a){
   return botSession.done
     ? `<div class="wa-foot"><span class="pqbadge done"><i data-lucide="check-circle-2"></i> ${pqFilled(a)}/6 erfasst · Score ${a.botScore}</span><button class="btn" onclick="closeBot()"><i data-lucide="user"></i> Zum Bewerber</button></div>`
-    : `<div class="wa-foot"><span class="wa-typing"><i data-lucide="loader"></i> Bewerber wird vorqualifiziert… ${pqFilled(a)}/6</span><button class="btn ghost" onclick="abortBot()"><i data-lucide="x"></i> Abbrechen</button></div>`;
+    : `<div class="wa-foot"><span class="wa-typing"><i data-lucide="loader"></i> Bewerber wird vorqualifiziert… ${pqFilled(a)}/6</span><button class="btn ghost" onclick="abortBot()"><i data-lucide="x"></i> Schließen</button></div>`;
 }
 function renderBotSheet(){
   if(!botSession) return;
@@ -6337,7 +6369,7 @@ function renderBotSheet(){
       <button class="iconbtn sheet__close" onclick="botX()"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body wa-body">
-      <div class="wa-note"><i data-lucide="info"></i> Der BewerberBot <b>sammelt nur Infos</b> – er entscheidet nicht. Jede Antwort wird sofort beim Bewerber gespeichert, auch wenn der Chat abbricht.</div>
+      <div class="wa-note"><i data-lucide="info"></i> <span>Läuft <b>automatisch</b> bei jeder neuen Bewerbung. Der Bot sammelt nur Infos – er entscheidet nicht.</span></div>
       <div class="wa-thread">${bubbles}</div>
     </div>
     ${botFootHtml(a)}`);
@@ -6356,7 +6388,7 @@ function abortBot(){
   botSession = null;
   closeSheet();
   if(currentView==='recruiting') renderBewerberKanban();
-  toast('Vorqualifizierung pausiert – Daten gespeichert');
+  toast('Vorqualifizierung läuft im Hintergrund weiter');
 }
 function closeBot(){
   const id = botSession ? botSession.id : null;
