@@ -1115,6 +1115,45 @@
   .mini-btn.sick{ color:var(--danger); border-color:#F0D2D2; }
   .mini-btn.sick:hover{ background:#FBEDED; border-color:var(--danger); }
   .mini-btn.is-sick{ color:var(--danger); background:#FBEDED; border-color:#F0D2D2; cursor:default; }
+  /* Denk-mit-Feed */
+  .dw-feed{ display:flex; flex-direction:column; gap:2px; }
+  .dw-item{ display:flex; align-items:center; gap:11px; padding:9px 6px; border-radius:10px; transition:background .12s ease; }
+  .dw-item:hover{ background:var(--soft); }
+  .dw-item--bad{ background:#FCF1F1; }
+  .dw-item--bad:hover{ background:#FAE8E8; }
+  .dw-item__ic{ width:34px; height:34px; flex-shrink:0; border-radius:9px; display:grid; place-items:center; }
+  .dw-item__ic .lucide{ width:17px; height:17px; }
+  .dw-item__main{ flex:1; min-width:0; display:flex; flex-direction:column; gap:1px; }
+  .dw-item__t{ font-size:13.5px; font-weight:650; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .dw-item__s{ font-size:11.5px; color:var(--muted); }
+  .dw-item__when{ flex-shrink:0; font-size:11px; font-weight:700; color:var(--muted-2); background:var(--soft); border-radius:99px; padding:4px 9px; }
+  .dw-item__when.soon{ color:var(--green-2); background:var(--soft-green); }
+  .dw-item__when.bad{ color:#fff; background:var(--danger); }
+  .dw-empty{ display:flex; align-items:center; gap:8px; font-size:13px; color:var(--muted); padding:10px 6px; }
+  .dw-empty .lucide{ width:17px; height:17px; color:var(--green); }
+  .dw-add{ width:100%; margin-top:10px; display:inline-flex; align-items:center; justify-content:center; gap:7px; height:38px; border-radius:10px; border:1px dashed var(--line); background:#fff; color:var(--green-2); font-size:13px; font-weight:700; cursor:pointer; transition:all .14s ease; }
+  .dw-add:hover{ border-color:var(--green); background:var(--soft-green); }
+  .dw-add .lucide{ width:15px; height:15px; }
+  /* Denk-mit Einstellungen */
+  .dw-setlist{ display:flex; flex-direction:column; gap:4px; margin-bottom:14px; }
+  .dw-set{ display:flex; align-items:center; gap:11px; padding:9px 4px; border-bottom:1px solid var(--line); }
+  .dw-set:last-child{ border-bottom:0; }
+  .dw-set__ic{ width:32px; height:32px; flex-shrink:0; border-radius:8px; display:grid; place-items:center; }
+  .dw-set__ic .lucide{ width:16px; height:16px; }
+  .dw-set__lbl{ flex:1; font-size:13.5px; font-weight:650; color:var(--ink); }
+  .dw-lead{ display:flex; align-items:center; gap:5px; font-size:11.5px; color:var(--muted); }
+  .dw-lead input{ width:50px; padding:5px 7px; border:1px solid var(--line); border-radius:7px; font-size:12.5px; text-align:center; }
+  .switch{ position:relative; width:40px; height:23px; flex-shrink:0; }
+  .switch input{ opacity:0; width:0; height:0; }
+  .switch__sl{ position:absolute; inset:0; background:#D6D9D6; border-radius:99px; transition:.18s; cursor:pointer; }
+  .switch__sl::before{ content:''; position:absolute; width:17px; height:17px; left:3px; top:3px; background:#fff; border-radius:50%; transition:.18s; box-shadow:0 1px 3px rgba(0,0,0,.2); }
+  .switch input:checked + .switch__sl{ background:var(--green); }
+  .switch input:checked + .switch__sl::before{ transform:translateX(17px); }
+  .dw-priv{ display:flex; align-items:flex-start; gap:10px; padding:11px 12px; border:1px solid var(--line); border-radius:11px; cursor:pointer; margin-top:2px; }
+  .dw-priv input{ margin-top:3px; width:16px; height:16px; accent-color:var(--green); }
+  .dw-priv span{ display:flex; flex-direction:column; gap:1px; }
+  .dw-priv b{ font-size:13px; }
+  .dw-priv small{ font-size:11.5px; color:var(--muted); }
   .akte-cert{ display:flex; align-items:center; gap:10px; padding:10px 12px; border:1px solid var(--line); border-radius:10px; background:#fff; margin-bottom:7px; }
   .akte-cert__ic{ width:30px; height:30px; flex-shrink:0; border-radius:8px; background:var(--soft); display:grid; place-items:center; color:var(--green); }
   .akte-cert__ic .lucide{ width:15px; height:15px; }
@@ -3543,11 +3582,142 @@ function moduleWrap(html, key='', extra=''){
 }
 
 // Lane-Zuordnung + Reihenfolge aller Module (statisch + dazugebucht) – wird beim Verschieben gespeichert.
-let moduleLayout = { main:['kpi','wichtig','baustellen'], rail:['wetter','recruiting','quick'] };
-const STATIC_MODULE_KEYS = ['kpi','wichtig','baustellen','wetter','recruiting','quick'];
+let moduleLayout = { main:['kpi','denkmit','wichtig','baustellen'], rail:['wetter','recruiting','quick'] };
+const STATIC_MODULE_KEYS = ['kpi','denkmit','wichtig','baustellen','wetter','recruiting','quick'];
+
+/* ===================== „Denk mit"-Feed (Vorlaufmeldungen) ===================== */
+// Fuhrpark-Dummy für TÜV/HU-Erinnerungen
+const VEHICLES = [
+  {name:'MAN TGE Pritsche',   plate:'HH-MG 1234', tuev:'2026-07-05'},
+  {name:'Multicar M27',       plate:'HH-MG 88',   tuev:'2026-09-20'},
+  {name:'Anhänger Humbaur',   plate:'HH-MG 412',  tuev:'2026-06-30'},
+];
+// Frei definierbare eigene Erinnerungen (auch privat/wiederkehrend)
+let dwSeq = 3;
+let customReminders = [
+  {id:1, title:'Tochter Zahnarzt',               date:'2026-06-18', recur:'none',   lead:10, priv:true},
+  {id:2, title:'Gewerbeversicherung verlängern', date:'2026-07-02', recur:'yearly', lead:14, priv:false},
+];
+// Konfiguration: welche Typen aktiv + Vorlaufzeit (Tage)
+const DW_TYPES = {
+  geburtstag:{label:'Geburtstage',            icon:'cake',         color:'#16A34A'},
+  jubilaeum: {label:'Firmenjubiläen',         icon:'party-popper', color:'#B7791F'},
+  probe:     {label:'Probezeit-Ende',         icon:'user-check',   color:'#2563EB'},
+  schein:    {label:'Scheine & Führerschein', icon:'badge-check',  color:'#C24141'},
+  tuev:      {label:'TÜV & Fahrzeuge',        icon:'truck',        color:'#7C3AED'},
+  eigene:    {label:'Eigene Erinnerungen',    icon:'bell',         color:'#0E7A43'},
+};
+let dwConfig = {
+  geburtstag:{on:true, lead:7},
+  jubilaeum: {on:true, lead:30},
+  probe:     {on:true, lead:14},
+  schein:    {on:true, lead:60},
+  tuev:      {on:true, lead:30},
+  eigene:    {on:true, lead:7},
+};
+function dwISO(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function dwTodayMid(){ const t=new Date(TODAY); return new Date(t.getFullYear(),t.getMonth(),t.getDate()); }
+function dwDaysTo(d){ return Math.round((d - dwTodayMid())/86400000); }
+function dwDaysToISO(iso){ return dwDaysTo(new Date(iso)); }
+function dwNextAnnual(iso){ const b=new Date(iso), tm=dwTodayMid(); let c=new Date(tm.getFullYear(),b.getMonth(),b.getDate()); if(c<tm) c=new Date(tm.getFullYear()+1,b.getMonth(),b.getDate()); return c; }
+function dwNextMonthly(iso){ const b=new Date(iso), tm=dwTodayMid(); let c=new Date(tm.getFullYear(),tm.getMonth(),b.getDate()); if(c<tm) c=new Date(tm.getFullYear(),tm.getMonth()+1,b.getDate()); return c; }
+function dwHireISO(e,hr){ const v=(hr.docs||[]).find(d=>d.type==='Vertrag'); if(v&&v.date) return v.date; return e.since?(e.since+'-01-01'):''; }
+function buildDenkMitFeed(){
+  const items = []; const c = dwConfig;
+  if(c.geburtstag.on) employees.forEach(e=>{ const hr=hrData(e); if(!hr.bd) return; const nx=dwNextAnnual(hr.bd); const days=dwDaysTo(nx); if(days>=0&&days<=c.geburtstag.lead){ const turns=nx.getFullYear()-new Date(hr.bd).getFullYear(); items.push({icon:'cake',color:DW_TYPES.geburtstag.color,title:`${escapeHtml(e.name)} wird ${turns}`,sub:'Geburtstag',dateISO:dwISO(nx),days}); }});
+  if(c.jubilaeum.on) employees.forEach(e=>{ const hr=hrData(e); const h=dwHireISO(e,hr); if(!h) return; const nx=dwNextAnnual(h); const days=dwDaysTo(nx); const yrs=nx.getFullYear()-new Date(h).getFullYear(); if(yrs>=1&&days>=0&&days<=c.jubilaeum.lead) items.push({icon:'party-popper',color:DW_TYPES.jubilaeum.color,title:`${escapeHtml(e.name)} · ${yrs} Jahre im Betrieb`,sub:'Firmenjubiläum',dateISO:dwISO(nx),days}); });
+  if(c.probe.on) employees.forEach(e=>{ const hr=hrData(e); if(!hr.probe) return; const days=dwDaysToISO(hr.probe); if(days>=0&&days<=c.probe.lead) items.push({icon:'user-check',color:DW_TYPES.probe.color,title:`${escapeHtml(e.name)} · Probezeit endet`,sub:'Probezeit-Ende',dateISO:hr.probe,days}); });
+  if(c.schein.on) employees.forEach(e=>{ const hr=hrData(e); const fn=e.name.split(' ')[0];
+    (hr.certs||[]).forEach(ct=>{ if(!ct.exp) return; const days=dwDaysToISO(ct.exp); if(days<=c.schein.lead) items.push({icon:'badge-check',color:days<0?'#C24141':'#B7791F',title:`${escapeHtml(fn)} · ${escapeHtml(ct.n)}`,sub:days<0?'Schein abgelaufen':'Schein läuft ab',dateISO:ct.exp,days}); });
+    if(hr.fsExp){ const days=dwDaysToISO(hr.fsExp); if(days<=c.schein.lead) items.push({icon:'car',color:days<0?'#C24141':'#B7791F',title:`${escapeHtml(fn)} · Führerschein`,sub:days<0?'Führerschein abgelaufen':'Führerschein verlängern',dateISO:hr.fsExp,days}); }
+  });
+  if(c.tuev.on) VEHICLES.forEach(v=>{ const days=dwDaysToISO(v.tuev); if(days<=c.tuev.lead) items.push({icon:'truck',color:days<0?'#C24141':'#7C3AED',title:`${escapeHtml(v.name)} · ${escapeHtml(v.plate)}`,sub:days<0?'TÜV/HU überfällig':'TÜV/HU fällig',dateISO:v.tuev,days}); });
+  if(c.eigene.on) customReminders.forEach(r=>{ let d,days; if(r.recur==='yearly'){ d=dwNextAnnual(r.date); days=dwDaysTo(d);} else if(r.recur==='monthly'){ d=dwNextMonthly(r.date); days=dwDaysTo(d);} else { d=new Date(r.date); days=dwDaysToISO(r.date);} const lead=r.lead!=null?r.lead:c.eigene.lead; if(days>=0&&days<=lead) items.push({icon:r.priv?'lock':'bell',color:DW_TYPES.eigene.color,title:escapeHtml(r.title),sub:r.priv?'Private Erinnerung':'Erinnerung',dateISO:dwISO(d),days,rid:r.id}); });
+  items.sort((a,b)=>a.days-b.days);
+  return items;
+}
+function dwWhen(days){ if(days===0) return 'Heute'; if(days===1) return 'Morgen'; if(days<0) return `${Math.abs(days)} Tg. überfällig`; if(days<7) return `in ${days} Tg.`; return 'in '+Math.round(days/7)+' Wo.'; }
+function dwRow(it){
+  const overdue = it.days<0, soon = it.days>=0&&it.days<=1;
+  const click = it.rid ? ` onclick="openReminderForm(${it.rid})" style="cursor:pointer"` : '';
+  return `<div class="dw-item${overdue?' dw-item--bad':''}"${click}>
+    <span class="dw-item__ic" style="background:${it.color}1A;color:${it.color}"><i data-lucide="${it.icon}"></i></span>
+    <span class="dw-item__main"><span class="dw-item__t">${it.title}</span><span class="dw-item__s">${it.sub} · ${deDate(it.dateISO)}</span></span>
+    <span class="dw-item__when${overdue?' bad':(soon?' soon':'')}">${dwWhen(it.days)}</span>
+  </div>`;
+}
+function denkMitHtml(){
+  const items = buildDenkMitFeed();
+  const head = `<div class="panel__head"><i data-lucide="lightbulb"></i>Denk mit<span class="more" onclick="openDenkMitSettings()"><i data-lucide="sliders-horizontal" style="width:13px;height:13px;vertical-align:-2px"></i> Einstellungen</span></div>`;
+  const body = items.length
+    ? `<div class="dw-feed">${items.slice(0,7).map(dwRow).join('')}</div>`
+    : `<div class="dw-empty"><i data-lucide="check-circle-2"></i> Nichts steht an – alles im grünen Bereich.</div>`;
+  return `<div class="panel dw-panel">${head}${body}<button class="dw-add" onclick="openReminderForm()"><i data-lucide="plus"></i> Eigene Erinnerung</button></div>`;
+}
+function openDenkMitSettings(){
+  const rows = Object.keys(DW_TYPES).map(k=>{ const t=DW_TYPES[k], cf=dwConfig[k];
+    return `<div class="dw-set">
+      <span class="dw-set__ic" style="background:${t.color}1A;color:${t.color}"><i data-lucide="${t.icon}"></i></span>
+      <span class="dw-set__lbl">${t.label}</span>
+      <label class="dw-lead">Vorlauf <input id="dwlead_${k}" type="number" min="0" max="365" value="${cf.lead}"> Tage</label>
+      <label class="switch"><input type="checkbox" id="dwon_${k}" ${cf.on?'checked':''}><span class="switch__sl"></span></label>
+    </div>`; }).join('');
+  openSheet(`
+    <div class="sheet__head">
+      <span class="avatar" style="width:46px;height:46px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="lightbulb" style="width:20px;height:20px"></i></span>
+      <div><div class="sheet__title">„Denk mit" einstellen</div><div class="sheet__sub">Welche Erinnerungen – und wie früh?</div></div>
+      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+    </div>
+    <div class="sheet__body">
+      <div class="dw-setlist">${rows}</div>
+      <div class="sheet-actions">
+        <button class="btn" style="flex:1" onclick="saveDenkMitSettings()"><i data-lucide="check"></i> Speichern</button>
+        <button class="btn ghost" onclick="closeSheet()">Abbrechen</button>
+      </div>
+    </div>`);
+}
+function saveDenkMitSettings(){
+  Object.keys(DW_TYPES).forEach(k=>{ const on=document.getElementById('dwon_'+k); const lead=document.getElementById('dwlead_'+k); if(on) dwConfig[k].on=on.checked; if(lead) dwConfig[k].lead=Math.max(0,parseInt(lead.value,10)||0); });
+  closeSheet(); if(currentView==='heute') setView('heute'); toast('„Denk mit" aktualisiert');
+}
+function openReminderForm(rid){
+  const r = rid ? customReminders.find(x=>x.id===rid) : null;
+  const title = r?r.title:'', date = r?r.date:TODAY, recur = r?r.recur:'none', lead = r?r.lead:7, priv = r?r.priv:false;
+  const ropt = (v,l)=>`<option value="${v}" ${recur===v?'selected':''}>${l}</option>`;
+  openSheet(`
+    <div class="sheet__head">
+      <span class="avatar" style="width:46px;height:46px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="bell" style="width:20px;height:20px"></i></span>
+      <div><div class="sheet__title">${r?'Erinnerung bearbeiten':'Eigene Erinnerung'}</div><div class="sheet__sub">Auch privat & wiederkehrend möglich</div></div>
+      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+    </div>
+    <div class="sheet__body">
+      <div class="field field--wide"><label>Worum geht's? <span style="color:var(--danger)">*</span></label><input id="rmTitle" value="${String(title).replace(/"/g,'&quot;')}" placeholder="z. B. Tochter Zahnarzt"></div>
+      <div class="fieldgrid">
+        <div class="field"><label>Datum</label><input id="rmDate" type="date" value="${date}"></div>
+        <div class="field"><label>Wiederholung</label><select id="rmRecur">${ropt('none','Einmalig')}${ropt('monthly','Monatlich')}${ropt('yearly','Jährlich')}</select></div>
+      </div>
+      <div class="field"><label>Vorlauf (Tage vorher erinnern)</label><input id="rmLead" type="number" min="0" max="365" value="${lead}"></div>
+      <label class="dw-priv"><input type="checkbox" id="rmPriv" ${priv?'checked':''}> <span><b>Private Erinnerung</b><small>Nur für dich – ohne Mitarbeiterbezug</small></span></label>
+      <div class="sheet-actions">
+        <button class="btn" style="flex:1" onclick="saveReminder(${rid||0})"><i data-lucide="check"></i> ${r?'Speichern':'Hinzufügen'}</button>
+        <button class="btn ghost" onclick="closeSheet()">Abbrechen</button>
+      </div>
+      ${r?`<button class="btn danger btn--block" onclick="deleteReminder(${rid})"><i data-lucide="trash-2"></i> Erinnerung löschen</button>`:''}
+    </div>`);
+}
+function saveReminder(rid){
+  const title = (document.getElementById('rmTitle')||{}).value.trim();
+  if(!title){ toast('Bitte kurz beschreiben, worum es geht'); return; }
+  const obj = { title, date:(document.getElementById('rmDate')||{}).value||TODAY, recur:(document.getElementById('rmRecur')||{}).value||'none', lead:Math.max(0,parseInt((document.getElementById('rmLead')||{}).value,10)||0), priv:(document.getElementById('rmPriv')||{}).checked };
+  if(rid){ const r=customReminders.find(x=>x.id===rid); if(r) Object.assign(r,obj); }
+  else { obj.id = ++dwSeq; customReminders.push(obj); }
+  closeSheet(); if(currentView==='heute') setView('heute'); toast(rid?'Erinnerung gespeichert':'Erinnerung hinzugefügt');
+}
+function deleteReminder(rid){ customReminders = customReminders.filter(x=>x.id!==rid); closeSheet(); if(currentView==='heute') setView('heute'); toast('Erinnerung gelöscht'); }
 
 function staticModuleHtml(key){
   switch(key){
+    case 'denkmit': return denkMitHtml();
     case 'kpi': return `<div class="kpi-grid">
           ${kpi('phone-call','2','Bewerber anrufen','vom BewerberBot qualifiziert',true,"setView('recruiting')")}
           ${kpi('inbox','5','Neue Anfragen','WhatsApp · Mail · Tel.',false,"goModule('kunden')")}
@@ -7691,8 +7861,12 @@ const HR_SEED = {
      notes:[]},
 };
 function hrFallback(e){
-  // deterministische Demo-Werte für Mitarbeiter ohne expliziten Seed
-  return {bd:'1995-06-15',addr:'Hamburg',pphone:'',contract:'Unbefristet',hours:40,probe:'',salary:'2.900 € / Monat',iban:'DE00 0000 0000 0000 0000 00',taxId:'—',sv:'—',kk:'AOK Nordwest',nk:{n:'—',r:'',p:''},fs:['B'],fsIssued:'2013-09-01',fsExp:'2028-09-01',certs:[{n:'Erste Hilfe (16h)',exp:'2027-01-31'}],psa:{s:'L',h:'50',f:'44',g:'10'},docs:[{name:'Arbeitsvertrag_'+e.name.replace(/\s+/g,'_')+'.pdf',type:'Vertrag',date:e.since+'-01-01'}],notes:[]};
+  // deterministische, aber je Mitarbeiter gestreute Demo-Werte (sonst gleiche Geburtstage im Denk-mit-Feed)
+  const id = e.id || 1;
+  const yr = 1980 + (id*7)%26;
+  const mo = String(1 + (id*5)%12).padStart(2,'0');
+  const dy = String(1 + (id*11)%27).padStart(2,'0');
+  return {bd:`${yr}-${mo}-${dy}`,addr:'Hamburg',pphone:'',contract:'Unbefristet',hours:40,probe:'',salary:'2.900 € / Monat',iban:'DE00 0000 0000 0000 0000 00',taxId:'—',sv:'—',kk:'AOK Nordwest',nk:{n:'—',r:'',p:''},fs:['B'],fsIssued:'2013-09-01',fsExp:'2028-09-01',certs:[{n:'Erste Hilfe (16h)',exp:'2027-01-31'}],psa:{s:'L',h:'50',f:'44',g:'10'},docs:[{name:'Arbeitsvertrag_'+e.name.replace(/\s+/g,'_')+'.pdf',type:'Vertrag',date:e.since+'-01-01'}],notes:[]};
 }
 let hrStore = {};   // Laufzeit-Kopie (Notizen/Dokumente sind in der Demo bearbeitbar)
 function hrData(e){
