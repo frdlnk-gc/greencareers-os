@@ -1092,6 +1092,17 @@
   .akte-photo__cam .lucide{ width:10px; height:10px; color:#fff; }
   .akte-chips{ display:flex; flex-wrap:wrap; gap:7px; }
   .akte-chip{ font-size:12px; font-weight:700; color:var(--green-2); background:var(--soft-green); border:1px solid #CFE9D8; border-radius:7px; padding:5px 9px; }
+  .fs-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:8px; }
+  .fs-pick{ display:flex; flex-direction:column; align-items:flex-start; gap:1px; text-align:left; padding:9px 11px; border:1.5px solid var(--line); border-radius:11px; background:#fff; cursor:pointer; transition:all .14s ease; }
+  .fs-pick b{ font-size:14px; font-weight:800; color:var(--ink); line-height:1.1; }
+  .fs-pick small{ font-size:11px; color:var(--muted); line-height:1.25; }
+  .fs-pick:hover{ border-color:#CFE9D8; background:#FAFCFB; }
+  .fs-pick.on{ border-color:var(--green); background:var(--soft-green); box-shadow:0 0 0 3px rgba(22,163,74,.10); }
+  .fs-pick.on b{ color:var(--green-2); }
+  .cert-suggest{ display:flex; flex-wrap:wrap; gap:7px; }
+  .cert-sug{ font-size:12px; font-weight:600; color:var(--muted-2); background:#fff; border:1px solid var(--line); border-radius:99px; padding:6px 11px; cursor:pointer; transition:all .14s ease; }
+  .cert-sug:hover{ border-color:var(--green); color:var(--green-2); background:var(--soft-green); }
+  @media(max-width:640px){ .fs-grid{ grid-template-columns:1fr; } }
   .akte-cert{ display:flex; align-items:center; gap:10px; padding:10px 12px; border:1px solid var(--line); border-radius:10px; background:#fff; margin-bottom:7px; }
   .akte-cert__ic{ width:30px; height:30px; flex-shrink:0; border-radius:8px; background:var(--soft); display:grid; place-items:center; color:var(--green); }
   .akte-cert__ic .lucide{ width:15px; height:15px; }
@@ -3853,6 +3864,7 @@ function moduleBody(id){
     const items = [];
     employees.forEach(e => { const hr = hrData(e);
       (hr.certs||[]).forEach(c => { if(!c.exp) return; const [st] = certStatus(c.exp); if(st!=='ok') items.push({name:e.name.split(' ')[0], cert:c.n, exp:c.exp, st}); });
+      if(hr.fsExp){ const [st] = certStatus(hr.fsExp); if(st!=='ok') items.push({name:e.name.split(' ')[0], cert:'Führerschein '+((hr.fs||[]).join('/')||''), exp:hr.fsExp, st}); }
     });
     items.sort((a,b) => new Date(a.exp) - new Date(b.exp));
     if(!items.length) return `<div class="mod-line"><i data-lucide="check-circle-2" style="color:var(--green)"></i> Alle Scheine & Führerscheine gültig.</div>`;
@@ -7637,25 +7649,25 @@ function submitProtocol(siteId, empId){
 /* ===================== PERSONALAKTE (HR-Stammdaten je Mitarbeiter) ===================== */
 // Demo-Personaldaten. Sensible Felder (Gehalt, IBAN, Steuer-ID, SV-Nr) nur mit Recht „editEmployees".
 const HR_SEED = {
-  1:{bd:'1986-03-14',addr:'Lindenweg 12, 22359 Hamburg',pphone:'040 5566778',contract:'Unbefristet',hours:40,probe:'',salary:'3.450 € / Monat',iban:'DE89 3704 0044 0532 0130 00',taxId:'12 345 678 901',sv:'65 140386 A 123',kk:'AOK Nordwest',nk:{n:'Petra Albrecht',r:'Ehefrau',p:'0171 1112233'},fs:['B','BE','C1','T'],certs:[{n:'Erste Hilfe (16h)',exp:'2027-04-30'},{n:'Motorsägenschein AS Baum I',exp:'2026-09-15'},{n:'PSA gegen Absturz',exp:'2026-07-01'}],psa:{s:'L',h:'52',f:'44'},
+  1:{bd:'1986-03-14',addr:'Lindenweg 12, 22359 Hamburg',pphone:'040 5566778',contract:'Unbefristet',hours:40,probe:'',salary:'3.450 € / Monat',iban:'DE89 3704 0044 0532 0130 00',taxId:'12 345 678 901',sv:'65 140386 A 123',kk:'AOK Nordwest',nk:{n:'Petra Albrecht',r:'Ehefrau',p:'0171 1112233'},fs:['B','BE','C1','T'],fsIssued:'2004-05-12',fsExp:'2032-05-12',certs:[{n:'Erste Hilfe (16h)',exp:'2027-04-30'},{n:'Motorsägenschein AS Baum I',exp:'2026-09-15'},{n:'PSA gegen Absturz',exp:'2026-07-01'},{n:'G41 Arbeiten mit Absturzgefahr',exp:'2026-08-10'}],psa:{s:'L',h:'52',f:'44',g:'10'},
      docs:[{name:'Arbeitsvertrag_Sven_Albrecht.pdf',type:'Vertrag',date:'2019-04-01'},{name:'Fuehrerschein_Sven.jpg',type:'Führerschein',date:'2023-02-10'},{name:'AS_Baum_I_Zertifikat.pdf',type:'Bescheinigung',date:'2024-09-15'}],
      notes:[{date:'2026-05-20',author:'Georg Müller',text:'Übernimmt ab Juni die Einarbeitung von Lukas (Azubi).'},{date:'2026-03-02',author:'Georg Müller',text:'Gehaltsgespräch geführt – Erhöhung zum 01.04. vereinbart.'}]},
-  2:{bd:'1992-07-22',addr:'Kieler Str. 88, 22769 Hamburg',pphone:'',contract:'Unbefristet',hours:40,probe:'',salary:'3.050 € / Monat',iban:'DE21 2005 0550 1234 5678 90',taxId:'45 678 901 234',sv:'12 220792 K 456',kk:'Techniker Krankenkasse',nk:{n:'Aylin Kaya',r:'Ehefrau',p:'0152 3344556'},fs:['B','BE','C1'],certs:[{n:'Erste Hilfe (16h)',exp:'2026-08-20'},{n:'Rüttelplatte / Verdichtung',exp:''}],psa:{s:'XL',h:'54',f:'45'},
+  2:{bd:'1992-07-22',addr:'Kieler Str. 88, 22769 Hamburg',pphone:'',contract:'Unbefristet',hours:40,probe:'',salary:'3.050 € / Monat',iban:'DE21 2005 0550 1234 5678 90',taxId:'45 678 901 234',sv:'12 220792 K 456',kk:'Techniker Krankenkasse',nk:{n:'Aylin Kaya',r:'Ehefrau',p:'0152 3344556'},fs:['B','BE','C1'],fsIssued:'2010-08-03',fsExp:'2030-08-03',certs:[{n:'Erste Hilfe (16h)',exp:'2026-08-20'},{n:'Rüttelplatte / Verdichtung',exp:''}],psa:{s:'XL',h:'54',f:'45',g:'11'},
      docs:[{name:'Arbeitsvertrag_Mehmet_Kaya.pdf',type:'Vertrag',date:'2021-05-01'},{name:'Fuehrerschein_Mehmet.jpg',type:'Führerschein',date:'2021-05-01'}],
      notes:[{date:'2026-04-10',author:'Georg Müller',text:'Sehr zuverlässig bei Pflasterarbeiten, kann Kolonne vertreten.'}]},
-  3:{bd:'1998-11-05',addr:'Gärtnerstr. 4, 22041 Hamburg',pphone:'040 7788991',contract:'Unbefristet',hours:40,probe:'',salary:'2.850 € / Monat',iban:'DE33 2004 1133 0998 7654 32',taxId:'78 901 234 567',sv:'48 051198 S 789',kk:'AOK Nordwest',nk:{n:'Maria Schulz',r:'Mutter',p:'0176 9988771'},fs:['B','T','L'],certs:[{n:'Erste Hilfe (16h)',exp:'2026-12-01'},{n:'Gabelstaplerschein',exp:'2028-01-15'}],psa:{s:'M',h:'48',f:'43'},
+  3:{bd:'1998-11-05',addr:'Gärtnerstr. 4, 22041 Hamburg',pphone:'040 7788991',contract:'Unbefristet',hours:40,probe:'',salary:'2.850 € / Monat',iban:'DE33 2004 1133 0998 7654 32',taxId:'78 901 234 567',sv:'48 051198 S 789',kk:'AOK Nordwest',nk:{n:'Maria Schulz',r:'Mutter',p:'0176 9988771'},fs:['B','T','L'],fsIssued:'2016-06-20',fsExp:'2031-06-20',certs:[{n:'Erste Hilfe (16h)',exp:'2026-12-01'},{n:'Gabelstaplerschein',exp:'2028-01-15'}],psa:{s:'M',h:'48',f:'43',g:'9'},
      docs:[{name:'Arbeitsvertrag_Tim_Schulz.pdf',type:'Vertrag',date:'2022-08-01'}],
      notes:[]},
-  5:{bd:'2006-02-18',addr:'Schulredder 9, 22119 Hamburg',pphone:'040 2211009',contract:'Ausbildung (3. Lehrjahr)',hours:40,probe:'',salary:'1.150 € / Monat (Azubi)',iban:'DE07 2007 0024 0455 6677 88',taxId:'90 123 456 789',sv:'33 180206 L 234',kk:'DAK-Gesundheit',nk:{n:'Andrea Berger',r:'Mutter',p:'0151 6677889'},fs:['B'],certs:[{n:'Erste Hilfe (16h)',exp:'2027-02-28'}],psa:{s:'M',h:'46',f:'42'},
+  5:{bd:'2006-02-18',addr:'Schulredder 9, 22119 Hamburg',pphone:'040 2211009',contract:'Ausbildung (3. Lehrjahr)',hours:40,probe:'',salary:'1.150 € / Monat (Azubi)',iban:'DE07 2007 0024 0455 6677 88',taxId:'90 123 456 789',sv:'33 180206 L 234',kk:'DAK-Gesundheit',nk:{n:'Andrea Berger',r:'Mutter',p:'0151 6677889'},fs:['B'],fsIssued:'2024-03-01',fsExp:'2039-03-01',certs:[{n:'Erste Hilfe (16h)',exp:'2027-02-28'}],psa:{s:'M',h:'46',f:'42',g:'9'},
      docs:[{name:'Ausbildungsvertrag_Lukas_Berger.pdf',type:'Vertrag',date:'2024-08-01'},{name:'Berufsschule_Zeugnis_2025.pdf',type:'Bescheinigung',date:'2025-07-15'}],
      notes:[{date:'2026-05-20',author:'Georg Müller',text:'Wird von Sven eingearbeitet. Abschlussprüfung Sommer 2027.'}]},
-  10:{bd:'1980-09-30',addr:'Maschstr. 21, 21035 Hamburg',pphone:'',contract:'Unbefristet',hours:40,probe:'',salary:'3.600 € / Monat',iban:'DE55 2004 0066 0112 2334 45',taxId:'34 567 890 123',sv:'09 300980 V 567',kk:'Barmer',nk:{n:'Klaus Vogt',r:'Bruder',p:'0170 4455667'},fs:['B','BE','C1','C','CE','T','L'],certs:[{n:'Erste Hilfe (16h)',exp:'2026-06-25'},{n:'Bagger / Radlader (Erdbaumaschinen)',exp:''},{n:'Ladungssicherung',exp:'2027-03-01'}],psa:{s:'XL',h:'56',f:'46'},
+  10:{bd:'1980-09-30',addr:'Maschstr. 21, 21035 Hamburg',pphone:'',contract:'Unbefristet',hours:40,probe:'',salary:'3.600 € / Monat',iban:'DE55 2004 0066 0112 2334 45',taxId:'34 567 890 123',sv:'09 300980 V 567',kk:'Barmer',nk:{n:'Klaus Vogt',r:'Bruder',p:'0170 4455667'},fs:['B','BE','C1','C','CE','T','L'],fsIssued:'2008-04-15',fsExp:'2026-07-20',certs:[{n:'Erste Hilfe (16h)',exp:'2026-06-25'},{n:'Bagger / Radlader (Erdbaumaschinen)',exp:''},{n:'Ladungssicherung',exp:'2027-03-01'},{n:'Kranschein',exp:'2028-09-01'}],psa:{s:'XL',h:'56',f:'46',g:'12'},
      docs:[{name:'Arbeitsvertrag_Stefan_Vogt.pdf',type:'Vertrag',date:'2017-03-01'},{name:'Fuehrerschein_CE_Stefan.jpg',type:'Führerschein',date:'2022-06-01'},{name:'Erdbaumaschinen_Nachweis.pdf',type:'Bescheinigung',date:'2019-04-12'}],
      notes:[]},
 };
 function hrFallback(e){
   // deterministische Demo-Werte für Mitarbeiter ohne expliziten Seed
-  return {bd:'1995-06-15',addr:'Hamburg',pphone:'',contract:'Unbefristet',hours:40,probe:'',salary:'2.900 € / Monat',iban:'DE00 0000 0000 0000 0000 00',taxId:'—',sv:'—',kk:'AOK Nordwest',nk:{n:'—',r:'',p:''},fs:['B'],certs:[{n:'Erste Hilfe (16h)',exp:'2027-01-31'}],psa:{s:'L',h:'50',f:'44'},docs:[{name:'Arbeitsvertrag_'+e.name.replace(/\s+/g,'_')+'.pdf',type:'Vertrag',date:e.since+'-01-01'}],notes:[]};
+  return {bd:'1995-06-15',addr:'Hamburg',pphone:'',contract:'Unbefristet',hours:40,probe:'',salary:'2.900 € / Monat',iban:'DE00 0000 0000 0000 0000 00',taxId:'—',sv:'—',kk:'AOK Nordwest',nk:{n:'—',r:'',p:''},fs:['B'],fsIssued:'2013-09-01',fsExp:'2028-09-01',certs:[{n:'Erste Hilfe (16h)',exp:'2027-01-31'}],psa:{s:'L',h:'50',f:'44',g:'10'},docs:[{name:'Arbeitsvertrag_'+e.name.replace(/\s+/g,'_')+'.pdf',type:'Vertrag',date:e.since+'-01-01'}],notes:[]};
 }
 let hrStore = {};   // Laufzeit-Kopie (Notizen/Dokumente sind in der Demo bearbeitbar)
 function hrData(e){
@@ -7689,6 +7701,27 @@ const AKTE_TABS = [
   {id:'notizen',       label:'Notizen',                     icon:'sticky-note'},
 ];
 const AKTE_CONTRACTS = ['Unbefristet','Befristet','Ausbildung (1. Lehrjahr)','Ausbildung (2. Lehrjahr)','Ausbildung (3. Lehrjahr)','Minijob (520 €)','Werkstudent','Saison-/Aushilfskraft'];
+const AKTE_BEREICHE = ['Pflasterbau & Wegebau','Pflanzung & Pflege','Baumpflege / Fällung','Erdbau & Maschinen','Teich- & Wasserbau','Zaun- & Holzbau','Winterdienst','Werkstatt / Fuhrpark'];
+// Führerscheinklassen – GaLaBau-relevante zuerst, mit Klartext-Beschreibung
+const FS_CLASSES = [
+  {k:'B',   d:'PKW bis 3,5 t'},
+  {k:'BE',  d:'PKW mit Anhänger'},
+  {k:'C1',  d:'LKW bis 7,5 t'},
+  {k:'C1E', d:'LKW bis 7,5 t mit Anhänger'},
+  {k:'C',   d:'LKW über 7,5 t'},
+  {k:'CE',  d:'LKW mit Anhänger (Sattelzug)'},
+  {k:'T',   d:'Traktor / Zugmaschine bis 60 km/h'},
+  {k:'L',   d:'Land-/forstw. Zugmaschine bis 40 km/h'},
+  {k:'AM',  d:'Roller / Mofa'},
+  {k:'A',   d:'Motorrad'},
+];
+function fsDesc(k){ const x = FS_CLASSES.find(c=>c.k===k); return x?x.d:''; }
+// GaLaBau-typische Scheine & Befähigungen als Ein-Klick-Vorschläge
+const CERT_SUGGEST = [
+  'Motorsägenschein AS Baum I','Motorsägenschein AS Baum II','PSA gegen Absturz','Gabelstaplerschein',
+  'Bagger / Radlader (Erdbaumaschinen)','Kranschein','Ladungssicherung','Erste Hilfe (16h)',
+  'Pflanzenschutz-Sachkundenachweis','G25 Fahr-/Steuertätigkeit','G41 Arbeiten mit Absturzgefahr','Rüttelplatte / Verdichtung',
+];
 // Sektions-Konfiguration: bestimmt, welche Felder ein Bearbeiten-Formular zeigt.
 const AKTE_SECTIONS = {
   kontakt:{ title:'Kontakt', icon:'phone', fields:[
@@ -7697,14 +7730,18 @@ const AKTE_SECTIONS = {
     {path:'e.email',  label:'E-Mail',               type:'email', wide:true},
   ]},
   person:{ title:'Persönliche Daten', icon:'user', fields:[
-    {path:'hr.bd',  label:'Geburtsdatum',            type:'date'},
-    {path:'hr.addr',label:'Adresse',                 type:'text', wide:true},
-    {path:'hr.nk.n',label:'Notfallkontakt – Name',   type:'text'},
-    {path:'hr.nk.r',label:'Beziehung',               type:'text'},
-    {path:'hr.nk.p',label:'Notfallkontakt – Telefon',type:'tel'},
+    {path:'hr.bd',     label:'Geburtsdatum',            type:'date'},
+    {path:'hr.birthplace',label:'Geburtsort',           type:'text'},
+    {path:'hr.nationality',label:'Staatsangehörigkeit',  type:'text'},
+    {path:'hr.addr',   label:'Adresse',                 type:'text', wide:true},
+    {path:'hr.nk.n',   label:'Notfallkontakt – Name',   type:'text'},
+    {path:'hr.nk.r',   label:'Beziehung',               type:'text'},
+    {path:'hr.nk.p',   label:'Notfallkontakt – Telefon',type:'tel'},
   ]},
   beschaeftigung:{ title:'Beschäftigung', icon:'briefcase', fields:[
+    {path:'hr.persnr',  label:'Personalnummer',      type:'text'},
     {path:'e.role',     label:'Funktion',           type:'text', req:true},
+    {path:'hr.bereich', label:'Einsatzbereich',      type:'select', opts:AKTE_BEREICHE},
     {path:'e.since',    label:'Im Betrieb seit (Jahr)', type:'text'},
     {path:'hr.contract',label:'Vertragsart',        type:'select', opts:AKTE_CONTRACTS},
     {path:'hr.hours',   label:'Wochenstunden',       type:'number'},
@@ -7720,13 +7757,11 @@ const AKTE_SECTIONS = {
     {path:'hr.taxId',label:'Steuer-ID',    type:'text'},
     {path:'hr.iban', label:'IBAN (Lohn)',  type:'text', wide:true},
   ]},
-  fuehrerschein:{ title:'Führerschein', icon:'car', fields:[
-    {path:'hr.fs', label:'Führerscheinklassen', type:'text', joinArr:true, wide:true, hint:'Komma-getrennt, z. B. B, BE, C1, T'},
-  ]},
   psa:{ title:'Arbeitskleidung (PSA)', icon:'shirt', fields:[
-    {path:'hr.psa.s', label:'Oberteil-Größe',  type:'text'},
-    {path:'hr.psa.h', label:'Hosengröße',      type:'text'},
-    {path:'hr.psa.f', label:'Schuhgröße',      type:'text'},
+    {path:'hr.psa.s', label:'Oberteil-Größe',     type:'text'},
+    {path:'hr.psa.h', label:'Hosengröße',         type:'text'},
+    {path:'hr.psa.f', label:'Sicherheitsschuhe',  type:'text'},
+    {path:'hr.psa.g', label:'Handschuhgröße',     type:'text'},
   ]},
 };
 // Pfad-Helfer: liest/schreibt verschachtelte Felder ("e.role", "hr.nk.n", "hr.psa.s")
@@ -7749,10 +7784,10 @@ function akteFilled(v){
   return s!=='' && s!=='—';
 }
 function akteCompleteness(e,hr){
-  const nk = hr.nk||{};
+  const nk = hr.nk||{}; const psa = hr.psa||{};
   const checks = [ e.phone, e.email, hr.bd, hr.addr, hr.pphone, nk.n,
-    hr.contract, hr.hours, hr.salary, hr.kk, hr.sv, hr.taxId, hr.iban,
-    hr.fs, hr.certs, hr.photo ];
+    hr.persnr, hr.bereich, hr.contract, hr.hours, hr.salary, hr.kk, hr.sv, hr.taxId, hr.iban,
+    hr.fs, hr.fsExp, hr.certs, psa.s, hr.photo ];
   const t = checks.length;
   const f = checks.filter(akteFilled).length;
   return {f, t, pct: Math.round(f/t*100)};
@@ -7836,15 +7871,17 @@ function akteTabContent(e,hr,priv){
 // Karten-Gerüst mit „Bearbeiten"-Button (entfällt bei gesperrten Sektionen ohne Recht)
 function akteCard(opts){
   const showEdit = opts.editable!==false && opts.section && !(opts.gated && !opts.priv);
+  const editCall = opts.edit || `editAkteSection('${opts.section}')`;
   return `<div class="akte-card">
-    <div class="akte-card__h"><i data-lucide="${opts.icon}"></i><span class="akte-card__t">${opts.title}</span>${opts.gated?'<span class="akte-sensitive"><i data-lucide="lock"></i> nur Personalverwaltung</span>':''}${showEdit?`<button class="akte-edit" onclick="editAkteSection('${opts.section}')"><i data-lucide="pencil"></i> Bearbeiten</button>`:''}</div>
+    <div class="akte-card__h"><i data-lucide="${opts.icon}"></i><span class="akte-card__t">${opts.title}</span>${opts.gated?'<span class="akte-sensitive"><i data-lucide="lock"></i> nur Personalverwaltung</span>':''}${showEdit?`<button class="akte-edit" onclick="${editCall}"><i data-lucide="pencil"></i> Bearbeiten</button>`:''}</div>
     <div class="akte-card__b">${opts.body}</div>
   </div>`;
 }
 // Zeile: gefüllt → Wert, leer → „+ ergänzen" (öffnet das passende Sektions-Formular)
 function akteRow(label,raw,section){
   if(akteFilled(raw)) return `<div class="dw-quiz__row"><span class="dw-quiz__k">${label}</span><span class="dw-quiz__v">${raw}</span></div>`;
-  return `<div class="dw-quiz__row"><span class="dw-quiz__k">${label}</span><span class="dw-quiz__v"><button class="akte-add-link" onclick="editAkteSection('${section}')">+ ergänzen</button></span></div>`;
+  const call = section==='fuehrerschein' ? 'editFuehrerschein()' : `editAkteSection('${section}')`;
+  return `<div class="dw-quiz__row"><span class="dw-quiz__k">${label}</span><span class="dw-quiz__v"><button class="akte-add-link" onclick="${call}">+ ergänzen</button></span></div>`;
 }
 function akteKontaktCard(e,hr){
   const body = `<div class="dw-quiz">
@@ -7859,6 +7896,8 @@ function aktePersonCard(e,hr){
   const nkVal = akteFilled(nk.n) ? `${escapeHtml(nk.n)}${akteFilled(nk.r)?` <small style="color:var(--muted)">(${escapeHtml(nk.r)})</small>`:''}${akteFilled(nk.p)?` · ${escapeHtml(nk.p)}`:''}` : '';
   const body = `<div class="dw-quiz">
     ${akteRow('Geburtsdatum', akteFilled(hr.bd)?`${deDate(hr.bd)}${ageFrom(hr.bd)?` <small style="color:var(--muted)">(${ageFrom(hr.bd)} J.)</small>`:''}`:'', 'person')}
+    ${akteRow('Geburtsort', akteFilled(hr.birthplace)?escapeHtml(hr.birthplace):'', 'person')}
+    ${akteRow('Staatsangehörigkeit', akteFilled(hr.nationality)?escapeHtml(hr.nationality):'', 'person')}
     ${akteRow('Adresse', akteFilled(hr.addr)?escapeHtml(hr.addr):'', 'person')}
     ${akteRow('Notfallkontakt', nkVal, 'person')}
   </div>`;
@@ -7867,7 +7906,9 @@ function aktePersonCard(e,hr){
 function akteBeschaeftigungCard(e,hr){
   const vac = vacInfo(e.id);
   const body = `<div class="dw-quiz">
+    ${akteRow('Personalnummer', akteFilled(hr.persnr)?escapeHtml(hr.persnr):'', 'beschaeftigung')}
     ${akteRow('Funktion', akteFilled(e.role)?escapeHtml(e.role):'', 'beschaeftigung')}
+    ${akteRow('Einsatzbereich', akteFilled(hr.bereich)?escapeHtml(hr.bereich):'', 'beschaeftigung')}
     ${akteRow('Im Betrieb seit', akteFilled(e.since)?escapeHtml(e.since):'', 'beschaeftigung')}
     ${akteRow('Vertragsart', akteFilled(hr.contract)?escapeHtml(hr.contract):'', 'beschaeftigung')}
     ${akteRow('Wochenstunden', akteFilled(hr.hours)?(hr.hours+' h'):'', 'beschaeftigung')}
@@ -7893,10 +7934,22 @@ function akteGatedNote(){
   return `<div class="akte-card"><div class="akte-card__b"><p class="compose-hint" style="margin:0"><i data-lucide="lock" style="width:13px;height:13px;vertical-align:-2px"></i> Vergütung, Bankdaten und Steuer sind nur für die Personalverwaltung sichtbar.</p></div></div>`;
 }
 function akteFuehrerscheinCard(e,hr){
-  const body = (hr.fs&&hr.fs.length)
-    ? `<div class="akte-chips">${hr.fs.map(f=>`<span class="akte-chip">Klasse ${escapeHtml(f)}</span>`).join('')}</div>`
-    : `<button class="akte-add-link" onclick="editAkteSection('fuehrerschein')">+ Führerscheinklassen ergänzen</button>`;
-  return akteCard({title:'Führerschein', icon:'car', section:'fuehrerschein', body, priv:true});
+  const hasClasses = hr.fs && hr.fs.length;
+  let body;
+  if(hasClasses){
+    const chips = hr.fs.map(f=>`<span class="akte-chip" title="${escapeHtml(fsDesc(f))}">Klasse ${escapeHtml(f)}</span>`).join('');
+    const cs = hr.fsExp ? certStatus(hr.fsExp) : null;
+    const dates = `<div class="dw-quiz" style="margin-top:11px">
+      ${akteRow('Ausgestellt am', akteFilled(hr.fsIssued)?deDate(hr.fsIssued):'', 'fuehrerschein')}
+      ${hr.fsExp
+        ? `<div class="dw-quiz__row"><span class="dw-quiz__k">Gültig bis</span><span class="dw-quiz__v">${deDate(hr.fsExp)} <span class="akte-badge ${cs[0]}" style="margin-left:6px">${cs[1]}</span></span></div>`
+        : akteRow('Gültig bis', '', 'fuehrerschein')}
+    </div>`;
+    body = `<div class="akte-chips">${chips}</div>${dates}`;
+  } else {
+    body = `<button class="akte-add-link" onclick="editFuehrerschein()">+ Führerscheinklassen ergänzen</button>`;
+  }
+  return akteCard({title:'Führerschein', icon:'car', section:'fuehrerschein', body, priv:true, edit:'editFuehrerschein()'});
 }
 function akteCertCard(e,hr,priv){
   const list = (hr.certs&&hr.certs.length)
@@ -7911,6 +7964,7 @@ function aktePsaCard(e,hr){
     ${akteRow('Oberteil', akteFilled(p.s)?('Größe '+escapeHtml(p.s)):'', 'psa')}
     ${akteRow('Hose', akteFilled(p.h)?('Größe '+escapeHtml(p.h)):'', 'psa')}
     ${akteRow('Sicherheitsschuhe', akteFilled(p.f)?('Größe '+escapeHtml(p.f)):'', 'psa')}
+    ${akteRow('Handschuhe', akteFilled(p.g)?('Größe '+escapeHtml(p.g)):'', 'psa')}
   </div>`;
   return akteCard({title:'Arbeitskleidung (PSA)', icon:'shirt', section:'psa', body, priv:true});
 }
@@ -8004,6 +8058,40 @@ function saveAkteSection(section){
   }
   closeSheet(); renderAkte(); toast(cfg.title+' gespeichert');
 }
+// Dedizierter Führerschein-Editor: Klassen per Klick + Ausstell-/Ablaufdatum (damit das Scheine-Modul wirklich warnt)
+function editFuehrerschein(){
+  const e = emp(akteEmpId); if(!e) return;
+  const hr = hrData(e);
+  const sel = new Set(hr.fs||[]);
+  const chips = FS_CLASSES.map(c=>`<button type="button" class="fs-pick${sel.has(c.k)?' on':''}" data-k="${c.k}" onclick="this.classList.toggle('on')"><b>${c.k}</b><small>${c.d}</small></button>`).join('');
+  openSheet(`
+    <div class="sheet__head">
+      <span class="avatar" style="width:46px;height:46px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="car" style="width:20px;height:20px"></i></span>
+      <div><div class="sheet__title">Führerschein bearbeiten</div><div class="sheet__sub">${escapeHtml(e.name)}</div></div>
+      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+    </div>
+    <div class="sheet__body">
+      <div class="field field--wide"><label>Führerscheinklassen <small style="color:var(--muted);font-weight:500">(Mehrfachauswahl)</small></label>
+        <div class="fs-grid">${chips}</div></div>
+      <div class="fieldgrid" style="margin-top:12px">
+        <div class="field"><label>Ausgestellt am</label><input id="fsIssued" type="date" value="${hr.fsIssued||''}"></div>
+        <div class="field"><label>Gültig bis</label><input id="fsExp" type="date" value="${hr.fsExp||''}"></div>
+      </div>
+      <p class="sheet-note"><i data-lucide="info" style="width:12px;height:12px;vertical-align:-2px"></i> Mit Ablaufdatum warnt das Modul „Scheine & Führerscheine", sobald die Verlängerung ansteht.</p>
+      <div class="sheet-actions">
+        <button class="btn" style="flex:1" onclick="saveFuehrerschein()"><i data-lucide="check"></i> Speichern</button>
+        <button class="btn ghost" onclick="closeSheet()">Abbrechen</button>
+      </div>
+    </div>`);
+}
+function saveFuehrerschein(){
+  const e = emp(akteEmpId); if(!e) return;
+  const hr = hrData(e);
+  hr.fs = Array.from(document.querySelectorAll('.fs-pick.on')).map(b=>b.dataset.k);
+  hr.fsIssued = (document.getElementById('fsIssued')||{}).value || '';
+  hr.fsExp = (document.getElementById('fsExp')||{}).value || '';
+  closeSheet(); renderAkte(); toast('Führerschein gespeichert');
+}
 function addAkteCert(){
   const e = emp(akteEmpId); if(!e) return;
   openSheet(`
@@ -8013,6 +8101,8 @@ function addAkteCert(){
       <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body">
+      <div class="field field--wide"><label>Schnellauswahl <small style="color:var(--muted);font-weight:500">(GaLaBau-typisch)</small></label>
+        <div class="cert-suggest">${CERT_SUGGEST.map(s=>`<button type="button" class="cert-sug" onclick="document.getElementById('certN').value='${s.replace(/'/g,"\\'")}'">${s}</button>`).join('')}</div></div>
       <div class="field"><label>Bezeichnung <span style="color:var(--danger)">*</span></label><input id="certN" placeholder="z. B. Motorsägenschein AS Baum I"></div>
       <div class="field"><label>Gültig bis <small style="color:var(--muted);font-weight:500">(leer = unbefristet)</small></label><input id="certE" type="date"></div>
       <div class="sheet-actions">
