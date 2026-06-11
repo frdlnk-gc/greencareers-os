@@ -1386,6 +1386,16 @@
   .zsec-h b{ font-size:14px; }
   .zsec-h span{ font-size:12px; color:var(--muted); }
   .tlist{ display:flex; flex-direction:column; gap:8px; }
+  /* „heute abwesend"-Streifen (Verkettung Zeit ↔ Urlaub) */
+  .absent-strip{ display:flex; align-items:center; gap:12px; width:100%; margin:0 0 14px; padding:11px 13px; border:1px solid #F0E2C8; border-radius:11px; background:#FCF8EF; cursor:pointer; text-align:left; }
+  .absent-strip:hover{ border-color:#E6CF9E; }
+  .absent-strip__l{ display:flex; align-items:center; gap:8px; color:#9A6B12; font-size:13px; flex-shrink:0; }
+  .absent-strip__l .lucide{ width:16px; height:16px; }
+  .absent-strip__chips{ display:flex; align-items:center; gap:6px; flex:1; min-width:0; overflow:hidden; flex-wrap:wrap; }
+  .abx{ display:inline-flex; align-items:center; gap:5px; padding:3px 8px; border-radius:999px; font-size:11px; font-weight:600; background:#fff; border:1px solid var(--line); color:var(--ink); }
+  .abx .lucide{ width:12px; height:12px; }
+  .abx.krank{ color:#C24141; } .abx.urlaub{ color:var(--green-2); } .abx.sonder{ color:#7C3AED; }
+  .absent-strip__go{ width:16px; height:16px; color:#B79A5E; flex-shrink:0; margin-left:auto; }
   .trow{ display:flex; align-items:center; gap:12px; width:100%; text-align:left; padding:11px 13px; background:#fff; border:1px solid var(--line); border-radius:12px; cursor:pointer; transition:border-color .14s, box-shadow .14s; }
   .trow:hover{ border-color:var(--green); box-shadow:var(--shadow); }
   .trow.flag{ border-color:#F4C77E; background:#FFFCF6; }
@@ -2478,7 +2488,7 @@ function accountMeta(a){ return {active:['Aktiv','g','check-circle-2'], invited:
 /* ===================== ENDE ROLLEN-MODELL ===================== */
 
 let currentView = 'heute';
-let activeTeamTab = 'mitarbeiter';
+let activeTeamTab = 'zeit';
 let activeCustomerTab = 'anfragen';
 let activeFinTab = 'uebersicht';
 let activeMarktTab = 'feed';
@@ -3165,11 +3175,13 @@ function teamTabList(){
       {id:'urlaub', label:'Meine Abwesenheiten', count:''},
     ];
   }
+  // Reihenfolge nach Tagesnutzen des Inhabers: erst „läuft die Truppe?", dann offene To-dos,
+  // dann Disposition, zuletzt die Stammdaten-Liste (wird am seltensten gebraucht).
   const tabs = [];
-  tabs.push({id:'mitarbeiter', label:'Mitarbeiter', count:employees.length});
-  if(can('editEmployees')) tabs.push({id:'kolonnen', label:'Kolonnen', count:crews.length});
-  tabs.push({id:'urlaub', label:'Urlaub & Krank', count:absences.filter(a => a.status === 'offen').length || ''});
   tabs.push({id:'zeit', label:'Zeiterfassung', count:''});
+  tabs.push({id:'urlaub', label:'Urlaub & Krank', count:absences.filter(a => a.status === 'offen').length || ''});
+  if(can('editEmployees')) tabs.push({id:'kolonnen', label:'Kolonnen', count:crews.length});
+  tabs.push({id:'mitarbeiter', label:'Mitarbeiter', count:employees.length});
   return tabs;
 }
 function tabButton(id,label,count,active){
@@ -6634,6 +6646,7 @@ function zeitViewTeam(){
       ${kpi('timer', hoursStr(avg).replace(' h',''), 'Ø Stunden', 'heute pro Kopf', false)}
       ${kpi(flags&&settings.geo?'alert-triangle':'check-circle-2', String(done.length), 'Feierabend', flags&&settings.geo?`${flags} Standort prüfen`:'heute fertig', false)}
     </div>
+    ${absentStrip()}
     <div class="zsec-h"><b>Live im Einsatz</b><span>${running.length} eingestempelt · tippen für Details</span></div>
     <div class="tlist">
       ${running.map(timeRow).join('') || `<div class="empty"><i data-lucide="clock"></i><div>Noch niemand eingestempelt.</div></div>`}
@@ -6641,6 +6654,17 @@ function zeitViewTeam(){
     ${done.length ? `<div class="zsec-h" style="margin-top:16px"><b>Feierabend</b><span>heute fertig</span></div><div class="tlist">${done.map(timeRow).join('')}</div>` : ''}
     ${settings.geo?`<div class="dsgvo"><i data-lucide="shield-check"></i> <span><b>Datenschutz:</b> Der Standort wird <b>nur beim Ein- &amp; Ausstempeln</b> einmalig erfasst – als Nachweis vor Ort. Keine laufende Ortung während der Arbeitszeit.</span></div>`:''}
   </div>`;
+}
+// Verkettung Zeit ↔ Urlaub: „wer fehlt heute" direkt im Zeit-Einstieg, tippbar → Urlaub & Krank.
+function absentStrip(){
+  const off = employees.filter(e => absentToday(e.id)).map(e => ({e, ab:absentToday(e.id)}));
+  if(!off.length) return '';
+  const chips = off.map(({e,ab}) => { const t = typeMeta(ab.type); return `<span class="abx ${t.cls}"><i data-lucide="${t.icon}"></i>${e.name.split(' ')[0]}</span>`; }).join('');
+  return `<button class="absent-strip" onclick="teamTab('urlaub')">
+    <span class="absent-strip__l"><i data-lucide="user-minus"></i><b>${off.length} heute abwesend</b></span>
+    <span class="absent-strip__chips">${chips}</span>
+    <i data-lucide="chevron-right" class="absent-strip__go"></i>
+  </button>`;
 }
 function adminClockCard(){
   return `<div class="clockcard admin">
