@@ -606,7 +606,42 @@
   .candidate__job{ display:flex; align-items:center; gap:6px; font-size:11.5px; font-weight:600; color:var(--green-2); margin:0 0 8px; }
   .candidate__job .lucide{ width:13px; height:13px; flex-shrink:0; }
   .candidate__job.unassigned{ color:var(--muted-2); font-weight:500; font-style:italic; }
-  .candidate__foot{ display:flex; align-items:center; border-top:1px solid var(--line); margin-top:10px; padding-top:9px; }
+  .candidate__foot{ display:flex; flex-direction:column; align-items:stretch; gap:9px; border-top:1px solid var(--line); margin-top:10px; padding-top:10px; }
+
+  /* Status direkt auf der Karte ändern (kein Drag nötig) */
+  .stagechip{ display:flex; align-items:center; gap:7px; width:100%; padding:7px 10px; border:1px solid var(--line); border-radius:8px; background:#fff; color:var(--ink); font:inherit; font-size:11.5px; font-weight:700; cursor:pointer; text-align:left; }
+  .stagechip:hover{ border-color:var(--green); background:var(--mint); }
+  .stagechip__dot{ width:9px; height:9px; border-radius:999px; flex-shrink:0; }
+  .stagechip__lbl{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .stagechip .lucide{ width:14px; height:14px; color:var(--muted-2); flex-shrink:0; }
+
+  /* Status-Popover (erscheint direkt an der Karte) */
+  .stagepop{ position:fixed; z-index:300; min-width:208px; max-width:260px; background:#fff; border:1px solid var(--line); border-radius:12px; box-shadow:0 14px 40px rgba(18,33,24,.22); padding:6px; opacity:0; transform:translateY(-4px) scale(.98); transition:opacity .14s, transform .14s; }
+  .stagepop.show{ opacity:1; transform:translateY(0) scale(1); }
+  .stagepop__hd{ font-size:10.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--muted-2); padding:7px 9px 5px; }
+  .stagepop__opt{ display:flex; align-items:center; gap:9px; width:100%; padding:9px 9px; border:none; border-radius:8px; background:none; color:var(--ink); font:inherit; font-size:13px; font-weight:600; cursor:pointer; text-align:left; }
+  .stagepop__opt:hover{ background:var(--mint); }
+  .stagepop__opt.on{ color:var(--green-2); }
+  .stagepop__opt .stagepop__dot{ width:10px; height:10px; border-radius:999px; flex-shrink:0; }
+  .stagepop__opt > span:nth-child(2){ flex:1; }
+  .stagepop__opt .lucide{ width:15px; height:15px; color:var(--green); }
+
+  /* Bewerber-Liste (mobil statt Spalten-Board) */
+  .fstrip{ display:flex; gap:8px; overflow-x:auto; padding:2px 2px 12px; -webkit-overflow-scrolling:touch; }
+  .fstrip::-webkit-scrollbar{ display:none; }
+  .fchip{ display:inline-flex; align-items:center; gap:6px; flex-shrink:0; padding:7px 12px; border:1px solid var(--line); border-radius:999px; background:#fff; color:var(--ink); font:inherit; font-size:12.5px; font-weight:700; cursor:pointer; white-space:nowrap; }
+  .fchip.on{ background:var(--green); border-color:var(--green); color:#fff; }
+  .fchip__n{ display:inline-flex; align-items:center; justify-content:center; min-width:18px; height:18px; padding:0 5px; border-radius:999px; background:#F0F3EF; color:var(--muted); font-size:10.5px; }
+  .fchip.on .fchip__n{ background:rgba(255,255,255,.25); color:#fff; }
+  .candrows{ display:flex; flex-direction:column; gap:9px; }
+  .cand-row{ display:flex; align-items:center; gap:11px; width:100%; padding:12px; border:1px solid var(--line); border-radius:11px; background:#fff; box-shadow:0 1px 1px rgba(20,30,20,.035); cursor:pointer; }
+  .cand-row:active{ background:#FAFCF9; }
+  .cand-row__main{ flex:1; min-width:0; display:flex; flex-direction:column; gap:5px; }
+  .cand-row__top{ display:flex; align-items:center; gap:8px; }
+  .cand-row__top b{ font-size:14px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .cand-row__top .src{ margin-left:0; width:20px; height:20px; }
+  .cand-row__role{ color:var(--muted); font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .cand-row .stagechip{ width:auto; max-width:128px; flex-shrink:0; }
 
   /* Vorqualifizierungs-Badge */
   .pqbadge{ display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:999px; font-size:10.5px; font-weight:700; }
@@ -1014,6 +1049,11 @@
 
   @media(max-width:1080px){
     .dashboard{ grid-template-columns:1fr; }
+  }
+  /* Bewerber-Ansicht auf dem Handy: Spalten-Board → fokussierte Liste, Kopf entschlackt */
+  @media(max-width:760px){
+    .rec-head p{ display:none; }
+    .bewerber-bar{ display:none; }
   }
   @media(max-width:860px){
     .app{ height:100dvh; min-height:100dvh; background:#fff; }
@@ -2024,7 +2064,7 @@
 <script>
 const NAV = [
   {id:'heute', label:'Heute', icon:'layout-dashboard', badge:''},
-  {id:'recruiting', label:'Recruiting', icon:'user-search', badge:'2'},
+  {id:'recruiting', label:'Bewerber', icon:'user-search', badge:'2'},
   {id:'team', label:'Team', icon:'users', badge:''},
   {id:'planung', label:'Planung', icon:'calendar-range', badge:''},
   {id:'kunden', label:'Kunden', icon:'handshake', badge:'5'},
@@ -2834,7 +2874,7 @@ const FAB_ACTIONS = {
     {icon:'file-text', label:'Angebot anlegen', fn:'openInvoiceForm("angebot")'},
   ],
   recruiting: [
-    {grp:'Recruiting'},
+    {grp:'Bewerber'},
     {icon:'sliders-horizontal', label:'Status anpassen', fn:'openStageManager()'},
   ],
   team: [
@@ -2990,8 +3030,8 @@ const VIEWS = {
     </div>`,
 
   recruiting: () => `
-    <div class="pagehead">
-      <div><h2>Recruiting</h2><p>Deine Bewerber-Pipeline aus GreenCareers – vom Eingang bis zur Einstellung an einem Ort.</p></div>
+    <div class="pagehead rec-head">
+      <div><h2>Bewerber</h2><p>Deine Bewerber-Pipeline aus GreenCareers – vom Eingang bis zur Einstellung an einem Ort.</p></div>
       <div class="pagehead__actions">
         <button class="mini-btn" onclick="openStageManager()" title="Status-Spalten anpassen"><i data-lucide="sliders-horizontal"></i> Status</button>
       </div>
@@ -5412,8 +5452,18 @@ function pqFilled(a){
   const p = a.pq || {};
   return ['branche','beruf','erfahrung','gehalt','verfuegbar','ort'].filter(k => p[k] !== '' && p[k] !== null && p[k] !== undefined).length;
 }
-// Kanban-Inhalt unter Berücksichtigung des Stelle×Status-Filters
+// Phone-Erkennung: ab hier zeigen wir statt des Spalten-Boards eine fokussierte Liste.
+function isPhone(){ return window.matchMedia('(max-width:760px)').matches; }
+
+// Status-Chip auf der Karte – Status direkt dort ändern, wo das Auge ist (kein Drag nötig).
+function stageChip(a){
+  const s = stageById(a.stage);
+  return `<button class="stagechip" type="button" title="Status ändern" onpointerdown="event.stopPropagation()" onclick="event.stopPropagation();openStagePop(event,${a.id})"><span class="stagechip__dot" style="background:${s.color}"></span><span class="stagechip__lbl">${s.label}</span><i data-lucide="chevron-down"></i></button>`;
+}
+
+// Kanban-Inhalt unter Berücksichtigung des Stelle×Status-Filters (Desktop: Spalten nebeneinander, horizontal scrollbar)
 function bewerberKanbanHtml(){
+  if(isPhone()) return bewerberListHtml();
   const f = bewerberFilter;
   const cols = f.status ? stages.filter(c => c.id === f.status) : stages;
   return `<div class="kanban" id="kanban">${cols.map(col => {
@@ -5424,9 +5474,22 @@ function bewerberKanbanHtml(){
     </section>`;
   }).join('')}</div>`;
 }
+// Mobile Liste: Status-Filter-Chips + große, tippbare Bewerber-Zeilen mit Inline-Status
+function bewerberListHtml(){
+  const f = bewerberFilter;
+  const inJob = a => (!f.job || a.jobId === f.job);
+  const total = applicants.filter(inJob).length;
+  const chip = (id,label,n,on) => `<button class="fchip ${on?'on':''}" onclick="setBewerberFilter('status','${id}')">${label}<span class="fchip__n">${n}</span></button>`;
+  const strip = `<div class="fstrip">${chip('','Alle',total,!f.status)}${stages.map(s => chip(s.id, s.label, applicants.filter(a => a.stage===s.id && inJob(a)).length, f.status===s.id)).join('')}</div>`;
+  const list = applicants.filter(a => (!f.status || a.stage===f.status) && inJob(a));
+  const rows = list.length ? list.map(candidateRow).join('') : `<div class="kanban-empty" style="padding:28px 12px">Keine Bewerber in dieser Ansicht.</div>`;
+  return `<div class="bewerber-list" id="kanban"><div class="bewerber-list__hint hint inline" style="margin-bottom:10px"><i data-lucide="sparkles"></i> Vom BewerberBot vorqualifizierte Bewerber landen direkt in „In Bearbeitung".</div>${strip}<div class="candrows">${rows}</div></div>`;
+}
 function renderBewerberKanban(){
   const wrap = document.getElementById('kanbanWrap');
   if(!wrap){ if(currentView==='recruiting') setView('recruiting'); return; }
+  closeStagePop();
+  _lastPhone = isPhone();
   wrap.innerHTML = bewerberKanbanHtml();
   icons();
   wireKanban();
@@ -5437,14 +5500,76 @@ function candidateCard(a){
   const src = srcMeta(a.source);
   const j = job(a.jobId);
   const role = a.role || (a.pq && a.pq.beruf) || '—';
-  return `<button class="candidate" draggable="true" data-id="${a.id}" data-col="${a.stage}" onclick="openApplicant(${a.id})">
+  return `<div class="candidate" draggable="true" data-id="${a.id}" data-col="${a.stage}" role="button" tabindex="0" onclick="openApplicant(${a.id})">
     <span class="candidate__top"><span class="avatar">${initials(a.name)}</span><span class="candidate__name">${a.name}</span><span class="src ${src.cls}" title="Quelle: ${src.label}"><i data-lucide="${src.icon}"></i></span></span>
     <span class="candidate__role">${role}</span>
     <span class="candidate__job ${j?'':'unassigned'}"><i data-lucide="briefcase"></i>${j ? j.title : 'Stelle zuweisen'}</span>
     <span class="tagrow">${(a.tags||[]).map(tag => `<span class="tag ${a.hot ? 'green' : ''}">${tag}</span>`).join('')}</span>
-    <span class="candidate__foot">${pqBadge(a)}</span>
-  </button>`;
+    <span class="candidate__foot">${pqBadge(a)}${stageChip(a)}</span>
+  </div>`;
 }
+function candidateRow(a){
+  const src = srcMeta(a.source);
+  const j = job(a.jobId);
+  const role = a.role || (a.pq && a.pq.beruf) || '—';
+  return `<div class="cand-row" role="button" tabindex="0" onclick="openApplicant(${a.id})">
+    <span class="avatar">${initials(a.name)}</span>
+    <span class="cand-row__main">
+      <span class="cand-row__top"><b>${a.name}</b><span class="src ${src.cls}"><i data-lucide="${src.icon}"></i></span></span>
+      <span class="cand-row__role">${role}${j ? ` · ${j.title}` : ''}</span>
+      <span class="cand-row__foot">${pqBadge(a)}</span>
+    </span>
+    ${stageChip(a)}
+  </div>`;
+}
+
+// ---- Status-Popover (öffnet direkt an der angetippten Karte) ----
+let _lastPhone = null;
+function openStagePop(ev, id){
+  ev.stopPropagation();
+  closeStagePop();
+  const a = findCandidate(id); if(!a) return;
+  const anchor = ev.currentTarget.getBoundingClientRect();
+  const pop = document.createElement('div');
+  pop.className = 'stagepop';
+  pop.id = 'stagePop';
+  pop.innerHTML = `<div class="stagepop__hd">Status ändern</div>` + stages.map(s => `<button class="stagepop__opt ${s.id===a.stage?'on':''}" onclick="quickSetStage(${id},'${s.id}')"><span class="stagepop__dot" style="background:${s.color}"></span><span>${s.label}</span>${s.id===a.stage?'<i data-lucide="check"></i>':''}</button>`).join('');
+  document.body.appendChild(pop);
+  icons();
+  const pw = pop.offsetWidth, ph = pop.offsetHeight;
+  let left = anchor.left, top = anchor.bottom + 6;
+  if(left + pw > window.innerWidth - 10) left = window.innerWidth - pw - 10;
+  if(top + ph > window.innerHeight - 10) top = anchor.top - ph - 6;
+  pop.style.left = Math.max(10, left) + 'px';
+  pop.style.top = Math.max(10, top) + 'px';
+  requestAnimationFrame(() => pop.classList.add('show'));
+  setTimeout(() => {
+    document.addEventListener('pointerdown', stagePopOutside, true);
+    window.addEventListener('scroll', closeStagePop, true);
+  }, 0);
+}
+function stagePopOutside(e){ const p = document.getElementById('stagePop'); if(p && !p.contains(e.target)) closeStagePop(); }
+function closeStagePop(){
+  const p = document.getElementById('stagePop');
+  if(p) p.remove();
+  document.removeEventListener('pointerdown', stagePopOutside, true);
+  window.removeEventListener('scroll', closeStagePop, true);
+}
+function quickSetStage(id, to){
+  const a = findCandidate(id);
+  closeStagePop();
+  if(!a || a.stage === to) return;
+  a.stage = to;
+  a.hot = to === 'inbearb';
+  if(currentView === 'recruiting') renderBewerberKanban();
+  toast(`${a.name.split(' ')[0]} → ${stageById(to).label}`);
+}
+// Beim Drehen/Resizen über die Phone-Grenze: Board ↔ Liste automatisch umschalten
+window.addEventListener('resize', () => {
+  if(currentView !== 'recruiting') return;
+  const p = isPhone();
+  if(p !== _lastPhone) renderBewerberKanban();
+});
 
 function customerTab(tab){
   activeCustomerTab = tab;
