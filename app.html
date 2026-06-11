@@ -803,26 +803,33 @@
   /* Modul-Marktplatz */
   .modlist{ display:flex; flex-direction:column; gap:9px; margin-bottom:6px; }
   .modtile{ display:flex; align-items:center; gap:12px; width:100%; text-align:left; padding:12px; border:1px solid var(--line); border-radius:12px; background:#fff; cursor:pointer; transition:border-color .15s, box-shadow .15s; }
-  .modtile:hover:not(:disabled){ border-color:var(--green); box-shadow:var(--shadow-sm); }
-  .modtile:disabled{ opacity:.6; cursor:default; }
-  .modtile.paid{ background:linear-gradient(180deg,#fff,#FBFAF6); }
+  .modtile:hover:not(:disabled){ border-color:var(--green); box-shadow:var(--shadow); }
+  .modtile:disabled{ cursor:default; }
   .modtile__ic{ width:38px; height:38px; border-radius:10px; display:grid; place-items:center; background:var(--mint); color:var(--green-2); flex-shrink:0; }
-  .modtile.paid .modtile__ic{ background:#FBEFD9; color:#8A5A14; }
   .modtile__t{ flex:1; min-width:0; }
   .modtile__t b{ display:block; font-size:13px; }
   .modtile__t small{ display:block; font-size:11px; color:var(--muted); margin-top:1px; }
   .modtile__badge{ font-size:10.5px; font-weight:600; padding:4px 9px; border-radius:999px; white-space:nowrap; flex-shrink:0; }
   .modtile__badge.free{ background:var(--mint); color:var(--green-2); }
-  .modtile__badge.paid{ background:#FBEFD9; color:#8A5A14; }
   .modtile__badge.on{ background:var(--green); color:#fff; }
+  /* Zusatzmodul-Karten (= die ausgegrauten Oberpunkte: Kunden/Planung/Finanzen/Markt) */
+  .modupg{ display:flex; align-items:center; gap:12px; width:100%; text-align:left; padding:12px; border:1px solid var(--line); border-radius:12px; background:linear-gradient(180deg,#fff,#FBFAF6); cursor:pointer; transition:border-color .15s, box-shadow .15s; }
+  .modupg:hover{ border-color:var(--green); box-shadow:var(--shadow); }
+  .modupg__ic{ width:38px; height:38px; border-radius:10px; display:grid; place-items:center; background:#FBEFD9; color:#8A5A14; flex-shrink:0; }
+  .modupg__t{ flex:1; min-width:0; }
+  .modupg__t b{ display:block; font-size:13px; }
+  .modupg__t small{ display:block; font-size:11px; color:var(--muted); margin-top:1px; }
+  .modupg__price{ text-align:right; flex-shrink:0; white-space:nowrap; }
+  .modupg__price b{ font-size:14px; color:var(--ink); }
+  .modupg__price small{ font-size:10.5px; color:var(--muted); margin-left:2px; }
+  .modupg__on{ font-size:10.5px; font-weight:700; color:var(--green-2); background:var(--soft-green); padding:4px 9px; border-radius:999px; }
+  .modupg__arr{ width:18px; display:grid; place-items:center; color:var(--muted-2); flex-shrink:0; }
+  .modupg__arr .lucide{ width:15px; height:15px; }
+  .modupg.owned{ background:#fff; }
+  .modupg.owned .modupg__ic{ background:var(--soft-green); color:var(--green-2); }
   .modemo{ display:flex; align-items:center; gap:11px; padding:6px 2px; color:var(--muted); font-size:12.5px; }
   .modemo__ic{ width:40px; height:40px; border-radius:10px; display:grid; place-items:center; background:var(--mint); color:var(--green-2); flex-shrink:0; }
   .modemo small{ color:var(--muted-2); font-size:11px; }
-  /* „Kommt bald"-Kacheln */
-  .modtile.soon{ background:#FAFBFA; border-style:dashed; }
-  .modtile.soon .modtile__ic{ background:#EEF1EE; color:#9AA8A0; }
-  .modtile.soon .modtile__t b, .modtile.soon .modtile__t small{ color:var(--muted); }
-  .modtile__badge.soon{ background:#EEF1EE; color:#6A7A6E; }
   /* Modul-Mini-Inhalte (echte Daten statt Dummy) */
   .mod-body{ padding-top:2px; }
   .mod-stats{ display:flex; gap:10px; }
@@ -3806,21 +3813,13 @@ function deleteCrew(id){
 }
 
 /* ===================== MODUL-MARKTPLATZ („Modul hinzufügen") ===================== */
-// tier: free = sofort nutzbar · premium = kostenpflichtig dazubuchbar · soon = Vorschau „Kommt bald"
-// Da wir zuerst das Thema Personal/Team ausspielen, sind die Gratis-Module bewusst personal-/recruiting-nah.
+// Nur echte BASIS-Widgets (kostenlos, aus Personal- & Bewerber-Daten). Alles Kostenpflichtige
+// läuft über die vier Oberpunkte (Kunden/Planung/Finanzen/Markt) = COMING_SOON, identisch zur Sidebar.
 const MODULES = [
-  {id:'anwesenheit',name:'Wer ist heute da?',     desc:'Anwesend, krank & im Urlaub auf einen Blick.',        icon:'users',           tier:'free'},
-  {id:'bewerber',   name:'Bewerber-Radar',        desc:'Neue Bewerbungen & fällige Rückrufe heute.',         icon:'user-plus',       tier:'free'},
-  {id:'geburtstage',name:'Geburtstage & Jubiläen',desc:'Wer hat Geburtstag oder Firmenjubiläum?',             icon:'cake',            tier:'free'},
-  {id:'umsatz',     name:'Umsatz heute',          desc:'Tagesumsatz & offene Posten auf einen Blick.',        icon:'euro',            tier:'free'},
-  {id:'lager',      name:'Materiallager',         desc:'Bestand an Pflanzen, Pflaster & Verbrauchsmaterial.', icon:'package',         tier:'free'},
-  {id:'fuhrpark',   name:'Fuhrpark-Check',        desc:'TÜV, Wartung & wer fährt welches Fahrzeug.',          icon:'truck',           tier:'free'},
-  {id:'route',      name:'Routenoptimierung Pro', desc:'Beste Reihenfolge & Fahrzeit für alle Baustellen.',   icon:'route',           tier:'premium', price:29},
-  {id:'lohn',       name:'Lohn-Export (DATEV)',   desc:'Zeiten direkt an Steuerberater / DATEV exportieren.', icon:'file-spreadsheet',tier:'premium', price:19},
-  {id:'ki',         name:'KI-Angebotsschreiber',  desc:'Aus einer Anfrage in Sekunden ein fertiges Angebot.', icon:'sparkles',        tier:'premium', price:39},
-  {id:'termin',     name:'Online-Terminbuchung',  desc:'Kunden buchen Aufmaß-Termine selbst online.',         icon:'calendar-check',  tier:'soon'},
-  {id:'doku',       name:'Foto-Baudokumentation', desc:'Baustellen-Fotos automatisch je Auftrag sammeln.',    icon:'camera',          tier:'soon'},
-  {id:'portal',     name:'Kundenportal',          desc:'Kunden sehen Angebote, Termine & Status online.',     icon:'panels-top-left', tier:'soon'},
+  {id:'anwesenheit',name:'Wer ist heute da?',      desc:'Anwesend, krank & im Urlaub auf einen Blick.',  icon:'users',      tier:'free'},
+  {id:'bewerber',   name:'Bewerber-Radar',         desc:'Neue Bewerbungen & fällige Rückrufe heute.',    icon:'user-plus',  tier:'free'},
+  {id:'geburtstage',name:'Geburtstage & Jubiläen', desc:'Wer hat Geburtstag oder Firmenjubiläum?',        icon:'cake',       tier:'free'},
+  {id:'scheine',    name:'Scheine & Führerscheine',desc:'Warnung, wenn Befähigungen bald ablaufen.',     icon:'badge-check',tier:'free'},
 ];
 const addedModules = new Set();
 function moduleMeta(id){ return MODULES.find(m => m.id === id); }
@@ -3850,19 +3849,17 @@ function moduleBody(id){
     return `<div class="mod-line"><span class="mod-ava">LB</span> <b>Lukas Berger</b> wird am <b>14.06.</b> 19</div>
       <div class="mod-line"><span class="mod-ava">SV</span> <b>Sven Albrecht</b> · 5 Jahre dabei (01.07.)</div>`;
   }
-  if(id === 'umsatz'){
-    return `<div class="mod-stats">
-      <div class="mod-stat"><b>4.280 €</b><span>heute fakturiert</span></div>
-      <div class="mod-stat muted"><b>12.640 €</b><span>offen</span></div>
-    </div>`;
-  }
-  if(id === 'lager'){
-    return `<div class="mod-line"><i data-lucide="check-circle-2" style="color:var(--green)"></i> Pflastersteine grau · 3 Pal.</div>
-      <div class="mod-line"><i data-lucide="alert-triangle" style="color:#B7791F"></i> Rollrasen · nur 40 m² · knapp</div>`;
-  }
-  if(id === 'fuhrpark'){
-    return `<div class="mod-line"><i data-lucide="truck"></i> HH-MG 1234 · TÜV bis 09/2026</div>
-      <div class="mod-line"><i data-lucide="alert-triangle" style="color:#C24141"></i> HH-MG 5678 · Wartung fällig</div>`;
+  if(id === 'scheine'){
+    const items = [];
+    employees.forEach(e => { const hr = hrData(e);
+      (hr.certs||[]).forEach(c => { if(!c.exp) return; const [st] = certStatus(c.exp); if(st!=='ok') items.push({name:e.name.split(' ')[0], cert:c.n, exp:c.exp, st}); });
+    });
+    items.sort((a,b) => new Date(a.exp) - new Date(b.exp));
+    if(!items.length) return `<div class="mod-line"><i data-lucide="check-circle-2" style="color:var(--green)"></i> Alle Scheine & Führerscheine gültig.</div>`;
+    return items.slice(0,3).map(it => {
+      const bad = it.st === 'bad';
+      return `<div class="mod-line"><i data-lucide="${bad?'alert-octagon':'alert-triangle'}" style="color:${bad?'#C24141':'#B7791F'}"></i> <b>${it.name}</b> · ${it.cert}<span style="margin-left:auto;color:var(--muted)">${deDate(it.exp)}</span></div>`;
+    }).join('');
   }
   return `<div class="modemo"><span class="modemo__ic"><i data-lucide="${moduleMeta(id).icon}"></i></span><span>${moduleMeta(id).desc}</span></div>`;
 }
@@ -3871,30 +3868,37 @@ function extraModuleHtml(id){ const m = moduleMeta(id); return `<div class="pane
   <div class="mod-body">${moduleBody(id)}</div>
 </div>`; }
 function openModuleMarket(){
-  const tile = (m) => { const added = addedModules.has(m.id);
-    const badge = added ? '✓ Aktiv' : m.tier==='premium' ? `${m.price} €/Mon.` : m.tier==='soon' ? 'Bald' : 'Gratis';
-    const badgeCls = added ? 'on' : m.tier==='premium' ? 'paid' : m.tier==='soon' ? 'soon' : 'free';
-    const click = m.tier==='soon' ? `notifyModule('${m.id}')` : m.tier==='premium' ? `upsellModule('${m.id}')` : `addFreeModule('${m.id}')`;
-    return `<button class="modtile${m.tier==='premium'?' paid':''}${m.tier==='soon'?' soon':''}" ${added?'disabled':''} onclick="${click}">
+  const freeTile = (m) => { const added = addedModules.has(m.id);
+    return `<button class="modtile" ${added?'disabled':''} onclick="addFreeModule('${m.id}')">
       <span class="modtile__ic"><i data-lucide="${m.icon}"></i></span>
       <span class="modtile__t"><b>${m.name}</b><small>${m.desc}</small></span>
-      <span class="modtile__badge ${badgeCls}">${badge}</span>
+      <span class="modtile__badge ${added?'on':'free'}">${added?'✓ Aktiv':'+ Hinzufügen'}</span>
+    </button>`; };
+  const upgCard = (id) => { const m = COMING_SOON[id]; const owned = ownsModule(id);
+    const right = owned
+      ? `<span class="modupg__on">Aktiv</span>`
+      : `<span class="modupg__price"><b>${m.price} €</b><small>/ Mon.</small></span>`;
+    const click = owned ? `closeSheet();goModule('${id}')` : `openComingSoon('${id}')`;
+    return `<button class="modupg${owned?' owned':''}" onclick="${click}">
+      <span class="modupg__ic"><i data-lucide="${m.icon}"></i></span>
+      <span class="modupg__t"><b>${m.title}</b><small>${m.tag}</small></span>
+      ${right}
+      <span class="modupg__arr"><i data-lucide="${owned?'arrow-right':'chevron-right'}"></i></span>
     </button>`; };
   openSheet(`
     <div class="sheet__head">
       <span class="avatar" style="width:46px;height:46px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="layout-grid" style="width:20px;height:20px"></i></span>
-      <div><div class="sheet__title">Module hinzufügen</div><div class="sheet__sub">Bau dir dein Cockpit – heute kostenlos, mehr kommt laufend dazu</div></div>
+      <div><div class="sheet__title">Module hinzufügen</div><div class="sheet__sub">Stell dir dein Cockpit zusammen – oder schalte ganze Bereiche frei</div></div>
       <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body">
-      <div class="setsec">Kostenlos – sofort nutzbar</div>
-      <div class="modlist">${MODULES.filter(m => m.tier==='free').map(tile).join('')}</div>
-      <div class="setsec">Premium – dazubuchbar</div>
-      <p class="sheet-note"><i data-lucide="sparkles"></i> Diese Module schaltest du jederzeit im Tarif frei. Heute schon als Vorschau sichtbar.</p>
-      <div class="modlist">${MODULES.filter(m => m.tier==='premium').map(tile).join('')}</div>
-      <div class="setsec">Kommt bald <span class="setsec__hint">in Entwicklung</span></div>
-      <p class="sheet-note"><i data-lucide="rocket"></i> GreenCareers OS wächst ständig. Sag „Bescheid geben", dann melden wir uns, sobald es live ist.</p>
-      <div class="modlist">${MODULES.filter(m => m.tier==='soon').map(tile).join('')}</div>
+      <div class="setsec">Dein Cockpit <span class="setsec__hint">kostenlos</span></div>
+      <p class="sheet-note"><i data-lucide="layout-grid"></i> Bau dir die Heute-Übersicht aus deinen Personal- &amp; Bewerber-Daten. Jederzeit wieder entfernbar.</p>
+      <div class="modlist">${MODULES.map(freeTile).join('')}</div>
+      <div class="setsec">Mehr freischalten <span class="setsec__hint">Zusatzmodule</span></div>
+      <p class="sheet-note"><i data-lucide="sparkles"></i> Erweitere GreenCareers OS um ganze Bereiche – einzeln oder im Paket, monatlich kündbar.</p>
+      <div class="modlist">${UPGRADE_ORDER.map(upgCard).join('')}</div>
+      <button class="btn ghost full" style="margin-top:4px" onclick="openUpgrade()"><i data-lucide="layout-grid"></i> Alle Module &amp; Paketpreis ansehen</button>
     </div>`);
 }
 function addFreeModule(id){
@@ -3910,8 +3914,6 @@ function removeModule(id){
   moduleLayout.rail = moduleLayout.rail.filter(k => k !== id);
   setView('heute'); toast('Modul entfernt');
 }
-function upsellModule(id){ const m = moduleMeta(id); toast(`${m.name}: dazubuchbar für ${m.price} €/Monat – im Tarif freischaltbar`); }
-function notifyModule(id){ const m = moduleMeta(id); toast(`Top! Wir geben dir Bescheid, sobald „${m.name}" live ist.`); }
 
 /* ===================== SHARED HELPERS ===================== */
 function eur(n){ return (Number(n)||0).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' €'; }
