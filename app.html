@@ -3548,7 +3548,7 @@ function navButton(item,mode){
   const active = item.id === currentView ? 'on' : '';
   const locked = isLocked(item.id);
   const badge = locked ? `<i data-lucide="sparkles" class="navitem__soon"></i>` : (item.badge ? `<span class="navitem__badge">${item.badge}</span>` : '');
-  const click = locked ? `openComingSoon('${item.id}')` : `setView('${item.id}')`;
+  const click = locked ? `openComingSoon('${item.id}')` : `navTo('${item.id}')`;
   if(mode === 'mobile'){
     return `<button class="${active} ${locked?'locked':''}" onclick="${click}"><i data-lucide="${item.icon}"></i><span>${item.label}</span>${badge}</button>`;
   }
@@ -3566,6 +3566,14 @@ function soonTileHtml(){
         ${locked.map(n => { const m = COMING_SOON[n.id]; return `<button class="soon-chip" onclick="openComingSoon('${n.id}')"><i data-lucide="${m.icon}"></i><span>${m.title}<small>Vorschau ansehen</small></span></button>`; }).join('')}
       </div>
     </div>`;
+}
+// Echte Top-Level-Navigation (Sidebar/Bottom-Nav): verlaesst immer eine offene
+// Detailseite, damit man frisch im Bereich landet (z. B. Mitarbeiterliste statt
+// der zuletzt geoeffneten Personalakte). Gezieltes Oeffnen laeuft ueber openEmployee.
+function navTo(view){
+  if(isLocked(view)){ openComingSoon(view); return; }
+  akteEmpId = null;
+  setView(view);
 }
 function setView(view){
   if(isLocked(view)){ moduleLocked(); return; }
@@ -6335,7 +6343,7 @@ function initCalDrag(){
 }
 
 /* ---- Einzelkalender pro Person ---- */
-function openPersonCal(id){ calPerson = id; urlaubSub = 'kalender'; activeTeamTab = 'urlaub'; closeSheet(); if(currentView !== 'team'){ setView('team'); } else { renderUrlaub(); } }
+function openPersonCal(id){ calPerson = id; urlaubSub = 'kalender'; activeTeamTab = 'urlaub'; akteEmpId = null; closeSheet(); if(currentView !== 'team'){ setView('team'); } else { renderUrlaub(); } }
 function closePersonCal(){ calPerson = null; renderUrlaub(); }
 function personCalHTML(id){
   const e = emp(id); if(!e) return '';
@@ -6578,7 +6586,7 @@ function submitAbsence(){
     if(a){ Object.assign(a, { empId, type, from, to, note }); if(type !== 'krank') a.au = a.au || ''; saveAbsences(); }
     afEditId = null; afAuData = null;
     closeSheet();
-    activeTeamTab = 'urlaub';
+    activeTeamTab = 'urlaub'; akteEmpId = null;
     if(currentView !== 'team'){ setView('team'); } else { renderUrlaub(); refreshUrlaubBadge(); }
     toast('Eintrag aktualisiert');
     return;
@@ -6591,7 +6599,7 @@ function submitAbsence(){
   saveAbsences();
   closeSheet();
   urlaubSub = (status === 'offen') ? 'antraege' : 'kalender';
-  activeTeamTab = 'urlaub';
+  activeTeamTab = 'urlaub'; akteEmpId = null;
   if(currentView !== 'team'){ setView('team'); } else { renderUrlaub(); refreshUrlaubBadge(); }
   toast(status === 'offen' ? `Antrag gesendet: ${typeMeta(type).label}` : `${emp(empId).name}: ${typeMeta(type).label} eingetragen`);
 }
