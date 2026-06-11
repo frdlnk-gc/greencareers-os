@@ -540,6 +540,40 @@
   }
   .quick-grid button:hover{ border-color:#CDE7D4; }
   .quick-grid .lucide{ width:17px; height:17px; color:var(--green-2); flex-shrink:0; }
+  .quick-panel .quick-grid{ margin-top:12px; }
+  .qchip{ position:relative; cursor:pointer; touch-action:none; user-select:none; transition:.12s; }
+  .qchip > .lucide, .qchip > span:not(.qchip__rm){ pointer-events:none; }
+  .qchip__rm{ position:absolute; top:-7px; right:-7px; width:20px; height:20px; border-radius:50%; background:#fff; border:1px solid var(--line); display:none; align-items:center; justify-content:center; color:var(--muted); box-shadow:var(--shadow); pointer-events:auto !important; }
+  .qchip__rm .lucide{ width:12px; height:12px; color:var(--muted); pointer-events:none; }
+  .qchip:hover .qchip__rm{ display:flex; }
+  .qchip__rm:hover{ color:var(--danger); border-color:var(--danger); }
+  .qchip.dragging{ opacity:.5; border-color:var(--green) !important; }
+  .qchip--add{ border-style:dashed !important; color:var(--muted); box-shadow:none !important; justify-content:center; cursor:pointer; }
+  .qchip--add .lucide{ color:var(--muted) !important; }
+  .qchip--add:hover{ border-color:var(--green) !important; color:var(--green-2); }
+  .qchip--add span{ font-weight:600; }
+  .qpick-list{ display:flex; flex-direction:column; gap:6px; }
+  .qpick{ display:flex; align-items:center; gap:11px; padding:11px 12px; border:1px solid var(--line); border-radius:11px; background:#fff; cursor:pointer; text-align:left; transition:.12s; }
+  .qpick:hover{ border-color:var(--green); }
+  .qpick.on{ border-color:var(--green); background:var(--soft-green); }
+  .qpick__ic{ width:34px; height:34px; flex-shrink:0; border-radius:9px; background:var(--soft); display:grid; place-items:center; color:var(--green-2); }
+  .qpick.on .qpick__ic{ background:#fff; }
+  .qpick__ic .lucide{ width:17px; height:17px; }
+  .qpick__lbl{ flex:1; font-size:13.5px; font-weight:600; }
+  .qpick__state{ width:30px; height:30px; flex-shrink:0; border-radius:50%; display:grid; place-items:center; color:var(--muted); }
+  .qpick.on .qpick__state{ background:var(--green); color:#fff; }
+  .qpick__state .lucide{ width:15px; height:15px; }
+  .qsick-list{ display:flex; flex-direction:column; gap:6px; }
+  .qsick{ display:flex; align-items:center; gap:11px; padding:9px 12px; border:1px solid var(--line); border-radius:11px; background:#fff; cursor:pointer; text-align:left; width:100%; }
+  .qsick:hover:not(:disabled){ border-color:var(--danger); }
+  .qsick:disabled{ opacity:.55; cursor:default; }
+  .qsick__av{ width:34px; height:34px; flex-shrink:0; border-radius:50%; background:var(--soft-green); color:var(--green-2); display:grid; place-items:center; font-size:12px; font-weight:700; }
+  .qsick__main{ flex:1; min-width:0; display:flex; flex-direction:column; }
+  .qsick__main b{ font-size:13px; }
+  .qsick__main small{ font-size:11px; color:var(--muted); }
+  .qsick__state{ flex-shrink:0; font-size:11.5px; font-weight:600; color:var(--danger); display:flex; align-items:center; gap:4px; }
+  .qsick.is-sick .qsick__state{ color:var(--green-2); }
+  .qsick__state .lucide{ width:14px; height:14px; }
   .pagehead{
     display:flex;
     align-items:flex-end;
@@ -3648,6 +3682,67 @@ function moduleWrap(html, key='', extra=''){
 let moduleLayout = { main:['kpi','denkmit','wichtig','baustellen'], rail:['wetter','recruiting','quick'] };
 const STATIC_MODULE_KEYS = ['kpi','denkmit','wichtig','baustellen','wetter','recruiting','quick'];
 
+// Schnellzugriff-Shortcuts (frei zusammenstellbar + per Drag&Drop sortierbar)
+const QUICK_CATALOG = {
+  personalakte: {icon:'folder-open',     label:'Personalakte',    run:()=>teamTab('mitarbeiter')},
+  zeit:         {icon:'clock',           label:'Zeiterfassung',   run:()=>teamTab('zeit')},
+  abwesenheiten:{icon:'plane',           label:'Abwesenheiten',   run:()=>teamTab('urlaub')},
+  bewerber:     {icon:'user-plus',       label:'Bewerber',        run:()=>setView('recruiting')},
+  termin:       {icon:'calendar-clock',  label:'Termin anlegen',  run:()=>openEventForm({})},
+  krankmeldung: {icon:'thermometer',     label:'Krankmeldung',    run:()=>openQuickSickPicker()},
+  erinnerung:   {icon:'bell',            label:'Erinnerung',      run:()=>openReminderForm()},
+  wetter:       {icon:'cloud-sun',       label:'16-Tage-Wetter',  run:()=>openWeatherForecast()},
+};
+let quickShortcuts = ['personalakte','zeit','abwesenheiten','bewerber'];
+function runQuick(key){ if(Date.now()<dragClickBlockUntil) return; const c=QUICK_CATALOG[key]; if(c) c.run(); }
+function quickGridHtml(){
+  const chips = quickShortcuts.map(k=>{ const c=QUICK_CATALOG[k]; if(!c) return '';
+    return `<button class="qchip" data-qs="${k}" onclick="runQuick('${k}')">
+      <span class="qchip__rm" onclick="removeQuick(event,'${k}')" title="Entfernen"><i data-lucide="x"></i></span>
+      <i data-lucide="${c.icon}"></i><span>${c.label}</span>
+    </button>`; }).join('');
+  return `<div class="panel quick-panel">
+    <div class="panel__head"><i data-lucide="zap"></i>Schnellzugriff<span class="more" onclick="openQuickPicker()"><i data-lucide="plus" style="width:13px;height:13px;vertical-align:-2px"></i> Anpassen</span></div>
+    <div class="quick-grid" id="quickGrid">${chips}<button class="qchip qchip--add" onclick="openQuickPicker()"><i data-lucide="plus"></i><span>Hinzufügen</span></button></div>
+  </div>`;
+}
+function removeQuick(ev, key){ ev.stopPropagation(); quickShortcuts = quickShortcuts.filter(k=>k!==key); if(currentView==='heute') setView('heute'); toast('Shortcut entfernt'); }
+function toggleQuick(key){ if(quickShortcuts.includes(key)) quickShortcuts=quickShortcuts.filter(k=>k!==key); else quickShortcuts.push(key); if(currentView==='heute') setView('heute'); openQuickPicker(); }
+function openQuickPicker(){
+  const rows = Object.keys(QUICK_CATALOG).map(k=>{ const c=QUICK_CATALOG[k]; const on=quickShortcuts.includes(k);
+    return `<button class="qpick${on?' on':''}" onclick="toggleQuick('${k}')">
+      <span class="qpick__ic"><i data-lucide="${c.icon}"></i></span>
+      <span class="qpick__lbl">${c.label}</span>
+      <span class="qpick__state"><i data-lucide="${on?'check':'plus'}"></i></span>
+    </button>`; }).join('');
+  openSheet(`
+    <div class="sheet__head">
+      <span class="avatar" style="width:46px;height:46px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="zap" style="width:20px;height:20px"></i></span>
+      <div><div class="sheet__title">Schnellzugriff anpassen</div><div class="sheet__sub">Auf „Heute" per Drag &amp; Drop sortierbar</div></div>
+      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+    </div>
+    <div class="sheet__body">
+      <div class="qpick-list">${rows}</div>
+      <div class="sheet-actions"><button class="btn" style="flex:1" onclick="closeSheet()"><i data-lucide="check"></i> Fertig</button></div>
+    </div>`);
+}
+function openQuickSickPicker(){
+  if(!can('editEmployees') && !can('approveAbsence')){ toast('Keine Berechtigung'); return; }
+  const rows = employees.map(e=>{ const sick = absences.find(x=>x.empId===e.id && x.type==='krank' && x.status==='genehmigt' && covers(x,TODAY));
+    return `<button class="qsick${sick?' is-sick':''}" ${sick?'disabled':`onclick="quickSick(${e.id}); closeSheet();"`}>
+      <span class="qsick__av">${initials(e.name)}</span>
+      <span class="qsick__main"><b>${escapeHtml(e.name)}</b><small>${escapeHtml(e.role||'')}</small></span>
+      <span class="qsick__state">${sick?'<i data-lucide=\"check\"></i> krank':'<i data-lucide=\"thermometer\"></i> krankmelden'}</span>
+    </button>`; }).join('');
+  openSheet(`
+    <div class="sheet__head">
+      <span class="avatar" style="width:46px;height:46px;background:linear-gradient(135deg,#C24141,#9B2C2C)"><i data-lucide="thermometer" style="width:20px;height:20px"></i></span>
+      <div><div class="sheet__title">Schnellkrankmeldung</div><div class="sheet__sub">Ein Tipp – Mitarbeiter ist heute krank</div></div>
+      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+    </div>
+    <div class="sheet__body"><div class="qsick-list">${rows}</div></div>`);
+}
+
 /* ===================== „Denk mit"-Feed (Vorlaufmeldungen) ===================== */
 // Fuhrpark-Dummy für TÜV/HU-Erinnerungen
 const VEHICLES = [
@@ -4019,12 +4114,7 @@ function staticModuleHtml(key){
           <div class="recruiting-panel__grid"><div class="recruiting-panel__metric"><b>7</b><span>Bewerber / Monat</span></div><div class="recruiting-panel__metric"><b>2</b><span>qualifiziert</span></div></div>
           <button class="btn full" style="margin-top:13px;box-shadow:none" onclick="setView('recruiting')">Bewerber ansehen</button>
         </div>`;
-    case 'quick': return `<div class="quick-grid">
-          <button onclick="teamTab('mitarbeiter')"><i data-lucide="folder-open"></i>Personalakte</button>
-          <button onclick="teamTab('zeit')"><i data-lucide="clock"></i>Zeiterfassung</button>
-          <button onclick="teamTab('urlaub')"><i data-lucide="plane"></i>Abwesenheiten</button>
-          <button onclick="setView('recruiting')"><i data-lucide="user-plus"></i>Bewerber</button>
-        </div>`;
+    case 'quick': return quickGridHtml();
     default: return null;
   }
 }
@@ -6786,6 +6876,40 @@ function wireModules(){
     });
   });
   wireModulePointerDrag();
+  wireQuickShortcuts();
+}
+
+// Schnellzugriff-Chips per Pointer-Drag sortieren (Desktop + Mobile)
+function wireQuickShortcuts(){
+  const grid = document.getElementById('quickGrid'); if(!grid) return;
+  grid.querySelectorAll('.qchip[data-qs]').forEach(chip => {
+    chip.addEventListener('pointerdown', event => {
+      if(event.button !== 0) return;
+      if(event.target.closest('.qchip__rm')) return;
+      const start = {x:event.clientX, y:event.clientY}; let moved = false;
+      const onMove = moveEvent => {
+        if(!moved && Math.abs(moveEvent.clientX-start.x)+Math.abs(moveEvent.clientY-start.y) > 8){ moved = true; chip.classList.add('dragging'); }
+      };
+      const onUp = upEvent => {
+        document.removeEventListener('pointermove', onMove);
+        document.removeEventListener('pointerup', onUp);
+        chip.classList.remove('dragging');
+        if(!moved) return;
+        dragClickBlockUntil = Date.now() + 250;
+        const target = document.elementFromPoint(upEvent.clientX, upEvent.clientY);
+        const overChip = target && target.closest('.qchip[data-qs]');
+        if(overChip && overChip !== chip){
+          const rect = overChip.getBoundingClientRect();
+          const after = (upEvent.clientX > rect.left + rect.width/2) || (upEvent.clientY > rect.bottom);
+          grid.insertBefore(chip, after ? overChip.nextSibling : overChip);
+          quickShortcuts = [...grid.querySelectorAll('.qchip[data-qs]')].map(c => c.dataset.qs);
+          toast('Schnellzugriff angepasst');
+        }
+      };
+      document.addEventListener('pointermove', onMove);
+      document.addEventListener('pointerup', onUp);
+    });
+  });
 }
 
 function wireKanban(){
