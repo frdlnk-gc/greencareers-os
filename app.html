@@ -1103,6 +1103,18 @@
   .cert-sug{ font-size:12px; font-weight:600; color:var(--muted-2); background:#fff; border:1px solid var(--line); border-radius:99px; padding:6px 11px; cursor:pointer; transition:all .14s ease; }
   .cert-sug:hover{ border-color:var(--green); color:var(--green-2); background:var(--soft-green); }
   @media(max-width:640px){ .fs-grid{ grid-template-columns:1fr; } }
+  .akte-ca{ display:flex; gap:8px; margin-top:12px; }
+  .akte-ca__btn{ flex:1; display:inline-flex; align-items:center; justify-content:center; gap:7px; height:40px; border-radius:10px; font-size:13px; font-weight:700; text-decoration:none; cursor:pointer; transition:all .14s ease; }
+  .akte-ca__btn .lucide{ width:16px; height:16px; }
+  .akte-ca__btn.wa{ background:#25D366; color:#fff; border:1px solid #1FBB59; }
+  .akte-ca__btn.wa:hover{ background:#1FBB59; }
+  .akte-ca__btn.call{ background:#fff; color:var(--ink); border:1px solid var(--line); }
+  .akte-ca__btn.call:hover{ border-color:var(--green); color:var(--green-2); background:var(--soft-green); }
+  .akte-ca--empty{ font-size:12.5px; color:var(--muted); align-items:center; }
+  .akte-ca--empty .lucide{ width:14px; height:14px; margin-right:5px; vertical-align:-2px; }
+  .mini-btn.sick{ color:var(--danger); border-color:#F0D2D2; }
+  .mini-btn.sick:hover{ background:#FBEDED; border-color:var(--danger); }
+  .mini-btn.is-sick{ color:var(--danger); background:#FBEDED; border-color:#F0D2D2; cursor:default; }
   .akte-cert{ display:flex; align-items:center; gap:10px; padding:10px 12px; border:1px solid var(--line); border-radius:10px; background:#fff; margin-bottom:7px; }
   .akte-cert__ic{ width:30px; height:30px; flex-shrink:0; border-radius:8px; background:var(--soft); display:grid; place-items:center; color:var(--green); }
   .akte-cert__ic .lucide{ width:15px; height:15px; }
@@ -5975,6 +5987,19 @@ function openAbsenceForm(preEmp, preFrom, preTo, preType, preNote, editId){
   if(ty === 'krank'){ const f = document.getElementById('afAuField'); if(f) f.style.display = ''; }
   absencePreview();
 }
+// Schnellkrankmeldung: 1-Tap „heute krank" ohne Formular (für Morgens-krank-Anrufe)
+function quickSick(id){
+  const e = emp(id); if(!e) return;
+  if(!can('editEmployees') && !can('approveAbsence')){ toast('Keine Berechtigung'); return; }
+  const already = absences.find(x => x.empId === id && x.type === 'krank' && x.status === 'genehmigt' && covers(x, TODAY));
+  if(already){ toast(e.name.split(' ')[0] + ' ist heute bereits krankgemeldet'); return; }
+  const newId = absSeq++;
+  absences.push({ id:newId, empId:id, type:'krank', from:TODAY, to:TODAY, note:'Schnellkrankmeldung', status:'genehmigt', au:'' });
+  saveAbsences();
+  if(akteEmpId === id) renderAkte();
+  refreshUrlaubBadge();
+  toast(e.name.split(' ')[0] + ' für heute krankgemeldet');
+}
 function afType(btn){ btn.parentNode.querySelectorAll('.segb').forEach(b => b.classList.remove('on')); btn.classList.add('on'); document.getElementById('afTypeVal').value = btn.dataset.t; const au = document.getElementById('afAuField'); if(au) au.style.display = btn.dataset.t === 'krank' ? '' : 'none'; absencePreview(); }
 function afAuPick(input){
   const f = input.files && input.files[0]; if(!f) return;
@@ -7829,6 +7854,9 @@ function renderAkte(){
     <div class="akte-topbar">
       <button class="akte-back" onclick="closeAkte()"><i data-lucide="arrow-left"></i> Alle Mitarbeiter</button>
       <div class="akte-topbar__sp"></div>
+      ${priv ? (st[0]==='Krank'
+        ? `<span class="mini-btn is-sick"><i data-lucide="thermometer"></i> Heute krankgemeldet</span>`
+        : `<button class="mini-btn sick" onclick="quickSick(${e.id})"><i data-lucide="thermometer"></i> Heute krankmelden</button>`) : ''}
       <button class="mini-btn" onclick="closeAkte();teamTab('urlaub');openAbsenceForm(${e.id})"><i data-lucide="plane"></i> Abwesenheit erfassen</button>
       ${priv ? `<button class="mini-btn primary" onclick="openEmployeeForm(${e.id})"><i data-lucide="user-cog"></i> Zugang & Rolle</button>` : ''}
     </div>
@@ -7883,12 +7911,22 @@ function akteRow(label,raw,section){
   const call = section==='fuehrerschein' ? 'editFuehrerschein()' : `editAkteSection('${section}')`;
   return `<div class="dw-quiz__row"><span class="dw-quiz__k">${label}</span><span class="dw-quiz__v"><button class="akte-add-link" onclick="${call}">+ ergänzen</button></span></div>`;
 }
+function akteContactActions(e,hr){
+  const phone = hr.pphone || e.phone || '';
+  if(!akteFilled(phone)) return `<div class="akte-ca akte-ca--empty"><i data-lucide="phone-off"></i> Keine Nummer hinterlegt — <button class="akte-add-link" onclick="editAkteSection('kontakt')">ergänzen</button></div>`;
+  const wa = waNumber(phone);
+  const tel = String(phone).replace(/[^0-9+]/g,'');
+  return `<div class="akte-ca">
+    <a class="akte-ca__btn wa" href="https://wa.me/${wa}" target="_blank" rel="noopener"><i data-lucide="message-circle"></i> WhatsApp</a>
+    <a class="akte-ca__btn call" href="tel:${tel}"><i data-lucide="phone-call"></i> Anrufen</a>
+  </div>`;
+}
 function akteKontaktCard(e,hr){
   const body = `<div class="dw-quiz">
     ${akteRow('Telefon (dienstlich)', akteFilled(e.phone)?escapeHtml(e.phone):'', 'kontakt')}
     ${akteRow('Telefon (privat)', akteFilled(hr.pphone)?escapeHtml(hr.pphone):'', 'kontakt')}
     ${akteRow('E-Mail', akteFilled(e.email)?escapeHtml(e.email):'', 'kontakt')}
-  </div>`;
+  </div>${akteContactActions(e,hr)}`;
   return akteCard({title:'Kontakt', icon:'phone', section:'kontakt', body, priv:true});
 }
 function aktePersonCard(e,hr){
