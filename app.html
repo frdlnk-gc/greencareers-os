@@ -22,6 +22,9 @@
     --muted-2:#8A978D;
     --line:#E2E8E1;
     --line-2:#D4DDD3;
+    --soft:#F2F5F2;
+    --soft-green:#E6F4EC;
+    --danger:#C24141;
     --card:#FFFFFF;
     --canvas:#F6F9F5;
     --canvas-2:#EDF4ED;
@@ -1101,6 +1104,70 @@
   .akte-docadd .lucide{ width:16px; height:16px; }
   .akte-sensitive{ font-size:10.5px; color:var(--muted); display:inline-flex; align-items:center; gap:4px; }
   .akte-sensitive .lucide{ width:11px; height:11px; }
+
+  /* ===== Personalakte als Vollseite ===== */
+  .akte-topbar{ display:flex; align-items:center; gap:12px; margin-bottom:16px; flex-wrap:wrap; }
+  .akte-back{ display:inline-flex; align-items:center; gap:6px; padding:8px 13px; border:1px solid var(--line); border-radius:9px; background:#fff; font-size:13px; font-weight:600; color:var(--ink); cursor:pointer; transition:all .15s; }
+  .akte-back:hover{ background:var(--soft); border-color:var(--line-2); }
+  .akte-back .lucide{ width:15px; height:15px; }
+  .akte-topbar__sp{ flex:1; }
+  .akte-page{ display:grid; grid-template-columns:268px 1fr; gap:20px; align-items:start; }
+  .akte-side{ position:sticky; top:14px; display:flex; flex-direction:column; gap:14px; }
+  .akte-idcard{ background:var(--card); border:1px solid var(--line); border-radius:16px; padding:20px 18px; text-align:center; }
+  .akte-idcard .akte-photo{ display:inline-block; }
+  .akte-idcard .akte-photo img{ width:74px; height:74px; }
+  .akte-idcard__av{ width:74px; height:74px; border-radius:50%; display:inline-grid; place-items:center; font-size:25px; font-weight:800; color:#fff; background:linear-gradient(135deg,var(--green),var(--green-2)); position:relative; }
+  .akte-idcard__name{ font-size:17px; font-weight:800; margin-top:11px; line-height:1.25; }
+  .akte-idcard__role{ font-size:12.5px; color:var(--muted); margin-top:2px; }
+  .akte-idcard__pills{ display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin-top:11px; }
+  .akte-prog{ margin-top:15px; padding-top:14px; border-top:1px solid var(--line); }
+  .akte-prog__top{ display:flex; justify-content:space-between; font-size:11.5px; font-weight:700; color:var(--ink-2); margin-bottom:6px; }
+  .akte-prog__pct{ color:var(--green-2); }
+  .akte-prog__bar{ height:7px; border-radius:99px; background:var(--soft); overflow:hidden; }
+  .akte-prog__fill{ height:100%; border-radius:99px; background:linear-gradient(90deg,var(--green),var(--green-2)); transition:width .3s; }
+  .akte-prog__hint{ font-size:11px; color:var(--muted); margin-top:7px; line-height:1.4; }
+  .akte-tabs{ background:var(--card); border:1px solid var(--line); border-radius:16px; padding:7px; display:flex; flex-direction:column; gap:2px; }
+  .akte-tab{ display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:10px; font-size:13.5px; font-weight:600; color:var(--ink-2); cursor:pointer; border:none; background:none; text-align:left; width:100%; transition:all .14s; }
+  .akte-tab .lucide{ width:17px; height:17px; color:var(--muted); flex-shrink:0; }
+  .akte-tab:hover{ background:var(--soft); }
+  .akte-tab.on{ background:var(--soft-green); color:var(--green-2); }
+  .akte-tab.on .lucide{ color:var(--green-2); }
+  .akte-tab__c{ margin-left:auto; font-size:11px; font-weight:700; color:var(--muted); background:var(--soft); padding:1px 7px; border-radius:99px; }
+  .akte-tab.on .akte-tab__c{ background:#CFE9D8; color:var(--green-2); }
+  .akte-main{ min-width:0; display:flex; flex-direction:column; gap:16px; }
+  .akte-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .akte-card{ background:var(--card); border:1px solid var(--line); border-radius:14px; overflow:hidden; }
+  .akte-card__h{ display:flex; align-items:center; gap:9px; padding:13px 16px; border-bottom:1px solid var(--line); }
+  .akte-card__h .lucide{ width:16px; height:16px; color:var(--green-2); }
+  .akte-card__t{ font-size:14px; font-weight:700; flex:1; }
+  .akte-card__b{ padding:14px 16px; }
+  .akte-edit{ display:inline-flex; align-items:center; gap:5px; padding:5px 11px; border:1px solid var(--line); border-radius:8px; background:#fff; font-size:12px; font-weight:600; color:var(--ink-2); cursor:pointer; transition:all .15s; }
+  .akte-edit:hover{ border-color:var(--green); color:var(--green-2); background:var(--soft-green); }
+  .akte-edit .lucide{ width:13px; height:13px; color:inherit; }
+  .akte-add-link{ border:none; background:none; padding:0; color:var(--green-2); font-size:13px; font-weight:600; cursor:pointer; }
+  .akte-add-link:hover{ text-decoration:underline; }
+  .akte-banner{ display:flex; align-items:center; gap:13px; padding:14px 16px; border-radius:13px; background:var(--soft-green); border:1px solid #CFE9D8; }
+  .akte-banner__ic{ width:38px; height:38px; flex-shrink:0; border-radius:10px; background:#fff; display:grid; place-items:center; color:var(--green-2); }
+  .akte-banner__ic .lucide{ width:19px; height:19px; }
+  .akte-banner__t{ font-size:13.5px; font-weight:700; color:var(--green-2); }
+  .akte-banner__s{ font-size:12px; color:var(--ink-2); margin-top:1px; }
+  .akte-doclist{ display:flex; flex-direction:column; gap:7px; }
+  .cv-card__dl{ width:30px; height:30px; flex-shrink:0; border-radius:8px; border:1px solid var(--line); background:#fff; display:grid; place-items:center; color:var(--muted); cursor:pointer; }
+  .cv-card__dl:hover{ color:var(--danger); border-color:var(--danger); }
+  .cv-card__dl .lucide{ width:14px; height:14px; }
+  .akte-cert__del{ width:28px; height:28px; flex-shrink:0; border:none; background:none; display:grid; place-items:center; color:var(--muted); cursor:pointer; border-radius:7px; }
+  .akte-cert__del:hover{ color:var(--danger); background:#FEE4E2; }
+  .akte-cert__del .lucide{ width:14px; height:14px; }
+  .fieldgrid{ display:grid; grid-template-columns:1fr 1fr; gap:11px 13px; }
+  .field--wide{ grid-column:1 / -1; }
+  @media(max-width:860px){
+    .akte-page{ grid-template-columns:1fr; }
+    .akte-side{ position:static; }
+    .akte-tabs{ flex-direction:row; overflow-x:auto; }
+    .akte-tab__c{ display:none; }
+    .akte-grid{ grid-template-columns:1fr; }
+    .fieldgrid{ grid-template-columns:1fr; }
+  }
 
   /* Compose (Anschreiben) */
   .compose-channels{ display:flex; gap:8px; margin-bottom:14px; }
@@ -2859,6 +2926,8 @@ function accountMeta(a){ return {active:['Aktiv','g','check-circle-2'], invited:
 
 let currentView = 'heute';
 let activeTeamTab = 'zeit';
+let akteEmpId = null;        // geoeffnete Personalakte (Vollseite) – null = Liste
+let akteTab = 'uebersicht';  // aktiver Tab innerhalb der Akte
 let activeCustomerTab = 'anfragen';
 let activeFinTab = 'uebersicht';
 let activeMarktTab = 'feed';
@@ -3611,7 +3680,8 @@ function teamTab(tab){
   const allowed = teamTabList().map(t => t.id);
   if(!allowed.includes(tab)) tab = allowed[0];
   activeTeamTab = tab;
-  if(currentView !== 'team'){
+  akteEmpId = null;   // Tab-Wechsel verlaesst eine ggf. offene Personalakte
+  if(currentView !== 'team' || !document.getElementById('teamTabs')){
     setView('team');
     return;
   }
@@ -3623,9 +3693,9 @@ function teamTab(tab){
 
 const TEAM = {
   mitarbeiter: () => `
-    ${can('editEmployees') ? `<div class="listbar"><span class="listbar__c">${employees.length} Mitarbeiter</span><button class="mini-btn primary" onclick="openEmployeeForm()"><i data-lucide="user-plus"></i> Mitarbeiter anlegen</button></div>` : ''}
-    <div class="panel table-wrap"><table><thead><tr><th>Name</th><th>Funktion</th><th>Kolonne</th><th>Telefon</th><th>Status</th><th>Zugang</th><th>Resturlaub</th></tr></thead><tbody>
-    ${employees.map(e => { const s = empStatus(e.id); const v = vacInfo(e.id); const am = accountMeta(e.account); return `<tr class="clickable" onclick="openEmployee(${e.id})"><td><span class="person-cell"><span class="avatar">${initials(e.name)}</span>${e.name}</span></td><td>${e.role}</td><td><span class="crewtag"><span class="crewtag__dot" style="background:${e.crewId?crewColor(e.crewId):'#9AA8A0'}"></span>${crewOf(e)}</span></td><td>${e.phone}</td><td><span class="pill ${s[1]}">${s[0]}</span></td><td><span class="pill ${am[1]}"><i data-lucide="${am[2]}" style="width:11px;height:11px;vertical-align:-1px"></i> ${am[0]}</span></td><td><b>${v.rest}</b> <span style="color:var(--muted)">/ ${e.annual}</span></td></tr>`; }).join('')}
+    <div class="listbar"><span class="listbar__c">${employees.length} Mitarbeiter · <span style="color:var(--muted);font-weight:500">Klick auf eine Zeile öffnet die Personalakte</span></span>${can('editEmployees') ? `<button class="mini-btn primary" onclick="openEmployeeForm()"><i data-lucide="user-plus"></i> Mitarbeiter anlegen</button>` : ''}</div>
+    <div class="panel table-wrap"><table><thead><tr><th>Name</th><th>Funktion</th><th>Kolonne</th><th>Telefon</th><th>Status</th><th>Zugang</th><th>Resturlaub</th><th></th></tr></thead><tbody>
+    ${employees.map(e => { const s = empStatus(e.id); const v = vacInfo(e.id); const am = accountMeta(e.account); return `<tr class="clickable" onclick="openEmployee(${e.id})"><td><span class="person-cell"><span class="avatar">${initials(e.name)}</span>${e.name}</span></td><td>${e.role}</td><td><span class="crewtag"><span class="crewtag__dot" style="background:${e.crewId?crewColor(e.crewId):'#9AA8A0'}"></span>${crewOf(e)}</span></td><td>${e.phone}</td><td><span class="pill ${s[1]}">${s[0]}</span></td><td><span class="pill ${am[1]}"><i data-lucide="${am[2]}" style="width:11px;height:11px;vertical-align:-1px"></i> ${am[0]}</span></td><td><b>${v.rest}</b> <span style="color:var(--muted)">/ ${e.annual}</span></td><td style="text-align:right"><i data-lucide="chevron-right" style="width:16px;height:16px;color:var(--muted-2);vertical-align:-3px"></i></td></tr>`; }).join('')}
   </tbody></table></div>`,
   kolonnen: () => kolonnenView(),
   urlaub: () => urlaubView(),
@@ -6184,7 +6254,7 @@ function submitCustomer(){
 function afterRender(view){
   if(view === 'heute') wireModules();
   if(view === 'recruiting') wireKanban();
-  if(view === 'team') teamTab(activeTeamTab);
+  if(view === 'team'){ if(akteEmpId){ renderAkte(); } else { teamTab(activeTeamTab); } }
   if(view === 'planung') planTab(activePlanTab);
   if(view === 'kunden') customerTab(activeCustomerTab);
   if(view === 'finanzen') finTab(activeFinTab);
@@ -7606,114 +7676,377 @@ function akteCopyRow(label,val,icon){
   return `<div class="copy-row"><div class="copy-row__ic"><i data-lucide="${icon}"></i></div><div class="copy-row__main"><div class="copy-row__label">${label}</div><div class="copy-row__val">${escapeHtml(val)}</div></div><button class="copy-btn" onclick="copyVal('${esc}','${label} kopiert',event)"><i data-lucide="copy"></i></button></div>`;
 }
 function docIcon(type){ return type==='Vertrag'?'file-signature':(type==='Führerschein'?'id-card':'file-text'); }
+/* ---- Personalakte als Vollseite mit Tab-Navigation (Referenz: Absence.io) ---- */
+const AKTE_TABS = [
+  {id:'uebersicht',    label:'Übersicht',                   icon:'layout-dashboard'},
+  {id:'stammdaten',    label:'Stammdaten',                  icon:'user'},
+  {id:'vertrag',       label:'Vertrag & Lohn',              icon:'briefcase'},
+  {id:'qualifikation', label:'Führerschein & Qualifikation',icon:'car'},
+  {id:'dokumente',     label:'Dokumente',                   icon:'folder'},
+  {id:'abwesenheit',   label:'Abwesenheit',                 icon:'plane'},
+  {id:'notizen',       label:'Notizen',                     icon:'sticky-note'},
+];
+const AKTE_CONTRACTS = ['Unbefristet','Befristet','Ausbildung (1. Lehrjahr)','Ausbildung (2. Lehrjahr)','Ausbildung (3. Lehrjahr)','Minijob (520 €)','Werkstudent','Saison-/Aushilfskraft'];
+// Sektions-Konfiguration: bestimmt, welche Felder ein Bearbeiten-Formular zeigt.
+const AKTE_SECTIONS = {
+  kontakt:{ title:'Kontakt', icon:'phone', fields:[
+    {path:'e.phone',  label:'Telefon (dienstlich)', type:'tel'},
+    {path:'hr.pphone',label:'Telefon (privat)',     type:'tel'},
+    {path:'e.email',  label:'E-Mail',               type:'email', wide:true},
+  ]},
+  person:{ title:'Persönliche Daten', icon:'user', fields:[
+    {path:'hr.bd',  label:'Geburtsdatum',            type:'date'},
+    {path:'hr.addr',label:'Adresse',                 type:'text', wide:true},
+    {path:'hr.nk.n',label:'Notfallkontakt – Name',   type:'text'},
+    {path:'hr.nk.r',label:'Beziehung',               type:'text'},
+    {path:'hr.nk.p',label:'Notfallkontakt – Telefon',type:'tel'},
+  ]},
+  beschaeftigung:{ title:'Beschäftigung', icon:'briefcase', fields:[
+    {path:'e.role',     label:'Funktion',           type:'text', req:true},
+    {path:'e.since',    label:'Im Betrieb seit (Jahr)', type:'text'},
+    {path:'hr.contract',label:'Vertragsart',        type:'select', opts:AKTE_CONTRACTS},
+    {path:'hr.hours',   label:'Wochenstunden',       type:'number'},
+    {path:'hr.probe',   label:'Probezeit bis',       type:'date'},
+    {path:'e.annual',   label:'Urlaubstage / Jahr',  type:'number'},
+  ]},
+  verguetung:{ title:'Vergütung', icon:'banknote', gated:true, fields:[
+    {path:'hr.salary', label:'Monatsvergütung', type:'text', wide:true},
+  ]},
+  bank:{ title:'Sozialversicherung & Steuer', icon:'shield', gated:true, fields:[
+    {path:'hr.kk',   label:'Krankenkasse', type:'text'},
+    {path:'hr.sv',   label:'SV-Nummer',    type:'text'},
+    {path:'hr.taxId',label:'Steuer-ID',    type:'text'},
+    {path:'hr.iban', label:'IBAN (Lohn)',  type:'text', wide:true},
+  ]},
+  fuehrerschein:{ title:'Führerschein', icon:'car', fields:[
+    {path:'hr.fs', label:'Führerscheinklassen', type:'text', joinArr:true, wide:true, hint:'Komma-getrennt, z. B. B, BE, C1, T'},
+  ]},
+  psa:{ title:'Arbeitskleidung (PSA)', icon:'shirt', fields:[
+    {path:'hr.psa.s', label:'Oberteil-Größe',  type:'text'},
+    {path:'hr.psa.h', label:'Hosengröße',      type:'text'},
+    {path:'hr.psa.f', label:'Schuhgröße',      type:'text'},
+  ]},
+};
+// Pfad-Helfer: liest/schreibt verschachtelte Felder ("e.role", "hr.nk.n", "hr.psa.s")
+function akteGetVal(e,hr,path){
+  const parts = path.split('.');
+  let o = parts[0]==='hr' ? hr : e;
+  for(let i=1;i<parts.length-1;i++){ if(o[parts[i]]==null) return undefined; o = o[parts[i]]; }
+  return o[parts[parts.length-1]];
+}
+function akteSetVal(e,hr,path,val){
+  const parts = path.split('.');
+  let o = parts[0]==='hr' ? hr : e;
+  for(let i=1;i<parts.length-1;i++){ if(o[parts[i]]==null) o[parts[i]]={}; o = o[parts[i]]; }
+  o[parts[parts.length-1]] = val;
+}
+function akteFilled(v){
+  if(Array.isArray(v)) return v.length>0;
+  if(v==null) return false;
+  const s = String(v).trim();
+  return s!=='' && s!=='—';
+}
+function akteCompleteness(e,hr){
+  const nk = hr.nk||{};
+  const checks = [ e.phone, e.email, hr.bd, hr.addr, hr.pphone, nk.n,
+    hr.contract, hr.hours, hr.salary, hr.kk, hr.sv, hr.taxId, hr.iban,
+    hr.fs, hr.certs, hr.photo ];
+  const t = checks.length;
+  const f = checks.filter(akteFilled).length;
+  return {f, t, pct: Math.round(f/t*100)};
+}
+function akteTabCount(tab,e,hr){
+  let n = 0;
+  if(tab==='dokumente') n = hr.docs?hr.docs.length:0;
+  else if(tab==='notizen') n = hr.notes?hr.notes.length:0;
+  else if(tab==='qualifikation') n = hr.certs?hr.certs.length:0;
+  else return '';
+  return n ? `<span class="akte-tab__c">${n}</span>` : '';
+}
+
 function openEmployee(id){
   const e = employees.find(item => item.id === id);
   if(!e) return;
+  akteEmpId = id;
+  akteTab = 'uebersicht';
+  if(currentView !== 'team'){ setView('team'); } else { renderAkte(); }
+}
+function akteSetTab(tab){ akteTab = tab; renderAkte(); }
+function closeAkte(){ akteEmpId = null; teamTab('mitarbeiter'); }
+
+function renderAkte(){
+  const e = emp(akteEmpId);
+  if(!e){ akteEmpId = null; teamTab('mitarbeiter'); return; }
+  const v = document.getElementById('view');
+  if(!v) return;
   const hr = hrData(e);
-  const priv = can('editEmployees');   // Gehalt/IBAN/Steuer/SV nur für Inhaber & Personalverwaltung
-  const vac = vacInfo(e.id);
-  const te = empEntryToday(e.id); const s = te && site(te.siteId);
+  const priv = can('editEmployees');
+  const comp = akteCompleteness(e,hr);
   const am = accountMeta(e.account);
+  const st = empStatus(e.id);
+  const offen = comp.t - comp.f;
   const photo = hr.photo
-    ? `<span class="avatar akte-photo" style="width:50px;height:50px"><img src="${hr.photo}" alt=""><span class="akte-photo__cam" onclick="event.stopPropagation();setEmpPhoto(${e.id})"><i data-lucide="camera"></i></span></span>`
-    : `<span class="avatar akte-photo" style="width:50px;height:50px;font-size:17px">${initials(e.name)}<span class="akte-photo__cam" onclick="event.stopPropagation();setEmpPhoto(${e.id})"><i data-lucide="camera"></i></span></span>`;
-  const certHtml = hr.certs.map(c => { const st = certStatus(c.exp); return `<div class="akte-cert"><div class="akte-cert__ic"><i data-lucide="award"></i></div><div class="akte-cert__main"><div class="akte-cert__name">${escapeHtml(c.n)}</div><div class="akte-cert__exp">${c.exp?('gültig bis '+deDate(c.exp)):'unbefristet'}</div></div><span class="akte-badge ${st[0]}">${st[1]}</span></div>`; }).join('');
-  const docHtml = hr.docs.map((d,i) => `<div class="cv-card" onclick="toast('Demo · Dokument öffnen')"><div class="cv-card__ic"><i data-lucide="${docIcon(d.type)}"></i></div><div class="cv-card__main"><div class="cv-card__title">${escapeHtml(d.name)}</div><div class="cv-card__meta">${d.type} · ${deDate(d.date)}</div></div><i data-lucide="download" style="width:16px;height:16px;color:var(--muted)"></i></div>`).join('');
-  const noteHtml = hr.notes.length
-    ? hr.notes.map(n => `<div class="akte-note"><div class="akte-note__meta"><b>${escapeHtml(n.author)}</b> · ${deDate(n.date)}</div><div class="akte-note__txt">${escapeHtml(n.text)}</div></div>`).join('')
-    : `<p class="compose-hint" style="margin:0 0 8px">Noch keine Notizen.</p>`;
+    ? `<span class="avatar akte-photo" style="width:74px;height:74px"><img src="${hr.photo}" alt=""><span class="akte-photo__cam" onclick="event.stopPropagation();setEmpPhoto(${e.id})"><i data-lucide="camera"></i></span></span>`
+    : `<span class="akte-idcard__av">${initials(e.name)}<span class="akte-photo__cam" onclick="event.stopPropagation();setEmpPhoto(${e.id})"><i data-lucide="camera"></i></span></span>`;
+  v.innerHTML = `
+    <div class="akte-topbar">
+      <button class="akte-back" onclick="closeAkte()"><i data-lucide="arrow-left"></i> Alle Mitarbeiter</button>
+      <div class="akte-topbar__sp"></div>
+      <button class="mini-btn" onclick="closeAkte();teamTab('urlaub');openAbsenceForm(${e.id})"><i data-lucide="plane"></i> Abwesenheit erfassen</button>
+      ${priv ? `<button class="mini-btn primary" onclick="openEmployeeForm(${e.id})"><i data-lucide="user-cog"></i> Zugang & Rolle</button>` : ''}
+    </div>
+    <div class="akte-page">
+      <aside class="akte-side">
+        <div class="akte-idcard">
+          ${photo}
+          <div class="akte-idcard__name">${escapeHtml(e.name)}</div>
+          <div class="akte-idcard__role">${escapeHtml(e.role)} · ${crewOf(e)}</div>
+          <div class="akte-idcard__pills">
+            <span class="pill ${st[1]}">${st[0]}</span>
+            <span class="pill ${am[1]}"><i data-lucide="${am[2]}" style="width:11px;height:11px;vertical-align:-1px"></i> ${am[0]}</span>
+          </div>
+          <div class="akte-prog">
+            <div class="akte-prog__top"><span>Profil ausgefüllt</span><span class="akte-prog__pct">${comp.pct}%</span></div>
+            <div class="akte-prog__bar"><div class="akte-prog__fill" style="width:${comp.pct}%"></div></div>
+            <div class="akte-prog__hint">${offen>0 ? offen+' Angaben fehlen noch' : 'Akte vollständig'}</div>
+          </div>
+        </div>
+        <nav class="akte-tabs">
+          ${AKTE_TABS.map(t => `<button class="akte-tab ${akteTab===t.id?'on':''}" onclick="akteSetTab('${t.id}')"><i data-lucide="${t.icon}"></i> ${t.label}${akteTabCount(t.id,e,hr)}</button>`).join('')}
+        </nav>
+      </aside>
+      <div class="akte-main" id="akteMain">${akteTabContent(e,hr,priv)}</div>
+    </div>`;
+  v.scrollTop = 0;
+  icons();
+}
+function akteTabContent(e,hr,priv){
+  switch(akteTab){
+    case 'stammdaten':    return akteKontaktCard(e,hr) + aktePersonCard(e,hr);
+    case 'vertrag':       return akteBeschaeftigungCard(e,hr) + (priv ? akteVerguetungCard(e,hr)+akteBankCard(e,hr) : akteGatedNote());
+    case 'qualifikation': return akteFuehrerscheinCard(e,hr) + akteCertCard(e,hr,priv) + aktePsaCard(e,hr);
+    case 'dokumente':     return akteDocCard(e,hr,priv);
+    case 'abwesenheit':   return akteAbsenceCard(e,hr);
+    case 'notizen':       return akteNotesCard(e,hr,priv);
+    default:              return akteOverview(e,hr,priv);
+  }
+}
+// Karten-Gerüst mit „Bearbeiten"-Button (entfällt bei gesperrten Sektionen ohne Recht)
+function akteCard(opts){
+  const showEdit = opts.editable!==false && opts.section && !(opts.gated && !opts.priv);
+  return `<div class="akte-card">
+    <div class="akte-card__h"><i data-lucide="${opts.icon}"></i><span class="akte-card__t">${opts.title}</span>${opts.gated?'<span class="akte-sensitive"><i data-lucide="lock"></i> nur Personalverwaltung</span>':''}${showEdit?`<button class="akte-edit" onclick="editAkteSection('${opts.section}')"><i data-lucide="pencil"></i> Bearbeiten</button>`:''}</div>
+    <div class="akte-card__b">${opts.body}</div>
+  </div>`;
+}
+// Zeile: gefüllt → Wert, leer → „+ ergänzen" (öffnet das passende Sektions-Formular)
+function akteRow(label,raw,section){
+  if(akteFilled(raw)) return `<div class="dw-quiz__row"><span class="dw-quiz__k">${label}</span><span class="dw-quiz__v">${raw}</span></div>`;
+  return `<div class="dw-quiz__row"><span class="dw-quiz__k">${label}</span><span class="dw-quiz__v"><button class="akte-add-link" onclick="editAkteSection('${section}')">+ ergänzen</button></span></div>`;
+}
+function akteKontaktCard(e,hr){
+  const body = `<div class="dw-quiz">
+    ${akteRow('Telefon (dienstlich)', akteFilled(e.phone)?escapeHtml(e.phone):'', 'kontakt')}
+    ${akteRow('Telefon (privat)', akteFilled(hr.pphone)?escapeHtml(hr.pphone):'', 'kontakt')}
+    ${akteRow('E-Mail', akteFilled(e.email)?escapeHtml(e.email):'', 'kontakt')}
+  </div>`;
+  return akteCard({title:'Kontakt', icon:'phone', section:'kontakt', body, priv:true});
+}
+function aktePersonCard(e,hr){
+  const nk = hr.nk||{};
+  const nkVal = akteFilled(nk.n) ? `${escapeHtml(nk.n)}${akteFilled(nk.r)?` <small style="color:var(--muted)">(${escapeHtml(nk.r)})</small>`:''}${akteFilled(nk.p)?` · ${escapeHtml(nk.p)}`:''}` : '';
+  const body = `<div class="dw-quiz">
+    ${akteRow('Geburtsdatum', akteFilled(hr.bd)?`${deDate(hr.bd)}${ageFrom(hr.bd)?` <small style="color:var(--muted)">(${ageFrom(hr.bd)} J.)</small>`:''}`:'', 'person')}
+    ${akteRow('Adresse', akteFilled(hr.addr)?escapeHtml(hr.addr):'', 'person')}
+    ${akteRow('Notfallkontakt', nkVal, 'person')}
+  </div>`;
+  return akteCard({title:'Persönliche Daten', icon:'user', section:'person', body, priv:true});
+}
+function akteBeschaeftigungCard(e,hr){
+  const vac = vacInfo(e.id);
+  const body = `<div class="dw-quiz">
+    ${akteRow('Funktion', akteFilled(e.role)?escapeHtml(e.role):'', 'beschaeftigung')}
+    ${akteRow('Im Betrieb seit', akteFilled(e.since)?escapeHtml(e.since):'', 'beschaeftigung')}
+    ${akteRow('Vertragsart', akteFilled(hr.contract)?escapeHtml(hr.contract):'', 'beschaeftigung')}
+    ${akteRow('Wochenstunden', akteFilled(hr.hours)?(hr.hours+' h'):'', 'beschaeftigung')}
+    ${akteFilled(hr.probe)?kv('Probezeit bis', deDate(hr.probe)):''}
+    ${kv('Urlaub '+new Date(TODAY).getFullYear(), `${vac.rest} Rest <small style="color:var(--muted);font-weight:500">(${vac.taken} genommen · ${vac.planned} geplant · ${e.annual} ges.)</small>`)}
+  </div>`;
+  return akteCard({title:'Beschäftigung', icon:'briefcase', section:'beschaeftigung', body, priv:true});
+}
+function akteVerguetungCard(e,hr){
+  const body = `<div class="dw-quiz">${akteRow('Monatsvergütung', akteFilled(hr.salary)?escapeHtml(hr.salary):'', 'verguetung')}</div>`;
+  return akteCard({title:'Vergütung', icon:'banknote', section:'verguetung', body, priv:true, gated:true});
+}
+function akteBankCard(e,hr){
+  const body = `<div class="dw-quiz">
+    ${akteRow('Krankenkasse', akteFilled(hr.kk)?escapeHtml(hr.kk):'', 'bank')}
+    ${akteRow('SV-Nummer', akteFilled(hr.sv)?escapeHtml(hr.sv):'', 'bank')}
+    ${akteRow('Steuer-ID', akteFilled(hr.taxId)?escapeHtml(hr.taxId):'', 'bank')}
+    ${akteRow('IBAN (Lohn)', akteFilled(hr.iban)?escapeHtml(hr.iban):'', 'bank')}
+  </div>`;
+  return akteCard({title:'Sozialversicherung & Steuer', icon:'shield', section:'bank', body, priv:true, gated:true});
+}
+function akteGatedNote(){
+  return `<div class="akte-card"><div class="akte-card__b"><p class="compose-hint" style="margin:0"><i data-lucide="lock" style="width:13px;height:13px;vertical-align:-2px"></i> Vergütung, Bankdaten und Steuer sind nur für die Personalverwaltung sichtbar.</p></div></div>`;
+}
+function akteFuehrerscheinCard(e,hr){
+  const body = (hr.fs&&hr.fs.length)
+    ? `<div class="akte-chips">${hr.fs.map(f=>`<span class="akte-chip">Klasse ${escapeHtml(f)}</span>`).join('')}</div>`
+    : `<button class="akte-add-link" onclick="editAkteSection('fuehrerschein')">+ Führerscheinklassen ergänzen</button>`;
+  return akteCard({title:'Führerschein', icon:'car', section:'fuehrerschein', body, priv:true});
+}
+function akteCertCard(e,hr,priv){
+  const list = (hr.certs&&hr.certs.length)
+    ? hr.certs.map((c,i)=>{ const cs = certStatus(c.exp); return `<div class="akte-cert"><div class="akte-cert__ic"><i data-lucide="award"></i></div><div class="akte-cert__main"><div class="akte-cert__name">${escapeHtml(c.n)}</div><div class="akte-cert__exp">${c.exp?('gültig bis '+deDate(c.exp)):'unbefristet'}</div></div><span class="akte-badge ${cs[0]}">${cs[1]}</span>${priv?`<button class="akte-cert__del" onclick="removeAkteCert(${i})" title="Entfernen"><i data-lucide="x"></i></button>`:''}</div>`; }).join('')
+    : '<p class="compose-hint" style="margin:0 0 4px">Noch keine Qualifikationen oder Scheine hinterlegt.</p>';
+  const add = priv ? `<div class="akte-docadd" style="margin-top:9px" onclick="addAkteCert()"><i data-lucide="plus"></i> Qualifikation / Schein hinzufügen</div>` : '';
+  return akteCard({title:'Qualifikationen & Scheine', icon:'graduation-cap', section:null, editable:false, body:list+add, priv});
+}
+function aktePsaCard(e,hr){
+  const p = hr.psa||{};
+  const body = `<div class="dw-quiz">
+    ${akteRow('Oberteil', akteFilled(p.s)?('Größe '+escapeHtml(p.s)):'', 'psa')}
+    ${akteRow('Hose', akteFilled(p.h)?('Größe '+escapeHtml(p.h)):'', 'psa')}
+    ${akteRow('Sicherheitsschuhe', akteFilled(p.f)?('Größe '+escapeHtml(p.f)):'', 'psa')}
+  </div>`;
+  return akteCard({title:'Arbeitskleidung (PSA)', icon:'shirt', section:'psa', body, priv:true});
+}
+function akteDocCard(e,hr,priv){
+  const list = (hr.docs&&hr.docs.length)
+    ? `<div class="akte-doclist">${hr.docs.map((d,i)=>`<div class="cv-card"><div class="cv-card__ic"><i data-lucide="${docIcon(d.type)}"></i></div><div class="cv-card__main" onclick="toast('Demo · Dokument öffnen')" style="cursor:pointer"><div class="cv-card__title">${escapeHtml(d.name)}</div><div class="cv-card__meta">${escapeHtml(d.type)} · ${deDate(d.date)}</div></div>${priv?`<button class="cv-card__dl" onclick="removeAkteDoc(${i})" title="Entfernen"><i data-lucide="trash-2"></i></button>`:`<i data-lucide="download" style="width:16px;height:16px;color:var(--muted)"></i>`}</div>`).join('')}</div>`
+    : '<p class="compose-hint" style="margin:0 0 4px">Noch keine Dokumente.</p>';
+  const add = priv ? `<div class="akte-docadd" style="margin-top:10px" onclick="uploadEmpDoc(${e.id})"><i data-lucide="upload"></i> Dokument hochladen (PDF, JPG, PNG)</div>` : '';
+  return akteCard({title:'Dokumente', icon:'folder', section:null, editable:false, body:list+add, priv});
+}
+function akteAbsenceCard(e,hr){
+  const vac = vacInfo(e.id);
+  const body = `<div class="dw-quiz">
+    ${kv('Urlaubsanspruch '+new Date(TODAY).getFullYear(), e.annual+' Tage')}
+    ${kv('Genommen', vac.taken+' Tage')}
+    ${kv('Verplant', vac.planned+' Tage')}
+    ${kv('Resturlaub', `<b>${vac.rest} Tage</b>`)}
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:13px">
+    <button class="mini-btn primary" onclick="closeAkte();teamTab('urlaub');openAbsenceForm(${e.id})"><i data-lucide="plane"></i> Abwesenheit erfassen</button>
+    <button class="mini-btn" onclick="closeAkte();openPersonCal(${e.id})"><i data-lucide="calendar-days"></i> Kalender öffnen</button>
+  </div>`;
+  return akteCard({title:'Urlaub & Abwesenheit', icon:'plane', section:null, editable:false, body, priv:true});
+}
+function akteNotesCard(e,hr,priv){
+  const notes = (hr.notes&&hr.notes.length)
+    ? hr.notes.map(n=>`<div class="akte-note"><div class="akte-note__meta"><b>${escapeHtml(n.author)}</b> · ${deDate(n.date)}</div><div class="akte-note__txt">${escapeHtml(n.text)}</div></div>`).join('')
+    : '<p class="compose-hint" style="margin:0 0 8px">Noch keine Notizen.</p>';
+  const add = priv ? `<textarea class="akte-add" id="akteNote" placeholder="Interne Notiz hinzufügen (nur für die Personalverwaltung sichtbar)…"></textarea><button class="mini-btn primary" onclick="addEmpNote(${e.id})"><i data-lucide="plus"></i> Notiz speichern</button>` : '';
+  return akteCard({title:'Interne Notizen', icon:'sticky-note', section:null, editable:false, body:notes+add, priv});
+}
+function akteOverview(e,hr,priv){
+  const comp = akteCompleteness(e,hr);
+  const offen = comp.t - comp.f;
+  const banner = offen>0
+    ? `<div class="akte-banner"><div class="akte-banner__ic"><i data-lucide="clipboard-list"></i></div><div><div class="akte-banner__t">Noch ${offen} Angaben offen</div><div class="akte-banner__s">Vervollständige die Akte über die Tabs links oder direkt in den Karten.</div></div></div>`
+    : `<div class="akte-banner"><div class="akte-banner__ic"><i data-lucide="check-circle-2"></i></div><div><div class="akte-banner__t">Personalakte vollständig</div><div class="akte-banner__s">Alle wichtigen Angaben sind hinterlegt.</div></div></div>`;
+  const grid = `<div class="akte-grid">${akteKontaktCard(e,hr)}${akteBeschaeftigungCard(e,hr)}${aktePersonCard(e,hr)}${akteFuehrerscheinCard(e,hr)}</div>`;
+  return banner + grid;
+}
+
+// Sektionsweises Bearbeiten: baut ein fokussiertes Formular aus AKTE_SECTIONS
+function editAkteSection(section){
+  const cfg = AKTE_SECTIONS[section];
+  const e = emp(akteEmpId); if(!e || !cfg) return;
+  const hr = hrData(e);
+  const priv = can('editEmployees');
+  if(cfg.gated && !priv){ toast('Nur die Personalverwaltung darf das bearbeiten'); return; }
+  const inputs = cfg.fields.map((f,i)=>{
+    let cur = akteGetVal(e,hr,f.path);
+    if(f.joinArr) cur = Array.isArray(cur)?cur.join(', '):(cur||'');
+    cur = (cur==null)?'':String(cur);
+    const val = cur.replace(/"/g,'&quot;');
+    let input;
+    if(f.type==='select'){
+      input = `<select id="af_${i}">${f.opts.map(o=>`<option value="${o.replace(/"/g,'&quot;')}" ${cur===o?'selected':''}>${o}</option>`).join('')}</select>`;
+    } else {
+      const itype = f.type==='number'?'number':(f.type==='date'?'date':'text');
+      input = `<input id="af_${i}" type="${itype}" value="${val}" placeholder="${f.label}">`;
+    }
+    return `<div class="field ${f.wide?'field--wide':''}"><label>${f.label}${f.req?' <span style="color:var(--danger)">*</span>':''}</label>${input}${f.hint?`<div class="fieldhint"><i data-lucide="info"></i> ${f.hint}</div>`:''}</div>`;
+  }).join('');
   openSheet(`
     <div class="sheet__head">
-      ${photo}
-      <div><div class="sheet__title">${e.name}</div><div class="sheet__sub">${e.role} · ${crewOf(e)}</div></div>
+      <span class="avatar" style="width:46px;height:46px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="${cfg.icon}" style="width:20px;height:20px"></i></span>
+      <div><div class="sheet__title">${cfg.title} bearbeiten</div><div class="sheet__sub">${escapeHtml(e.name)}</div></div>
       <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body">
-      <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px">
-        <span class="pill ${empStatus(e.id)[1]}">${empStatus(e.id)[0]}</span>
-        <span class="pill ${am[1]}"><i data-lucide="${am[2]}" style="width:12px;height:12px;vertical-align:-2px"></i> ${am[0]}</span>
-        ${te ? `<span class="pill g"><i data-lucide="map-pin" style="width:12px;height:12px;vertical-align:-2px"></i> heute im Einsatz</span>` : ''}
-      </div>
-
-      <div class="contact-actions">
-        <a class="ca-btn ca-btn--call" href="tel:${(e.phone||'').replace(/\s+/g,'')}"><i data-lucide="phone"></i> Anrufen</a>
-        <a class="ca-btn ca-btn--mail" href="mailto:${e.email||''}"><i data-lucide="mail"></i> E-Mail</a>
-        <button class="ca-btn" onclick="closeSheet();openPersonCal(${e.id})"><i data-lucide="calendar-days"></i> Kalender</button>
-      </div>
-
-      ${akteCopyRow('Telefon (dienstlich)', e.phone, 'phone')}
-      ${akteCopyRow('Telefon (privat)', hr.pphone, 'smartphone')}
-      ${akteCopyRow('E-Mail', e.email, 'mail')}
-
-      <div class="dw-section">
-        <div class="dw-section__h"><i data-lucide="briefcase"></i> Beschäftigung</div>
-        <div class="dw-quiz">
-          ${kv('Im Betrieb seit', e.since)}
-          ${kv('Vertragsart', hr.contract)}
-          ${kv('Wochenstunden', hr.hours+' h')}
-          ${hr.probe ? kv('Probezeit bis', deDate(hr.probe)) : ''}
-          ${priv ? kv('Vergütung', hr.salary) : ''}
-          ${kv('Urlaub '+new Date(TODAY).getFullYear(), `${vac.rest} Rest <small style="color:var(--muted);font-weight:500">(${vac.taken} genommen · ${vac.planned} geplant · ${e.annual} ges.)</small>`)}
-          ${s ? kv('Heute auf Baustelle', `${s.customer}${s.label?' · '+s.label:''}`) : ''}
-        </div>
-      </div>
-
-      <div class="dw-section">
-        <div class="dw-section__h"><i data-lucide="user"></i> Persönlich</div>
-        <div class="dw-quiz">
-          ${kv('Geburtsdatum', `${deDate(hr.bd)}${ageFrom(hr.bd)?` <small style="color:var(--muted);font-weight:500">(${ageFrom(hr.bd)} J.)</small>`:''}`)}
-          ${kv('Adresse', escapeHtml(hr.addr))}
-          ${kv('Notfallkontakt', hr.nk.n!=='—' ? `${escapeHtml(hr.nk.n)} <small style="color:var(--muted);font-weight:500">(${escapeHtml(hr.nk.r)})</small> · ${hr.nk.p}` : '—')}
-        </div>
-      </div>
-
-      ${priv ? `<div class="dw-section">
-        <div class="dw-section__h"><i data-lucide="shield"></i> Sozialversicherung &amp; Steuer <span class="akte-sensitive"><i data-lucide="lock"></i> nur Personalverwaltung</span></div>
-        <div class="dw-quiz">
-          ${kv('Krankenkasse', escapeHtml(hr.kk))}
-          ${kv('SV-Nummer', hr.sv)}
-          ${kv('Steuer-ID', hr.taxId)}
-          ${kv('IBAN (Lohn)', hr.iban)}
-        </div>
-      </div>` : ''}
-
-      <div class="dw-section">
-        <div class="dw-section__h"><i data-lucide="car"></i> Führerschein &amp; Qualifikation</div>
-        <div class="akte-chips" style="margin-bottom:10px">${hr.fs.map(f=>`<span class="akte-chip">Klasse ${f}</span>`).join('')||'<span class="compose-hint">Kein Führerschein hinterlegt</span>'}</div>
-        ${certHtml}
-        <div class="dw-quiz" style="margin-top:8px">
-          ${kv('Kleidung (Oberteil)', 'Größe '+hr.psa.s)}
-          ${kv('Hose', 'Größe '+hr.psa.h)}
-          ${kv('Sicherheitsschuhe', 'Größe '+hr.psa.f)}
-        </div>
-      </div>
-
-      <div class="dw-section">
-        <div class="dw-section__h"><i data-lucide="folder"></i> Dokumente <small style="color:var(--muted);font-weight:600;text-transform:none;letter-spacing:0">· ${hr.docs.length}</small></div>
-        <div style="display:flex;flex-direction:column;gap:7px;margin-bottom:9px">${docHtml||'<p class="compose-hint" style="margin:0">Noch keine Dokumente.</p>'}</div>
-        ${priv ? `<div class="akte-docadd" onclick="uploadEmpDoc(${e.id})"><i data-lucide="upload"></i> Dokument hochladen (PDF, JPG, PNG)</div>` : ''}
-      </div>
-
-      <div class="dw-section">
-        <div class="dw-section__h"><i data-lucide="sticky-note"></i> Notizen</div>
-        ${noteHtml}
-        ${priv ? `<textarea class="akte-add" id="akteNote" placeholder="Interne Notiz hinzufügen (nur für die Personalverwaltung sichtbar)…"></textarea>
-        <button class="btn ghost sm btn--block" onclick="addEmpNote(${e.id})"><i data-lucide="plus"></i> Notiz speichern</button>` : ''}
-      </div>
-
-      ${e.account !== 'active' && priv ? `<button class="btn btn--block" style="margin-top:16px" onclick="inviteEmployee(${e.id})"><i data-lucide="send"></i> ${e.account==='invited'?'Einladung erneut senden':'Einladung per E-Mail senden'}</button>` : ''}
+      <div class="fieldgrid">${inputs}</div>
+      ${cfg.gated?'<p class="sheet-note"><i data-lucide="lock" style="width:12px;height:12px;vertical-align:-2px"></i> Diese Angaben sind nur für die Personalverwaltung sichtbar.</p>':''}
       <div class="sheet-actions">
-        <button class="btn" style="flex:1" onclick="closeSheet();teamTab('urlaub');openAbsenceForm(${e.id})"><i data-lucide="plane"></i> Abwesenheit erfassen</button>
-        ${priv ? `<button class="btn ghost" style="flex:1" onclick="openEmployeeForm(${e.id})"><i data-lucide="pencil"></i> Stammdaten bearbeiten</button>` : ''}
+        <button class="btn" style="flex:1" onclick="saveAkteSection('${section}')"><i data-lucide="check"></i> Speichern</button>
+        <button class="btn ghost" onclick="closeSheet()">Abbrechen</button>
       </div>
-    </div>`, {drawer:true});
+    </div>`);
+}
+function saveAkteSection(section){
+  const cfg = AKTE_SECTIONS[section];
+  const e = emp(akteEmpId); if(!e || !cfg) return;
+  const hr = hrData(e);
+  for(let i=0;i<cfg.fields.length;i++){
+    const f = cfg.fields[i];
+    const el = document.getElementById('af_'+i);
+    if(!el) continue;
+    let val = el.value.trim();
+    if(f.req && !val){ toast('Bitte „'+f.label+'" ausfüllen'); el.focus(); return; }
+    if(f.joinArr){ val = val.split(',').map(s=>s.trim()).filter(Boolean); }
+    else if(f.type==='number'){ val = val===''?'':(parseInt(val,10)||0); }
+    akteSetVal(e,hr,f.path,val);
+  }
+  closeSheet(); renderAkte(); toast(cfg.title+' gespeichert');
+}
+function addAkteCert(){
+  const e = emp(akteEmpId); if(!e) return;
+  openSheet(`
+    <div class="sheet__head">
+      <span class="avatar" style="width:46px;height:46px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="award" style="width:20px;height:20px"></i></span>
+      <div><div class="sheet__title">Qualifikation hinzufügen</div><div class="sheet__sub">${escapeHtml(e.name)}</div></div>
+      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+    </div>
+    <div class="sheet__body">
+      <div class="field"><label>Bezeichnung <span style="color:var(--danger)">*</span></label><input id="certN" placeholder="z. B. Motorsägenschein AS Baum I"></div>
+      <div class="field"><label>Gültig bis <small style="color:var(--muted);font-weight:500">(leer = unbefristet)</small></label><input id="certE" type="date"></div>
+      <div class="sheet-actions">
+        <button class="btn" style="flex:1" onclick="saveAkteCert()"><i data-lucide="check"></i> Hinzufügen</button>
+        <button class="btn ghost" onclick="closeSheet()">Abbrechen</button>
+      </div>
+    </div>`);
+}
+function saveAkteCert(){
+  const e = emp(akteEmpId); if(!e) return;
+  const n = ((document.getElementById('certN')||{}).value || '').trim();
+  if(!n){ toast('Bitte Bezeichnung eingeben'); return; }
+  const exp = (document.getElementById('certE')||{}).value || '';
+  const hr = hrData(e);
+  hr.certs = hr.certs || [];
+  hr.certs.push({n, exp});
+  closeSheet(); akteTab = 'qualifikation'; renderAkte(); toast('Qualifikation hinzugefügt');
+}
+function removeAkteCert(i){
+  const e = emp(akteEmpId); if(!e) return;
+  const hr = hrData(e);
+  if(hr.certs && hr.certs[i]) hr.certs.splice(i,1);
+  renderAkte(); toast('Qualifikation entfernt');
+}
+function removeAkteDoc(i){
+  const e = emp(akteEmpId); if(!e) return;
+  const hr = hrData(e);
+  if(hr.docs && hr.docs[i]) hr.docs.splice(i,1);
+  renderAkte(); toast('Dokument entfernt');
 }
 function setEmpPhoto(id){ toast('Demo · hier würdest du ein Foto hochladen'); }
 function uploadEmpDoc(id){
   const e = emp(id); if(!e) return;
   const hr = hrData(e);
   hr.docs.unshift({name:'Neues_Dokument_'+(hr.docs.length+1)+'.pdf', type:'Bescheinigung', date:TODAY});
-  openEmployee(id);
+  if(akteEmpId===id) renderAkte();
   toast('Dokument hochgeladen (Demo)');
 }
 function addEmpNote(id){
@@ -7723,7 +8056,7 @@ function addEmpNote(id){
   const e = emp(id); if(!e) return;
   const hr = hrData(e);
   hr.notes.unshift({date:TODAY, author: (settings.company&&settings.company.owner) || 'Georg Müller', text:txt});
-  openEmployee(id);
+  if(akteEmpId===id) renderAkte();
   toast('Notiz gespeichert');
 }
 /* ---- Mitarbeiter anlegen / bearbeiten + Einladung ---- */
