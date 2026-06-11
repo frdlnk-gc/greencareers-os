@@ -1154,6 +1154,19 @@
   .dw-priv span{ display:flex; flex-direction:column; gap:1px; }
   .dw-priv b{ font-size:13px; }
   .dw-priv small{ font-size:11.5px; color:var(--muted); }
+  .ev-meetbox{ margin:2px 0; }
+  .ev-meet__add{ width:100%; display:flex; align-items:center; justify-content:center; gap:8px; padding:11px 12px; border:1px dashed var(--line); border-radius:11px; background:#fff; color:#2563EB; font-size:13px; font-weight:600; cursor:pointer; }
+  .ev-meet__add:hover{ background:#F4F8FF; border-color:#BFD4FF; }
+  .ev-meet__add .lucide{ width:16px; height:16px; }
+  .ev-meet{ display:flex; align-items:center; gap:11px; padding:11px 12px; border:1px solid #DCE7FF; border-radius:11px; background:#F4F8FF; }
+  .ev-meet__ic{ width:34px; height:34px; flex-shrink:0; border-radius:9px; background:#2563EB; color:#fff; display:grid; place-items:center; }
+  .ev-meet__ic .lucide{ width:17px; height:17px; }
+  .ev-meet__main{ flex:1; min-width:0; display:flex; flex-direction:column; gap:1px; }
+  .ev-meet__main b{ font-size:12.5px; }
+  .ev-meet__main a{ font-size:12px; color:#2563EB; text-decoration:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .ev-meet__rm{ flex-shrink:0; width:28px; height:28px; border:none; background:transparent; border-radius:8px; color:var(--muted); cursor:pointer; display:grid; place-items:center; }
+  .ev-meet__rm:hover{ background:#E4ECFB; color:var(--ink); }
+  .ev-meet__rm .lucide{ width:15px; height:15px; }
   .akte-cert{ display:flex; align-items:center; gap:10px; padding:10px 12px; border:1px solid var(--line); border-radius:10px; background:#fff; margin-bottom:7px; }
   .akte-cert__ic{ width:30px; height:30px; flex-shrink:0; border-radius:8px; background:var(--soft); display:grid; place-items:center; color:var(--green); }
   .akte-cert__ic .lucide{ width:15px; height:15px; }
@@ -3598,8 +3611,14 @@ let customReminders = [
   {id:1, title:'Tochter Zahnarzt',               date:'2026-06-18', recur:'none',   lead:10, priv:true},
   {id:2, title:'Gewerbeversicherung verlängern', date:'2026-07-02', recur:'yearly', lead:14, priv:false},
 ];
+// Termine/Events (Bewerbungsgespräche etc.) – Google-artiges Event-System
+let tmSeq = 2;
+let termine = [
+  {id:1, title:'Bewerbungsgespräch · Murat Yıldız', date:dwTomorrowISO(), start:'10:00', end:'10:45', guests:'Murat Yıldız', meet:'meet.google.com/qab-rmxt-kdo', loc:'', candId:null},
+];
 // Konfiguration: welche Typen aktiv + Vorlaufzeit (Tage)
 const DW_TYPES = {
+  termin:    {label:'Termine & Gespräche',    icon:'calendar-clock',color:'#2563EB'},
   geburtstag:{label:'Geburtstage',            icon:'cake',         color:'#16A34A'},
   jubilaeum: {label:'Firmenjubiläen',         icon:'party-popper', color:'#B7791F'},
   probe:     {label:'Probezeit-Ende',         icon:'user-check',   color:'#2563EB'},
@@ -3608,6 +3627,7 @@ const DW_TYPES = {
   eigene:    {label:'Eigene Erinnerungen',    icon:'bell',         color:'#0E7A43'},
 };
 let dwConfig = {
+  termin:    {on:true, lead:14},
   geburtstag:{on:true, lead:7},
   jubilaeum: {on:true, lead:30},
   probe:     {on:true, lead:14},
@@ -3617,6 +3637,7 @@ let dwConfig = {
 };
 function dwISO(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 function dwTodayMid(){ const t=new Date(TODAY); return new Date(t.getFullYear(),t.getMonth(),t.getDate()); }
+function dwTomorrowISO(){ const t=dwTodayMid(); t.setDate(t.getDate()+1); return dwISO(t); }
 function dwDaysTo(d){ return Math.round((d - dwTodayMid())/86400000); }
 function dwDaysToISO(iso){ return dwDaysTo(new Date(iso)); }
 function dwNextAnnual(iso){ const b=new Date(iso), tm=dwTodayMid(); let c=new Date(tm.getFullYear(),b.getMonth(),b.getDate()); if(c<tm) c=new Date(tm.getFullYear()+1,b.getMonth(),b.getDate()); return c; }
@@ -3624,6 +3645,7 @@ function dwNextMonthly(iso){ const b=new Date(iso), tm=dwTodayMid(); let c=new D
 function dwHireISO(e,hr){ const v=(hr.docs||[]).find(d=>d.type==='Vertrag'); if(v&&v.date) return v.date; return e.since?(e.since+'-01-01'):''; }
 function buildDenkMitFeed(){
   const items = []; const c = dwConfig;
+  if(c.termin.on) termine.forEach(t=>{ const days=dwDaysToISO(t.date); if(days>=0&&days<=c.termin.lead) items.push({icon:'calendar-clock',color:DW_TYPES.termin.color,title:escapeHtml(t.title),sub:`${t.start} Uhr${t.meet?' · Google Meet':''}`,dateISO:t.date,days,tid:t.id}); });
   if(c.geburtstag.on) employees.forEach(e=>{ const hr=hrData(e); if(!hr.bd) return; const nx=dwNextAnnual(hr.bd); const days=dwDaysTo(nx); if(days>=0&&days<=c.geburtstag.lead){ const turns=nx.getFullYear()-new Date(hr.bd).getFullYear(); items.push({icon:'cake',color:DW_TYPES.geburtstag.color,title:`${escapeHtml(e.name)} wird ${turns}`,sub:'Geburtstag',dateISO:dwISO(nx),days}); }});
   if(c.jubilaeum.on) employees.forEach(e=>{ const hr=hrData(e); const h=dwHireISO(e,hr); if(!h) return; const nx=dwNextAnnual(h); const days=dwDaysTo(nx); const yrs=nx.getFullYear()-new Date(h).getFullYear(); if(yrs>=1&&days>=0&&days<=c.jubilaeum.lead) items.push({icon:'party-popper',color:DW_TYPES.jubilaeum.color,title:`${escapeHtml(e.name)} · ${yrs} Jahre im Betrieb`,sub:'Firmenjubiläum',dateISO:dwISO(nx),days}); });
   if(c.probe.on) employees.forEach(e=>{ const hr=hrData(e); if(!hr.probe) return; const days=dwDaysToISO(hr.probe); if(days>=0&&days<=c.probe.lead) items.push({icon:'user-check',color:DW_TYPES.probe.color,title:`${escapeHtml(e.name)} · Probezeit endet`,sub:'Probezeit-Ende',dateISO:hr.probe,days}); });
@@ -3639,7 +3661,7 @@ function buildDenkMitFeed(){
 function dwWhen(days){ if(days===0) return 'Heute'; if(days===1) return 'Morgen'; if(days<0) return `${Math.abs(days)} Tg. überfällig`; if(days<7) return `in ${days} Tg.`; return 'in '+Math.round(days/7)+' Wo.'; }
 function dwRow(it){
   const overdue = it.days<0, soon = it.days>=0&&it.days<=1;
-  const click = it.rid ? ` onclick="openReminderForm(${it.rid})" style="cursor:pointer"` : '';
+  const click = it.tid ? ` onclick="openEventForm({editId:${it.tid}})" style="cursor:pointer"` : (it.rid ? ` onclick="openReminderForm(${it.rid})" style="cursor:pointer"` : '');
   return `<div class="dw-item${overdue?' dw-item--bad':''}"${click}>
     <span class="dw-item__ic" style="background:${it.color}1A;color:${it.color}"><i data-lucide="${it.icon}"></i></span>
     <span class="dw-item__main"><span class="dw-item__t">${it.title}</span><span class="dw-item__s">${it.sub} · ${deDate(it.dateISO)}</span></span>
@@ -3714,6 +3736,80 @@ function saveReminder(rid){
   closeSheet(); if(currentView==='heute') setView('heute'); toast(rid?'Erinnerung gespeichert':'Erinnerung hinzugefügt');
 }
 function deleteReminder(rid){ customReminders = customReminders.filter(x=>x.id!==rid); closeSheet(); if(currentView==='heute') setView('heute'); toast('Erinnerung gelöscht'); }
+
+// ── Termine / Google-artiges Event-System ──────────────────────────────
+function genMeetLink(){ const c='abcdefghijklmnopqrstuvwxyz'; const r=n=>Array.from({length:n},()=>c[Math.floor(Math.random()*26)]).join(''); return `meet.google.com/${r(3)}-${r(4)}-${r(3)}`; }
+function openEventForm(opts){
+  opts = opts || {};
+  const ev = opts.editId ? termine.find(t=>t.id===opts.editId) : null;
+  const title  = ev ? ev.title  : (opts.title  || '');
+  const date   = ev ? ev.date   : (opts.date   || dwTomorrowISO());
+  const start  = ev ? ev.start  : (opts.start  || '10:00');
+  const end    = ev ? ev.end    : (opts.end    || '10:45');
+  const guests = ev ? ev.guests : (opts.guests || '');
+  const loc    = ev ? ev.loc    : (opts.loc    || '');
+  const meet   = ev ? ev.meet   : (opts.withMeet ? genMeetLink() : '');
+  const candId = ev ? ev.candId : (opts.candId != null ? opts.candId : null);
+  const esc = v => String(v||'').replace(/"/g,'&quot;');
+  openSheet(`
+    <div class="sheet__head">
+      <span class="avatar" style="width:46px;height:46px;background:linear-gradient(135deg,#2563EB,#1E40AF)"><i data-lucide="calendar-clock" style="width:20px;height:20px"></i></span>
+      <div><div class="sheet__title">${ev?'Termin bearbeiten':'Termin anlegen'}</div><div class="sheet__sub">${candId?'Bewerbungsgespräch':'Im Kalender eintragen'}</div></div>
+      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+    </div>
+    <div class="sheet__body">
+      <div class="field field--wide"><label>Titel <span style="color:var(--danger)">*</span></label><input id="evTitle" value="${esc(title)}" placeholder="z. B. Bewerbungsgespräch · Murat Y."></div>
+      <div class="field"><label>Datum</label><input id="evDate" type="date" value="${date}"></div>
+      <div class="fieldgrid">
+        <div class="field"><label>Von</label><input id="evStart" type="time" value="${start}"></div>
+        <div class="field"><label>Bis</label><input id="evEnd" type="time" value="${end}"></div>
+      </div>
+      <div class="field field--wide"><label>Gäste</label><input id="evGuests" value="${esc(guests)}" placeholder="Namen, durch Komma getrennt"></div>
+      <div class="ev-meetbox" id="evMeetBox">
+        ${meet
+          ? `<div class="ev-meet"><span class="ev-meet__ic"><i data-lucide="video"></i></span><div class="ev-meet__main"><b>Google Meet</b><a href="https://${meet}" target="_blank" rel="noopener">${meet}</a></div><button type="button" class="ev-meet__rm" onclick="evToggleMeet(false)" title="Entfernen"><i data-lucide="x"></i></button></div>
+             <input type="hidden" id="evMeet" value="${esc(meet)}">`
+          : `<button type="button" class="ev-meet__add" onclick="evToggleMeet(true)"><i data-lucide="video"></i> Google Meet hinzufügen</button>
+             <input type="hidden" id="evMeet" value="">`}
+      </div>
+      <div class="field field--wide"><label>Ort</label><input id="evLoc" value="${esc(loc)}" placeholder="z. B. Büro Hamburg / vor Ort"></div>
+      <input type="hidden" id="evCand" value="${candId!=null?candId:''}">
+      <div class="sheet-actions">
+        <button class="btn" style="flex:1" onclick="saveEvent(${ev?ev.id:0})"><i data-lucide="check"></i> ${ev?'Speichern':'Termin anlegen'}</button>
+        <button class="btn ghost" onclick="closeSheet()">Abbrechen</button>
+      </div>
+      ${ev?`<button class="btn danger btn--block" onclick="deleteEvent(${ev.id})"><i data-lucide="trash-2"></i> Termin löschen</button>`:''}
+    </div>`);
+}
+function evToggleMeet(on){
+  const box = document.getElementById('evMeetBox'); if(!box) return;
+  if(on){ const m=genMeetLink();
+    box.innerHTML = `<div class="ev-meet"><span class="ev-meet__ic"><i data-lucide="video"></i></span><div class="ev-meet__main"><b>Google Meet</b><a href="https://${m}" target="_blank" rel="noopener">${m}</a></div><button type="button" class="ev-meet__rm" onclick="evToggleMeet(false)" title="Entfernen"><i data-lucide="x"></i></button></div><input type="hidden" id="evMeet" value="${m}">`;
+  } else {
+    box.innerHTML = `<button type="button" class="ev-meet__add" onclick="evToggleMeet(true)"><i data-lucide="video"></i> Google Meet hinzufügen</button><input type="hidden" id="evMeet" value="">`;
+  }
+  if(window.lucide) lucide.createIcons();
+}
+function saveEvent(editId){
+  const title = (document.getElementById('evTitle')||{}).value.trim();
+  if(!title){ toast('Bitte einen Titel eingeben'); return; }
+  const candRaw = (document.getElementById('evCand')||{}).value;
+  const obj = {
+    title,
+    date:  (document.getElementById('evDate')||{}).value || dwTomorrowISO(),
+    start: (document.getElementById('evStart')||{}).value || '09:00',
+    end:   (document.getElementById('evEnd')||{}).value || '09:30',
+    guests:(document.getElementById('evGuests')||{}).value.trim(),
+    meet:  (document.getElementById('evMeet')||{}).value.trim(),
+    loc:   (document.getElementById('evLoc')||{}).value.trim(),
+    candId: candRaw!==''? (isNaN(+candRaw)?candRaw:+candRaw) : null
+  };
+  if(editId){ const t=termine.find(x=>x.id===editId); if(t) Object.assign(t,obj); }
+  else { obj.id = tmSeq++; termine.push(obj); }
+  closeSheet(); if(currentView==='heute') setView('heute'); toast(editId?'Termin gespeichert':'Termin angelegt');
+}
+function deleteEvent(id){ termine = termine.filter(x=>x.id!==id); closeSheet(); if(currentView==='heute') setView('heute'); toast('Termin gelöscht'); }
+function planInterview(id){ const a=findCandidate(id); if(!a) return; closeSheet(); openEventForm({title:`Bewerbungsgespräch · ${a.name}`, guests:a.name, withMeet:true, candId:id}); }
 
 function staticModuleHtml(key){
   switch(key){
@@ -7130,6 +7226,7 @@ function openApplicant(id){
       <div id="commentBox">${commentsHtml(a)}</div>
 
       <div class="sheet-actions" style="margin-top:18px">
+        <button class="btn ghost" style="flex:1" onclick="planInterview(${id})"><i data-lucide="calendar-clock"></i> Gespräch planen</button>
         <button class="btn" style="flex:1" onclick="openProbetag(${id})"><i data-lucide="calendar-plus"></i> Probetag planen</button>
       </div>
     </div>`, {drawer:true});
