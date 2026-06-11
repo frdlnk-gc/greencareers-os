@@ -2556,10 +2556,10 @@ const DEFAULT_SETTINGS = {
 };
 let settings = loadSettings();
 function loadSettings(){
-  try{ const r = localStorage.getItem('gcos_settings_v1'); if(r){ const s = JSON.parse(r); s.perms = s.perms || {}; s.perms.buero = Object.assign({}, DEFAULT_SETTINGS.perms.buero, s.perms.buero); s.perms.buchhaltung = Object.assign({}, DEFAULT_SETTINGS.perms.buchhaltung, s.perms.buchhaltung); s.perms.mitarbeiter = Object.assign({}, DEFAULT_SETTINGS.perms.mitarbeiter, s.perms.mitarbeiter); s.company = Object.assign({}, DEFAULT_SETTINGS.company, s.company); return Object.assign(JSON.parse(JSON.stringify(DEFAULT_SETTINGS)), s); } }catch(e){}
+  try{ const r = localStorage.getItem('gcos_settings_v2'); if(r){ const s = JSON.parse(r); s.perms = s.perms || {}; s.perms.buero = Object.assign({}, DEFAULT_SETTINGS.perms.buero, s.perms.buero); s.perms.buchhaltung = Object.assign({}, DEFAULT_SETTINGS.perms.buchhaltung, s.perms.buchhaltung); s.perms.mitarbeiter = Object.assign({}, DEFAULT_SETTINGS.perms.mitarbeiter, s.perms.mitarbeiter); s.company = Object.assign({}, DEFAULT_SETTINGS.company, s.company); return Object.assign(JSON.parse(JSON.stringify(DEFAULT_SETTINGS)), s); } }catch(e){}
   return JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
 }
-function saveSettings(){ try{ localStorage.setItem('gcos_settings_v1', JSON.stringify(settings)); }catch(e){} }
+function saveSettings(){ try{ localStorage.setItem('gcos_settings_v2', JSON.stringify(settings)); }catch(e){} }
 
 // Rechte-Check: Admin darf alles, Büro/Mitarbeiter laut Einstellungen
 function can(cap){
