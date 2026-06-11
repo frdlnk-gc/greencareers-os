@@ -1134,8 +1134,9 @@
   .pkg__list{ list-style:none; padding:0; margin:0 0 4px; display:flex; flex-direction:column; gap:6px; }
   .pkg__list li{ display:flex; gap:7px; font-size:12.5px; color:#3A4A3E; line-height:1.35; }
   .pkg__list .lucide{ width:14px; height:14px; color:var(--green); flex-shrink:0; margin-top:1px; }
-  .pkg__dep{ margin-top:10px; font-size:11.5px; color:#9A6B1E; background:#FBF3E2; border:1px solid #F0E0BE; border-radius:8px; padding:7px 9px; display:flex; gap:6px; }
-  .pkg__dep .lucide{ width:13px; height:13px; flex-shrink:0; margin-top:1px; }
+  .pkg__dep{ margin-top:10px; font-size:11.5px; line-height:1.45; color:#9A6B1E; background:#FBF3E2; border:1px solid #F0E0BE; border-radius:8px; padding:8px 10px; display:flex; gap:7px; align-items:flex-start; }
+  .pkg__dep .lucide{ width:13px; height:13px; flex-shrink:0; margin-top:2px; }
+  .pkg__dep > span{ flex:1; min-width:0; }
   /* Zusammenfassung */
   .up-sum{ position:sticky; top:20px; border:1.5px solid var(--line); border-radius:16px; background:#fff; padding:18px; box-shadow:var(--shadow-soft); }
   .up-sum__h{ font-size:14px; font-weight:800; margin-bottom:12px; }
@@ -1168,6 +1169,23 @@
   .cs-price{ display:flex; align-items:baseline; gap:8px; margin:14px 0 4px; padding:12px 14px; background:var(--soft-green); border-radius:11px; }
   .cs-price b{ font-size:26px; font-weight:800; color:var(--text); }
   .cs-price span{ font-size:13px; color:var(--muted); }
+  /* ----- Zahlung erfolgreich ----- */
+  .paid{ max-width:480px; margin:0 auto; padding:24px 0 60px; text-align:center; }
+  .paid-badge{ width:72px; height:72px; margin:8px auto 22px; border-radius:50%; background:var(--soft-green); display:grid; place-items:center; color:var(--green); }
+  .paid-badge .lucide{ width:34px; height:34px; stroke-width:3; }
+  .paid h1{ font-family:'Fraunces',serif; font-size:30px; font-weight:600; color:var(--text); margin:0 0 8px; }
+  .paid > p{ font-size:14.5px; line-height:1.55; color:var(--muted); margin:0 auto 24px; max-width:400px; }
+  .paid-list{ display:flex; flex-direction:column; gap:10px; text-align:left; margin-bottom:24px; }
+  .paid-row{ display:flex; align-items:center; gap:13px; padding:13px 15px; background:#fff; border:1px solid var(--line); border-radius:13px; }
+  .paid-ic{ width:40px; height:40px; flex-shrink:0; border-radius:10px; background:var(--soft-green); display:grid; place-items:center; color:var(--green-2); }
+  .paid-ic .lucide{ width:19px; height:19px; }
+  .paid-row > div{ flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
+  .paid-row b{ font-size:14.5px; color:var(--text); }
+  .paid-row small{ font-size:12.5px; color:var(--muted); }
+  .paid-check{ width:20px; height:20px; color:var(--green); stroke-width:3; flex-shrink:0; }
+  .paid-cta{ width:100%; justify-content:center; padding:14px; font-size:15px; }
+  .paid-note{ display:flex; align-items:center; justify-content:center; gap:7px; font-size:12px; color:var(--muted); margin-top:16px; }
+  .paid-note .lucide{ width:14px; height:14px; flex-shrink:0; }
   @media(max-width:820px){
     .up-layout{ grid-template-columns:1fr; }
     .up-cards{ grid-template-columns:1fr; }
@@ -2598,7 +2616,7 @@ const BUNDLE_PRICE = 79;   // alle 4 Module zusammen pro Monat (statt 96 €)
 function openComingSoon(id){
   const m = COMING_SOON[id]; if(!m){ moduleLocked(); return; }
   const depTxt = (m.requires && m.requires.length)
-    ? `<p class="pkg__dep" style="margin-top:14px"><i data-lucide="link"></i> Nur zusammen mit <b style="margin:0 3px">${m.requires.map(r=>COMING_SOON[r].title).join(' & ')}</b> nutzbar – ${escapeHtml(m.reason||'')}</p>`
+    ? `<div class="pkg__dep" style="margin-top:14px"><i data-lucide="link"></i> <span>Nur zusammen mit <b>${m.requires.map(r=>COMING_SOON[r].title).join(' & ')}</b> nutzbar – ${escapeHtml(m.reason||'')}</span></div>`
     : '';
   openSheet(`
     <div class="sheet__head">
@@ -2634,6 +2652,7 @@ function upgradeTotal(ids){
   return ids.reduce((s,id) => s + COMING_SOON[id].price, 0);
 }
 function openUpgrade(preselect){
+  closeSheet();                              // evtl. offenes Coming-Soon-Modal schließen (sonst taucht es nach dem Kauf wieder auf)
   upgradeSel = {};
   (settings.owned||[]).forEach(id => {});   // bereits gebuchte werden separat als „aktiv" gezeigt
   if(preselect && COMING_SOON[preselect] && !ownsModule(preselect)) upgradeSel[preselect] = true;
@@ -2688,7 +2707,7 @@ function renderUpgrade(){
           const sel = owned || eff.all.includes(id);
           const userSel = !!upgradeSel[id];
           const dep = (m.requires&&m.requires.length)
-            ? `<div class="pkg__dep"><i data-lucide="link"></i> Nur mit ${m.requires.map(r=>COMING_SOON[r].title).join(' & ')} – ${escapeHtml(m.reason||'')}</div>` : '';
+            ? `<div class="pkg__dep"><i data-lucide="link"></i> <span>Nur mit <b>${m.requires.map(r=>COMING_SOON[r].title).join(' & ')}</b> – ${escapeHtml(m.reason||'')}</span></div>` : '';
           return `<div class="pkg ${sel?'sel':''} ${(!userSel&&!owned&&eff.all.includes(id))?'dep':''}" onclick="togglePkg('${id}')">
             <div class="pkg__check">${sel?'<i data-lucide="check"></i>':''}</div>
             <div class="pkg__ic"><i data-lucide="${m.icon}"></i></div>
@@ -2754,11 +2773,35 @@ function finishStripe(idsCsv){
   settings.owned = [...new Set([...(settings.owned||[]), ...ids])];
   saveSettings();
   upgradeSel = {};
-  closeUpgrade();
   renderNav();
+  renderStripeSuccess(ids);   // erst Bestätigung zeigen – nicht direkt zurück aufs Modal
+}
+function renderStripeSuccess(ids){
+  const inOrder = UPGRADE_ORDER.filter(id => ids.includes(id));
+  const list = inOrder.map(id =>
+    `<div class="paid-row"><span class="paid-ic"><i data-lucide="${COMING_SOON[id].icon}"></i></span><div><b>${COMING_SOON[id].title}</b><small>${COMING_SOON[id].tag}</small></div><i data-lucide="check" class="paid-check"></i></div>`
+  ).join('');
+  const inner = `
+    <div class="up-top">
+      <div class="up-brand" style="margin:0 auto"><i data-lucide="sprout" style="width:18px;height:18px;color:var(--green)"></i> GreenCareers <b>OS</b></div>
+    </div>
+    <div class="paid">
+      <div class="paid-badge"><i data-lucide="check"></i></div>
+      <h1>Zahlung erfolgreich</h1>
+      <p>Danke, Georg! ${inOrder.length>1?'Deine neuen Module sind':'Dein neues Modul ist'} ab sofort freigeschaltet. Du kannst direkt loslegen.</p>
+      <div class="paid-list">${list}</div>
+      <button class="btn paid-cta" onclick="startAfterPurchase('${inOrder.join(',')}')"><i data-lucide="arrow-right"></i> Jetzt loslegen</button>
+      <div class="paid-note"><i data-lucide="info"></i> Monatlich kündbar · Beleg geht an georg@mueller-galabau.de</div>
+    </div>`;
+  document.getElementById('upgradeInner').innerHTML = inner;
+  icons();
+}
+function startAfterPurchase(idsCsv){
+  const ids = idsCsv.split(',').filter(Boolean);
+  closeUpgrade();
+  closeSheet();   // evtl. noch offenes Coming-Soon-Modal entfernen
   const first = UPGRADE_ORDER.find(id => ids.includes(id));
-  if(first) setView(first);
-  toast(`${ids.length>1?ids.length+' Module':COMING_SOON[ids[0]].title} freigeschaltet – viel Erfolg!`);
+  if(first){ setView(first); startModuleTour(first); }
 }
 function unlockModule(id){
   settings.startModul = false; saveSettings();
@@ -3128,6 +3171,7 @@ const TOUR_STEPS = [
   { sel:['#rolePill'], title:'Demo-Schalter', text:'Nur in dieser Vorschau: Sieh die App als Inhaber, Personalverwaltung, Buchhaltung oder Mitarbeiter. Im echten Produkt ist dieser Platz frei.' },
 ];
 let tourIdx = 0;
+let CUR_TOUR = TOUR_STEPS;   // aktive Schritt-Liste (Haupt-Tour oder Modul-Tour)
 function tourVisible(el){
   if(!el) return false;
   const cs = getComputedStyle(el);
@@ -3140,7 +3184,8 @@ function tourVisible(el){
   return true;
 }
 function tourAnchor(step){ for(const s of step.sel){ const el = document.querySelector(s); if(tourVisible(el)) return el; } return null; }
-function startTour(){
+function startTour(steps){
+  CUR_TOUR = (steps && steps.length) ? steps : TOUR_STEPS;
   tourIdx = 0;
   if(!document.getElementById('tourLayer')){
     const l = document.createElement('div');
@@ -3152,16 +3197,16 @@ function startTour(){
   tourShow();
 }
 function tourShow(){
-  const step = TOUR_STEPS[tourIdx];
+  const step = CUR_TOUR[tourIdx];
   const el = tourAnchor(step);
-  if(!el){ if(tourIdx < TOUR_STEPS.length - 1){ tourIdx++; return tourShow(); } return endTour(); }
+  if(!el){ if(tourIdx < CUR_TOUR.length - 1){ tourIdx++; return tourShow(); } return endTour(); }
   const layer = document.getElementById('tourLayer');
   layer.classList.remove('hidden');
-  const last = tourIdx === TOUR_STEPS.length - 1;
-  const dots = TOUR_STEPS.map((_,i) => `<span class="tour-dot ${i===tourIdx?'on':''}"></span>`).join('');
+  const last = tourIdx === CUR_TOUR.length - 1;
+  const dots = CUR_TOUR.map((_,i) => `<span class="tour-dot ${i===tourIdx?'on':''}"></span>`).join('');
   document.getElementById('tourCard').innerHTML = `
     <button class="tour-x" onclick="endTour()" title="Tour beenden"><i data-lucide="x"></i></button>
-    <div class="tour-card__step">Tour · ${tourIdx+1}/${TOUR_STEPS.length}</div>
+    <div class="tour-card__step">${step.kicker || 'Tour'} · ${tourIdx+1}/${CUR_TOUR.length}</div>
     <h4>${step.title}</h4>
     <p>${step.text}</p>
     <div class="tour-foot">
@@ -3198,10 +3243,40 @@ function tourPlace(el){
   card.style.top = top + 'px';
   card.style.left = left + 'px';
 }
-function tourReposition(){ const l = document.getElementById('tourLayer'); if(!l || l.classList.contains('hidden')) return; const el = tourAnchor(TOUR_STEPS[tourIdx]); if(el) tourPlace(el); }
-function tourNext(){ if(tourIdx < TOUR_STEPS.length - 1){ tourIdx++; tourShow(); } else endTour(); }
+function tourReposition(){ const l = document.getElementById('tourLayer'); if(!l || l.classList.contains('hidden')) return; const el = tourAnchor(CUR_TOUR[tourIdx]); if(el) tourPlace(el); }
+function tourNext(){ if(tourIdx < CUR_TOUR.length - 1){ tourIdx++; tourShow(); } else endTour(); }
 function tourPrev(){ if(tourIdx > 0){ tourIdx--; tourShow(); } }
 function endTour(){ const l = document.getElementById('tourLayer'); if(l) l.classList.add('hidden'); }
+
+// ---- Modul-Touren: kurze Einführung direkt nach dem Freischalten ----
+const MODULE_TOURS = {
+  kunden: [
+    { kicker:'Kunden', sel:['.pagehead'], title:'Willkommen im Kundenbereich', text:'Alle Anfragen aus WhatsApp, E-Mail, Telefon & Website landen hier – plus dein kompletter Kundenstamm mit Baustellen und Verlauf.' },
+    { kicker:'Kunden', sel:['#customerTabs'], title:'Inbox & Kundenstamm', text:'Links die neuen Anfragen, rechts der Kundenstamm. Aus jeder Anfrage machst du mit einem Klick ein Angebot.' },
+    { kicker:'Kunden', sel:['#fab'], title:'Schnell anlegen', text:'Mit dem Plus legst du Kunden, Angebote und Rechnungen direkt aus dem Kundenbereich an.' },
+  ],
+  planung: [
+    { kicker:'Planung', sel:['.pagehead'], title:'Deine Plantafel ist da', text:'Verteile Kolonnen per Drag & Drop auf Baustellen und Wochentage. Urlaub und Krankmeldungen aus dem Team fließen automatisch ein.' },
+    { kicker:'Planung', sel:['#planTabs'], title:'Ansichten wechseln', text:'Wechsle zwischen Plantafel, Woche und Baustellen – je nachdem, was du gerade planst.' },
+    { kicker:'Planung', sel:['#fab'], title:'Auftrag einplanen', text:'Mit dem Plus legst du einen neuen Auftrag an und ziehst ihn direkt auf die richtige Kolonne.' },
+  ],
+  finanzen: [
+    { kicker:'Finanzen', sel:['.pagehead'], title:'Finanzen im Griff', text:'Angebote, Rechnungen und dein Umsatz an einem Ort – aufbauend auf deinem Kundenstamm.' },
+    { kicker:'Finanzen', sel:['#finTabs'], title:'Übersicht, Angebote & Rechnungen', text:'Hier siehst du offene Posten, schreibst Angebote und machst aus angenommenen Angeboten in Sekunden eine Rechnung.' },
+    { kicker:'Finanzen', sel:['#fab'], title:'Rechnung schreiben', text:'Mit dem Plus erstellst du Rechnung oder Angebot – Kundendaten werden automatisch übernommen.' },
+  ],
+  markt: [
+    { kicker:'Markt', sel:['.pagehead'], title:'Willkommen im Netzwerk', text:'Tausch dich mit anderen GaLaBau-Betrieben aus und kauf oder verkauf Maschinen direkt im Marktplatz.' },
+    { kicker:'Markt', sel:['#marktTabs'], title:'Feed & Marktplatz', text:'Im Feed stellst du Fragen und teilst Tipps, im Marktplatz findest du gebrauchte Maschinen und Material.' },
+    { kicker:'Markt', sel:['#fab'], title:'Mitmachen', text:'Mit dem Plus stellst du eine Frage oder bietest selbst etwas zum Verkauf an.' },
+  ],
+};
+function startModuleTour(id){
+  const steps = MODULE_TOURS[id];
+  if(!steps) return;
+  // kurz warten, bis die View gerendert ist, dann Tour starten
+  setTimeout(() => startTour(steps), 360);
+}
 
 function navButton(item,mode){
   const active = item.id === currentView ? 'on' : '';
@@ -7035,7 +7110,7 @@ function renderBotSheet(){
       <button class="iconbtn sheet__close" onclick="botX()"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body wa-body">
-      <div class="wa-note"><i data-lucide="info"></i> <span>Läuft <b>automatisch</b> bei jeder neuen Bewerbung. Der Bot sammelt nur Infos – er entscheidet nicht.</span></div>
+      <div class="wa-note"><i data-lucide="info"></i> <span>Du startest den Bot <b>manuell</b> im Bewerberprofil. Er sammelt nur fehlende Infos – entscheiden tust du.</span></div>
       <div class="wa-thread">${bubbles}</div>
     </div>
     ${botFootHtml(a)}`);
