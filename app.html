@@ -192,6 +192,15 @@
   .cs-list li{ display:flex; align-items:center; gap:9px; font-size:13.5px; font-weight:600; color:var(--ink); }
   .cs-list li .lucide{ width:16px; height:16px; color:var(--green); flex-shrink:0; }
   .cs-actions{ display:flex; gap:10px; }
+  /* Cockpit-Kachel „Demnächst" – nur auf dem Handy, weil dort die Bottom-Nav die gesperrten Module ausblendet */
+  .soon-tile{ display:none; }
+  .soon-tile__hd{ display:flex; align-items:center; gap:8px; font-size:12px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:var(--muted); margin-bottom:11px; }
+  .soon-tile__hd .lucide{ width:15px; height:15px; color:var(--green); }
+  .soon-tile__grid{ display:grid; grid-template-columns:1fr 1fr; gap:9px; }
+  .soon-chip{ display:flex; align-items:center; gap:10px; padding:12px; border:1px solid var(--line); border-radius:12px; background:#fff; text-align:left; font-weight:700; font-size:13.5px; color:var(--text); }
+  .soon-chip i[data-lucide]{ width:18px; height:18px; color:var(--green); flex-shrink:0; }
+  .soon-chip small{ display:block; font-weight:600; font-size:11px; color:var(--muted); margin-top:1px; }
+  @media(max-width:760px){ .soon-tile{ display:block; } }
   .sidefoot{ margin-top:auto; display:flex; flex-direction:column; gap:10px; }
   .powered{
     display:flex; align-items:center; justify-content:center; gap:6px;
@@ -2917,6 +2926,19 @@ function navButton(item,mode){
   }
   return `<button class="navitem ${active} ${locked?'locked':''}" onclick="${click}"><i data-lucide="${item.icon}"></i><span class="navitem__label">${item.label}</span>${badge}</button>`;
 }
+// Aus dem Cockpit heraus angesteuert: gesperrte Module zeigen die Vorschau statt eines Toasts.
+function goModule(id){ if(isLocked(id)){ openComingSoon(id); return; } setView(id); }
+// Cockpit-Kachel „Demnächst" – macht die auf dem Handy ausgeblendeten Module wieder auffindbar.
+function soonTileHtml(){
+  const locked = navForRole().filter(n => isLocked(n.id) && COMING_SOON[n.id]);
+  if(!locked.length) return '';
+  return `<div class="panel soon-tile">
+      <div class="soon-tile__hd"><i data-lucide="sparkles"></i> Demnächst freischalten</div>
+      <div class="soon-tile__grid">
+        ${locked.map(n => { const m = COMING_SOON[n.id]; return `<button class="soon-chip" onclick="openComingSoon('${n.id}')"><i data-lucide="${m.icon}"></i><span>${m.title}<small>Vorschau ansehen</small></span></button>`; }).join('')}
+      </div>
+    </div>`;
+}
 function setView(view){
   if(isLocked(view)){ moduleLocked(); return; }
   currentView = view;
@@ -3036,13 +3058,13 @@ function staticModuleHtml(key){
   switch(key){
     case 'kpi': return `<div class="kpi-grid">
           ${kpi('phone-call','2','Bewerber anrufen','vom BewerberBot qualifiziert',true,"setView('recruiting')")}
-          ${kpi('inbox','5','Neue Anfragen','WhatsApp · Mail · Tel.',false,"setView('kunden')")}
+          ${kpi('inbox','5','Neue Anfragen','WhatsApp · Mail · Tel.',false,"goModule('kunden')")}
         </div>`;
     case 'wichtig': return `<div class="panel">
           ${panelHead('list-checks','Das ist heute wichtig',{label:'Alle ansehen',action:"toast('Alle Aufgaben geöffnet')"})}
           <div class="tasklist">
             <div class="task hot" onclick="setView('recruiting')"><span class="task__icon"><i data-lucide="phone"></i></span><span class="task__copy"><span class="task__title">2 qualifizierte Bewerber anrufen</span><span class="task__meta">Thomas K. (Vorarbeiter) · Murat Y. (Pflasterer)</span></span><button class="mini-btn primary">Öffnen</button></div>
-            <div class="task" onclick="setView('kunden')"><span class="task__icon"><i data-lucide="message-circle"></i></span><span class="task__copy"><span class="task__title">Anfrage Familie Brandt beantworten</span><span class="task__meta">Gartenneuanlage · WhatsApp · vor 20 Min.</span></span><button class="mini-btn">Öffnen</button></div>
+            <div class="task" onclick="goModule('kunden')"><span class="task__icon"><i data-lucide="message-circle"></i></span><span class="task__copy"><span class="task__title">Anfrage Familie Brandt beantworten</span><span class="task__meta">Gartenneuanlage · WhatsApp · vor 20 Min.</span></span><button class="mini-btn">Öffnen</button></div>
             <div class="task" onclick="teamTab('urlaub');urlaubTab('antraege')"><span class="task__icon"><i data-lucide="calendar-clock"></i></span><span class="task__copy"><span class="task__title">3 Urlaubsanträge prüfen</span><span class="task__meta">u. a. Tim &amp; Stefan · Überschneidung in Kolonne 3</span></span><button class="mini-btn">Prüfen</button></div>
           </div>
         </div>`;
@@ -3057,15 +3079,15 @@ function staticModuleHtml(key){
           <div class="weather-bar"><div><b>Wind</b>12 km/h</div><div><b>Regen</b>0%</div><div><b>UV</b>mittel</div></div>
         </div>`;
     case 'recruiting': return `<div class="panel recruiting-panel">
-          <div class="recruiting-panel__label"><i data-lucide="sparkles"></i> Recruiting-Suche</div>
+          <div class="recruiting-panel__label"><i data-lucide="sparkles"></i> Bewerber-Suche</div>
           <div class="recruiting-panel__role">Landschaftsgärtner (m/w/d)</div>
           <div class="recruiting-panel__grid"><div class="recruiting-panel__metric"><b>7</b><span>Bewerber / Monat</span></div><div class="recruiting-panel__metric"><b>2</b><span>qualifiziert</span></div></div>
           <button class="btn full" style="margin-top:13px;box-shadow:none" onclick="setView('recruiting')">Bewerber ansehen</button>
         </div>`;
     case 'quick': return `<div class="quick-grid">
           <button onclick="teamTab('mitarbeiter')"><i data-lucide="user-plus"></i>Mitarbeiter</button>
-          <button onclick="setView('planung')"><i data-lucide="calendar-plus"></i>Einsatz</button>
-          <button onclick="setView('kunden')"><i data-lucide="file-plus"></i>Angebot</button>
+          <button onclick="goModule('planung')"><i data-lucide="calendar-plus"></i>Einsatz</button>
+          <button onclick="goModule('kunden')"><i data-lucide="file-plus"></i>Angebot</button>
           <button onclick="teamTab('zeit')"><i data-lucide="clock"></i>Zeiten</button>
         </div>`;
     default: return null;
@@ -3092,6 +3114,7 @@ const VIEWS = {
       </div>
       <div class="module-lane" id="railModules">
         ${moduleLayout.rail.map(k => moduleWrap(moduleHtmlFor(k), k)).join('')}
+        ${soonTileHtml()}
       </div>
     </div>`,
 
