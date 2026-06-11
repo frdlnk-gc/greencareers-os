@@ -3554,10 +3554,10 @@ function staticModuleHtml(key){
           <button class="btn full" style="margin-top:13px;box-shadow:none" onclick="setView('recruiting')">Bewerber ansehen</button>
         </div>`;
     case 'quick': return `<div class="quick-grid">
-          <button onclick="teamTab('mitarbeiter')"><i data-lucide="user-plus"></i>Mitarbeiter</button>
-          <button onclick="goModule('planung')"><i data-lucide="calendar-plus"></i>Einsatz</button>
-          <button onclick="goModule('kunden')"><i data-lucide="file-plus"></i>Angebot</button>
-          <button onclick="teamTab('zeit')"><i data-lucide="clock"></i>Zeiten</button>
+          <button onclick="teamTab('mitarbeiter')"><i data-lucide="folder-open"></i>Personalakte</button>
+          <button onclick="teamTab('zeit')"><i data-lucide="clock"></i>Zeiterfassung</button>
+          <button onclick="teamTab('urlaub')"><i data-lucide="plane"></i>Abwesenheiten</button>
+          <button onclick="setView('recruiting')"><i data-lucide="user-plus"></i>Bewerber</button>
         </div>`;
     default: return null;
   }
@@ -3671,9 +3671,9 @@ function teamTabList(){
   // dann Disposition, zuletzt die Stammdaten-Liste (wird am seltensten gebraucht).
   const tabs = [];
   tabs.push({id:'zeit', label:'Zeiterfassung', count:''});
-  tabs.push({id:'urlaub', label:'Urlaub & Krank', count:absences.filter(a => a.status === 'offen').length || ''});
+  tabs.push({id:'urlaub', label:'Abwesenheiten', count:absences.filter(a => a.status === 'offen').length || ''});
   if(can('editEmployees')) tabs.push({id:'kolonnen', label:'Kolonnen', count:crews.length});
-  tabs.push({id:'mitarbeiter', label:'Mitarbeiter', count:employees.length});
+  tabs.push({id:'mitarbeiter', label:'Personalakte', count:employees.length});
   return tabs;
 }
 function tabButton(id,label,count,active){
