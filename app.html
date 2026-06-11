@@ -1023,6 +1023,63 @@
   .detail-row dt{ width:130px; flex-shrink:0; color:var(--muted); }
   .detail-row dd{ font-weight:600; }
   .sheet-actions{ display:flex; gap:10px; margin-top:18px; }
+
+  /* ----- Right-Side Drawer (Bewerber-Detail) ----- */
+  .overlay.as-drawer{ place-items:stretch end; padding:0; }
+  .overlay.as-drawer .sheet{
+    width:min(100%,468px); height:100vh; max-height:100vh;
+    border-radius:0; box-shadow:-12px 0 48px rgba(10,30,18,.22);
+    animation:drawerIn .24s cubic-bezier(.22,.61,.36,1);
+    display:flex; flex-direction:column;
+  }
+  @keyframes drawerIn{ from{ transform:translateX(100%); } to{ transform:translateX(0); } }
+  @media(max-width:760px){ .overlay.as-drawer .sheet{ width:100%; } }
+
+  /* Kopierbare Kontaktzeilen */
+  .copy-row{ display:flex; align-items:center; gap:10px; padding:10px 12px; border:1px solid var(--line); border-radius:10px; background:var(--soft); margin-bottom:8px; }
+  .copy-row__ic{ width:32px; height:32px; flex-shrink:0; border-radius:8px; background:#fff; border:1px solid var(--line); display:grid; place-items:center; color:var(--green); }
+  .copy-row__ic .lucide{ width:16px; height:16px; }
+  .copy-row__main{ min-width:0; flex:1; }
+  .copy-row__label{ font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
+  .copy-row__val{ font-size:13.5px; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .copy-btn{ flex-shrink:0; width:30px; height:30px; border:1px solid var(--line); border-radius:8px; background:#fff; color:var(--muted); cursor:pointer; display:grid; place-items:center; transition:all .15s; }
+  .copy-btn:hover{ color:var(--green); border-color:var(--green); background:var(--soft-green); }
+  .copy-btn .lucide{ width:15px; height:15px; }
+
+  /* Kontakt-Aktionen (Anrufen/WhatsApp/Mail) */
+  .contact-actions{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:14px 0; }
+  .ca-btn{ display:flex; flex-direction:column; align-items:center; gap:6px; padding:13px 8px; border:1px solid var(--line); border-radius:12px; background:#fff; cursor:pointer; transition:all .15s; font-size:12px; font-weight:600; color:var(--text); }
+  .ca-btn:hover{ border-color:var(--green); background:var(--soft-green); transform:translateY(-1px); }
+  .ca-btn .lucide{ width:20px; height:20px; }
+  .ca-btn--call{ color:#0E7A43; }
+  .ca-btn--wa{ color:#1FA855; }
+  .ca-btn--mail{ color:#2563EB; }
+
+  /* CV-Karte */
+  .cv-card{ display:flex; align-items:center; gap:12px; padding:12px 14px; border:1px solid var(--line); border-radius:12px; background:#fff; cursor:pointer; transition:all .15s; }
+  .cv-card:hover{ border-color:var(--green); box-shadow:var(--shadow-soft); }
+  .cv-card__ic{ width:40px; height:40px; flex-shrink:0; border-radius:9px; background:linear-gradient(135deg,#FEE2E2,#FECACA); display:grid; place-items:center; color:#DC2626; }
+  .cv-card__none{ background:var(--soft); color:var(--muted); }
+  .cv-card__main{ flex:1; min-width:0; }
+  .cv-card__title{ font-size:13.5px; font-weight:600; }
+  .cv-card__meta{ font-size:11.5px; color:var(--muted); margin-top:1px; }
+
+  /* Abschnitts-Boxen im Drawer */
+  .dw-section{ margin-top:18px; }
+  .dw-section__h{ font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); margin-bottom:9px; display:flex; align-items:center; gap:7px; }
+  .dw-section__h .lucide{ width:14px; height:14px; }
+  .dw-letter{ font-size:13px; line-height:1.6; color:var(--text); background:var(--soft); border:1px solid var(--line); border-radius:10px; padding:12px 14px; }
+  .dw-quiz{ display:flex; flex-direction:column; gap:1px; border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+  .dw-quiz__row{ display:flex; justify-content:space-between; gap:12px; padding:9px 12px; background:#fff; font-size:12.5px; }
+  .dw-quiz__row:nth-child(even){ background:var(--soft); }
+  .dw-quiz__k{ color:var(--muted); }
+  .dw-quiz__v{ font-weight:600; text-align:right; }
+
+  /* Compose (Anschreiben) */
+  .compose-channels{ display:flex; gap:8px; margin-bottom:14px; }
+  .compose-tpl{ width:100%; padding:9px 11px; border:1px solid var(--line); border-radius:9px; background:#fff; font-size:13px; margin-bottom:10px; cursor:pointer; }
+  .compose-ta{ width:100%; min-height:150px; padding:12px; border:1px solid var(--line); border-radius:10px; font:inherit; font-size:13px; line-height:1.55; resize:vertical; }
+  .compose-hint{ font-size:11.5px; color:var(--muted); margin-top:8px; }
   .toast{
     position:fixed;
     left:50%;
@@ -2142,6 +2199,7 @@ function cmt(author, role, text, daysAgo){ return {id:cmtSeq++, author, role, te
 const applicants = [
   {id:1,name:'Daniel Hoffmann',phone:'0176 5544332',email:'d.hoffmann@web.de',jobId:'j1',source:'WhatsApp',date:'Heute, 08:14', stage:'neu',
    letter:'Hallo, ich habe 3 Jahre als Landschaftsgärtner gearbeitet und suche eine neue Stelle in der Nähe von Ahrensburg. Führerschein BE ist vorhanden.',
+   cv:{name:'Lebenslauf_Daniel_Hoffmann.pdf', meta:'PDF · 2 Seiten'},
    comments:[],
    pq:{branche:'Garten- & Landschaftsbau',beruf:'Landschaftsgärtner',erfahrung:3,gehalt:'',verfuegbar:'ab sofort',ort:'Ahrensburg'},
    pqStatus:'laufend', botScore:null,
@@ -2154,6 +2212,7 @@ const applicants = [
    role:'Geselle GaLaBau',tags:['Umzug möglich'],available:'in 4 Wochen',hot:false},
   {id:3,name:'Thomas Krause',phone:'0170 9988771',email:'t.krause@gmx.de',jobId:'j3',source:'WhatsApp',date:'Heute, 07:02', stage:'inbearb',
    letter:'',
+   cv:{name:'CV_Thomas_Krause_Vorarbeiter.pdf', meta:'PDF · 3 Seiten'},
    comments:[cmt('Georg Müller','Inhaber','Klingt sehr passend – hat Baggerschein und Vorarbeiter-Erfahrung. Anrufen!',1)],
    pq:{branche:'Garten- & Landschaftsbau',beruf:'Vorarbeiter',erfahrung:8,gehalt:'3.800 €',verfuegbar:'ab sofort',ort:'Bargteheide'},
    pqStatus:'fertig', botScore:87,
@@ -6371,7 +6430,20 @@ function openApplicant(id){
   // Abgleich Vorqual ↔ Stelle (nur wenn Stelle zugewiesen)
   const expOk = j && p.erfahrung != null ? p.erfahrung >= j.expMin : null;
   const brancheOk = j && p.branche ? p.branche === j.branche : null;
-  const chatBtn = `<button class="btn ghost" style="flex:1" onclick="viewBotChat(${id})"><i data-lucide="message-circle"></i> WhatsApp-Verlauf</button>`;
+  const tel = (a.phone||'').replace(/\s/g,'');
+  const wa = waNumber(a.phone);
+  const botDone = a.pqStatus === 'fertig';
+  // CV-Karte: zeigt angehängten Lebenslauf oder klaren Hinweis, dass keiner dabei ist
+  const cvCard = a.cv
+    ? `<div class="cv-card" onclick="toast('Lebenslauf-Vorschau folgt in der Live-Version')">
+         <span class="cv-card__ic"><i data-lucide="file-text"></i></span>
+         <div class="cv-card__main"><div class="cv-card__title">${escapeHtml(a.cv.name)}</div><div class="cv-card__meta">${escapeHtml(a.cv.meta||'PDF')} · angehängt</div></div>
+         <i data-lucide="download" style="width:18px;height:18px;color:var(--muted)"></i>
+       </div>`
+    : `<div class="cv-card" style="cursor:default">
+         <span class="cv-card__ic cv-card__none"><i data-lucide="file-x"></i></span>
+         <div class="cv-card__main"><div class="cv-card__title">Kein Lebenslauf angehängt</div><div class="cv-card__meta">Bewerbung kam ohne PDF</div></div>
+       </div>`;
   openSheet(`
     <div class="sheet__head">
       <span class="avatar" style="width:50px;height:50px;font-size:17px">${initials(a.name)}</span>
@@ -6380,6 +6452,38 @@ function openApplicant(id){
     </div>
     <div class="sheet__body">
       <div class="pq-statusbar">${pqBadge(a)}<span class="pq-progress">${filled}/6 Felder</span></div>
+
+      <div class="copy-row">
+        <span class="copy-row__ic"><i data-lucide="user"></i></span>
+        <div class="copy-row__main"><div class="copy-row__label">Name</div><div class="copy-row__val">${escapeHtml(a.name)}</div></div>
+        <button class="copy-btn" title="Name kopieren" onclick="copyVal('${escapeHtml(a.name)}','Name',event)"><i data-lucide="copy"></i></button>
+      </div>
+      <div class="copy-row">
+        <span class="copy-row__ic"><i data-lucide="phone"></i></span>
+        <div class="copy-row__main"><div class="copy-row__label">Telefon</div><div class="copy-row__val">${a.phone||'—'}</div></div>
+        ${a.phone?`<button class="copy-btn" title="Nummer kopieren" onclick="copyVal('${a.phone}','Nummer',event)"><i data-lucide="copy"></i></button>`:''}
+      </div>
+      <div class="copy-row">
+        <span class="copy-row__ic"><i data-lucide="mail"></i></span>
+        <div class="copy-row__main"><div class="copy-row__label">E-Mail</div><div class="copy-row__val">${a.email||'—'}</div></div>
+        ${a.email?`<button class="copy-btn" title="E-Mail kopieren" onclick="copyVal('${a.email}','E-Mail',event)"><i data-lucide="copy"></i></button>`:''}
+      </div>
+
+      <div class="contact-actions">
+        <a class="ca-btn ca-btn--call" href="tel:${tel}"><i data-lucide="phone-call"></i> Anrufen</a>
+        <button class="ca-btn ca-btn--wa" onclick="openCompose(${id},'whatsapp')"><i data-lucide="message-circle"></i> WhatsApp</button>
+        <button class="ca-btn ca-btn--mail" onclick="openCompose(${id},'email')"><i data-lucide="mail"></i> E-Mail</button>
+      </div>
+
+      ${botDone
+        ? `<button class="btn ghost" style="width:100%" onclick="viewBotChat(${id})"><i data-lucide="message-square-text"></i> WhatsApp-Bot-Verlauf ansehen</button>`
+        : `<button class="btn" style="width:100%" onclick="startBotPrequal(${id})"><i data-lucide="bot"></i> WhatsApp-Bot jetzt starten</button>
+           <p class="compose-hint" style="text-align:center">Startet die Vorqualifizierung manuell – der Bot fragt fehlende Infos ab.</p>`}
+
+      <div class="dw-section">
+        <div class="dw-section__h"><i data-lucide="paperclip"></i> Lebenslauf</div>
+        ${cvCard}
+      </div>
 
       <div class="setsec">Zuweisung</div>
       <div class="fieldrow">
@@ -6396,13 +6500,7 @@ function openApplicant(id){
         </div>
       </div>
 
-      <div class="setsec">Kontakt</div>
-      <div class="contactrow">
-        <a class="contactbtn" href="tel:${(a.phone||'').replace(/\s/g,'')}"><i data-lucide="phone"></i> ${a.phone||'—'}</a>
-        <a class="contactbtn" href="mailto:${a.email||''}"><i data-lucide="mail"></i> ${a.email||'—'}</a>
-      </div>
-
-      <div class="setsec">Vorqualifizierung <span class="setsec__hint">${j?`Abgleich mit „${j.title}"`:'läuft automatisch bei jeder Bewerbung'}</span></div>
+      <div class="setsec">Vorqualifizierung <span class="setsec__hint">${j?`Abgleich mit „${j.title}"`:'vom WhatsApp-Bot erfasst'}</span></div>
       <dl>
         ${pqRow('Branche', p.branche, brancheOk)}
         ${pqRow('Beruf / Position', p.beruf)}
@@ -6413,17 +6511,104 @@ function openApplicant(id){
         ${a.botScore!=null?`<div class="detail-row"><dt>BewerberBot-Score</dt><dd><b>${a.botScore}</b> / 100</dd></div>`:''}
       </dl>
 
-      ${a.letter ? `<div class="setsec">Anschreiben</div><div class="letterbox">${escapeHtml(a.letter)}</div>` : ''}
+      ${a.letter ? `<div class="dw-section"><div class="dw-section__h"><i data-lucide="pen-line"></i> Das schrieb ${a.name.split(' ')[0]}</div><div class="dw-letter">${escapeHtml(a.letter)}</div></div>` : ''}
 
       <div class="setsec">Interne Kommentare <span class="setsec__hint">nur fürs Team sichtbar</span></div>
       <div id="commentBox">${commentsHtml(a)}</div>
 
-      <div class="sheet-actions" style="margin-top:6px">
-        <button class="btn" style="flex:1" onclick="closeSheet();toast('Anruf wird gestartet')"><i data-lucide="phone"></i> Anrufen</button>
-        <button class="btn ghost" style="flex:1" onclick="closeSheet();toast('Probetag angelegt')"><i data-lucide="calendar-plus"></i> Probetag</button>
+      <div class="sheet-actions" style="margin-top:18px">
+        <button class="btn" style="flex:1" onclick="openProbetag(${id})"><i data-lucide="calendar-plus"></i> Probetag planen</button>
       </div>
-      <div class="sheet-actions">${chatBtn}</div>
-    </div>`);
+    </div>`, {drawer:true});
+}
+
+/* ----- Anschreiben (WhatsApp / E-Mail) mit Vorlagen ----- */
+function openCompose(id, channel){
+  const a = findCandidate(id); if(!a) return;
+  const isWa = channel === 'whatsapp';
+  const list = isWa ? TEMPLATES.whatsapp : TEMPLATES.email;
+  const first = list[0] ? fillTemplate(list[0].text, a) : '';
+  openSheet(`
+    <div class="sheet__head">
+      <span class="avatar" style="width:46px;height:46px;background:${isWa?'linear-gradient(135deg,#25D366,#1FA855)':'linear-gradient(135deg,#3B82F6,#2563EB)'}"><i data-lucide="${isWa?'message-circle':'mail'}" style="width:20px;height:20px"></i></span>
+      <div><div class="sheet__title">${isWa?'WhatsApp':'E-Mail'} an ${a.name.split(' ')[0]}</div><div class="sheet__sub">Vorlage wählen oder frei schreiben (Du-Form)</div></div>
+      <button class="iconbtn sheet__close" onclick="openApplicant(${id})"><i data-lucide="arrow-left"></i></button>
+    </div>
+    <div class="sheet__body">
+      <label class="copy-row__label" style="display:block;margin-bottom:6px">Vorlage</label>
+      <select class="compose-tpl" onchange="composePick(${id},'${channel}',this.value)">
+        <option value="">— eigener Text —</option>
+        ${list.map((t,i)=>`<option value="${i}" ${i===0?'selected':''}>${escapeHtml(t.name)}</option>`).join('')}
+      </select>
+      <textarea id="composeTa" class="compose-ta">${escapeHtml(first)}</textarea>
+      <p class="compose-hint">Platzhalter wie <code>{Vorname}</code> und <code>{Beruf}</code> werden automatisch ersetzt. Versand öffnet ${isWa?'WhatsApp':'dein Mailprogramm'} – nichts wird automatisch verschickt.</p>
+      <div class="sheet-actions">
+        <button class="btn" style="flex:1" onclick="composeSend(${id},'${channel}')"><i data-lucide="send"></i> In ${isWa?'WhatsApp':'E-Mail'} öffnen</button>
+        <button class="btn ghost" onclick="composeSaveTpl(${id},'${channel}')"><i data-lucide="bookmark-plus"></i> Als Vorlage</button>
+      </div>
+    </div>`, {drawer:true});
+}
+function composePick(id, channel, idx){
+  const a = findCandidate(id); if(!a) return;
+  const ta = document.getElementById('composeTa'); if(!ta) return;
+  if(idx === ''){ ta.value = ''; ta.focus(); return; }
+  const list = channel==='whatsapp' ? TEMPLATES.whatsapp : TEMPLATES.email;
+  const t = list[parseInt(idx,10)];
+  if(t) ta.value = fillTemplate(t.text, a);
+}
+function composeSend(id, channel){
+  const a = findCandidate(id); if(!a) return;
+  const ta = document.getElementById('composeTa');
+  const text = ta ? ta.value : '';
+  if(channel === 'whatsapp'){
+    const num = waNumber(a.phone);
+    window.open(`https://wa.me/${num}?text=${encodeURIComponent(text)}`, '_blank');
+    toast('WhatsApp wird geöffnet');
+  } else {
+    const sub = encodeURIComponent('Deine Bewerbung bei Müller GaLaBau');
+    window.location.href = `mailto:${a.email||''}?subject=${sub}&body=${encodeURIComponent(text)}`;
+    toast('E-Mail wird geöffnet');
+  }
+}
+function composeSaveTpl(id, channel){
+  const ta = document.getElementById('composeTa');
+  const text = ta ? ta.value.trim() : '';
+  if(!text){ toast('Erst Text schreiben'); return; }
+  const name = (text.split('\n')[0] || 'Eigene Vorlage').slice(0,40);
+  const list = channel==='whatsapp' ? TEMPLATES.whatsapp : TEMPLATES.email;
+  list.push({ id:'usr'+Date.now().toString(36), name, text });
+  saveTemplates();
+  toast('Als Vorlage gespeichert');
+}
+
+/* ----- Probetag planen (Kalender folgt in Welle 8) ----- */
+function openProbetag(id){
+  const a = findCandidate(id); if(!a) return;
+  openSheet(`
+    <div class="sheet__head">
+      <span class="avatar" style="width:46px;height:46px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="calendar-plus" style="width:20px;height:20px"></i></span>
+      <div><div class="sheet__title">Probetag mit ${a.name.split(' ')[0]}</div><div class="sheet__sub">Termin festlegen &amp; in den Kalender legen</div></div>
+      <button class="iconbtn sheet__close" onclick="openApplicant(${id})"><i data-lucide="arrow-left"></i></button>
+    </div>
+    <div class="sheet__body">
+      <div class="fieldrow">
+        <div class="field"><label>Datum</label><input id="ptDate" type="date"></div>
+        <div class="field"><label>Uhrzeit</label><input id="ptTime" type="time" value="07:00"></div>
+      </div>
+      <div class="field"><label>Baustelle / Treffpunkt</label><input id="ptOrt" placeholder="z. B. Betriebshof, Musterstr. 1"></div>
+      <p class="compose-hint"><i data-lucide="info"></i> Wird in deinen GreenCareers-Kalender gelegt und mit Google Kalender synchronisiert (in dieser Demo simuliert). Die volle Kalenderansicht kommt im nächsten Schritt.</p>
+      <div class="sheet-actions">
+        <button class="btn" style="flex:1" onclick="saveProbetag(${id})"><i data-lucide="check"></i> Probetag eintragen</button>
+        <button class="btn ghost" onclick="openApplicant(${id})">Zurück</button>
+      </div>
+    </div>`, {drawer:true});
+}
+function saveProbetag(id){
+  const a = findCandidate(id); if(!a) return;
+  const d = (document.getElementById('ptDate')||{}).value;
+  if(!d){ toast('Bitte Datum wählen'); return; }
+  closeSheet();
+  toast(`Probetag mit ${a.name.split(' ')[0]} eingetragen`);
 }
 /* ===================== BEWERBER HOCHLADEN (NUR GreenCareers-Backend) ===================== */
 // WICHTIG: Im Kunden-OS NICHT verfügbar. Bewerber werden von GreenCareers im internen Backend
@@ -6481,8 +6666,7 @@ function submitApplicantUpload(){
   applicants.push(a);
   uploadDraft = null;
   if(currentView==='recruiting') renderBewerberKanban(); else setView('recruiting');
-  toast(`${a.name.split(' ')[0]} hochgeladen – Vorqualifizierung startet`);
-  startBotPrequal(a.id);
+  toast(`${a.name.split(' ')[0]} hochgeladen – Bot im Profil manuell starten`);
 }
 
 /* ===================== WHATSAPP-VORQUALIFIZIERUNGS-BOT (Simulation) ===================== */
@@ -7163,13 +7347,17 @@ function openMessage(id){
       </div>
     </div>`);
 }
-function openSheet(html){
+function openSheet(html, opts){
   document.getElementById('sheet').innerHTML = html;
-  document.getElementById('modal').classList.remove('hidden');
+  const modal = document.getElementById('modal');
+  modal.classList.toggle('as-drawer', !!(opts && opts.drawer));
+  modal.classList.remove('hidden');
   icons();
 }
 function closeSheet(){
-  document.getElementById('modal').classList.add('hidden');
+  const modal = document.getElementById('modal');
+  modal.classList.add('hidden');
+  modal.classList.remove('as-drawer');
   if(currentView === 'kunden') customerTab(activeCustomerTab);
 }
 document.getElementById('modal').addEventListener('click', event => {
@@ -7178,6 +7366,56 @@ document.getElementById('modal').addEventListener('click', event => {
 document.addEventListener('keydown', event => {
   if(event.key === 'Escape') closeSheet();
 });
+
+/* ----- Kontakt-Helfer (Welle 6) ----- */
+function waNumber(phone){
+  let n = String(phone||'').replace(/[^0-9+]/g,'');
+  n = n.replace(/^\+/,'');
+  if(n.startsWith('00')) n = n.slice(2);
+  else if(n.startsWith('0')) n = '49' + n.slice(1);
+  return n;
+}
+function copyVal(text, label, ev){
+  if(ev){ ev.stopPropagation(); }
+  const done = () => toast((label||'Kopiert') + ' kopiert');
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(done, done);
+  } else {
+    const t = document.createElement('textarea'); t.value = text;
+    document.body.appendChild(t); t.select();
+    try{ document.execCommand('copy'); }catch(e){}
+    document.body.removeChild(t); done();
+  }
+}
+
+/* Vorlagen (Du-Form) – fertig + eigene (localStorage) */
+const DEFAULT_TEMPLATES = {
+  whatsapp: [
+    { id:'wa-dank', name:'Danke für die Bewerbung', text:'Hallo {Vorname}, danke, dass du dich bei uns als {Beruf} beworben hast! Wir schauen uns deine Bewerbung an und melden uns zeitnah. Liebe Grüße, dein Team von Müller GaLaBau' },
+    { id:'wa-kennen', name:'Kennenlernen', text:'Hallo {Vorname}, deine Bewerbung gefällt uns – wir würden dich gerne kennenlernen. Wann hättest du diese Woche kurz Zeit für ein Telefonat?' },
+    { id:'wa-termin', name:'Vorstellungsgespräch', text:'Hallo {Vorname}, wir würden gerne ein Vorstellungsgespräch mit dir vereinbaren. Passt es dir am Donnerstag um 16 Uhr bei uns auf dem Hof? Sag gern Bescheid!' },
+    { id:'wa-probe', name:'Probetag anbieten', text:'Hallo {Vorname}, am besten lernst du uns direkt auf der Baustelle kennen. Hättest du Lust auf einen bezahlten Probetag? Dann finden wir einen Termin.' }
+  ],
+  email: [
+    { id:'ml-dank', name:'Danke für die Bewerbung', text:'Hallo {Vorname},\n\nvielen Dank, dass du dich bei uns als {Beruf} beworben hast. Wir haben deine Unterlagen erhalten und melden uns in den nächsten Tagen bei dir.\n\nViele Grüße\nGeorg Müller\nMüller GaLaBau' },
+    { id:'ml-kennen', name:'Kennenlernen', text:'Hallo {Vorname},\n\ndeine Bewerbung hat uns angesprochen – wir würden dich gerne kennenlernen. Melde dich gern, wann es dir für ein kurzes Telefonat passt.\n\nViele Grüße\nGeorg Müller\nMüller GaLaBau' },
+    { id:'ml-termin', name:'Vorstellungsgespräch', text:'Hallo {Vorname},\n\nwir würden gerne ein persönliches Vorstellungsgespräch mit dir vereinbaren. Wie sieht es bei dir am Donnerstag um 16 Uhr bei uns auf dem Betriebshof aus?\n\nViele Grüße\nGeorg Müller\nMüller GaLaBau' }
+  ]
+};
+function loadTemplates(){
+  try{
+    const raw = localStorage.getItem('gc_templates');
+    if(raw){ const p = JSON.parse(raw); return { whatsapp:p.whatsapp||DEFAULT_TEMPLATES.whatsapp, email:p.email||DEFAULT_TEMPLATES.email }; }
+  }catch(e){}
+  return JSON.parse(JSON.stringify(DEFAULT_TEMPLATES));
+}
+let TEMPLATES = loadTemplates();
+function saveTemplates(){ try{ localStorage.setItem('gc_templates', JSON.stringify(TEMPLATES)); }catch(e){} }
+function fillTemplate(text, a){
+  const vorname = (a.name||'').split(' ')[0] || '';
+  const beruf = (a.role || (a.pq && a.pq.beruf) || 'Mitarbeiter');
+  return String(text).replace(/\{Vorname\}/g, vorname).replace(/\{Beruf\}/g, beruf);
+}
 
 function findCandidate(id){ return applicants.find(item => item.id === id) || null; }
 function findCandidateCol(id){ const a = findCandidate(id); return a ? a.stage : ''; }
