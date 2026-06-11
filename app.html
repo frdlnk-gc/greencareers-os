@@ -1075,6 +1075,33 @@
   .dw-quiz__k{ color:var(--muted); }
   .dw-quiz__v{ font-weight:600; text-align:right; }
 
+  /* ----- Personalakte ----- */
+  .akte-photo{ position:relative; }
+  .akte-photo img{ width:50px; height:50px; border-radius:50%; object-fit:cover; display:block; }
+  .akte-photo__cam{ position:absolute; right:-3px; bottom:-3px; width:20px; height:20px; border-radius:50%; background:var(--green); border:2px solid #fff; display:grid; place-items:center; cursor:pointer; }
+  .akte-photo__cam .lucide{ width:10px; height:10px; color:#fff; }
+  .akte-chips{ display:flex; flex-wrap:wrap; gap:7px; }
+  .akte-chip{ font-size:12px; font-weight:700; color:var(--green-2); background:var(--soft-green); border:1px solid #CFE9D8; border-radius:7px; padding:5px 9px; }
+  .akte-cert{ display:flex; align-items:center; gap:10px; padding:10px 12px; border:1px solid var(--line); border-radius:10px; background:#fff; margin-bottom:7px; }
+  .akte-cert__ic{ width:30px; height:30px; flex-shrink:0; border-radius:8px; background:var(--soft); display:grid; place-items:center; color:var(--green); }
+  .akte-cert__ic .lucide{ width:15px; height:15px; }
+  .akte-cert__main{ flex:1; min-width:0; }
+  .akte-cert__name{ font-size:13px; font-weight:600; }
+  .akte-cert__exp{ font-size:11.5px; color:var(--muted); margin-top:1px; }
+  .akte-badge{ flex-shrink:0; font-size:10.5px; font-weight:700; padding:3px 8px; border-radius:99px; }
+  .akte-badge.ok{ color:#0E7A43; background:#E4F6EC; }
+  .akte-badge.warn{ color:#9A6B1E; background:#FBF3E2; }
+  .akte-badge.bad{ color:#B42318; background:#FEE4E2; }
+  .akte-note{ border:1px solid var(--line); border-radius:10px; background:#fff; padding:11px 13px; margin-bottom:8px; }
+  .akte-note__meta{ font-size:11px; color:var(--muted); margin-bottom:4px; display:flex; gap:7px; }
+  .akte-note__txt{ font-size:13px; line-height:1.5; color:var(--text); }
+  .akte-add{ width:100%; min-height:64px; padding:10px 12px; border:1px solid var(--line); border-radius:10px; font:inherit; font-size:13px; line-height:1.5; resize:vertical; margin-bottom:8px; }
+  .akte-docadd{ display:flex; align-items:center; justify-content:center; gap:8px; width:100%; padding:11px; border:1.5px dashed var(--line); border-radius:11px; background:var(--soft); color:var(--muted); font-size:12.5px; font-weight:600; cursor:pointer; transition:all .15s; }
+  .akte-docadd:hover{ border-color:var(--green); color:var(--green); background:var(--soft-green); }
+  .akte-docadd .lucide{ width:16px; height:16px; }
+  .akte-sensitive{ font-size:10.5px; color:var(--muted); display:inline-flex; align-items:center; gap:4px; }
+  .akte-sensitive .lucide{ width:11px; height:11px; }
+
   /* Compose (Anschreiben) */
   .compose-channels{ display:flex; gap:8px; margin-bottom:14px; }
   .compose-tpl{ width:100%; padding:9px 11px; border:1px solid var(--line); border-radius:9px; background:#fff; font-size:13px; margin-bottom:10px; cursor:pointer; }
@@ -7531,33 +7558,169 @@ function submitProtocol(siteId, empId){
   toast('Tagesprotokoll gespeichert' + (damageText ? ' · Schaden gemeldet' : ''));
 }
 
+/* ===================== PERSONALAKTE (HR-Stammdaten je Mitarbeiter) ===================== */
+// Demo-Personaldaten. Sensible Felder (Gehalt, IBAN, Steuer-ID, SV-Nr) nur mit Recht „editEmployees".
+const HR_SEED = {
+  1:{bd:'1986-03-14',addr:'Lindenweg 12, 22359 Hamburg',pphone:'040 5566778',contract:'Unbefristet',hours:40,probe:'',salary:'3.450 € / Monat',iban:'DE89 3704 0044 0532 0130 00',taxId:'12 345 678 901',sv:'65 140386 A 123',kk:'AOK Nordwest',nk:{n:'Petra Albrecht',r:'Ehefrau',p:'0171 1112233'},fs:['B','BE','C1','T'],certs:[{n:'Erste Hilfe (16h)',exp:'2027-04-30'},{n:'Motorsägenschein AS Baum I',exp:'2026-09-15'},{n:'PSA gegen Absturz',exp:'2026-07-01'}],psa:{s:'L',h:'52',f:'44'},
+     docs:[{name:'Arbeitsvertrag_Sven_Albrecht.pdf',type:'Vertrag',date:'2019-04-01'},{name:'Fuehrerschein_Sven.jpg',type:'Führerschein',date:'2023-02-10'},{name:'AS_Baum_I_Zertifikat.pdf',type:'Bescheinigung',date:'2024-09-15'}],
+     notes:[{date:'2026-05-20',author:'Georg Müller',text:'Übernimmt ab Juni die Einarbeitung von Lukas (Azubi).'},{date:'2026-03-02',author:'Georg Müller',text:'Gehaltsgespräch geführt – Erhöhung zum 01.04. vereinbart.'}]},
+  2:{bd:'1992-07-22',addr:'Kieler Str. 88, 22769 Hamburg',pphone:'',contract:'Unbefristet',hours:40,probe:'',salary:'3.050 € / Monat',iban:'DE21 2005 0550 1234 5678 90',taxId:'45 678 901 234',sv:'12 220792 K 456',kk:'Techniker Krankenkasse',nk:{n:'Aylin Kaya',r:'Ehefrau',p:'0152 3344556'},fs:['B','BE','C1'],certs:[{n:'Erste Hilfe (16h)',exp:'2026-08-20'},{n:'Rüttelplatte / Verdichtung',exp:''}],psa:{s:'XL',h:'54',f:'45'},
+     docs:[{name:'Arbeitsvertrag_Mehmet_Kaya.pdf',type:'Vertrag',date:'2021-05-01'},{name:'Fuehrerschein_Mehmet.jpg',type:'Führerschein',date:'2021-05-01'}],
+     notes:[{date:'2026-04-10',author:'Georg Müller',text:'Sehr zuverlässig bei Pflasterarbeiten, kann Kolonne vertreten.'}]},
+  3:{bd:'1998-11-05',addr:'Gärtnerstr. 4, 22041 Hamburg',pphone:'040 7788991',contract:'Unbefristet',hours:40,probe:'',salary:'2.850 € / Monat',iban:'DE33 2004 1133 0998 7654 32',taxId:'78 901 234 567',sv:'48 051198 S 789',kk:'AOK Nordwest',nk:{n:'Maria Schulz',r:'Mutter',p:'0176 9988771'},fs:['B','T','L'],certs:[{n:'Erste Hilfe (16h)',exp:'2026-12-01'},{n:'Gabelstaplerschein',exp:'2028-01-15'}],psa:{s:'M',h:'48',f:'43'},
+     docs:[{name:'Arbeitsvertrag_Tim_Schulz.pdf',type:'Vertrag',date:'2022-08-01'}],
+     notes:[]},
+  5:{bd:'2006-02-18',addr:'Schulredder 9, 22119 Hamburg',pphone:'040 2211009',contract:'Ausbildung (3. Lehrjahr)',hours:40,probe:'',salary:'1.150 € / Monat (Azubi)',iban:'DE07 2007 0024 0455 6677 88',taxId:'90 123 456 789',sv:'33 180206 L 234',kk:'DAK-Gesundheit',nk:{n:'Andrea Berger',r:'Mutter',p:'0151 6677889'},fs:['B'],certs:[{n:'Erste Hilfe (16h)',exp:'2027-02-28'}],psa:{s:'M',h:'46',f:'42'},
+     docs:[{name:'Ausbildungsvertrag_Lukas_Berger.pdf',type:'Vertrag',date:'2024-08-01'},{name:'Berufsschule_Zeugnis_2025.pdf',type:'Bescheinigung',date:'2025-07-15'}],
+     notes:[{date:'2026-05-20',author:'Georg Müller',text:'Wird von Sven eingearbeitet. Abschlussprüfung Sommer 2027.'}]},
+  10:{bd:'1980-09-30',addr:'Maschstr. 21, 21035 Hamburg',pphone:'',contract:'Unbefristet',hours:40,probe:'',salary:'3.600 € / Monat',iban:'DE55 2004 0066 0112 2334 45',taxId:'34 567 890 123',sv:'09 300980 V 567',kk:'Barmer',nk:{n:'Klaus Vogt',r:'Bruder',p:'0170 4455667'},fs:['B','BE','C1','C','CE','T','L'],certs:[{n:'Erste Hilfe (16h)',exp:'2026-06-25'},{n:'Bagger / Radlader (Erdbaumaschinen)',exp:''},{n:'Ladungssicherung',exp:'2027-03-01'}],psa:{s:'XL',h:'56',f:'46'},
+     docs:[{name:'Arbeitsvertrag_Stefan_Vogt.pdf',type:'Vertrag',date:'2017-03-01'},{name:'Fuehrerschein_CE_Stefan.jpg',type:'Führerschein',date:'2022-06-01'},{name:'Erdbaumaschinen_Nachweis.pdf',type:'Bescheinigung',date:'2019-04-12'}],
+     notes:[]},
+};
+function hrFallback(e){
+  // deterministische Demo-Werte für Mitarbeiter ohne expliziten Seed
+  return {bd:'1995-06-15',addr:'Hamburg',pphone:'',contract:'Unbefristet',hours:40,probe:'',salary:'2.900 € / Monat',iban:'DE00 0000 0000 0000 0000 00',taxId:'—',sv:'—',kk:'AOK Nordwest',nk:{n:'—',r:'',p:''},fs:['B'],certs:[{n:'Erste Hilfe (16h)',exp:'2027-01-31'}],psa:{s:'L',h:'50',f:'44'},docs:[{name:'Arbeitsvertrag_'+e.name.replace(/\s+/g,'_')+'.pdf',type:'Vertrag',date:e.since+'-01-01'}],notes:[]};
+}
+let hrStore = {};   // Laufzeit-Kopie (Notizen/Dokumente sind in der Demo bearbeitbar)
+function hrData(e){
+  if(!hrStore[e.id]){ hrStore[e.id] = JSON.parse(JSON.stringify(HR_SEED[e.id] || hrFallback(e))); }
+  return hrStore[e.id];
+}
+function deDate(iso){ if(!iso) return '—'; const d=new Date(iso); if(isNaN(d)) return iso; return d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}); }
+function ageFrom(iso){ const d=new Date(iso); if(isNaN(d)) return ''; const t=new Date(TODAY); let a=t.getFullYear()-d.getFullYear(); if(t.getMonth()<d.getMonth()||(t.getMonth()===d.getMonth()&&t.getDate()<d.getDate())) a--; return a; }
+function certStatus(exp){
+  if(!exp) return ['ok','unbefristet'];
+  const days = Math.round((new Date(exp) - new Date(TODAY)) / 86400000);
+  if(days < 0) return ['bad','abgelaufen'];
+  if(days <= 60) return ['warn','läuft bald ab'];
+  return ['ok','gültig'];
+}
+function kv(k,v){ return `<div class="dw-quiz__row"><span class="dw-quiz__k">${k}</span><span class="dw-quiz__v">${v}</span></div>`; }
+function akteCopyRow(label,val,icon){
+  if(!val) return '';
+  const esc = String(val).replace(/'/g,"\\'");
+  return `<div class="copy-row"><div class="copy-row__ic"><i data-lucide="${icon}"></i></div><div class="copy-row__main"><div class="copy-row__label">${label}</div><div class="copy-row__val">${escapeHtml(val)}</div></div><button class="copy-btn" onclick="copyVal('${esc}','${label} kopiert',event)"><i data-lucide="copy"></i></button></div>`;
+}
+function docIcon(type){ return type==='Vertrag'?'file-signature':(type==='Führerschein'?'id-card':'file-text'); }
 function openEmployee(id){
   const e = employees.find(item => item.id === id);
   if(!e) return;
+  const hr = hrData(e);
+  const priv = can('editEmployees');   // Gehalt/IBAN/Steuer/SV nur für Inhaber & Personalverwaltung
+  const vac = vacInfo(e.id);
+  const te = empEntryToday(e.id); const s = te && site(te.siteId);
+  const am = accountMeta(e.account);
+  const photo = hr.photo
+    ? `<span class="avatar akte-photo" style="width:50px;height:50px"><img src="${hr.photo}" alt=""><span class="akte-photo__cam" onclick="event.stopPropagation();setEmpPhoto(${e.id})"><i data-lucide="camera"></i></span></span>`
+    : `<span class="avatar akte-photo" style="width:50px;height:50px;font-size:17px">${initials(e.name)}<span class="akte-photo__cam" onclick="event.stopPropagation();setEmpPhoto(${e.id})"><i data-lucide="camera"></i></span></span>`;
+  const certHtml = hr.certs.map(c => { const st = certStatus(c.exp); return `<div class="akte-cert"><div class="akte-cert__ic"><i data-lucide="award"></i></div><div class="akte-cert__main"><div class="akte-cert__name">${escapeHtml(c.n)}</div><div class="akte-cert__exp">${c.exp?('gültig bis '+deDate(c.exp)):'unbefristet'}</div></div><span class="akte-badge ${st[0]}">${st[1]}</span></div>`; }).join('');
+  const docHtml = hr.docs.map((d,i) => `<div class="cv-card" onclick="toast('Demo · Dokument öffnen')"><div class="cv-card__ic"><i data-lucide="${docIcon(d.type)}"></i></div><div class="cv-card__main"><div class="cv-card__title">${escapeHtml(d.name)}</div><div class="cv-card__meta">${d.type} · ${deDate(d.date)}</div></div><i data-lucide="download" style="width:16px;height:16px;color:var(--muted)"></i></div>`).join('');
+  const noteHtml = hr.notes.length
+    ? hr.notes.map(n => `<div class="akte-note"><div class="akte-note__meta"><b>${escapeHtml(n.author)}</b> · ${deDate(n.date)}</div><div class="akte-note__txt">${escapeHtml(n.text)}</div></div>`).join('')
+    : `<p class="compose-hint" style="margin:0 0 8px">Noch keine Notizen.</p>`;
   openSheet(`
     <div class="sheet__head">
-      <span class="avatar" style="width:50px;height:50px;font-size:17px">${initials(e.name)}</span>
+      ${photo}
       <div><div class="sheet__title">${e.name}</div><div class="sheet__sub">${e.role} · ${crewOf(e)}</div></div>
       <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body">
-      <dl>
-        <div class="detail-row"><dt>Status</dt><dd><span class="pill ${empStatus(e.id)[1]}">${empStatus(e.id)[0]}</span></dd></div>
-        ${(() => { const am = accountMeta(e.account); return `<div class="detail-row"><dt>Zugang</dt><dd><span class="pill ${am[1]}"><i data-lucide="${am[2]}" style="width:12px;height:12px;vertical-align:-2px"></i> ${am[0]}</span> ${ROLES[e.sysRole]?`<small style="color:var(--muted)">· ${ROLES[e.sysRole].short}</small>`:''}</dd></div>`; })()}
-        ${(() => { const te = empEntryToday(e.id); const s = te && site(te.siteId); return te ? `<div class="detail-row"><dt>Heute auf Baustelle</dt><dd>${s.customerId ? `<span class="clink" onclick="closeSheet();openCustomer('${s.customerId}')">${s.customer} · ${s.label}</span>` : `${s.customer}`} <small style="color:var(--muted)">· ${te.in}${te.out ? '–' + te.out : ' · läuft'}</small></dd></div>` : ''; })()}
-        <div class="detail-row"><dt>Telefon</dt><dd>${e.phone}</dd></div>
-        <div class="detail-row"><dt>E-Mail</dt><dd>${e.email||'—'}</dd></div>
-        <div class="detail-row"><dt>Im Betrieb seit</dt><dd>${e.since}</dd></div>
-        <div class="detail-row"><dt>Urlaub ${new Date(TODAY).getFullYear()}</dt><dd>${vacInfo(e.id).taken} genommen · ${vacInfo(e.id).planned} geplant · <b>${vacInfo(e.id).rest} Rest</b> (von ${e.annual})</dd></div>
-        <div class="detail-row"><dt>Dokumente</dt><dd>Vertrag · Führerschein · Bescheinigungen</dd></div>
-      </dl>
-      ${e.account !== 'active' && can('editEmployees') ? `<button class="btn btn--block" onclick="inviteEmployee(${e.id})"><i data-lucide="send"></i> ${e.account==='invited'?'Einladung erneut senden':'Einladung per E-Mail senden'}</button>` : ''}
-      <div class="sheet-actions">
-        <button class="btn" style="flex:1" onclick="openPersonCal(${e.id})"><i data-lucide="calendar-days"></i> Kalender ansehen</button>
-        <button class="btn ghost" style="flex:1" onclick="closeSheet();teamTab('urlaub');openAbsenceForm(${e.id})"><i data-lucide="plane"></i> Abwesenheit erfassen</button>
+      <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px">
+        <span class="pill ${empStatus(e.id)[1]}">${empStatus(e.id)[0]}</span>
+        <span class="pill ${am[1]}"><i data-lucide="${am[2]}" style="width:12px;height:12px;vertical-align:-2px"></i> ${am[0]}</span>
+        ${te ? `<span class="pill g"><i data-lucide="map-pin" style="width:12px;height:12px;vertical-align:-2px"></i> heute im Einsatz</span>` : ''}
       </div>
-      ${can('editEmployees') ? `<button class="btn ghost btn--block" onclick="openEmployeeForm(${e.id})"><i data-lucide="pencil"></i> Mitarbeiter bearbeiten</button>` : ''}
-    </div>`);
+
+      <div class="contact-actions">
+        <a class="ca-btn ca-btn--call" href="tel:${(e.phone||'').replace(/\s+/g,'')}"><i data-lucide="phone"></i> Anrufen</a>
+        <a class="ca-btn ca-btn--mail" href="mailto:${e.email||''}"><i data-lucide="mail"></i> E-Mail</a>
+        <button class="ca-btn" onclick="closeSheet();openPersonCal(${e.id})"><i data-lucide="calendar-days"></i> Kalender</button>
+      </div>
+
+      ${akteCopyRow('Telefon (dienstlich)', e.phone, 'phone')}
+      ${akteCopyRow('Telefon (privat)', hr.pphone, 'smartphone')}
+      ${akteCopyRow('E-Mail', e.email, 'mail')}
+
+      <div class="dw-section">
+        <div class="dw-section__h"><i data-lucide="briefcase"></i> Beschäftigung</div>
+        <div class="dw-quiz">
+          ${kv('Im Betrieb seit', e.since)}
+          ${kv('Vertragsart', hr.contract)}
+          ${kv('Wochenstunden', hr.hours+' h')}
+          ${hr.probe ? kv('Probezeit bis', deDate(hr.probe)) : ''}
+          ${priv ? kv('Vergütung', hr.salary) : ''}
+          ${kv('Urlaub '+new Date(TODAY).getFullYear(), `${vac.rest} Rest <small style="color:var(--muted);font-weight:500">(${vac.taken} genommen · ${vac.planned} geplant · ${e.annual} ges.)</small>`)}
+          ${s ? kv('Heute auf Baustelle', `${s.customer}${s.label?' · '+s.label:''}`) : ''}
+        </div>
+      </div>
+
+      <div class="dw-section">
+        <div class="dw-section__h"><i data-lucide="user"></i> Persönlich</div>
+        <div class="dw-quiz">
+          ${kv('Geburtsdatum', `${deDate(hr.bd)}${ageFrom(hr.bd)?` <small style="color:var(--muted);font-weight:500">(${ageFrom(hr.bd)} J.)</small>`:''}`)}
+          ${kv('Adresse', escapeHtml(hr.addr))}
+          ${kv('Notfallkontakt', hr.nk.n!=='—' ? `${escapeHtml(hr.nk.n)} <small style="color:var(--muted);font-weight:500">(${escapeHtml(hr.nk.r)})</small> · ${hr.nk.p}` : '—')}
+        </div>
+      </div>
+
+      ${priv ? `<div class="dw-section">
+        <div class="dw-section__h"><i data-lucide="shield"></i> Sozialversicherung &amp; Steuer <span class="akte-sensitive"><i data-lucide="lock"></i> nur Personalverwaltung</span></div>
+        <div class="dw-quiz">
+          ${kv('Krankenkasse', escapeHtml(hr.kk))}
+          ${kv('SV-Nummer', hr.sv)}
+          ${kv('Steuer-ID', hr.taxId)}
+          ${kv('IBAN (Lohn)', hr.iban)}
+        </div>
+      </div>` : ''}
+
+      <div class="dw-section">
+        <div class="dw-section__h"><i data-lucide="car"></i> Führerschein &amp; Qualifikation</div>
+        <div class="akte-chips" style="margin-bottom:10px">${hr.fs.map(f=>`<span class="akte-chip">Klasse ${f}</span>`).join('')||'<span class="compose-hint">Kein Führerschein hinterlegt</span>'}</div>
+        ${certHtml}
+        <div class="dw-quiz" style="margin-top:8px">
+          ${kv('Kleidung (Oberteil)', 'Größe '+hr.psa.s)}
+          ${kv('Hose', 'Größe '+hr.psa.h)}
+          ${kv('Sicherheitsschuhe', 'Größe '+hr.psa.f)}
+        </div>
+      </div>
+
+      <div class="dw-section">
+        <div class="dw-section__h"><i data-lucide="folder"></i> Dokumente <small style="color:var(--muted);font-weight:600;text-transform:none;letter-spacing:0">· ${hr.docs.length}</small></div>
+        <div style="display:flex;flex-direction:column;gap:7px;margin-bottom:9px">${docHtml||'<p class="compose-hint" style="margin:0">Noch keine Dokumente.</p>'}</div>
+        ${priv ? `<div class="akte-docadd" onclick="uploadEmpDoc(${e.id})"><i data-lucide="upload"></i> Dokument hochladen (PDF, JPG, PNG)</div>` : ''}
+      </div>
+
+      <div class="dw-section">
+        <div class="dw-section__h"><i data-lucide="sticky-note"></i> Notizen</div>
+        ${noteHtml}
+        ${priv ? `<textarea class="akte-add" id="akteNote" placeholder="Interne Notiz hinzufügen (nur für die Personalverwaltung sichtbar)…"></textarea>
+        <button class="btn ghost sm btn--block" onclick="addEmpNote(${e.id})"><i data-lucide="plus"></i> Notiz speichern</button>` : ''}
+      </div>
+
+      ${e.account !== 'active' && priv ? `<button class="btn btn--block" style="margin-top:16px" onclick="inviteEmployee(${e.id})"><i data-lucide="send"></i> ${e.account==='invited'?'Einladung erneut senden':'Einladung per E-Mail senden'}</button>` : ''}
+      <div class="sheet-actions">
+        <button class="btn" style="flex:1" onclick="closeSheet();teamTab('urlaub');openAbsenceForm(${e.id})"><i data-lucide="plane"></i> Abwesenheit erfassen</button>
+        ${priv ? `<button class="btn ghost" style="flex:1" onclick="openEmployeeForm(${e.id})"><i data-lucide="pencil"></i> Stammdaten bearbeiten</button>` : ''}
+      </div>
+    </div>`, {drawer:true});
+}
+function setEmpPhoto(id){ toast('Demo · hier würdest du ein Foto hochladen'); }
+function uploadEmpDoc(id){
+  const e = emp(id); if(!e) return;
+  const hr = hrData(e);
+  hr.docs.unshift({name:'Neues_Dokument_'+(hr.docs.length+1)+'.pdf', type:'Bescheinigung', date:TODAY});
+  openEmployee(id);
+  toast('Dokument hochgeladen (Demo)');
+}
+function addEmpNote(id){
+  const ta = document.getElementById('akteNote');
+  const txt = ta ? ta.value.trim() : '';
+  if(!txt){ toast('Bitte erst etwas eintippen'); return; }
+  const e = emp(id); if(!e) return;
+  const hr = hrData(e);
+  hr.notes.unshift({date:TODAY, author: (settings.company&&settings.company.owner) || 'Georg Müller', text:txt});
+  openEmployee(id);
+  toast('Notiz gespeichert');
 }
 /* ---- Mitarbeiter anlegen / bearbeiten + Einladung ---- */
 function openEmployeeForm(id){
