@@ -4980,7 +4980,7 @@ function submitMarkt(){
   if(currentView==='markt') marktTab(activeMarktTab);
 }
 
-/* ===================== GREENCAREERS BRAIN (Claude-Assistent) ===================== */
+/* ===================== GALABRAIN (KI-Assistent) ===================== */
 let brainMsgs = [];
 let brainRec = null;
 const BRAIN_CHIPS = [
@@ -5001,7 +5001,7 @@ function renderBrain(){
   openSheet(`
     <div class="brain-head">
       <span class="brain-av"><i data-lucide="sparkles"></i></span>
-      <div><div class="sheet__title">GaLaBrain</div><div class="sheet__sub">Dein KI-Assistent · powered by Claude</div></div>
+      <div><div class="sheet__title">GaLaBrain</div><div class="sheet__sub">Dein KI-Assistent für den Betrieb</div></div>
       <button class="sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
     </div>
     <div class="brain-body">
@@ -5028,12 +5028,30 @@ function brainSend(text){
   renderBrainMsgs();
   setTimeout(()=>{
     brainMsgs = brainMsgs.filter(m=>!m.typing);
-    brainMsgs.push({role:'bot', text:brainAnswer(text)});
+    const ans = brainAnswer(text);
+    brainMsgs.push({role:'bot', text:ans});
+    if(!isBrainMeta(text)) _brainLastAnswer = ans;
     renderBrainMsgs();
   }, 750);
 }
+let _brainLastAnswer = '';
 function brainAnswer(q){
-  const s = q.toLowerCase();
+  const s = q.toLowerCase().trim();
+  // --- Smalltalk & Begrüßung ---
+  if(/^(moin|hallo|hi|hey|servus|guten (morgen|tag|abend)|na)\b/.test(s) && s.length < 30)
+    return `Moin! 👋 Schieß los – frag mich z. B. „Wie kalkuliere ich Pflaster?", „Was muss auf eine Rechnung?" oder „Wie lade ich einen Bewerber zum Probetag ein?". Ich antworte in Klartext.`;
+  if(/^(danke|merci|top|super|perfekt|alles klar|passt)\b/.test(s) && s.length < 25)
+    return `Immer gerne, Georg. 💪 Wenn noch was ist – einfach fragen.`;
+  // --- Rückfrage / "verstehe ich nicht" → letzte Antwort einfacher ---
+  if(/^(hä|haeh|was|wie bitte|versteh|verstehe ich nicht|nochmal|erklär|erkläre|kapier)/.test(s) && s.length < 35){
+    if(_brainLastAnswer) return `Klar, ich sag's einfacher:<br><br>` + _brainLastAnswer;
+    return `Kein Ding – stell die Frage gern konkret, dann erkläre ich es Schritt für Schritt. Z. B. „Wie mache ich ein digitales Aufmaß?" oder „Wie viel MwSt. auf Pflanzen?".`;
+  }
+  if(/^(ja|jo|jap|genau|stimmt)\b/.test(s) && s.length < 12)
+    return `Alles klar 👍 Was möchtest du als Nächstes wissen?`;
+  // --- Aufmaß / digitale Vermessung ---
+  if(/(aufmaß|aufmass|aufmaßen|vermess|aufmessen|flächen messen|fläche messen)/.test(s))
+    return `Digitales Aufmaß beim Kunden machst du so:<br>• <strong>Vor Ort</strong> mit dem Handy: Fläche per <strong>Foto + Maße</strong> erfassen (Länge × Breite je Teilfläche), unregelmäßige Flächen in Rechtecke/Dreiecke zerlegen<br>• <strong>Laser-Entfernungsmesser</strong> koppeln spart Zettelwirtschaft – Werte direkt eintragen<br>• Aus dem Aufmaß wird mit einem Klick die <strong>Angebotsposition</strong> (m² × Einheitspreis)<br><br>In GreenCareers OS hängst du das Aufmaß direkt an den Kunden/die Anfrage – Fotos, Maße und Skizze bleiben am Auftrag, sodass nichts auf losen Zetteln verloren geht. Beim nächsten Mal rufst du es per Kunde wieder auf.`;
   if(/(mwst|umsatzsteuer|steuer ausweisen|19\s?%|7\s?%)/.test(s))
     return `Auf der Rechnung musst du die <strong>MwSt. separat ausweisen</strong>:<br>• <strong>Netto-Betrag</strong> (Summe ohne Steuer)<br>• <strong>Steuersatz</strong> – im GaLaBau i.d.R. <strong>19 %</strong> (7 % nur bei bestimmten Pflanzenlieferungen)<br>• <strong>Steuerbetrag</strong> in €<br>• <strong>Brutto</strong> (Netto + Steuer)<br><br>Wichtig: deine <strong>Steuernummer oder USt-IdNr.</strong> muss drauf. Kleinunternehmer (§19) weisen <strong>keine</strong> MwSt. aus und schreiben den Hinweis „Gemäß §19 UStG wird keine Umsatzsteuer berechnet". Beim neuen Angebot/Rechnung-Formular kannst du den Satz direkt auswählen.`;
   if(/(was muss.*rechnung|pflichtangaben|gültige rechnung|rechnung schreiben|rechnung.*stehen)/.test(s))
@@ -5048,7 +5066,18 @@ function brainAnswer(q){
     return `Den <strong>AVV (Auftragsverarbeitungsvertrag)</strong> hast du beim Einrichten schon digital bestätigt – der ist dokumentiert und liegt unter <em>Einstellungen → Verträge &amp; Datenschutz</em>.<br><br>Wichtig für dich als Betrieb: Du bist <strong>Verantwortlicher</strong> für die Daten deiner Mitarbeiter, GreenCareers verarbeitet sie nur in deinem Auftrag. Gesundheitsdaten (krank) werden nur automatisiert verarbeitet, kein GreenCareers-Mitarbeiter sieht sie. Bei einer Datenpanne hast du <strong>72 Std.</strong> Meldefrist – sag mir Bescheid, dann gehen wir das durch.`;
   if(/(angebot|kostenvoranschlag|offerte)/.test(s))
     return `Ein Angebot bindet dich erstmal nicht – aber sei genau. Pack rein: <strong>klare Leistungsbeschreibung</strong>, Einzelpreise, Netto/MwSt/Brutto, <strong>Gültigkeitsdauer</strong> (z. B. 14 Tage) und Zahlungsziel. Über „+ Angebot" legst du es an; wird es angenommen, wandelst du es mit einem Klick in eine Rechnung um – Positionen werden übernommen.`;
-  return `Gute Frage. Ich helfe dir bei allem rund um <strong>Rechnung &amp; Steuer, Personal &amp; Urlaub, Kalkulation, Recht und DSGVO</strong>. Stell die Frage gern konkret – z. B. „Wie viel MwSt. auf Pflanzen?" oder „Darf ein Azubi alleine auf die Baustelle?". <br><br><em>(Im Live-Produkt bin ich direkt an Claude angebunden und ziehe deine echten Betriebsdaten heran.)</em>`;
+  if(/(bewerber|recruiting|probetag|vorstellungsgespräch|einstell|stelle|azubi.*such|personal.*find)/.test(s))
+    return `Im Bereich <strong>Bewerber</strong> läuft dein ganzes Recruiting:<br>• Neue Bewerber aus GreenCareers landen automatisch im Board, der <strong>BewerberBot</strong> qualifiziert sie per WhatsApp vor<br>• Du kontaktierst direkt aus dem Profil: <strong>Anrufen</strong>, <strong>WhatsApp</strong> oder <strong>E-Mail</strong> – mit fertigen Vorlagen<br>• Per Status (Neu → In Bearbeitung → Gespräch → Probetag → Eingestellt) behältst du die Pipeline im Blick<br><br>Für einen Probetag öffnest du den Bewerber und drückst „Probetag planen" – Termin landet direkt in deinem Kalender.`;
+  if(/(lohn|gehalt zahlen|stundenlohn|mindestlohn|verdienst|was zahl)/.test(s))
+    return `Beim Lohn im GaLaBau gilt:<br>• <strong>Branchen-Mindestlohn GaLaBau</strong> liegt über dem gesetzlichen Mindestlohn – prüfe den aktuellen Tarif (gewerbliche Arbeitnehmer)<br>• Üblich sind je nach Qualifikation <strong>14–20 €/Std.</strong>, Vorarbeiter darüber<br>• Denk an <strong>Lohnnebenkosten</strong> (~20–22 % AG-Anteil) bei der Kalkulation deines Stundenverrechnungssatzes<br><br>Faustregel Verrechnungssatz = Bruttolohn × Faktor 2,2–2,8 (deckt Nebenkosten, Urlaub, Gerät, Gewinn).`;
+  // --- Intelligenter Fallback: greift die Frage auf, statt stur dasselbe zu wiederholen ---
+  const kurz = q.length > 60 ? q.slice(0,57).trim()+'…' : q;
+  return `Zu „<em>${escapeHtml(kurz)}</em>" hab ich gerade keine fertige Antwort parat – aber ich bin stark bei <strong>Rechnung &amp; Steuer, Personal &amp; Urlaub, Kalkulation, Aufmaß, Recruiting und DSGVO</strong>.<br><br>Formulier's gern eine Nummer konkreter, z. B. „Wie viel MwSt. auf Pflanzen?", „Was zahle ich einem Gesellen?" oder „Wie lade ich einen Bewerber zum Probetag ein?" – dann hast du in einem Satz die Antwort.`;
+}
+// Meta-Eingaben (Smalltalk/Rückfrage) sollen die zuletzt gemerkte Sachantwort nicht überschreiben.
+function isBrainMeta(s){
+  const t = (s||'').toLowerCase().trim();
+  return (/^(moin|hallo|hi|hey|servus|guten |na\b|danke|merci|top|super|perfekt|alles klar|passt|hä|haeh|was|wie bitte|versteh|nochmal|erklär|kapier|ja\b|jo|jap|genau|stimmt)/.test(t) && t.length < 35);
 }
 function brainVoice(){
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
