@@ -461,6 +461,56 @@
   .weather-bar{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:14px; }
   .weather-bar div{ border:1px solid var(--line); border-radius:8px; padding:8px; font-size:11px; color:var(--muted); }
   .weather-bar b{ display:block; color:var(--ink); font-size:12px; margin-bottom:2px; }
+  .wx-work{ font-weight:600; }
+  .wx-work--ok{ color:var(--green-2); }
+  .wx-work--warn{ color:var(--amber); }
+  .wx-work--bad{ color:var(--danger); }
+  .wx-strip{ display:flex; gap:6px; margin-top:13px; overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:2px; }
+  .wx-day{ flex:1 0 auto; min-width:50px; display:flex; flex-direction:column; align-items:center; gap:4px; padding:9px 6px; border:1px solid var(--line); border-radius:11px; background:#fff; cursor:pointer; transition:.12s; }
+  .wx-day:hover, .wx-day.on{ border-color:var(--green); background:var(--soft-green); }
+  .wx-day__dow{ font-size:11px; font-weight:600; color:var(--muted); }
+  .wx-day__ic .lucide{ width:18px; height:18px; color:var(--amber); }
+  .wx-day__t{ font-size:13px; font-weight:700; }
+  .wx-day__pop{ display:flex; align-items:center; gap:1px; font-size:10.5px; color:var(--muted); }
+  .wx-day__pop.wet{ color:#2563EB; }
+  .wx-day__pop .lucide{ width:10px; height:10px; }
+  .wx-more{ width:100%; margin-top:11px; display:flex; align-items:center; justify-content:center; gap:7px; padding:9px; border:1px solid var(--line); border-radius:10px; background:#fff; color:var(--ink); font-size:12.5px; font-weight:600; cursor:pointer; }
+  .wx-more:hover{ background:var(--soft); }
+  .wx-more .lucide{ width:15px; height:15px; }
+  .wx-detail-top{ display:flex; gap:8px; flex-wrap:wrap; }
+  .wx-dt{ flex:1; min-width:58px; text-align:center; border:1px solid var(--line); border-radius:10px; padding:9px 4px; }
+  .wx-dt span{ display:block; font-size:16px; font-weight:700; }
+  .wx-dt small{ font-size:10.5px; color:var(--muted); }
+  .wx-work-banner{ display:flex; align-items:center; gap:8px; margin:13px 0; padding:10px 12px; border-radius:10px; font-size:12.5px; font-weight:600; }
+  .wx-work-banner .lucide{ width:16px; height:16px; flex-shrink:0; }
+  .wx-work-banner--ok{ background:var(--soft-green); color:var(--green-2); }
+  .wx-work-banner--warn{ background:#FCF3E4; color:var(--amber); }
+  .wx-work-banner--bad{ background:#FBEAEA; color:var(--danger); }
+  .wxh-grid{ display:flex; gap:3px; overflow-x:auto; padding-bottom:4px; -webkit-overflow-scrolling:touch; }
+  .wxh{ flex:1 0 auto; min-width:34px; display:flex; flex-direction:column; align-items:center; gap:3px; text-align:center; }
+  .wxh__t{ font-size:11px; font-weight:600; }
+  .wxh__bar{ height:58px; width:14px; background:#F1F4F8; border-radius:6px; display:flex; align-items:flex-end; overflow:hidden; }
+  .wxh__fill{ width:100%; background:#BBD3F6; border-radius:6px; }
+  .wxh__fill.mid{ background:#6FA8F0; }
+  .wxh__fill.heavy{ background:#2563EB; }
+  .wxh__pop{ font-size:10px; font-weight:600; }
+  .wxh__mm{ font-size:9.5px; color:var(--muted); }
+  .wxh__h{ font-size:10.5px; color:var(--muted); }
+  .wx-src{ font-size:11px; color:var(--muted); margin-top:13px; line-height:1.5; }
+  .wx-list{ display:flex; flex-direction:column; gap:5px; }
+  .wx-row{ display:flex; align-items:center; gap:10px; padding:10px 12px; border:1px solid var(--line); border-radius:10px; background:#fff; cursor:pointer; text-align:left; }
+  .wx-row:hover{ border-color:var(--green); background:var(--soft-green); }
+  .wx-row__day{ flex:1; min-width:0; display:flex; flex-direction:column; }
+  .wx-row__day b{ font-size:13px; }
+  .wx-row__day small{ font-size:11px; color:var(--muted); }
+  .wx-row__ic{ flex-shrink:0; }
+  .wx-row__ic .lucide{ width:19px; height:19px; }
+  .wx-row__pop{ width:52px; flex-shrink:0; display:flex; align-items:center; gap:2px; justify-content:flex-end; font-size:11.5px; color:var(--muted); }
+  .wx-row__pop.wet{ color:#2563EB; font-weight:600; }
+  .wx-row__pop .lucide{ width:12px; height:12px; }
+  .wx-row__mm{ width:50px; text-align:right; font-size:11px; color:var(--muted); flex-shrink:0; }
+  .wx-row__temp{ width:56px; text-align:right; font-size:13px; flex-shrink:0; }
+  .wx-row__temp small{ color:var(--muted); }
   .recruiting-panel{
     padding:15px;
     color:#EAF4EA;
@@ -3811,6 +3861,136 @@ function saveEvent(editId){
 function deleteEvent(id){ termine = termine.filter(x=>x.id!==id); closeSheet(); if(currentView==='heute') setView('heute'); toast('Termin gelöscht'); }
 function planInterview(id){ const a=findCandidate(id); if(!a) return; closeSheet(); openEventForm({title:`Bewerbungsgespräch · ${a.name}`, guests:a.name, withMeet:true, candId:id}); }
 
+// ── Wetter (Demo-Daten im finalen UI) ──────────────────────────────────
+// HINWEIS für echte Daten: wetter.com / wetter.de bieten KEINE freie API.
+// Empfehlung: Open-Meteo (open-meteo.com) bzw. DWD – kostenlos, deutsche
+// Behördendaten, stundengenau inkl. Regenwahrscheinlichkeit & Niederschlag.
+// Anbindung = Backend (später). Hier realistische Dummy-Daten im finalen UI.
+const WEATHER_LOC = 'Hamburg';
+const WX = {
+  sun:    {icon:'sun',           label:'Sonnig'},
+  psun:   {icon:'cloud-sun',     label:'Heiter'},
+  cloud:  {icon:'cloud',         label:'Bewölkt'},
+  rain:   {icon:'cloud-rain',    label:'Regen'},
+  drizzle:{icon:'cloud-drizzle', label:'Nieselregen'},
+  storm:  {icon:'cloud-lightning',label:'Gewitter'},
+};
+const WX_DOW_S = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+const WX_DOW_L = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
+function wxDow(iso){ return WX_DOW_S[new Date(iso).getDay()]; }
+function wxDowLong(iso){ return WX_DOW_L[new Date(iso).getDay()]; }
+function wxIconColor(k){ return (k==='rain'||k==='storm')?'#2563EB':k==='drizzle'?'#3B82F6':k==='cloud'?'#64748B':'#B7791F'; }
+function weatherWork(pop, wind, t){
+  if(pop>=80 || wind>=35) return {st:'bad',  txt:'kritisch – Außenarbeit kaum möglich'};
+  if(pop>=45 || wind>=25) return {st:'warn', txt:'wechselhaft – Regenpausen einplanen'};
+  if(t<=3)                return {st:'warn', txt:'frostig – Pflanzarbeiten meiden'};
+  return {st:'ok', txt:'guter Arbeitstag'};
+}
+function weatherDays(){
+  const seq  = ['psun','sun','cloud','rain','drizzle','psun','cloud','sun','rain','storm','cloud','psun','sun','drizzle','cloud','psun'];
+  const tmax = [21,24,19,16,17,20,18,23,15,17,19,22,25,18,20,21];
+  const pops = [10, 0,40,80,60,20,45, 5,75,90,35,15, 0,55,40,20];
+  const t0 = dwTodayMid(); const out = [];
+  for(let i=0;i<16;i++){
+    const d = new Date(t0); d.setDate(t0.getDate()+i);
+    const k = seq[i], w = WX[k]; const hi = tmax[i], lo = hi-7-(i%3); const pop = pops[i];
+    const mm = pop>=90?6.5:pop>=80?3.2:pop>=40?0.8:0;
+    const wind = 8+((i*7)%18); const uv = hi>=23?'hoch':hi>=18?'mittel':'niedrig';
+    out.push({iso:dwISO(d), idx:i, k, icon:w.icon, label:w.label, tmax:hi, tmin:lo, pop, mm, wind, uv, work:weatherWork(pop,wind,hi)});
+  }
+  return out;
+}
+function weatherHourly(iso){
+  const day = weatherDays().find(d=>d.iso===iso) || weatherDays()[0]; const out = [];
+  for(let h=6; h<=19; h++){
+    const f = 0.55 + 0.45*Math.sin((h-6)/13*Math.PI);
+    const pop = Math.round(Math.min(99, day.pop*f));
+    const mm  = pop>=70 ? +(day.mm*f*0.4).toFixed(1) : pop>=40 ? +(day.mm*f*0.15).toFixed(1) : 0;
+    const temp = Math.round(day.tmin + (day.tmax-day.tmin)*Math.sin((h-5)/16*Math.PI));
+    const icon = pop>=70?'cloud-rain':pop>=40?'cloud-drizzle':day.icon;
+    out.push({h, pop, mm, temp, icon});
+  }
+  return out;
+}
+function weatherCardHtml(){
+  const days = weatherDays(); const t = days[0]; const w = t.work;
+  const strip = days.slice(0,7).map((d,i)=>`
+    <button class="wx-day${i===0?' on':''}" onclick="openWeatherDay('${d.iso}')">
+      <span class="wx-day__dow">${i===0?'Heute':wxDow(d.iso)}</span>
+      <span class="wx-day__ic"><i data-lucide="${d.icon}"></i></span>
+      <span class="wx-day__t">${d.tmax}°</span>
+      <span class="wx-day__pop${d.pop>=45?' wet':''}"><i data-lucide="droplet"></i>${d.pop}%</span>
+    </button>`).join('');
+  return `<div class="panel weather-card">
+    <div class="weather-card__main">
+      <span class="weather-card__icon"><i data-lucide="${t.icon}"></i></span>
+      <div><div class="weather-card__temp">${t.tmax}°C</div><div class="weather-card__meta">${WEATHER_LOC} · ${t.label} · <span class="wx-work wx-work--${w.st}">${w.txt}</span></div></div>
+    </div>
+    <div class="weather-bar">
+      <div><b>Wind</b>${t.wind} km/h</div>
+      <div><b>Regen</b>${t.pop}%</div>
+      <div><b>Niederschlag</b>${t.mm} mm</div>
+    </div>
+    <div class="wx-strip">${strip}</div>
+    <button class="wx-more" onclick="openWeatherForecast()"><i data-lucide="calendar-days"></i> 16-Tage-Trend</button>
+  </div>`;
+}
+function openWeatherDay(iso){
+  const days = weatherDays(); const d = days.find(x=>x.iso===iso) || days[0];
+  const hrs = weatherHourly(iso); const isToday = iso===days[0].iso;
+  const bars = hrs.map(h=>`
+    <div class="wxh">
+      <span class="wxh__t">${h.temp}°</span>
+      <span class="wxh__bar"><span class="wxh__fill${h.pop>=70?' heavy':h.pop>=40?' mid':''}" style="height:${Math.round(h.pop/100*54)+2}px"></span></span>
+      <span class="wxh__pop">${h.pop}%</span>
+      <span class="wxh__mm">${h.mm?h.mm:'–'}</span>
+      <span class="wxh__h">${h.h}</span>
+    </div>`).join('');
+  openSheet(`
+    <div class="sheet__head">
+      <span class="avatar" style="width:46px;height:46px;background:linear-gradient(135deg,#3B82F6,#2563EB)"><i data-lucide="${d.icon}" style="width:22px;height:22px"></i></span>
+      <div><div class="sheet__title">${isToday?'Heute':wxDowLong(iso)} · ${deDate(iso)}</div><div class="sheet__sub">${WEATHER_LOC} · ${d.label}</div></div>
+      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+    </div>
+    <div class="sheet__body">
+      <div class="wx-detail-top">
+        <div class="wx-dt"><span>${d.tmax}°</span><small>max</small></div>
+        <div class="wx-dt"><span>${d.tmin}°</span><small>min</small></div>
+        <div class="wx-dt"><span>${d.pop}%</span><small>Regen</small></div>
+        <div class="wx-dt"><span>${d.mm} mm</span><small>Menge</small></div>
+        <div class="wx-dt"><span>${d.wind}</span><small>km/h</small></div>
+      </div>
+      <div class="wx-work-banner wx-work-banner--${d.work.st}"><i data-lucide="hard-hat"></i> ${d.work.txt}</div>
+      <div class="setsec">Regen &amp; Temperatur stündlich <span class="setsec__hint">Arbeitszeit 6–19 Uhr · Balken = Regenwahrscheinlichkeit, mm = Menge</span></div>
+      <div class="wxh-grid">${bars}</div>
+      <p class="wx-src">Demo-Daten im finalen Layout. Für Live-Wetter empfiehlt sich <b>Open-Meteo / DWD</b> – kostenlos, stundengenau, deutsche Behördendaten (Anbindung später).</p>
+    </div>`);
+}
+function openWeatherForecast(){
+  const days = weatherDays();
+  const rows = days.map((d,i)=>{
+    const lbl = i===0?'Heute':i===1?'Morgen':wxDowLong(d.iso);
+    const dt  = deDate(d.iso).replace(/\.\d{4}$/,'.');
+    return `<button class="wx-row" onclick="openWeatherDay('${d.iso}')">
+      <span class="wx-row__day"><b>${lbl}</b><small>${dt}</small></span>
+      <span class="wx-row__ic" style="color:${wxIconColor(d.k)}"><i data-lucide="${d.icon}"></i></span>
+      <span class="wx-row__pop${d.pop>=45?' wet':''}"><i data-lucide="droplet"></i>${d.pop}%</span>
+      <span class="wx-row__mm">${d.mm?d.mm+' mm':'–'}</span>
+      <span class="wx-row__temp"><b>${d.tmax}°</b> <small>${d.tmin}°</small></span>
+    </button>`;
+  }).join('');
+  openSheet(`
+    <div class="sheet__head">
+      <span class="avatar" style="width:46px;height:46px;background:linear-gradient(135deg,#3B82F6,#2563EB)"><i data-lucide="calendar-days" style="width:22px;height:22px"></i></span>
+      <div><div class="sheet__title">16-Tage-Wetter</div><div class="sheet__sub">${WEATHER_LOC} · Tag antippen für Stunden-Details</div></div>
+      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+    </div>
+    <div class="sheet__body">
+      <div class="wx-list">${rows}</div>
+      <p class="wx-src">Demo-Daten im finalen Layout. Für Live-Wetter empfiehlt sich <b>Open-Meteo / DWD</b> – kostenlos, stundengenau, deutsche Behördendaten (Anbindung später).</p>
+    </div>`);
+}
+
 function staticModuleHtml(key){
   switch(key){
     case 'denkmit': return denkMitHtml();
@@ -3832,10 +4012,7 @@ function staticModuleHtml(key){
             ${[['Garten Schmidt · Neuanlage läuft nach Plan'],['Pflaster Brandt · Material 14:00 Uhr prüfen'],['Hecke Petersen · Abschlussfotos fehlen']].map((d,i) => crews[i] ? `<div class="daymap__item"><span class="crewtag__dot" style="background:${crews[i].color}"></span><b>${crews[i].label}</b><span>${d[0]}</span></div>` : '').join('')}
           </div>
         </div>`;
-    case 'wetter': return `<div class="panel weather-card">
-          <div class="weather-card__main"><span class="weather-card__icon"><i data-lucide="cloud-sun"></i></span><div><div class="weather-card__temp">21°C</div><div class="weather-card__meta">Hamburg · trocken - guter Arbeitstag</div></div></div>
-          <div class="weather-bar"><div><b>Wind</b>12 km/h</div><div><b>Regen</b>0%</div><div><b>UV</b>mittel</div></div>
-        </div>`;
+    case 'wetter': return weatherCardHtml();
     case 'recruiting': return `<div class="panel recruiting-panel">
           <div class="recruiting-panel__label"><i data-lucide="sparkles"></i> Bewerber-Suche</div>
           <div class="recruiting-panel__role">Landschaftsgärtner (m/w/d)</div>
