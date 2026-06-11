@@ -177,11 +177,21 @@
     font-size:10.5px;
     font-weight:700;
   }
-  .navitem.locked{ opacity:.42; }
-  .navitem.locked:hover{ background:transparent; color:var(--sidebar-text); }
+  .navitem.locked{ opacity:.5; }
+  .navitem.locked:hover{ background:rgba(255,255,255,.05); opacity:.8; color:var(--sidebar-text); }
   .navitem__lock{ margin-left:auto; width:14px!important; height:14px!important; opacity:.8; }
+  .navitem__soon{ margin-left:auto; width:13px!important; height:13px!important; opacity:.7; color:var(--green); }
+  .navlabel--soon{ margin-top:14px; }
+  .app.collapsed .navlabel--soon{ opacity:0; }
   .app.collapsed .navitem{ justify-content:center; padding-inline:0; }
-  .app.collapsed .navitem__label,.app.collapsed .navitem__badge,.app.collapsed .navitem__lock{ display:none; }
+  .app.collapsed .navitem__label,.app.collapsed .navitem__badge,.app.collapsed .navitem__lock,.app.collapsed .navitem__soon{ display:none; }
+  /* Demnächst-Vorschau-Sheet */
+  .soon-pill{ display:inline-block; vertical-align:2px; margin-left:6px; padding:2px 8px; border-radius:999px; background:var(--mint); color:var(--green-2); font-size:10.5px; font-weight:700; }
+  .cs-lead{ font-size:14px; line-height:1.55; color:var(--text); margin:0 0 14px; }
+  .cs-list{ list-style:none; margin:0 0 16px; padding:0; display:flex; flex-direction:column; gap:9px; }
+  .cs-list li{ display:flex; align-items:center; gap:9px; font-size:13.5px; font-weight:600; color:var(--ink); }
+  .cs-list li .lucide{ width:16px; height:16px; color:var(--green); flex-shrink:0; }
+  .cs-actions{ display:flex; gap:10px; }
   .sidefoot{ margin-top:auto; display:flex; flex-direction:column; gap:10px; }
   .powered{
     display:flex; align-items:center; justify-content:center; gap:6px;
@@ -2411,6 +2421,45 @@ function can(cap){
 const STARTMODUL_FREI = ['heute', 'recruiting', 'team'];
 function isLocked(id){ return settings.startModul && !STARTMODUL_FREI.includes(id); }
 function moduleLocked(){ toast('Im Startmodul „Personal" gesperrt – in den Einstellungen freischalten'); }
+// Vorschau auf einen Bereich, der im Startmodul „Personal" noch ausgeblendet ist.
+const COMING_SOON = {
+  planung: {icon:'calendar-range', title:'Planung', tag:'Plantafel & Einsatzplanung',
+    text:'Verteile deine Kolonnen per Drag & Drop auf Baustellen und Wochentage. Wetter, Urlaub und Krankmeldungen fließen automatisch ein – du siehst sofort, wo ein Mann fehlt und welcher Springer einspringt.',
+    points:['Kolonnen × Wochentage als Plantafel','Aufträge per Drag & Drop verschieben','Krank/Urlaub aus Team automatisch markiert']},
+  kunden: {icon:'handshake', title:'Kunden', tag:'Anfragen & Kundenstamm',
+    text:'Alle Anfragen aus WhatsApp, Mail, Telefon und Website in einer Inbox. Aus der Anfrage wird ein Angebot, daraus ein Auftrag – alles mit dem Kunden verknüpft, nichts geht unter.',
+    points:['Multichannel-Anfragen-Inbox','Kundenstamm mit Projekten & Werten','Direkt aus der Anfrage ins Angebot']},
+  finanzen: {icon:'receipt-euro', title:'Finanzen', tag:'Angebote, Rechnungen & Umsatz',
+    text:'Vom Angebot bis zur bezahlten Rechnung an einem Ort. Live-Auswertung, welche Aufträge laufen und was reinkommt – ohne Excel-Bastelei.',
+    points:['Angebote & Rechnungen aus den Stammdaten','Umsatz & offene Posten im Blick','Verknüpft mit Kunden & Aufträgen']},
+  markt: {icon:'store', title:'Markt', tag:'Netzwerk & Maschinen-Marktplatz',
+    text:'Das Netzwerk für GaLaBau-Betriebe: Schwarmwissen, Tipps und ein Maschinen-Marktplatz – nur unter verifizierten Kollegen.',
+    points:['Austausch mit anderen Betrieben','Maschinen & Material kaufen/verkaufen','Nur verifizierte GaLaBau-Kollegen']},
+};
+function openComingSoon(id){
+  const m = COMING_SOON[id]; if(!m){ moduleLocked(); return; }
+  openSheet(`
+    <div class="sheet__head">
+      <span class="avatar" style="width:48px;height:48px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="${m.icon}" style="width:21px;height:21px"></i></span>
+      <div><div class="sheet__title">${m.title} <span class="soon-pill">Demnächst</span></div><div class="sheet__sub">${m.tag}</div></div>
+      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+    </div>
+    <div class="sheet__body">
+      <p class="cs-lead">${m.text}</p>
+      <ul class="cs-list">${m.points.map(p => `<li><i data-lucide="check"></i> ${p}</li>`).join('')}</ul>
+      <div class="cs-actions">
+        <button class="btn" style="flex:1" onclick="unlockModule('${id}')"><i data-lucide="unlock"></i> Jetzt freischalten</button>
+        <button class="btn ghost" style="flex:1" onclick="closeSheet();toast('Top! Wir geben dir Bescheid, sobald „${m.title}" für dich dran ist.')"><i data-lucide="bell"></i> Bescheid geben</button>
+      </div>
+      <p class="sheet-note" style="margin-top:12px"><i data-lucide="info"></i> Du nutzt gerade das Startmodul „Personal" (Fokus auf Bewerber &amp; Team). „${m.title}" ist startklar – mit einem Klick im Cockpit.</p>
+    </div>`);
+}
+function unlockModule(id){
+  settings.startModul = false; saveSettings();
+  closeSheet();
+  setView(id);
+  toast(`„${(COMING_SOON[id]||{}).title||'Bereich'}" freigeschaltet – alle Bereiche sind jetzt aktiv.`);
+}
 function isStaffView(){ return viewRole === 'admin' || viewRole === 'buero'; }   // Gesamtsicht (Team/Kunden)
 function selfEmp(){ return emp(viewEmpId) || emp(1); }
 
@@ -2472,9 +2521,16 @@ function navForRole(){
 }
 function renderNav(){
   const nav = navForRole();
-  const html = '<span class="navlabel">Übersicht</span>' + nav.map(item => navButton(item,'side')).join('');
+  const free = nav.filter(n => !isLocked(n.id));
+  const locked = nav.filter(n => isLocked(n.id));
+  // Sidebar: aktive Bereiche oben, gesperrte dezent unter „Demnächst" (Klick = Vorschau)
+  let html = '<span class="navlabel">Übersicht</span>' + free.map(item => navButton(item,'side')).join('');
+  if(locked.length){
+    html += '<span class="navlabel navlabel--soon">Demnächst</span>' + locked.map(item => navButton(item,'side')).join('');
+  }
   document.getElementById('sideNav').innerHTML = html;
-  document.getElementById('mobileNav').innerHTML = nav.map(item => navButton(item,'mobile')).join('');
+  // Mobile Bottom-Nav: nur aktive Bereiche – kein Platz/Fokus an Gesperrtes verlieren
+  document.getElementById('mobileNav').innerHTML = free.map(item => navButton(item,'mobile')).join('');
   icons();
 }
 // Rolle anwenden: Sidebar-User, Rollen-Pill, Preview-Bar, Nav & Default-View
@@ -2844,8 +2900,8 @@ function endTour(){ const l = document.getElementById('tourLayer'); if(l) l.clas
 function navButton(item,mode){
   const active = item.id === currentView ? 'on' : '';
   const locked = isLocked(item.id);
-  const badge = locked ? `<i data-lucide="lock" class="navitem__lock"></i>` : (item.badge ? `<span class="navitem__badge">${item.badge}</span>` : '');
-  const click = locked ? 'moduleLocked()' : `setView('${item.id}')`;
+  const badge = locked ? `<i data-lucide="sparkles" class="navitem__soon"></i>` : (item.badge ? `<span class="navitem__badge">${item.badge}</span>` : '');
+  const click = locked ? `openComingSoon('${item.id}')` : `setView('${item.id}')`;
   if(mode === 'mobile'){
     return `<button class="${active} ${locked?'locked':''}" onclick="${click}"><i data-lucide="${item.icon}"></i><span>${item.label}</span>${badge}</button>`;
   }
