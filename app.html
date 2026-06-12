@@ -42,6 +42,37 @@
     --radius:8px;
     --shadow:0 1px 1px rgba(20,30,20,.04),0 12px 30px rgba(18,33,24,.07);
     --shadow-strong:0 18px 60px rgba(10,22,13,.24);
+    --brand-rgb:22,163,74;
+  }
+  /* Branchen-Farbschema: Straßen- & Tiefbau (orange) */
+  :root[data-theme="tiefbau"]{
+    --green:#EA580C;
+    --green-2:#C2410C;
+    --green-3:#9A3412;
+    --mint:#FDEFE6;
+    --mint-2:#FFF7F1;
+    --soft-green:#FBE6D6;
+    --canvas:#FBF6F2;
+    --canvas-2:#F5EBE2;
+    --sidebar:#241610;
+    --sidebar-2:#2E1C14;
+    --sidebar-text:#BFAFA4;
+    --brand-rgb:234,88,12;
+  }
+  /* Branchen-Farbschema: Landwirtschaft (gold) */
+  :root[data-theme="landwirtschaft"]{
+    --green:#CA8A04;
+    --green-2:#A16207;
+    --green-3:#854D0E;
+    --mint:#FBF3D8;
+    --mint-2:#FDF9EA;
+    --soft-green:#F4E9C2;
+    --canvas:#FAF6EB;
+    --canvas-2:#F3EDD9;
+    --sidebar:#221F0E;
+    --sidebar-2:#2B2713;
+    --sidebar-text:#BBB298;
+    --brand-rgb:202,138,4;
   }
   *{ box-sizing:border-box; margin:0; padding:0; }
   html,body{ min-height:100%; }
@@ -1918,6 +1949,14 @@
   .obnum{ font-size:11.5px; font-weight:800; color:var(--green-2); letter-spacing:.04em; }
   .obhead h3{ font-size:19px; font-weight:700; letter-spacing:-.01em; margin:4px 0 4px; }
   .obhead p{ font-size:13px; color:var(--muted); line-height:1.45; }
+  .branchewrap{ display:flex; flex-direction:column; gap:15px; margin-bottom:4px; }
+  .branchefam__h{ display:flex; align-items:center; gap:7px; font-size:12px; font-weight:800; letter-spacing:.02em; color:var(--ink-2); margin-bottom:8px; text-transform:uppercase; }
+  .branchedot{ width:11px; height:11px; border-radius:50%; flex:none; }
+  .branchechips{ display:flex; flex-wrap:wrap; gap:8px; }
+  .branchechip{ display:inline-flex; align-items:center; gap:6px; padding:8px 13px; border:1.5px solid var(--line); border-radius:999px; background:#fff; font-size:13px; font-weight:600; color:var(--ink); transition:.13s; line-height:1.2; }
+  .branchechip:hover{ border-color:var(--line-2); background:var(--soft); }
+  .branchechip.on{ border-color:var(--green); background:var(--soft-green); color:var(--green-3); }
+  .branchechip__n{ display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; border-radius:50%; background:var(--green); color:#fff; font-size:11px; font-weight:800; flex:none; }
   .obdone{ text-align:center; padding:14px 0 6px; }
   .obdone__ic{ width:58px; height:58px; border-radius:50%; background:var(--mint); color:var(--green); display:inline-flex; align-items:center; justify-content:center; margin-bottom:12px; }
   .obdone__ic .lucide{ width:28px; height:28px; }
@@ -2813,6 +2852,8 @@ let viewEmpId = 1;        // bei Mitarbeiter-Ansicht: welcher Mitarbeiter (Defau
 const CONSENT_VERSION = 'v1.2';   // Versionierung: bei Änderung muss neu bestätigt werden
 const DEFAULT_SETTINGS = {
   onboarded: false,
+  branchen: [],        // gewählte Branchen (Mehrfachauswahl); erste = Primärbranche → Farbschema
+  theme: 'galabau',    // galabau (grün) | tiefbau (orange) | landwirtschaft (gold)
   consent: null,       // {version, acceptedAt, by, items:{avv,datenschutz,agb,vollmacht}} – DSGVO-Einwilligung
   company: {name:'Müller GaLaBau', owner:'Georg Müller', email:'georg@mueller-galabau.de', start:'06:30',
     street:'Gärtnerweg 14', zip:'22926', city:'Ahrensburg', phone:'04102 88990',
@@ -3112,6 +3153,7 @@ function login(){
   document.getElementById('auth').classList.add('hidden');
   document.getElementById('app').classList.remove('hidden');
   document.body.classList.add('authed');
+  applyTheme(settings.theme);
   initCalDrag();
   applyRole();
   // Reihenfolge nach „Kauf erfolgreich": 1) AVV/DSGVO bestätigen  2) Einrichtung  3) Tour
@@ -3336,6 +3378,28 @@ function rerenderCurrent(){ renderNav(); if(currentView === 'team'){ teamTab(act
 /* ===================== ONBOARDING-ASSISTENT ===================== */
 let obStep = 0;
 const OB_DRAFT = {};
+/* ===================== BRANCHEN-FARBSCHEMA ===================== */
+// Drei Farb-Familien. Mehrfachauswahl; die ERSTE gewählte Branche bestimmt das Theme
+// (Wiedererkennung wie auf den jeweiligen Landingpages).
+const BRANCHEN_CATALOG = [
+  { theme:'galabau', label:'Garten & Landschaft', color:'#16A34A',
+    branchen:['Garten- und Landschaftsbau','Garten- und Landschaftspflege','Baumpflege','Forstwirtschaft'] },
+  { theme:'tiefbau', label:'Straßen- & Tiefbau', color:'#EA580C',
+    branchen:['Straßen- und Tiefbau'] },
+  { theme:'landwirtschaft', label:'Landwirtschaft', color:'#CA8A04',
+    branchen:['Landwirtschaft','Landtechnik','Landmaschinenbau','Landmaschinenhandel','Tierwirtschaft'] },
+];
+function brancheTheme(b){
+  if(!b) return 'galabau';
+  const fam = BRANCHEN_CATALOG.find(f => f.branchen.includes(b));
+  return fam ? fam.theme : 'galabau';
+}
+function applyTheme(theme){
+  const t = theme || 'galabau';
+  if(t === 'galabau') document.documentElement.removeAttribute('data-theme');
+  else document.documentElement.dataset.theme = t;
+}
+
 function maybeOnboard(){
   // Beim ersten Login fragen, ob der geführte Assistent gestartet werden soll
   applyRole();
@@ -3352,16 +3416,34 @@ function maybeOnboard(){
       </div>
     </div>`);
 }
-function skipOnboarding(){ settings.onboarded = true; saveSettings(); closeSheet(); setTimeout(startTour, 360); }
-function startOnboarding(){ obStep = 0; OB_DRAFT.company = Object.assign({}, settings.company); OB_DRAFT.ruestzeit = settings.ruestzeit; OB_DRAFT.geo = settings.geo; OB_DRAFT.selfClockIn = settings.selfClockIn; renderOnboard(); }
-const OB_STEPS = ['betrieb','zeit','rechte','fertig'];
+function skipOnboarding(){ settings.onboarded = true; applyTheme(settings.theme); saveSettings(); closeSheet(); setTimeout(startTour, 360); }
+function startOnboarding(){ obStep = 0; OB_DRAFT.company = Object.assign({}, settings.company); OB_DRAFT.ruestzeit = settings.ruestzeit; OB_DRAFT.geo = settings.geo; OB_DRAFT.selfClockIn = settings.selfClockIn; OB_DRAFT.branchen = (settings.branchen||[]).slice(); OB_DRAFT.theme = settings.theme || 'galabau'; renderOnboard(); }
+const OB_STEPS = ['branche','betrieb','zeit','rechte','fertig'];
 function renderOnboard(){
   const step = OB_STEPS[obStep];
   const dots = OB_STEPS.map((_,i) => `<span class="obdot ${i===obStep?'on':''} ${i<obStep?'done':''}"></span>`).join('');
   let body = '';
-  if(step === 'betrieb'){
+  if(step === 'branche'){
+    const primary = OB_DRAFT.branchen[0];
     body = `
-      <div class="obhead"><span class="obnum">1 / 3</span><h3>Dein Betrieb</h3><p>Damit Begrüßung, Login &amp; Dokumente stimmen.</p></div>
+      <div class="obhead"><span class="obnum">1 / 4</span><h3>In welcher Branche bist du?</h3><p>Mehrfachauswahl möglich – such alles aus, was auf deinen Betrieb zutrifft. Die <strong>erste Auswahl</strong> bestimmt dein Farbschema.</p></div>
+      <div class="branchewrap">
+        ${BRANCHEN_CATALOG.map(fam => `
+          <div class="branchefam">
+            <div class="branchefam__h"><span class="branchedot" style="background:${fam.color}"></span>${fam.label}</div>
+            <div class="branchechips">
+              ${fam.branchen.map(b => {
+                const idx = OB_DRAFT.branchen.indexOf(b);
+                const on = idx >= 0;
+                return `<button class="branchechip ${on?'on':''}" onclick="obToggleBranche('${b.replace(/'/g,"\\'")}')">${on?`<span class="branchechip__n">${idx+1}</span>`:''}${b}</button>`;
+              }).join('')}
+            </div>
+          </div>`).join('')}
+      </div>
+      <p class="sheet-note"><i data-lucide="palette"></i> ${primary ? `Primärbranche: <strong>${primary}</strong> – dein Tool erscheint im passenden Farbschema.` : 'Noch keine Auswahl – Standardfarbe Grün.'}</p>`;
+  } else if(step === 'betrieb'){
+    body = `
+      <div class="obhead"><span class="obnum">2 / 4</span><h3>Dein Betrieb</h3><p>Damit Begrüßung, Login &amp; Dokumente stimmen.</p></div>
       <div class="field"><label>Firmenname</label><input id="obName" value="${OB_DRAFT.company.name.replace(/"/g,'&quot;')}"></div>
       <div class="field"><label>Inhaber</label><input id="obOwner" value="${OB_DRAFT.company.owner.replace(/"/g,'&quot;')}"></div>
       <div class="fieldrow">
@@ -3370,13 +3452,13 @@ function renderOnboard(){
       </div>`;
   } else if(step === 'zeit'){
     body = `
-      <div class="obhead"><span class="obnum">2 / 3</span><h3>Zeiterfassung</h3><p>So stempelt dein Team. Später jederzeit änderbar.</p></div>
+      <div class="obhead"><span class="obnum">3 / 4</span><h3>Zeiterfassung</h3><p>So stempelt dein Team. Später jederzeit änderbar.</p></div>
       ${swRow('Mit Rüstzeit rechnen','Beladen &amp; Anfahrt zählen als Arbeitszeit – gilt einheitlich für alle Aufträge.', OB_DRAFT.ruestzeit, "obToggle('ruestzeit')")}
       ${swRow('Standortnachweis beim Stempeln','Einmaliger Standort als Nachweis vor Ort. Keine Dauerortung.', OB_DRAFT.geo, "obToggle('geo')")}
       ${swRow('Mitarbeiter stempeln selbst','Im Alltag stempeln die Mitarbeiter per Handy „auf Kunde".', OB_DRAFT.selfClockIn, "obToggle('selfClockIn')")}`;
   } else if(step === 'rechte'){
     body = `
-      <div class="obhead"><span class="obnum">3 / 3</span><h3>Rechte der Personalverwaltung</h3><p>Was darf die Personalverwaltung selbstständig erledigen?</p></div>
+      <div class="obhead"><span class="obnum">4 / 4</span><h3>Rechte der Personalverwaltung</h3><p>Was darf die Personalverwaltung selbstständig erledigen?</p></div>
       ${permRow('buero','approveAbsence','Urlaub genehmigen','Anträge freigeben/ablehnen.')}
       ${permRow('buero','editEmployees','Mitarbeiter verwalten','Anlegen, bearbeiten, einladen.')}
       ${permRow('buero','manageCustomers','Kunden verwalten','Kunden &amp; Anfragen pflegen.')}
@@ -3404,6 +3486,14 @@ function renderOnboard(){
     </div>`);
 }
 function obToggle(key){ OB_DRAFT[key] = !OB_DRAFT[key]; renderOnboard(); }
+function obToggleBranche(b){
+  const i = OB_DRAFT.branchen.indexOf(b);
+  if(i >= 0) OB_DRAFT.branchen.splice(i, 1);
+  else OB_DRAFT.branchen.push(b);
+  OB_DRAFT.theme = brancheTheme(OB_DRAFT.branchen[0]);
+  applyTheme(OB_DRAFT.theme);   // Live-Vorschau im Onboarding
+  renderOnboard();
+}
 function obBack(){ if(obStep>0){ obStep--; renderOnboard(); } }
 function obNext(){
   const step = OB_STEPS[obStep];
@@ -3419,6 +3509,9 @@ function obNext(){
 function finishOnboarding(){
   settings.company = Object.assign({}, settings.company, OB_DRAFT.company);
   settings.ruestzeit = OB_DRAFT.ruestzeit; settings.geo = OB_DRAFT.geo; settings.selfClockIn = OB_DRAFT.selfClockIn;
+  settings.branchen = (OB_DRAFT.branchen||[]).slice();
+  settings.theme = OB_DRAFT.theme || brancheTheme(settings.branchen[0]);
+  applyTheme(settings.theme);
   settings.onboarded = true; saveSettings();
   // Stammdaten in die App übernehmen
   document.querySelector('.sidebrand__text b').textContent = settings.company.name;
@@ -8946,6 +9039,7 @@ function toast(message){
 function icons(){
   if(window.lucide) lucide.createIcons();
 }
+applyTheme(settings.theme);
 icons();
 </script>
 </body>
