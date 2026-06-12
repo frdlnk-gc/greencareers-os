@@ -1371,6 +1371,62 @@
   .compose-tpl{ width:100%; padding:9px 11px; border:1px solid var(--line); border-radius:9px; background:#fff; font-size:13px; margin-bottom:10px; cursor:pointer; }
   .compose-ta{ width:100%; min-height:150px; padding:12px; border:1px solid var(--line); border-radius:10px; font:inherit; font-size:13px; line-height:1.55; resize:vertical; }
   .compose-hint{ font-size:11.5px; color:var(--muted); margin-top:8px; }
+  .compose-tplrow{ display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+  .compose-mng{ display:inline-flex; align-items:center; gap:5px; font-size:12px; font-weight:600; color:var(--green-2); }
+  .compose-mng .lucide{ width:13px; height:13px; }
+  /* Vorlagen-Verwaltung */
+  .tpl-switch{ display:flex; gap:6px; background:var(--soft); padding:4px; border-radius:11px; margin-bottom:14px; }
+  .tpl-switch__b{ flex:1; display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:8px; border-radius:8px; font-size:13px; font-weight:600; color:var(--muted); }
+  .tpl-switch__b.on{ background:#fff; color:var(--ink); box-shadow:var(--shadow); }
+  .tpl-switch__b .lucide{ width:15px; height:15px; }
+  .tpl-list{ display:flex; flex-direction:column; gap:10px; }
+  .tpl-card{ border:1px solid var(--line); border-radius:12px; padding:13px 14px; background:#fff; }
+  .tpl-card.is-default{ border-color:var(--green); box-shadow:0 0 0 3px var(--soft-green); }
+  .tpl-card__top{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:6px; }
+  .tpl-card__name{ font-size:14px; font-weight:700; }
+  .tpl-card__star{ display:inline-flex; align-items:center; gap:4px; font-size:11.5px; font-weight:700; color:var(--green-2); white-space:nowrap; }
+  .tpl-card__star .lucide{ width:13px; height:13px; fill:var(--green); color:var(--green); }
+  .tpl-card__setdef{ display:inline-flex; align-items:center; gap:4px; font-size:11.5px; font-weight:600; color:var(--muted); white-space:nowrap; }
+  .tpl-card__setdef .lucide{ width:13px; height:13px; }
+  .tpl-card__setdef:hover{ color:var(--green-2); }
+  .tpl-card__text{ font-size:12.5px; color:var(--muted); line-height:1.5; white-space:pre-wrap; max-height:64px; overflow:hidden; margin-bottom:10px; }
+  .tpl-card__acts{ display:flex; gap:8px; }
+  /* Add-on */
+  .addon-hero{ display:flex; gap:14px; align-items:flex-start; padding:14px; border-radius:12px; background:linear-gradient(135deg,#E9FBF0,#F3FBF6); border:1px solid var(--soft-green); margin-bottom:14px; }
+  .addon-hero__price{ font-size:26px; font-weight:800; color:var(--green-3); white-space:nowrap; line-height:1; }
+  .addon-hero__price span{ font-size:13px; font-weight:600; color:var(--muted); }
+  .addon-hero__txt{ font-size:13px; line-height:1.5; color:var(--ink-2); }
+  .addon-feat{ display:flex; gap:9px; align-items:flex-start; font-size:13px; line-height:1.45; padding:5px 0; }
+  .addon-feat .lucide{ width:17px; height:17px; color:var(--green); flex:none; margin-top:1px; }
+  .addon-on{ display:inline-flex; align-items:center; gap:4px; color:var(--green-2); font-weight:700; }
+  .addon-on .lucide{ width:13px; height:13px; }
+  .addon-row{ display:flex; align-items:center; gap:12px; width:100%; text-align:left; padding:13px 14px; border:1px solid var(--line); border-radius:12px; background:#fff; margin-top:10px; }
+  .addon-row:hover{ border-color:var(--line-2); background:var(--soft); }
+  .addon-row__ic{ width:38px; height:38px; border-radius:10px; background:linear-gradient(135deg,#25D366,#1FA855); color:#fff; display:flex; align-items:center; justify-content:center; flex:none; }
+  .addon-row__ic .lucide{ width:19px; height:19px; }
+  .addon-row__txt{ flex:1; display:flex; flex-direction:column; gap:2px; }
+  .addon-row__txt b{ font-size:13.5px; }
+  .addon-row__txt small{ font-size:11.5px; color:var(--muted); }
+  .addon-row__badge{ font-size:11px; font-weight:700; color:var(--muted); background:var(--soft); padding:4px 9px; border-radius:999px; white-space:nowrap; }
+  .addon-row__badge.on{ color:var(--green-2); background:var(--soft-green); display:inline-flex; align-items:center; gap:3px; }
+  .addon-row__badge.on .lucide{ width:12px; height:12px; }
+  /* Bot-Flow */
+  .bf-list{ display:flex; flex-direction:column; gap:8px; }
+  .bfrow{ display:flex; align-items:center; gap:8px; }
+  .bfrow__n{ width:22px; height:22px; border-radius:50%; background:var(--soft-green); color:var(--green-3); font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center; flex:none; }
+  .bfrow__in{ flex:1; padding:9px 11px; border:1px solid var(--line); border-radius:9px; font-size:13px; background:#fff; }
+  .bfrow__acts{ display:flex; gap:2px; flex:none; }
+  .iconbtn.xs{ width:28px; height:28px; border-radius:7px; display:inline-flex; align-items:center; justify-content:center; color:var(--muted); }
+  .iconbtn.xs:hover{ background:var(--soft); color:var(--ink); }
+  .iconbtn.xs:disabled{ opacity:.3; cursor:default; }
+  .iconbtn.xs.danger:hover{ background:var(--red-soft); color:var(--red); }
+  .iconbtn.xs .lucide{ width:15px; height:15px; }
+  .bf-preview{ margin-top:16px; padding:13px; border-radius:12px; background:#ECE5DD; }
+  .bf-preview__h{ display:flex; align-items:center; gap:6px; font-size:11.5px; font-weight:700; color:#5A6B5E; margin-bottom:10px; }
+  .bf-preview__h .lucide{ width:14px; height:14px; }
+  .bf-bubble{ max-width:82%; padding:8px 11px; border-radius:11px; font-size:12.5px; line-height:1.45; margin-bottom:7px; }
+  .bf-bubble.bot{ background:#fff; border-top-left-radius:3px; }
+  .bf-bubble.me{ background:#DCF8C6; margin-left:auto; border-top-right-radius:3px; }
   .toast{
     position:fixed;
     left:50%;
@@ -2864,6 +2920,9 @@ const DEFAULT_SETTINGS = {
     rechnungFuss:'Vielen Dank für Ihren Auftrag. Bitte überweisen Sie den Betrag innerhalb der Zahlungsfrist.'},
   startModul: true,    // Personal-Startmodul: nur Heute + Team aktiv, Rest gesperrt (schnelles Onboarding)
   owned: [],           // freigeschaltete Zusatzmodule (per Buchung): kunden/planung/finanzen/markt
+  tplDefault: { whatsapp:null, email:null },  // id der Standard-Vorlage je Kanal (null = erste Vorlage)
+  waBot: { booked:false },                    // WhatsApp-Bot Add-on (19 €/Monat) gebucht?
+  botFlow: null,                              // null = Default-Fragen (DEFAULT_BOT_FLOW); sonst eigene
   ruestzeit: true,     // Rüstzeit (Beladen + Anfahrt) sichtbar & wird mitgezählt
   geo: true,           // Standortnachweis beim Stempeln
   selfClockIn: true,   // Mitarbeiter dürfen selbst stempeln
@@ -3351,6 +3410,18 @@ function openSettings(){
         </div>
         <p class="data-vault__note">Verschlüsselt in Deutschland gespeichert, täglich gesichert. Deine Kundenhistorie, Kalkulationen und Mitarbeiterdaten wachsen mit jedem Tag – und bleiben jederzeit für dich abrufbar.</p>
       </div>
+
+      <div class="setsec">Bewerber-Kommunikation</div>
+      <p class="sheet-note"><i data-lucide="messages-square"></i> Lege deine WhatsApp- &amp; E-Mail-Vorlagen an. Beim Anschreiben ist immer deine Standard-Vorlage vorausgewählt.</p>
+      <div class="fieldrow">
+        <button class="btn ghost sm" style="flex:1" onclick="openTemplates('whatsapp')"><i data-lucide="message-circle"></i> WhatsApp-Vorlagen (${TEMPLATES.whatsapp.length})</button>
+        <button class="btn ghost sm" style="flex:1" onclick="openTemplates('email')"><i data-lucide="mail"></i> E-Mail-Vorlagen (${TEMPLATES.email.length})</button>
+      </div>
+      <button class="addon-row" onclick="openWaBot()">
+        <span class="addon-row__ic"><i data-lucide="bot-message-square"></i></span>
+        <span class="addon-row__txt"><b>WhatsApp-Bewerber-Bot</b><small>${(s.waBot&&s.waBot.booked)?'Aktiv · Fragen-Flow bearbeiten':'Add-on · 19 €/Monat · automatische Vorqualifizierung'}</small></span>
+        <span class="addon-row__badge ${(s.waBot&&s.waBot.booked)?'on':''}">${(s.waBot&&s.waBot.booked)?'<i data-lucide="check"></i> aktiv':'19 €/Mon.'}</span>
+      </button>
 
       <div class="setsec">Verträge &amp; Datenschutz</div>
       ${s.consent ? `<div class="consent-audit" style="margin-bottom:12px"><i data-lucide="shield-check"></i>
@@ -6219,29 +6290,40 @@ function brainVoice(){
 /* ===================== RECHTS-DOKUMENTE (Vorschau-Texte) ===================== */
 const DOC_TITLES = { avv:'Auftragsverarbeitungsvertrag (AVV)', datenschutz:'Datenschutz & Gesundheitsdaten', agb:'Allgemeine Geschäftsbedingungen' };
 const DOCS = {
-  avv: `<p><strong>Auftragsverarbeitungsvertrag gemäß Art. 28 DSGVO</strong></p>
-    <p>zwischen dem Betrieb (nachfolgend „Verantwortlicher") und GreenCareers OS (nachfolgend „Auftragsverarbeiter").</p>
-    <p><strong>§1 Gegenstand & Dauer.</strong> Der Auftragsverarbeiter verarbeitet personenbezogene Daten (Mitarbeiter-, Zeiterfassungs- und Kundendaten) ausschließlich im Auftrag und nach Weisung des Verantwortlichen, für die Laufzeit der Nutzung der Software.</p>
-    <p><strong>§2 Art der Daten.</strong> Stammdaten, Kontaktdaten, Arbeitszeiten, Abwesenheiten (inkl. Krankheitszeiten als Gesundheitsdaten nach Art. 9 DSGVO – nur Zeitraum, keine Diagnose), Kunden- und Auftragsdaten.</p>
-    <p><strong>§3 Technische & organisatorische Maßnahmen.</strong> Verschlüsselung (TLS, at-rest), Mandantentrennung (Row-Level-Security), Rollen- & Rechtekonzept, Audit-Log, EU-Hosting (Frankfurt), tägliche verschlüsselte Backups.</p>
-    <p><strong>§4 Unterauftragsverarbeiter.</strong> Hosting (EU-Region), E-Mail-Versand und Fehler-Monitoring; jeweils mit eigenem AVV und EU-/DSGVO-Konformität.</p>
-    <p><strong>§5 Betroffenenrechte & Löschung.</strong> Der Auftragsverarbeiter unterstützt bei Auskunft, Berichtigung, Export und Löschung. Daten werden nach Zweckwegfall bzw. Aufbewahrungsfrist gelöscht/anonymisiert.</p>
-    <p><strong>§6 Meldepflicht.</strong> Datenpannen werden unverzüglich (Unterstützung der 72-Stunden-Frist nach Art. 33) gemeldet.</p>
-    <p style="color:var(--muted);font-size:13px">Mustertext zur Produktdemonstration – im Live-Betrieb anwaltlich final geprüft.</p>`,
-  datenschutz: `<p><strong>Datenschutz & Gesundheitsdaten</strong></p>
-    <p>GreenCareers OS verarbeitet Daten nach den Grundsätzen der Datensparsamkeit und Zweckbindung (Art. 5 DSGVO).</p>
-    <p><strong>Gesundheitsdaten (Art. 9).</strong> Krankheitszeiten werden ausschließlich als Zeitraum („krank von–bis") erfasst – ohne Diagnose. Die Verarbeitung erfolgt vollautomatisiert in deinem Mandanten; kein GreenCareers-Mitarbeiter erhält Einblick in Personalien.</p>
-    <p><strong>Standortdaten.</strong> Beim Stempeln wird – sofern aktiviert – ein einmaliger Standort-Nachweis erzeugt, KEINE Dauerortung.</p>
-    <p><strong>Zugriff.</strong> Rollen- & Rechtekonzept (Admin / Personalverwaltung / Mitarbeiter). Mitarbeiter sehen nur eigene Daten.</p>
-    <p><strong>Betroffenenrechte.</strong> Auskunft, Berichtigung, Export und Löschung sind als Funktion abbildbar (Einstellungen → Verträge & Datenschutz).</p>
-    <p style="color:var(--muted);font-size:13px">Mustertext zur Produktdemonstration.</p>`,
-  agb: `<p><strong>Allgemeine Geschäftsbedingungen</strong></p>
-    <p><strong>§1 Leistung.</strong> GreenCareers OS stellt eine Betriebssoftware für GaLaBau-Betriebe bereit (Personal, Zeiterfassung, Planung, Kunden, Finanzen, Markt).</p>
-    <p><strong>§2 Nutzung.</strong> Die Nutzung erfolgt im gewählten Tarif. Der Kunde ist für die Richtigkeit seiner eingegebenen Daten verantwortlich.</p>
-    <p><strong>§3 Verfügbarkeit.</strong> Angestrebt werden 99,9 % Verfügbarkeit; Wartungsfenster werden angekündigt.</p>
-    <p><strong>§4 Haftung.</strong> Keine Rechtsberatung. Die GaLaBrain-Antworten sind Orientierung, kein Ersatz für Steuerberater/Anwalt.</p>
-    <p><strong>§5 Kündigung.</strong> Monatlich kündbar; Datenexport vor Löschung möglich.</p>
-    <p style="color:var(--muted);font-size:13px">Mustertext zur Produktdemonstration.</p>`,
+  avv: `<p><strong>Auftragsverarbeitungsvertrag (AVV) gemäß Art. 28 DSGVO</strong></p>
+    <p>zwischen dem nutzenden Betrieb (nachfolgend „Verantwortlicher") und der GreenCareers GmbH als Anbieter von GreenCareers OS (nachfolgend „Auftragsverarbeiter"). Dieser Vertrag wird durch elektronische Bestätigung im Rahmen der Einrichtung wirksam; eine Unterschrift ist nicht erforderlich.</p>
+    <p><strong>§1 Gegenstand &amp; Dauer.</strong> Der Auftragsverarbeiter verarbeitet personenbezogene Daten ausschließlich im Auftrag und nach dokumentierter Weisung des Verantwortlichen, für die Laufzeit der Nutzung der Software. Mit Beendigung des Vertrags werden die Daten nach Wahl des Verantwortlichen exportiert und anschließend gelöscht.</p>
+    <p><strong>§2 Art, Zweck &amp; Kategorien.</strong> Verarbeitet werden Mitarbeiter-Stammdaten, Kontaktdaten, Arbeitszeiten, Abwesenheiten (inkl. Krankheitszeiten als Gesundheitsdaten nach Art. 9 DSGVO – ausschließlich Zeitraum, keine Diagnose), Bewerberdaten sowie Kunden- und Auftragsdaten. Zweck ist der Betrieb der Personal-, Zeiterfassungs-, Recruiting- und Verwaltungsfunktionen. Betroffene sind Mitarbeiter, Bewerber und Kunden des Verantwortlichen.</p>
+    <p><strong>§3 Technische &amp; organisatorische Maßnahmen (Art. 32).</strong> Transportverschlüsselung (TLS) und Verschlüsselung at-rest, strikte Mandantentrennung über Row-Level-Security, rollenbasiertes Rechtekonzept, revisionssicheres Audit-Log, Zugriffsbeschränkung nach Need-to-know, ausschließliches EU-Hosting (Rechenzentrum Frankfurt am Main), tägliche verschlüsselte Backups, dokumentierter Wiederherstellungsprozess.</p>
+    <p><strong>§4 Unterauftragsverarbeiter.</strong> Der Auftragsverarbeiter setzt geprüfte Unterauftragsverarbeiter ein: Hosting/Datenbank (Supabase, EU-Region Frankfurt), transaktionaler E-Mail-Versand sowie – nur bei gebuchtem WhatsApp-Add-on – Meta Platforms Ireland Ltd. für den Nachrichtenversand. Jeder Unterauftragnehmer ist auf gleichwertige Datenschutzpflichten verpflichtet. Über Änderungen wird der Verantwortliche vorab informiert und kann widersprechen.</p>
+    <p><strong>§5 Weisungsrecht &amp; Mitwirkung.</strong> Der Auftragsverarbeiter handelt nur auf Weisung. Er unterstützt den Verantwortlichen bei der Erfüllung der Betroffenenrechte (Art. 15–22), bei Datenschutz-Folgenabschätzungen (Art. 35) und bei Anfragen der Aufsichtsbehörde.</p>
+    <p><strong>§6 Betroffenenrechte &amp; Löschung.</strong> Auskunft, Berichtigung, Datenübertragbarkeit, Einschränkung und Löschung sind als Funktion im System abbildbar. Daten werden nach Zweckwegfall bzw. Ablauf gesetzlicher Aufbewahrungsfristen gelöscht oder anonymisiert.</p>
+    <p><strong>§7 Meldepflicht.</strong> Verletzungen des Schutzes personenbezogener Daten werden dem Verantwortlichen unverzüglich gemeldet, um die Einhaltung der 72-Stunden-Frist nach Art. 33 DSGVO zu ermöglichen.</p>
+    <p><strong>§8 Nachweis &amp; Kontrolle.</strong> Der Auftragsverarbeiter stellt die zur Einhaltung des Art. 28 erforderlichen Informationen bereit und ermöglicht Überprüfungen (auch durch beauftragte Prüfer).</p>
+    <p style="color:var(--muted);font-size:13px">Stand 06/2026 · Version ${'v1.2'}. Vor produktivem Echteinsatz empfiehlt sich eine abschließende anwaltliche Prüfung auf die konkrete Betriebssituation.</p>`,
+  datenschutz: `<p><strong>Datenschutzerklärung GreenCareers OS</strong></p>
+    <p><strong>1. Verantwortlicher.</strong> Verantwortlich für die Verarbeitung im Sinne der DSGVO ist der nutzende Betrieb. GreenCareers handelt als Auftragsverarbeiter (siehe AVV).</p>
+    <p><strong>2. Grundsätze.</strong> Verarbeitung nach Datensparsamkeit, Zweckbindung und Transparenz (Art. 5 DSGVO).</p>
+    <p><strong>3. Rechtsgrundlagen (Art. 6).</strong> Vertragserfüllung und vorvertragliche Maßnahmen (Art. 6 Abs. 1 lit. b), rechtliche Verpflichtungen wie Aufbewahrungs- und Nachweispflichten (lit. c), berechtigtes Interesse am sicheren Betrieb (lit. f) sowie – wo erforderlich – Einwilligung (lit. a).</p>
+    <p><strong>4. Gesundheitsdaten (Art. 9).</strong> Krankheitszeiten werden ausschließlich als Zeitraum („krank von–bis") erfasst – ohne Diagnose. Die Verarbeitung erfolgt vollautomatisiert im Mandanten des Betriebs; kein GreenCareers-Mitarbeiter erhält Einblick in Personalien.</p>
+    <p><strong>5. Standortdaten.</strong> Beim Stempeln wird – sofern aktiviert – ein einmaliger Standort-Nachweis erzeugt. Es findet KEINE Dauerortung statt.</p>
+    <p><strong>6. WhatsApp-Verarbeitung.</strong> Bei gebuchtem WhatsApp-Add-on werden Bewerber-Telefonnummer und Nachrichteninhalte zur Kommunikation an Meta Platforms Ireland Ltd. übermittelt. Grundlage ist die Anbahnung/Durchführung des Bewerbungsprozesses; Bewerber werden im ersten Kontakt auf die Verarbeitung hingewiesen.</p>
+    <p><strong>7. Empfänger &amp; Hosting.</strong> Daten werden ausschließlich in der EU (Rechenzentrum Frankfurt am Main, Supabase) gehostet. Eine Übermittlung in Drittländer findet nur statt, soweit hierfür geeignete Garantien (z. B. EU-Standardvertragsklauseln) bestehen.</p>
+    <p><strong>8. Speicherdauer.</strong> Daten werden nur so lange gespeichert, wie es für den jeweiligen Zweck erforderlich ist bzw. gesetzliche Aufbewahrungsfristen es verlangen; danach Löschung oder Anonymisierung.</p>
+    <p><strong>9. Zugriff &amp; Rollen.</strong> Rollen- &amp; Rechtekonzept (Admin / Personalverwaltung / Buchhaltung / Mitarbeiter). Mitarbeiter sehen ausschließlich ihre eigenen Daten.</p>
+    <p><strong>10. Betroffenenrechte (Art. 15–22).</strong> Auskunft, Berichtigung, Löschung, Einschränkung, Datenübertragbarkeit und Widerspruch sind als Funktion abbildbar (Einstellungen → Verträge &amp; Datenschutz). Zudem besteht ein Beschwerderecht bei einer Aufsichtsbehörde.</p>
+    <p style="color:var(--muted);font-size:13px">Stand 06/2026 · Version ${'v1.2'}.</p>`,
+  agb: `<p><strong>Allgemeine Geschäftsbedingungen GreenCareers OS</strong></p>
+    <p><strong>§1 Geltungsbereich.</strong> Diese AGB gelten für die Nutzung der Betriebssoftware GreenCareers OS durch gewerbliche Kunden (B2B).</p>
+    <p><strong>§2 Leistung.</strong> GreenCareers OS stellt eine Betriebssoftware für die grüne Branche bereit (Heute-Dashboard, Team/Personal &amp; Zeiterfassung, Planung, Kunden, Finanzen, Markt – je nach Tarif). Das Basismodul (Heute + Team) wird kostenlos bereitgestellt.</p>
+    <p><strong>§3 Kostenpflichtige Zusatzleistungen.</strong> Einzelne Module sowie das <strong>WhatsApp-Add-on (19 €/Monat)</strong> sind kostenpflichtig zubuchbar. Preise verstehen sich zzgl. USt. Die Abrechnung erfolgt monatlich im Voraus.</p>
+    <p><strong>§4 Pflichten des Kunden.</strong> Der Kunde ist für die Richtigkeit seiner eingegebenen Daten, die Rechtmäßigkeit der Datenverarbeitung gegenüber seinen Betroffenen sowie die Geheimhaltung der Zugangsdaten verantwortlich.</p>
+    <p><strong>§5 Verfügbarkeit.</strong> Angestrebt wird eine Verfügbarkeit von 99,5 % im Jahresmittel. Geplante Wartungsfenster werden vorab angekündigt.</p>
+    <p><strong>§6 Datenschutz.</strong> Die Verarbeitung personenbezogener Daten regelt der Auftragsverarbeitungsvertrag (AVV) nach Art. 28 DSGVO, der Bestandteil dieser Vereinbarung ist.</p>
+    <p><strong>§7 Haftung.</strong> GreenCareers OS leistet keine Rechts-, Steuer- oder Unternehmensberatung. Hinweise des Assistenten (GaLaBrain) sind Orientierung und ersetzen nicht die Beratung durch Steuerberater oder Rechtsanwalt. Im Übrigen Haftung nur für Vorsatz und grobe Fahrlässigkeit; bei leichter Fahrlässigkeit nur bei Verletzung wesentlicher Vertragspflichten und begrenzt auf den vertragstypisch vorhersehbaren Schaden.</p>
+    <p><strong>§8 Laufzeit &amp; Kündigung.</strong> Kostenpflichtige Module sind monatlich kündbar. Vor Löschung ist ein Datenexport möglich.</p>
+    <p><strong>§9 Schlussbestimmungen.</strong> Es gilt deutsches Recht. Sollte eine Bestimmung unwirksam sein, bleibt der übrige Vertrag wirksam.</p>
+    <p style="color:var(--muted);font-size:13px">Stand 06/2026 · Version ${'v1.2'}.</p>`,
 };
 
 /* ===================== URLAUB & KRANK ===================== */
@@ -7639,7 +7721,8 @@ function openCompose(id, channel){
   const a = findCandidate(id); if(!a) return;
   const isWa = channel === 'whatsapp';
   const list = isWa ? TEMPLATES.whatsapp : TEMPLATES.email;
-  const first = list[0] ? fillTemplate(list[0].text, a) : '';
+  const di = defaultTplIndex(channel);
+  const first = list[di] ? fillTemplate(list[di].text, a) : '';
   openSheet(`
     <div class="sheet__head">
       <span class="avatar" style="width:46px;height:46px;background:${isWa?'linear-gradient(135deg,#25D366,#1FA855)':'linear-gradient(135deg,#3B82F6,#2563EB)'}"><i data-lucide="${isWa?'message-circle':'mail'}" style="width:20px;height:20px"></i></span>
@@ -7647,10 +7730,10 @@ function openCompose(id, channel){
       <button class="iconbtn sheet__close" onclick="openApplicant(${id})"><i data-lucide="arrow-left"></i></button>
     </div>
     <div class="sheet__body">
-      <label class="copy-row__label" style="display:block;margin-bottom:6px">Vorlage</label>
+      <div class="compose-tplrow"><label class="copy-row__label">Vorlage</label><button class="compose-mng" onclick="openTemplates('${channel}')"><i data-lucide="settings-2"></i> Vorlagen verwalten</button></div>
       <select class="compose-tpl" onchange="composePick(${id},'${channel}',this.value)">
         <option value="">— eigener Text —</option>
-        ${list.map((t,i)=>`<option value="${i}" ${i===0?'selected':''}>${escapeHtml(t.name)}</option>`).join('')}
+        ${list.map((t,i)=>`<option value="${i}" ${i===di?'selected':''}>${escapeHtml(t.name)}${i===di?' · Standard':''}</option>`).join('')}
       </select>
       <textarea id="composeTa" class="compose-ta">${escapeHtml(first)}</textarea>
       <p class="compose-hint">Platzhalter wie <code>{Vorname}</code> und <code>{Beruf}</code> werden automatisch ersetzt. Versand öffnet ${isWa?'WhatsApp':'dein Mailprogramm'} – nichts wird automatisch verschickt.</p>
@@ -7692,6 +7775,169 @@ function composeSaveTpl(id, channel){
   saveTemplates();
   toast('Als Vorlage gespeichert');
 }
+
+/* ----- Vorlagen-Verwaltung (WhatsApp & E-Mail, benennbar, Standard wählbar) ----- */
+function openTemplates(channel){
+  const isWa = channel === 'whatsapp';
+  const list = isWa ? TEMPLATES.whatsapp : TEMPLATES.email;
+  const di = defaultTplIndex(channel);
+  const otherCh = isWa ? 'email' : 'whatsapp';
+  openSheet(`
+    <div class="sheet__head">
+      <span class="avatar" style="width:46px;height:46px;background:${isWa?'linear-gradient(135deg,#25D366,#1FA855)':'linear-gradient(135deg,#3B82F6,#2563EB)'}"><i data-lucide="${isWa?'message-circle':'mail'}" style="width:20px;height:20px"></i></span>
+      <div><div class="sheet__title">${isWa?'WhatsApp':'E-Mail'}-Vorlagen</div><div class="sheet__sub">Erstellen, benennen &amp; Standard festlegen</div></div>
+      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+    </div>
+    <div class="sheet__body">
+      <div class="tpl-switch">
+        <button class="tpl-switch__b on"><i data-lucide="${isWa?'message-circle':'mail'}"></i> ${isWa?'WhatsApp':'E-Mail'}</button>
+        <button class="tpl-switch__b" onclick="openTemplates('${otherCh}')"><i data-lucide="${isWa?'mail':'message-circle'}"></i> ${isWa?'E-Mail':'WhatsApp'}</button>
+      </div>
+      <p class="sheet-note"><i data-lucide="star"></i> Die mit <b>Standard</b> markierte Vorlage ist beim Anschreiben immer vorausgewählt. Platzhalter <code>{Vorname}</code> &amp; <code>{Beruf}</code> werden automatisch ersetzt.</p>
+      <div class="tpl-list">
+        ${list.length ? list.map((t,i)=>`
+          <div class="tpl-card ${i===di?'is-default':''}">
+            <div class="tpl-card__top">
+              <span class="tpl-card__name">${escapeHtml(t.name)}</span>
+              ${i===di?'<span class="tpl-card__star"><i data-lucide="star"></i> Standard</span>':`<button class="tpl-card__setdef" onclick="tplSetDefault('${channel}','${t.id}')"><i data-lucide="star"></i> Als Standard</button>`}
+            </div>
+            <div class="tpl-card__text">${escapeHtml(t.text)}</div>
+            <div class="tpl-card__acts">
+              <button class="btn ghost sm" onclick="tplOpenForm('${channel}','${t.id}')"><i data-lucide="pencil"></i> Bearbeiten</button>
+              <button class="btn ghost sm danger" onclick="tplDelete('${channel}','${t.id}')"><i data-lucide="trash-2"></i> Löschen</button>
+            </div>
+          </div>`).join('') : '<p class="sheet-note"><i data-lucide="info"></i> Noch keine Vorlage – lege deine erste an.</p>'}
+      </div>
+      <button class="btn btn--block" style="margin-top:14px" onclick="tplOpenForm('${channel}','')"><i data-lucide="plus"></i> Neue Vorlage</button>
+    </div>`);
+}
+function tplOpenForm(channel, id){
+  const isWa = channel === 'whatsapp';
+  const list = isWa ? TEMPLATES.whatsapp : TEMPLATES.email;
+  const t = id ? list.find(x => x.id === id) : null;
+  openSheet(`
+    <div class="sheet__head">
+      <span class="avatar" style="width:46px;height:46px;background:${isWa?'linear-gradient(135deg,#25D366,#1FA855)':'linear-gradient(135deg,#3B82F6,#2563EB)'}"><i data-lucide="${t?'pencil':'plus'}" style="width:20px;height:20px"></i></span>
+      <div><div class="sheet__title">${t?'Vorlage bearbeiten':'Neue Vorlage'}</div><div class="sheet__sub">${isWa?'WhatsApp':'E-Mail'} · Du-Form</div></div>
+      <button class="iconbtn sheet__close" onclick="openTemplates('${channel}')"><i data-lucide="arrow-left"></i></button>
+    </div>
+    <div class="sheet__body">
+      <div class="field"><label>Name der Vorlage</label><input id="tplName" value="${t?escapeHtml(t.name):''}" placeholder="z. B. Probetag anbieten"></div>
+      <div class="field"><label>Text</label><textarea id="tplText" class="compose-ta" placeholder="Hallo {Vorname}, ...">${t?escapeHtml(t.text):''}</textarea></div>
+      <p class="compose-hint">Platzhalter: <code>{Vorname}</code>, <code>{Beruf}</code>.</p>
+      <div class="sheet-actions">
+        <button class="btn" style="flex:1" onclick="tplSaveForm('${channel}','${id||''}')"><i data-lucide="check"></i> Speichern</button>
+        <button class="btn ghost" onclick="openTemplates('${channel}')">Abbrechen</button>
+      </div>
+    </div>`);
+}
+function tplSaveForm(channel, id){
+  const name = (document.getElementById('tplName').value || '').trim();
+  const text = (document.getElementById('tplText').value || '').trim();
+  if(!name || !text){ toast('Name und Text nötig'); return; }
+  const list = channel === 'whatsapp' ? TEMPLATES.whatsapp : TEMPLATES.email;
+  if(id){ const t = list.find(x => x.id === id); if(t){ t.name = name; t.text = text; } }
+  else { const nid = 'usr'+Date.now().toString(36); list.push({ id:nid, name, text }); }
+  saveTemplates();
+  toast('Vorlage gespeichert');
+  openTemplates(channel);
+}
+function tplDelete(channel, id){
+  const list = channel === 'whatsapp' ? TEMPLATES.whatsapp : TEMPLATES.email;
+  const i = list.findIndex(x => x.id === id);
+  if(i >= 0) list.splice(i, 1);
+  if(settings.tplDefault && settings.tplDefault[channel] === id){ settings.tplDefault[channel] = null; saveSettings(); }
+  saveTemplates();
+  toast('Vorlage gelöscht');
+  openTemplates(channel);
+}
+function tplSetDefault(channel, id){
+  settings.tplDefault = settings.tplDefault || { whatsapp:null, email:null };
+  settings.tplDefault[channel] = id;
+  saveSettings();
+  toast('Standard-Vorlage gesetzt');
+  openTemplates(channel);
+}
+
+/* ----- WhatsApp-Bot: Add-on (19 €/Monat) + Flow-Konfigurator ----- */
+function openWaBot(){
+  if(settings.waBot && settings.waBot.booked){ openWaBotFlow(); return; }
+  openWaBotOffer();
+}
+function openWaBotOffer(){
+  openSheet(`
+    <div class="sheet__head">
+      <span class="avatar" style="width:50px;height:50px;background:linear-gradient(135deg,#25D366,#1FA855)"><i data-lucide="bot-message-square" style="width:22px;height:22px"></i></span>
+      <div><div class="sheet__title">WhatsApp-Bewerber-Bot</div><div class="sheet__sub">Add-on · 19 €/Monat</div></div>
+      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+    </div>
+    <div class="sheet__body">
+      <div class="addon-hero">
+        <div class="addon-hero__price">19 €<span>/Monat</span></div>
+        <div class="addon-hero__txt">Der Bot schreibt neue Bewerber automatisch per WhatsApp an, stellt deine Fragen und sammelt die Antworten – du bekommst nur noch die passenden Kandidaten.</div>
+      </div>
+      <div class="addon-feat"><i data-lucide="check-circle-2"></i> <span>Automatische Erstansprache &amp; Rückfragen (Gehalt, Führerschein, Startdatum …)</span></div>
+      <div class="addon-feat"><i data-lucide="check-circle-2"></i> <span>Fragen-Flow selbst konfigurieren – Reihenfolge, Inhalt, hinzufügen/löschen</span></div>
+      <div class="addon-feat"><i data-lucide="check-circle-2"></i> <span>Antworten landen direkt am Bewerber im Recruiting-Board</span></div>
+      <p class="sheet-note"><i data-lucide="info"></i> <b>Ohne Add-on</b> kannst du Bewerber jederzeit selbst per „WhatsApp schreiben" kontaktieren – mit deinen Vorlagen, eine Vorlage ist immer vorausgewählt.</p>
+      <div class="sheet-actions">
+        <button class="btn" style="flex:1" onclick="bookWaBot()"><i data-lucide="lock-open"></i> Für 19 €/Monat buchen</button>
+        <button class="btn ghost" onclick="closeSheet()">Später</button>
+      </div>
+    </div>`);
+}
+function bookWaBot(){
+  settings.waBot = { booked:true };
+  saveSettings();
+  toast('WhatsApp-Bot aktiviert (Demo)');
+  openWaBotFlow();
+}
+function unbookWaBot(){
+  settings.waBot = { booked:false };
+  saveSettings();
+  toast('Add-on gekündigt');
+  openWaBotOffer();
+}
+function openWaBotFlow(){
+  const flow = botFlow();
+  openSheet(`
+    <div class="sheet__head">
+      <span class="avatar" style="width:46px;height:46px;background:linear-gradient(135deg,#25D366,#1FA855)"><i data-lucide="bot-message-square" style="width:20px;height:20px"></i></span>
+      <div><div class="sheet__title">WhatsApp-Bot · Fragen-Flow</div><div class="sheet__sub"><span class="addon-on"><i data-lucide="check"></i> Aktiv · 19 €/Monat</span></div></div>
+      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+    </div>
+    <div class="sheet__body">
+      <p class="sheet-note"><i data-lucide="info"></i> Der Bot meldet sich beim Bewerber und stellt diese Fragen nacheinander. Du kannst sie umformulieren, sortieren, ergänzen oder löschen.</p>
+      <div class="bf-list">
+        ${flow.map((q,i)=>`
+          <div class="bfrow">
+            <span class="bfrow__n">${i+1}</span>
+            <input class="bfrow__in" value="${escapeHtml(q.q)}" onchange="bfSet('${q.id}',this.value)" placeholder="Frage an den Bewerber …">
+            <span class="bfrow__acts">
+              <button class="iconbtn xs" ${i===0?'disabled':''} onclick="bfMove('${q.id}',-1)"><i data-lucide="chevron-up"></i></button>
+              <button class="iconbtn xs" ${i===flow.length-1?'disabled':''} onclick="bfMove('${q.id}',1)"><i data-lucide="chevron-down"></i></button>
+              <button class="iconbtn xs danger" onclick="bfDel('${q.id}')"><i data-lucide="trash-2"></i></button>
+            </span>
+          </div>`).join('')}
+      </div>
+      <button class="btn ghost btn--block" style="margin-top:12px" onclick="bfAdd()"><i data-lucide="plus"></i> Frage hinzufügen</button>
+      <div class="bf-preview">
+        <div class="bf-preview__h"><i data-lucide="eye"></i> Vorschau</div>
+        <div class="bf-bubble bot">Hallo {Vorname}, schön dass du dich beworben hast! Ich stelle dir kurz ein paar Fragen. 🌱</div>
+        ${flow[0]?`<div class="bf-bubble bot">${escapeHtml(flow[0].q)}</div><div class="bf-bubble me">…Antwort des Bewerbers…</div>`:''}
+      </div>
+      <div class="sheet-actions" style="margin-top:16px">
+        <button class="btn ghost sm" onclick="bfReset()"><i data-lucide="rotate-ccw"></i> Auf Standard zurücksetzen</button>
+        <button class="btn ghost sm danger" onclick="unbookWaBot()"><i data-lucide="x-circle"></i> Add-on kündigen</button>
+      </div>
+    </div>`);
+}
+function ensureBotFlow(){ if(!settings.botFlow){ settings.botFlow = DEFAULT_BOT_FLOW.map(x => Object.assign({}, x)); } return settings.botFlow; }
+function bfSet(id, val){ const f = ensureBotFlow(); const q = f.find(x => x.id === id); if(q){ q.q = val; saveSettings(); } }
+function bfMove(id, dir){ const f = ensureBotFlow(); const i = f.findIndex(x => x.id === id); const j = i + dir; if(j < 0 || j >= f.length) return; const t = f[i]; f[i] = f[j]; f[j] = t; saveSettings(); openWaBotFlow(); }
+function bfDel(id){ const f = ensureBotFlow(); const i = f.findIndex(x => x.id === id); if(i >= 0){ f.splice(i, 1); saveSettings(); openWaBotFlow(); } }
+function bfAdd(){ const f = ensureBotFlow(); f.push({ id:'bf'+Date.now().toString(36), q:'' }); saveSettings(); openWaBotFlow(); }
+function bfReset(){ settings.botFlow = null; saveSettings(); toast('Auf Standard-Fragen zurückgesetzt'); openWaBotFlow(); }
 
 /* ----- Probetag planen (Kalender folgt in Welle 8) ----- */
 function openProbetag(id){
@@ -9022,6 +9268,28 @@ function fillTemplate(text, a){
   const beruf = (a.role || (a.pq && a.pq.beruf) || 'Mitarbeiter');
   return String(text).replace(/\{Vorname\}/g, vorname).replace(/\{Beruf\}/g, beruf);
 }
+// Standard-Vorlage je Kanal: gemerkte ID oder – falls keine/ungültig – die erste Vorlage.
+function defaultTplIndex(channel){
+  const list = channel === 'whatsapp' ? TEMPLATES.whatsapp : TEMPLATES.email;
+  const wantId = settings.tplDefault ? settings.tplDefault[channel] : null;
+  const i = list.findIndex(t => t.id === wantId);
+  return i >= 0 ? i : 0;
+}
+
+/* ===================== WHATSAPP-BOT (Add-on 19 €/Monat) ===================== */
+// Fragen, die der Bot dem Bewerber im 24h-Fenster automatisch stellt. Kunde editierbar.
+const DEFAULT_BOT_FLOW = [
+  { id:'bf-erf',  q:'Wie viele Jahre Berufserfahrung im GaLaBau hast du?' },
+  { id:'bf-fs',   q:'Hast du einen Führerschein? Wenn ja, welche Klassen (z. B. B, BE, C1)?' },
+  { id:'bf-start',q:'Ab wann könntest du bei uns anfangen?' },
+  { id:'bf-geh',  q:'Welche Gehaltsvorstellung hast du (brutto im Monat)?' },
+  { id:'bf-mob',  q:'Wohnst du in der Nähe bzw. wie kommst du zur Arbeit?' },
+];
+function botFlow(){
+  if(!settings.botFlow) return DEFAULT_BOT_FLOW.map(x => Object.assign({}, x));
+  return settings.botFlow;
+}
+function saveBotFlow(flow){ settings.botFlow = flow; saveSettings(); }
 
 function findCandidate(id){ return applicants.find(item => item.id === id) || null; }
 function findCandidateCol(id){ const a = findCandidate(id); return a ? a.stage : ''; }
