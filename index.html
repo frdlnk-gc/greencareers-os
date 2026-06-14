@@ -7700,7 +7700,7 @@ const PLAN = {
         ${crews.map(crew => { const n = crewMembers(crew.id).length; const off = crewMembers(crew.id).filter(m => absentToday(m.id)).length; return `
           <div class="crew"><span class="crew__icon" style="background:${crew.color}22;color:${crew.color}"><i data-lucide="${crew.icon||'users'}"></i></span><div><b>${crew.label}</b><span>${n} ${n===1?'Mann':'Mann'}${off?` · <span style="color:var(--amber)">${off} fehlt</span>`:''}</span></div></div>
           ${days.map(day => `<div class="plan-cell" data-crew="${crew.id}" data-day="${day.id}">
-            ${((plan[crew.id]&&plan[crew.id][day.id]) || []).map((job,index) => `<div class="job" draggable="true" data-crew="${crew.id}" data-day="${day.id}" data-index="${index}" style="--job-color:${job.c}"><b>${job.t}</b><span>${job.o}</span></div>`).join('')}
+            ${((plan[crew.id]&&plan[crew.id][day.id]) || []).map((job,index) => `<div class="job" draggable="true" data-crew="${crew.id}" data-day="${day.id}" data-index="${index}" style="--job-color:${job.c}" onclick="openPlanJob('${crew.id}','${day.id}',${index})"><b>${job.t}</b><span>${job.o}</span></div>`).join('')}
           </div>`).join('')}
         `; }).join('')}
       </div>
@@ -7805,7 +7805,49 @@ function ztBarInfo(crewId, dayId){
       <h4 style="margin:14px 0 8px">Team vor Ort</h4>
       ${members.map(m => { const ab = off.find(o => o.id === m.id); return `<div class="zt-member ${ab?'off':''}"><span>${escapeHtml(m.name)}</span>${ab?`<span class="pill a sm">abwesend</span>`:`<span class="pill g sm">eingeplant</span>`}</div>`; }).join('')}
       ${off.length ? `<p class="sheet-note" style="margin-top:12px"><i data-lucide="alert-triangle"></i> ${off.length} ${off.length===1?'Person fehlt':'Personen fehlen'} an diesem Tag – ggf. Springer einplanen.</p>` : ''}
+      <div class="sheet-actions" style="margin-top:14px">
+        <button class="btn" style="flex:1" onclick="openPlanJob('${crewId}','${dayId}',0)"><i data-lucide="settings-2"></i> Auftrag bearbeiten</button>
+      </div>
     </div>`);
+}
+// Detail eines eingeplanten Auftrags: Infos + Querläufe (Rechnung/Angebot aus dem Auftrag) + Löschen.
+// Schließt die Lücke, dass Tafel-Aufträge bisher nur ziehbar, aber nicht anklickbar waren.
+function openPlanJob(crewId, dayId, index){
+  if(Date.now() < dragClickBlockUntil) return;
+  const job = plan[crewId] && plan[crewId][dayId] && plan[crewId][dayId][index];
+  if(!job) return;
+  const c = crewById(crewId); const d = days.find(x => x.id === dayId);
+  const cust = job.customerId ? customer(job.customerId) : null;
+  openSheet(`
+    <div class="sheet__head">
+      <span class="avatar" style="width:46px;height:46px;background:${job.c||'#16A34A'}"><i data-lucide="map-pin" style="width:20px;height:20px"></i></span>
+      <div><div class="sheet__title">${escapeHtml(job.t)}</div><div class="sheet__sub">${escapeHtml(job.o||'')}</div></div>
+      <button class="sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+    </div>
+    <div class="sheet__body">
+      <div class="inv-doc">
+        <div class="inv-doc__row"><span>Kolonne</span><strong>${escapeHtml(c?c.label:'—')}</strong></div>
+        <div class="inv-doc__row"><span>Tag</span><span>${d?`${d.dow}, ${dDE(d.date)}`:'—'}</span></div>
+        ${cust ? `<div class="inv-doc__row"><span>Kunde</span><span>${escapeHtml(cust.name)}</span></div>` : ''}
+      </div>
+      ${cust
+        ? `<div class="sheet-actions" style="margin-top:14px">
+            <button class="btn" style="flex:1" onclick="closeSheet(); openInvoiceForm('angebot','${cust.id}')"><i data-lucide="file-text"></i> Angebot</button>
+            <button class="btn" style="flex:1" onclick="closeSheet(); openInvoiceForm('rechnung','${cust.id}')"><i data-lucide="receipt"></i> Rechnung</button>
+          </div>
+          <button class="btn ghost btn--block" style="margin-top:8px" onclick="closeSheet(); openCustomer('${cust.id}')"><i data-lucide="folder-open"></i> Kundenkartei öffnen</button>`
+        : `<p class="sheet-note" style="margin-top:12px"><i data-lucide="info"></i> Kein Kunde verknüpft – für Angebot/Rechnung beim Anlegen einen Kunden zuordnen.</p>`}
+      <button class="btn ghost btn--block danger" style="margin-top:14px" onclick="deletePlanJob('${crewId}','${dayId}',${index})"><i data-lucide="trash-2"></i> Auftrag aus Planung entfernen</button>
+    </div>`);
+}
+function deletePlanJob(crewId, dayId, index){
+  const arr = plan[crewId] && plan[crewId][dayId]; if(!arr || !arr[index]) return;
+  const name = arr[index].t;
+  if(!confirm(`„${name}" wirklich aus der Planung entfernen?`)) return;
+  arr.splice(index, 1);
+  closeSheet();
+  if(currentView==='planung') planTab(activePlanTab);
+  toast(`„${name}" entfernt`);
 }
 
 function wirePlan(){
@@ -7871,7 +7913,7 @@ function submitAuftrag(){
   const c = crewById(d.crew);
   if(!plan[d.crew]) plan[d.crew] = {};
   if(!plan[d.crew][d.day]) plan[d.crew][d.day] = [];
-  plan[d.crew][d.day].push({ t:d.t.trim(), o:d.o.trim() || (c?c.label:''), c: c?c.color:'#16A34A' });
+  plan[d.crew][d.day].push({ t:d.t.trim(), o:d.o.trim() || (c?c.label:''), c: c?c.color:'#16A34A', customerId: d.customerId || '' });
   closeSheet();
   auftragDraft = null;
   if(currentView!=='planung'){ activePlanTab='tafel'; setView('planung'); }
