@@ -1557,6 +1557,26 @@
   .fab-grouplabel{ align-self:flex-end; font-size:10.5px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; color:var(--muted-2); margin:5px 3px 0; }
   .fab-scrim{ position:fixed; inset:0; z-index:255; background:rgba(18,33,24,.18); opacity:0; pointer-events:none; transition:opacity .2s; }
   .fab-scrim.show{ opacity:1; pointer-events:auto; }
+  .fab-voice{ width:48px; height:48px; background:#fff; border:1px solid var(--line); color:var(--green-2); box-shadow:var(--shadow); touch-action:none; }
+  .fab-voice:hover{ background:var(--mint); border-color:var(--green); }
+  .fab-voice .fab__mic{ width:22px; height:22px; }
+  .fab-voice.rec{ background:var(--green); border-color:var(--green); color:#fff; animation:micpulse 1.1s infinite; }
+  .voice-hud{ position:fixed; left:50%; bottom:96px; transform:translateX(-50%); z-index:300; background:rgba(18,33,24,.92); color:#fff; border-radius:18px; padding:18px 22px; min-width:240px; max-width:86vw; text-align:center; box-shadow:0 14px 40px rgba(0,0,0,.3); }
+  .voice-hud.hidden{ display:none; }
+  .voice-hud__ring{ width:54px; height:54px; margin:0 auto 10px; border-radius:50%; background:var(--green); display:grid; place-items:center; animation:micpulse 1.1s infinite; }
+  .voice-hud__ring .lucide{ width:26px; height:26px; }
+  .voice-hud__txt{ font-size:15px; font-weight:600; line-height:1.4; min-height:21px; }
+  .voice-hud__hint{ font-size:12px; color:rgba(255,255,255,.6); margin-top:7px; }
+  .ob-osprev{ display:flex; align-items:center; justify-content:space-between; gap:10px; background:var(--mint); border:1px solid #D7EBDD; border-radius:12px; padding:11px 14px; margin-bottom:14px; }
+  .ob-osprev__lbl{ font-size:12px; font-weight:600; color:var(--green-3); }
+  .ob-osprev__name{ font-size:17px; font-weight:800; color:var(--green-2); letter-spacing:-.01em; }
+  .ob-logo{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .ob-logo__prev{ width:46px; height:46px; border-radius:11px; border:1px solid var(--line); background:var(--canvas); display:grid; place-items:center; overflow:hidden; flex-shrink:0; }
+  .ob-logo__prev img{ width:100%; height:100%; object-fit:cover; }
+  .ob-logo__prev .lucide{ width:20px; height:20px; color:var(--muted); }
+  .ob-color{ display:flex; align-items:center; gap:11px; flex-wrap:wrap; }
+  .ob-color input[type=color]{ width:46px; height:46px; padding:0; border:1px solid var(--line); border-radius:11px; background:none; cursor:pointer; }
+  .ob-color__hint{ font-size:12.5px; color:var(--muted); flex:1; min-width:120px; }
 
   @media(max-width:1080px){
     .dashboard{ grid-template-columns:1fr; }
@@ -2417,6 +2437,7 @@
   /* ===== Brain (Chat) ===== */
   .brain-body{ padding:18px 20px 20px; }
   .brain-chips{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px; }
+  .brain-fbchips{ display:flex; flex-wrap:wrap; gap:7px; margin-top:11px; }
   .brain-chip{ font-size:12px; font-weight:600; color:var(--green-3); background:var(--mint); border:1px solid #D7EBDD; border-radius:999px; padding:9px 13px; text-align:left; transition:all .15s; }
   .brain-chip:hover{ border-color:var(--green); color:var(--green-2); background:#E2F3E8; transform:translateY(-1px); }
   .brain-msgs{ display:flex; flex-direction:column; gap:11px; min-height:120px; max-height:46vh; overflow:auto; padding:4px 2px; margin-bottom:12px; }
@@ -2516,12 +2537,12 @@
       <div class="auth__brand">
         <span class="brandmark"><i data-lucide="leaf"></i></span>
         <div>
-          <div class="brandname">GreenCareers <small>OS</small></div>
-          <div class="brandsub">Betriebssoftware für GaLaBau</div>
+          <div class="brandname" id="loginBrandName">GreenCareers <small>OS</small></div>
+          <div class="brandsub" id="loginBrandSub">Betriebssoftware für GaLaBau</div>
         </div>
       </div>
       <h1>Willkommen zurück</h1>
-      <p class="sub">Melde dich an und öffne das Cockpit für Müller GaLaBau.</p>
+      <p class="sub" id="loginSubLine">Melde dich an und öffne das Cockpit für Müller GaLaBau.</p>
       <div class="field"><label for="email">E-Mail</label><input id="email" type="email" value="georg@mueller-galabau.de" autocomplete="email" /></div>
       <div class="field"><label for="password">Passwort</label><input id="password" type="password" value="demo1234" autocomplete="current-password" /></div>
       <div class="auth__row">
@@ -2551,7 +2572,7 @@
   <div class="scrim hidden" id="scrim" onclick="toggleMobile(false)"></div>
   <aside class="sidebar">
     <div class="sidebrand">
-      <span class="brandmark"><i data-lucide="leaf"></i></span>
+      <span class="brandmark" id="sideBrandmark"><i data-lucide="leaf"></i></span>
       <div class="sidebrand__text"><b>Müller GaLaBau</b><span>Garten- &amp; Landschaftsbau</span></div>
     </div>
     <nav class="nav" id="sideNav"></nav>
@@ -2588,7 +2609,14 @@
 <div class="fab-scrim" id="fabScrim" onclick="closeFab()"></div>
 <div class="fab-wrap" id="fabWrap">
   <div class="fab-menu" id="fabMenu"></div>
+  <button class="fab fab-voice" id="voiceFab" title="Gedrückt halten und sprechen"
+    onpointerdown="voiceFabDown(event)" onpointerup="voiceFabUp(event)" onpointerleave="voiceFabUp(event)" onpointercancel="voiceFabUp(event)"><i data-lucide="mic" class="fab__mic"></i></button>
   <button class="fab" id="fab" onclick="toggleFab()" title="Schnell anlegen"><i data-lucide="plus" class="fab__plus"></i></button>
+</div>
+<div class="voice-hud hidden" id="voiceHud">
+  <div class="voice-hud__ring"><i data-lucide="mic"></i></div>
+  <div class="voice-hud__txt" id="voiceHudTxt">Sprich jetzt…</div>
+  <div class="voice-hud__hint">Knopf loslassen zum Senden</div>
 </div>
 
 <script>
@@ -2912,6 +2940,7 @@ const DEFAULT_SETTINGS = {
   theme: 'galabau',    // galabau (grün) | tiefbau (orange) | landwirtschaft (gold)
   consent: null,       // {version, acceptedAt, by, items:{avv,datenschutz,agb,vollmacht}} – DSGVO-Einwilligung
   company: {name:'Müller GaLaBau', owner:'Georg Müller', email:'georg@mueller-galabau.de', start:'06:30',
+    logo:'', color:'',
     street:'Gärtnerweg 14', zip:'22926', city:'Ahrensburg', phone:'04102 88990',
     taxNo:'18/123/45678', ustId:'DE312345678',
     bank:'Sparkasse Holstein', iban:'DE89 3704 0044 0532 0130 00', bic:'NOLADE21HOL',
@@ -3213,6 +3242,7 @@ function login(){
   document.getElementById('app').classList.remove('hidden');
   document.body.classList.add('authed');
   applyTheme(settings.theme);
+  applyBranding();
   initCalDrag();
   applyRole();
   // Reihenfolge nach „Kauf erfolgreich": 1) AVV/DSGVO bestätigen  2) Einrichtung  3) Tour
@@ -3333,12 +3363,31 @@ function openSettings(){
       <div class="setsec">Stammdaten</div>
       <p class="sheet-note"><i data-lucide="building-2"></i> Diese Angaben erscheinen automatisch auf Angeboten, Rechnungen und im Co-Branding.</p>
       <div class="fieldrow">
-        <div class="field"><label>Firma</label><input value="${escapeHtml(c.name)}" onchange="settings.company.name=this.value;saveSettings();rerenderCurrent()"></div>
+        <div class="field"><label>Firma</label><input value="${escapeHtml(c.name)}" onchange="settings.company.name=this.value;saveSettings();applyBranding();rerenderCurrent()"></div>
         <div class="field"><label>Inhaber</label><input value="${escapeHtml(c.owner)}" onchange="settings.company.owner=this.value;saveSettings()"></div>
       </div>
       <div class="fieldrow">
         <div class="field"><label>E-Mail</label><input type="email" value="${escapeHtml(c.email)}" onchange="settings.company.email=this.value;saveSettings()"></div>
         <div class="field"><label>Telefon</label><input value="${escapeHtml(c.phone)}" onchange="settings.company.phone=this.value;saveSettings()"></div>
+      </div>
+
+      <div class="setsec">Branding</div>
+      <p class="sheet-note"><i data-lucide="palette"></i> Dein Cockpit heißt aktuell <strong>${escapeHtml(osName())}</strong>. Logo &amp; Farbe erscheinen in Sidebar, Login und auf deinen Dokumenten.</p>
+      <div class="field">
+        <label>Logo</label>
+        <div class="ob-logo">
+          <span class="ob-logo__prev" id="setLogoPrev">${c.logo?`<img src="${c.logo}" alt="Logo">`:`<i data-lucide="image"></i>`}</span>
+          <label class="btn ghost sm"><i data-lucide="upload"></i> Logo hochladen<input type="file" accept="image/*" onchange="setLogoUpload(this)" hidden></label>
+          ${c.logo?`<button class="btn ghost sm" onclick="clearLogo()"><i data-lucide="x"></i> Entfernen</button>`:''}
+        </div>
+      </div>
+      <div class="field">
+        <label>Markenfarbe</label>
+        <div class="ob-color">
+          <input type="color" value="${c.color || ((BRANCHEN_CATALOG.find(f=>f.theme===(s.theme||'galabau'))||{}).color || '#16A34A')}" oninput="setBrandColor(this.value)">
+          <span class="ob-color__hint">Passt Buttons &amp; Akzente an deine Farbe an.</span>
+          ${c.color?`<button class="btn ghost sm" onclick="clearBrandColor()"><i data-lucide="rotate-ccw"></i> Branchenfarbe</button>`:''}
+        </div>
       </div>
 
       <div class="setsec">Anschrift</div>
@@ -3470,6 +3519,67 @@ function applyTheme(theme){
   if(t === 'galabau') document.documentElement.removeAttribute('data-theme');
   else document.documentElement.dataset.theme = t;
 }
+/* ---- Dynamisches White-Label-Branding (OS-Name, Logo, Markenfarbe) ---- */
+function osBrandLabel(theme){
+  const t = theme || settings.theme || 'galabau';
+  return t==='tiefbau' ? 'Tiefbau' : t==='landwirtschaft' ? 'Agrar' : 'GaLaBau';
+}
+function osBranchePhrase(){
+  const t = settings.theme || 'galabau';
+  return t==='tiefbau' ? 'den Straßen- & Tiefbau' : t==='landwirtschaft' ? 'die Landwirtschaft' : 'den GaLaBau';
+}
+function osBase(){
+  const c = (settings.company && settings.company.name) ? settings.company.name.trim() : '';
+  return c || osBrandLabel();
+}
+function osName(){ return osBase() + ' OS'; }
+function hexToRgb(h){ h=(h||'').replace('#',''); if(h.length===3) h=h.split('').map(x=>x+x).join(''); const n=parseInt(h,16); return isNaN(n)?null:{r:(n>>16)&255,g:(n>>8)&255,b:n&255}; }
+function shade(hex, p){ const c=hexToRgb(hex); if(!c) return hex; const f=(v)=> Math.max(0,Math.min(255, Math.round(v + (p<0? v*p : (255-v)*p)))); return '#'+[f(c.r),f(c.g),f(c.b)].map(v=>v.toString(16).padStart(2,'0')).join(''); }
+function applyBrandColorValue(col){
+  const root = document.documentElement;
+  if(col && /^#?[0-9a-fA-F]{3,6}$/.test(col)){
+    const hex = col[0]==='#'? col : '#'+col;
+    root.style.setProperty('--green', hex);
+    root.style.setProperty('--green-2', shade(hex,-0.18));
+    root.style.setProperty('--green-3', shade(hex,-0.34));
+  } else {
+    root.style.removeProperty('--green');
+    root.style.removeProperty('--green-2');
+    root.style.removeProperty('--green-3');
+  }
+}
+function applyBrandColor(){ applyBrandColorValue(settings.company && settings.company.color ? settings.company.color.trim() : ''); }
+function applyBranding(){
+  const co = settings.company || {};
+  const base = osBase();
+  try{ document.title = osName(); }catch(e){}
+  // Login
+  const ln = document.getElementById('loginBrandName'); if(ln) ln.innerHTML = `${escapeHtml(base)} <small>OS</small>`;
+  const ls = document.getElementById('loginBrandSub'); if(ls) ls.textContent = `Betriebssoftware für ${osBranchePhrase()}`;
+  const lsl = document.getElementById('loginSubLine'); if(lsl && co.name) lsl.textContent = `Melde dich an und öffne das Cockpit für ${co.name}.`;
+  // Sidebar Name
+  const sb = document.querySelector('.sidebrand__text b'); if(sb) sb.textContent = co.name || 'GreenCareers';
+  // Logo (Sidebar + Login-Brandmark)
+  const logo = co.logo || '';
+  document.querySelectorAll('#sideBrandmark, .auth__brand .brandmark').forEach(mark=>{
+    if(!mark) return;
+    if(logo){ mark.innerHTML = `<img src="${logo}" alt="Logo" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">`; mark.style.background='transparent'; }
+    else { mark.innerHTML = '<i data-lucide="leaf"></i>'; mark.style.background=''; }
+  });
+  applyBrandColor();
+  icons();
+}
+/* ---- Branding-Bearbeitung in den Einstellungen ---- */
+function setLogoUpload(input){
+  const f = input.files && input.files[0]; if(!f) return;
+  if(f.size > 900*1024){ toast('Logo ist zu groß (max. 900 KB)'); return; }
+  const rd = new FileReader();
+  rd.onload = ()=>{ settings.company.logo = rd.result; saveSettings(); applyBranding(); refreshSettings(); toast('Logo gespeichert'); };
+  rd.readAsDataURL(f);
+}
+function clearLogo(){ settings.company.logo = ''; saveSettings(); applyBranding(); refreshSettings(); }
+function setBrandColor(v){ settings.company.color = v; saveSettings(); applyBranding(); rerenderCurrent(); }
+function clearBrandColor(){ settings.company.color = ''; saveSettings(); applyBranding(); refreshSettings(); rerenderCurrent(); }
 
 function maybeOnboard(){
   // Beim ersten Login fragen, ob der geführte Assistent gestartet werden soll
@@ -3513,13 +3623,34 @@ function renderOnboard(){
       </div>
       <p class="sheet-note"><i data-lucide="palette"></i> ${primary ? `Primärbranche: <strong>${primary}</strong> – dein Tool erscheint im passenden Farbschema.` : 'Noch keine Auswahl – Standardfarbe Grün.'}</p>`;
   } else if(step === 'betrieb'){
+    const _famColor = (BRANCHEN_CATALOG.find(f=>f.theme===(OB_DRAFT.theme||'galabau'))||{}).color || '#16A34A';
+    const _osBase = (OB_DRAFT.company.name||'').trim() || osBrandLabel(OB_DRAFT.theme);
+    const _logo = OB_DRAFT.company.logo || '';
+    const _col = OB_DRAFT.company.color || '';
     body = `
-      <div class="obhead"><span class="obnum">2 / 4</span><h3>Dein Betrieb</h3><p>Damit Begrüßung, Login &amp; Dokumente stimmen.</p></div>
-      <div class="field"><label>Firmenname</label><input id="obName" value="${OB_DRAFT.company.name.replace(/"/g,'&quot;')}"></div>
+      <div class="obhead"><span class="obnum">2 / 4</span><h3>Dein Betrieb</h3><p>Name, Logo &amp; Farbe – so wird die Software <strong>deine</strong>.</p></div>
+      <div class="ob-osprev"><span class="ob-osprev__lbl">So heißt dein Cockpit:</span><span class="ob-osprev__name" id="obOsPreview">${escapeHtml(_osBase)} OS</span></div>
+      <div class="field"><label>Firmenname</label><input id="obName" oninput="obNamePreview()" value="${OB_DRAFT.company.name.replace(/"/g,'&quot;')}"></div>
       <div class="field"><label>Inhaber</label><input id="obOwner" value="${OB_DRAFT.company.owner.replace(/"/g,'&quot;')}"></div>
       <div class="fieldrow">
         <div class="field"><label>Inhaber-E-Mail</label><input id="obEmail" type="email" value="${OB_DRAFT.company.email}"></div>
         <div class="field"><label>Arbeitsbeginn</label><input id="obStart" type="time" value="${OB_DRAFT.company.start}"></div>
+      </div>
+      <div class="field">
+        <label>Logo (optional)</label>
+        <div class="ob-logo">
+          <span class="ob-logo__prev" id="obLogoPrev">${_logo?`<img src="${_logo}" alt="Logo">`:`<i data-lucide="image"></i>`}</span>
+          <label class="btn ghost sm"><i data-lucide="upload"></i> Logo hochladen<input type="file" accept="image/*" onchange="obLogoUpload(this)" hidden></label>
+          ${_logo?`<button class="btn ghost sm" onclick="obClearLogo()"><i data-lucide="x"></i> Entfernen</button>`:''}
+        </div>
+      </div>
+      <div class="field">
+        <label>Markenfarbe (optional)</label>
+        <div class="ob-color">
+          <input type="color" id="obColor" value="${_col||_famColor}" oninput="obSetColor(this.value)">
+          <span class="ob-color__hint">Passt Buttons &amp; Akzente an deine Farbe an.</span>
+          ${_col?`<button class="btn ghost sm" onclick="obClearColor()"><i data-lucide="rotate-ccw"></i> Branchenfarbe</button>`:''}
+        </div>
       </div>`;
   } else if(step === 'zeit'){
     body = `
@@ -3563,17 +3694,36 @@ function obToggleBranche(b){
   else OB_DRAFT.branchen.push(b);
   OB_DRAFT.theme = brancheTheme(OB_DRAFT.branchen[0]);
   applyTheme(OB_DRAFT.theme);   // Live-Vorschau im Onboarding
+  if(OB_DRAFT.company.color) applyBrandColorValue(OB_DRAFT.company.color); // eigene Farbe behält Vorrang
   renderOnboard();
 }
+// Aktuelle Eingaben des Betrieb-Schritts sichern (vor einem Re-Render)
+function obCaptureBetrieb(){
+  const g = id => document.getElementById(id);
+  if(g('obName'))  OB_DRAFT.company.name  = g('obName').value.trim()  || OB_DRAFT.company.name;
+  if(g('obOwner')) OB_DRAFT.company.owner = g('obOwner').value.trim() || OB_DRAFT.company.owner;
+  if(g('obEmail')) OB_DRAFT.company.email = g('obEmail').value.trim() || OB_DRAFT.company.email;
+  if(g('obStart')) OB_DRAFT.company.start = g('obStart').value         || OB_DRAFT.company.start;
+}
+function obNamePreview(){
+  const n = document.getElementById('obName'), p = document.getElementById('obOsPreview');
+  if(p){ const base = (n && n.value.trim()) || osBrandLabel(OB_DRAFT.theme); p.textContent = base + ' OS'; }
+}
+function obLogoUpload(input){
+  const f = input.files && input.files[0]; if(!f) return;
+  if(f.size > 900*1024){ toast('Logo ist zu groß (max. 900 KB)'); return; }
+  obCaptureBetrieb();
+  const rd = new FileReader();
+  rd.onload = ()=>{ OB_DRAFT.company.logo = rd.result; renderOnboard(); };
+  rd.readAsDataURL(f);
+}
+function obClearLogo(){ obCaptureBetrieb(); OB_DRAFT.company.logo = ''; renderOnboard(); }
+function obSetColor(v){ OB_DRAFT.company.color = v; applyBrandColorValue(v); }
+function obClearColor(){ obCaptureBetrieb(); OB_DRAFT.company.color = ''; applyBrandColorValue(''); applyTheme(OB_DRAFT.theme); renderOnboard(); }
 function obBack(){ if(obStep>0){ obStep--; renderOnboard(); } }
 function obNext(){
   const step = OB_STEPS[obStep];
-  if(step === 'betrieb'){
-    OB_DRAFT.company.name = document.getElementById('obName').value.trim() || OB_DRAFT.company.name;
-    OB_DRAFT.company.owner = document.getElementById('obOwner').value.trim() || OB_DRAFT.company.owner;
-    OB_DRAFT.company.email = document.getElementById('obEmail').value.trim() || OB_DRAFT.company.email;
-    OB_DRAFT.company.start = document.getElementById('obStart').value || OB_DRAFT.company.start;
-  }
+  if(step === 'betrieb'){ obCaptureBetrieb(); }
   // 'zeit' & 'rechte' werden live über obToggle/togglePerm gespeichert
   obStep++; renderOnboard();
 }
@@ -3584,8 +3734,8 @@ function finishOnboarding(){
   settings.theme = OB_DRAFT.theme || brancheTheme(settings.branchen[0]);
   applyTheme(settings.theme);
   settings.onboarded = true; saveSettings();
-  // Stammdaten in die App übernehmen
-  document.querySelector('.sidebrand__text b').textContent = settings.company.name;
+  // Stammdaten + White-Label-Branding in die App übernehmen
+  applyBranding();
   closeSheet();
   applyRole();
   toast('Einrichtung abgeschlossen');
@@ -6186,7 +6336,8 @@ const BRAIN_CHIPS = [
 ];
 function openBrain(prefill){
   if(!brainMsgs.length){
-    brainMsgs = [{ role:'bot', text:'Moin Georg! Ich bin dein GaLaBrain. Frag mich alles rund um deinen Betrieb – Rechnung, Steuer, Personal, Kalkulation, Recht. Ich antworte in Handwerker-Klartext.' }];
+    const vn = ((settings.company && settings.company.owner) ? settings.company.owner.split(' ')[0] : '').trim();
+    brainMsgs = [{ role:'bot', text:`Moin${vn?' '+escapeHtml(vn):''}! Ich bin dein GaLaBrain. Frag mich alles rund um deinen Betrieb – Rechnung, Steuer, Personal, Kalkulation, Recht. Du kannst auch das <strong>Mikrofon gedrückt halten</strong> und deine Frage einfach einsprechen. Ich antworte in Handwerker-Klartext.` }];
   }
   renderBrain();
   if(prefill){ setTimeout(()=> brainSend(prefill), 200); }
@@ -6202,7 +6353,8 @@ function renderBrain(){
       <div class="brain-chips">${BRAIN_CHIPS.map(c=>`<button class="brain-chip" onclick="brainSend('${c.replace(/'/g,"\\'")}')">${c}</button>`).join('')}</div>
       <div class="brain-msgs" id="brainMsgs">${brainMsgs.map(brainBubble).join('')}</div>
       <div class="brain-input">
-        <button class="brain-mic" id="brainMic" onclick="brainVoice()" title="Sprechen"><i data-lucide="mic"></i></button>
+        <button class="brain-mic" id="brainMic" title="Gedrückt halten und sprechen"
+          onpointerdown="brainMicDown(event)" onpointerup="brainMicUp(event)" onpointerleave="brainMicUp(event)" onpointercancel="brainMicUp(event)"><i data-lucide="mic"></i></button>
         <input type="text" id="brainText" placeholder="Frag dein GaLaBrain…" onkeydown="if(event.key==='Enter'){brainSend(this.value); this.value='';}">
         <button class="brain-send" onclick="const t=document.getElementById('brainText'); brainSend(t.value); t.value='';"><i data-lucide="arrow-up"></i></button>
       </div>
@@ -6229,20 +6381,89 @@ function brainSend(text){
   }, 750);
 }
 let _brainLastAnswer = '';
+/* ===== GaLaBrain Wissensbasis: Scoring statt starrer Regex-Kette ===== */
+const BRAIN_KB = [
+  { id:'adoption', kw:['intensiv','akzeptanz','überzeug','gewöhn','annehmen','mitmachen','dazu bringen','dazu zu bringen','widerstand','skeptisch','motivier','adoption','wollen nicht','nutzen die app','app nutzen','app zu nutzen','zu nutzen','team dazu','mitarbeiter dazu','sauber stempeln','konsequent stempeln','einführen','ausrede'],
+    a:`Damit dein Team die Zeiterfassung wirklich nutzt, zählt vor allem <strong>Einfachheit + ein klarer Nutzen für die Leute selbst</strong>:<br>• <strong>Eine Geste statt Zettel</strong>: Stempeln läuft per Handy mit einem Tipp „auf Kunde" – das ist schneller als jeder Stundenzettel. Zeig es einmal auf der Baustelle vor, dann sitzt es.<br>• <strong>Den Vorteil benennen</strong>: korrekt erfasste Stunden = <strong>pünktlicher, korrekter Lohn</strong> inkl. Rüstzeit und Zuschläge. Wer stempelt, muss nichts mehr nachträglich reklamieren.<br>• <strong>Vorbild Vorarbeiter</strong>: Wenn die Kolonnenführer konsequent stempeln, zieht der Rest nach. Mach es zur festen Routine bei Arbeitsbeginn/-ende.<br>• <strong>Reibung raus</strong>: Standortnachweis nur einmal beim Ein-/Ausstempeln, keine Dauerortung – das nimmt die „Überwachungs"-Angst. Erklär das offen.<br>• <strong>Erste 2 Wochen begleiten</strong>: täglich kurz in „Team → Zeiterfassung" reinschauen, wer noch nicht stempelt, freundlich erinnern.<br><br>In der App siehst du unter <strong>Team → Zeiterfassung</strong> live, wer eingestempelt ist – das ist dein Kontrollinstrument ohne Nachfragen.` },
+  { id:'stempeln', kw:['stempeln','einstempeln','ausstempeln','zeiterfassung','arbeitszeit erfass','zeiten erfass','stechuhr','zeit buchen','arbeitszeit buchen','kommen gehen'],
+    a:`So läuft die <strong>Zeiterfassung</strong> in der App:<br>• Mitarbeiter öffnet am Handy <strong>Team → Zeiterfassung</strong> und tippt <strong>Einstempeln</strong> – wählt den Kunden/die Baustelle, fertig.<br>• <strong>Rüstzeit</strong> (Beladen + Anfahrt) wird – wenn aktiviert – automatisch mitgezählt.<br>• Beim Ein- und Ausstempeln wird <strong>einmalig der Standort</strong> als Nachweis erfasst (keine Dauerortung).<br>• Im Ausnahmefall kann das Büro jemanden <strong>für</strong> einen anderen ein-/ausstempeln.<br><br>Du als Chef siehst in derselben Ansicht live, wer im Einsatz ist, Stunden pro Kopf und Vor-Ort-Bestätigung. Einstellungen (Rüstzeit, Standort, Selbststempeln) änderst du unter <strong>Einstellungen → Zeiterfassung</strong>.` },
+  { id:'mitarbeiter_anlegen', kw:['mitarbeiter anleg','mitarbeiter hinzu','neuen mitarbeiter','mitarbeiter erfassen','personal anlegen','kollege anlegen','mitarbeiter einladen','zugang anlegen','mitarbeiter erstellen','neuer kollege'],
+    a:`Einen Mitarbeiter legst du in Sekunden an:<br>• <strong>Team → Personalakte → „Mitarbeiter anlegen"</strong> (oder das grüne <strong>+</strong> unten rechts → „Mitarbeiter anlegen").<br>• Name, Funktion, Kolonne und E-Mail eintragen – mehr braucht es erstmal nicht.<br>• Über <strong>„Zugang &amp; Rolle"</strong> lädst du ihn per E-Mail ein und legst fest, was er darf (nur stempeln, oder mehr).<br>• Die restliche Personalakte (Vertrag, Führerschein, Dokumente) füllst du nach und nach – die App zeigt dir pro Mitarbeiter, was noch fehlt.<br><br>Tipp: Du kannst mir auch einfach sagen „<em>Mitarbeiter anlegen</em>" – per Sprachbefehl öffne ich dir das Formular direkt.` },
+  { id:'personalakte', kw:['personalakte','akte','stammdaten mitarbeiter','dokumente hinterleg','qualifikation hinterleg','führerschein hinterleg','zeugnis hochladen','vertrag hinterleg'],
+    a:`Die <strong>digitale Personalakte</strong> (Team → Personalakte) bündelt alles zu einem Mitarbeiter an einem Ort:<br>• <strong>Stammdaten &amp; Kontakt</strong>, <strong>Vertrag &amp; Lohn</strong>, <strong>Führerschein &amp; Qualifikationen</strong> (mit Ablaufdaten), <strong>Dokumente</strong> und <strong>Notizen</strong>.<br>• Ein <strong>Fortschrittsbalken</strong> zeigt, wie vollständig die Akte ist – du siehst sofort, wo noch Angaben fehlen.<br>• Ablaufende Führerscheine/Prüfungen tauchen rechtzeitig im „Denk mit"-Feed auf der Startseite auf.<br><br>So hast du bei Kontrolle, Lohnabrechnung oder Urlaubsplanung alles griffbereit – ohne Aktenordner.` },
+  { id:'kolonnen', kw:['kolonne','plantafel','einsatzplanung','baustelle planen','wer wohin','team einteilen','disposition','einsatz planen','wochenplan','tagesplanung'],
+    a:`Kolonnen &amp; Einsätze planst du im Modul <strong>Planung</strong> (Plantafel):<br>• Du verteilst deine <strong>Kolonnen per Drag &amp; Drop</strong> auf Baustellen und Wochentage.<br>• <strong>Urlaub und Krankmeldungen fließen automatisch ein</strong> – du siehst sofort, wo ein Mann fehlt und welcher Springer einspringen kann.<br>• Aufträge aus dem Kunden-Bereich landen direkt als planbare Einsätze auf der Tafel.<br><br>Planung ist ein Zusatzmodul (19 €/Monat) und greift mit Team und Kunden ineinander. Die Kolonnen-Zuordnung deiner Leute pflegst du schon heute in der Personalakte.` },
+  { id:'skonto', kw:['skonto'],
+    a:`<strong>Skonto</strong> ist ein Preisnachlass für schnelle Zahlung – üblich sind <strong>2 % bei Zahlung innerhalb von 7–14 Tagen</strong>, sonst Zahlung netto innerhalb des normalen Ziels.<br>• Formulierung auf der Rechnung: „Bei Zahlung bis TT.MM.JJJJ gewähren wir 2 % Skonto (… €), ansonsten Zahlung rein netto bis TT.MM.JJJJ."<br>• <strong>Wichtig steuerlich</strong>: Skonto mindert das Entgelt – die MwSt. wird vom tatsächlich gezahlten (gekürzten) Betrag berechnet.<br>• Kalkulier den Skonto-Abzug vorher in deine Preise ein, sonst frisst er deine Marge.<br><br>Im Rechnungsformular kannst du Zahlungsziel und Skonto hinterlegen – der Hinweis erscheint dann automatisch.` },
+  { id:'mahnung', kw:['mahnung','zahlt nicht','nicht zahlt','zahlungsverzug','nicht bezahlt','zahlt einfach nicht','will nicht zahlen','mahnen','zahlungserinnerung','offene rechnung','verzug','säumig','geld eintreiben','außenstände'],
+    a:`Wenn ein Kunde nicht zahlt, gehst du gestuft vor:<br>1. <strong>Zahlungserinnerung</strong> (freundlich) nach Überschreiten des Ziels – oft reicht das schon.<br>2. <strong>1. Mahnung</strong> mit neuer Frist (z. B. 7 Tage). Spätestens jetzt ist der Kunde im <strong>Verzug</strong>.<br>3. <strong>2. Mahnung</strong> + Hinweis auf Verzugszinsen und weitere Schritte.<br>• Bei B2B darfst du <strong>Verzugszinsen</strong> (9 % über Basiszins) und eine <strong>Mahnpauschale von 40 €</strong> berechnen.<br>• Hilft alles nichts: gerichtliches <strong>Mahnverfahren</strong> (Mahnbescheid) – günstig und ohne Anwalt machbar.<br><br>In der Finanzen-Übersicht siehst du überfällige Rechnungen rot markiert, damit nichts durchrutscht.` },
+  { id:'anzahlung', kw:['anzahlung','abschlag','abschlagsrechnung','teilrechnung','vorkasse','vorauszahlung','akonto','abschläge'],
+    a:`<strong>Abschlags-/Teilrechnungen</strong> sind im GaLaBau Standard, damit du bei großen Aufträgen nicht in Vorleistung gehst:<br>• Vereinbare im Angebot einen <strong>Zahlungsplan</strong>, z. B. 30 % bei Auftrag, 40 % nach Hauptleistung, Rest nach Fertigstellung.<br>• Jede Abschlagsrechnung weist <strong>die bereits erbrachte Teilleistung + MwSt.</strong> aus.<br>• Zum Schluss stellst du eine <strong>Schlussrechnung</strong>, die alle Abschläge auflistet und nur den Restbetrag fordert.<br><br>So bleibt deine Liquidität stabil und der Kunde zahlt mit dem Baufortschritt mit.` },
+  { id:'stundensatz', kw:['stundenverrechnungssatz','verrechnungssatz','stundensatz','was kostet meine stunde','stundenpreis','was muss ich pro stunde','was kostet eine arbeitsstunde','kostensatz'],
+    a:`Deinen <strong>Stundenverrechnungssatz</strong> (was der Kunde pro Arbeitsstunde zahlt) rechnest du so:<br>• <strong>Bruttolohn</strong> des Mitarbeiters + <strong>Lohnnebenkosten</strong> (~20–22 % AG-Anteil, Urlaub, Krankheit, Feiertage).<br>• Dazu die <strong>produktive Stundenzahl</strong>: ein Mitarbeiter ist nie 100 % auf der Baustelle (Urlaub, Krankheit, Rüstzeit, Regen) – realistisch ~1.400–1.500 produktive Std./Jahr.<br>• Plus <strong>Gemeinkosten</strong> (Fahrzeuge, Maschinen, Büro, Versicherung) und deinen <strong>Gewinnaufschlag</strong>.<br><br>Faustregel: <strong>Verrechnungssatz ≈ Bruttostundenlohn × Faktor 2,2–2,8</strong>. Bei 18 €/Std. Lohn landest du also grob bei <strong>45–55 €/Std.</strong> netto. Lieber genau kalkulieren als zu billig anbieten.` },
+  { id:'rollrasen', kw:['rollrasen','rasen verlegen','rasen anlegen','rasenfläche','rasen kalkul','neuer rasen'],
+    a:`<strong>Rollrasen</strong> kalkulierst du pro m² in drei Blöcken:<br>• <strong>Material</strong>: Rollrasen (~4–7 €/m² je nach Qualität) + Mutterboden/Substrat + Startdünger, plus ~5 % Verschnitt.<br>• <strong>Lohn</strong>: Boden vorbereiten (fräsen, abziehen, walzen) + Verlegen – Faustwert <strong>0,3–0,5 Std/m²</strong> × Verrechnungssatz.<br>• <strong>Geräte/Anfahrt</strong>: Fräse, Walze, Entsorgung Altrasen, Anfahrt.<br><br>Endpreis je nach Untergrund oft <strong>12–20 €/m²</strong>. Leg im Angebot je eine Position für Bodenvorbereitung und Rasen an – das wirkt sauber und ist nachvollziehbar.` },
+  { id:'hecke', kw:['hecke','heckenschnitt','hecke schneiden','heckenpflege'],
+    a:`<strong>Heckenschnitt</strong> rechnest du meist nach <strong>laufenden Metern</strong> oder Stundenaufwand ab:<br>• Faustwert pro lfm hängt an Höhe + Tiefe der Hecke; kalkulier über deinen <strong>Stundenverrechnungssatz</strong> × geschätzte Zeit.<br>• <strong>Grünschnitt-Entsorgung</strong> immer als eigene Position einplanen (Container/Anfahrt).<br>• <strong>Recht</strong>: Radikalschnitt/Rodung nur außerhalb <strong>1.3.–30.9.</strong> erlaubt (Naturschutz, § 39 BNatSchG) – schonender Form-/Pflegeschnitt ist auch im Sommer ok.<br><br>Für Stammkunden lohnt ein <strong>Pflegevertrag</strong> (mehrere Einsätze pro Jahr) – planbarer Umsatz statt Einzelaufträge.` },
+  { id:'erdarbeiten', kw:['erdarbeiten','aushub','erdaushub','mutterboden','abtragen','modellier','planum','bodenaushub','erdbau'],
+    a:`Bei <strong>Erdarbeiten</strong> kalkulierst du nach <strong>m³ (Aushub)</strong> bzw. m² (Modellierung):<br>• <strong>Aushub</strong>: Volumen × Maschinenstunde (Bagger) + Lohn; an die <strong>Auflockerung</strong> denken (Boden quillt beim Lösen ~20–30 % auf → mehr Abtransport).<br>• <strong>Entsorgung</strong>: oft der größte Posten – Bodenklasse/Belastung prüfen, Deponiekosten + Container/LKW einrechnen.<br>• <strong>Geräte</strong>: Bagger, Radlader, Rüttelplatte als eigene Positionen oder im Stundensatz.<br><br>Tipp: Bodenklasse vorab klären – Fels oder belasteter Boden sprengt sonst deine Kalkulation.` },
+  { id:'baum', kw:['baum fällen','baumfällung','baum fäll','baumpflege','fällen','stubben','wurzel','baum entfernen'],
+    a:`Beim <strong>Baumfällen</strong> sind zwei Dinge entscheidend – Recht und Sicherheit:<br>• <strong>Genehmigung</strong>: Viele Kommunen haben eine <strong>Baumschutzsatzung</strong> – ab bestimmtem Stammumfang brauchst du eine Fällgenehmigung. Erst prüfen, dann fällen.<br>• <strong>Schonzeit</strong>: Fällungen nur außerhalb <strong>1.3.–30.9.</strong> (Vogelschutz), Ausnahmen nur mit Begründung.<br>• <strong>Kalkulation</strong>: Schwierigkeit (frei fällen vs. Stück für Stück abtragen mit Seilklettertechnik/Hebebühne) × Zeit + Entsorgung + <strong>Stubbenfräsen</strong> als Extraposition.<br>• <strong>Sicherheit</strong>: PSA, Absperrung, ggf. Verkehrssicherung – nie unterschätzen.<br><br>Häng die Genehmigung als Dokument an den Auftrag, dann hast du den Nachweis.` },
+  { id:'aufmass', kw:['aufmaß','aufmass','vermess','aufmessen','fläche messen','flächen messen','laser messen','flächenaufmaß'],
+    a:`Digitales <strong>Aufmaß</strong> beim Kunden machst du so:<br>• <strong>Vor Ort</strong> mit dem Handy: Fläche per <strong>Foto + Maße</strong> erfassen (Länge × Breite je Teilfläche), unregelmäßige Flächen in Rechtecke/Dreiecke zerlegen.<br>• <strong>Laser-Entfernungsmesser</strong> spart Zettelwirtschaft – Werte direkt eintragen.<br>• Aus dem Aufmaß wird mit einem Klick die <strong>Angebotsposition</strong> (m² × Einheitspreis).<br><br>Häng Aufmaß, Fotos und Skizze direkt an den Kunden/die Anfrage – so geht nichts auf losen Zetteln verloren und du rufst es beim nächsten Mal wieder auf.` },
+  { id:'probezeit', kw:['probezeit','kündig','entlassen','abmahnung','aufhebungsvertrag','befristet','rauswerfen','trennen von'],
+    a:`Kurz zum <strong>Trennen von Mitarbeitern</strong>:<br>• <strong>Probezeit</strong> (max. 6 Monate): beidseitig <strong>2 Wochen</strong> Kündigungsfrist, ohne Angabe von Gründen.<br>• Danach gelten die gesetzlichen/tariflichen Fristen (mit Betriebszugehörigkeit länger).<br>• Ab <strong>10+ Mitarbeitern</strong> greift das Kündigungsschutzgesetz – dann brauchst du einen Kündigungsgrund (verhaltens-, personen- oder betriebsbedingt) und meist eine <strong>Abmahnung</strong> vorab.<br>• Kündigung immer <strong>schriftlich mit Originalunterschrift</strong> (keine E-Mail/WhatsApp) und nachweisbar zustellen.<br><br>Bei verhaltensbedingten Themen: erst abmahnen, dokumentieren, dann kündigen. Im Zweifel kurz arbeitsrechtlich absichern.` },
+  { id:'minijob', kw:['minijob','538','520','midijob','geringfügig','aushilfe','450 euro','mini job'],
+    a:`<strong>Minijob</strong> (Stand 2025): Verdienstgrenze <strong>556 €/Monat</strong> (dynamisch an den Mindestlohn gekoppelt).<br>• Du zahlst <strong>Pauschalabgaben</strong> an die Minijob-Zentrale (Kranken-/Rentenversicherung, Steuer, Umlagen) – grob ~30 %.<br>• Der Minijobber ist <strong>rentenversicherungspflichtig</strong>, kann sich aber befreien lassen.<br>• Anmeldung läuft über die <strong>Minijob-Zentrale</strong>, nicht die normale Krankenkasse.<br>• Darüber (bis ~2.000 €) beginnt der <strong>Midijob</strong> mit reduzierten AN-Beiträgen.<br><br>Gerade für Saisonspitzen praktisch – aber Mindestlohn und Stundengrenze sauber im Blick behalten (Zeiterfassung hilft).` },
+  { id:'azubi', kw:['azubi','ausbildung','lehrling','ausbilden','ausbildungsvergütung','ausbildungsbetrieb'],
+    a:`Zum <strong>Ausbilden im GaLaBau</strong>:<br>• Du brauchst eine <strong>Ausbildungsberechtigung</strong> (Meister/geprüfter Ausbilder mit AdA-Schein) und einen geeigneten Betrieb.<br>• <strong>Ausbildungsvergütung</strong> ist tariflich geregelt und steigt je Lehrjahr – aktuell grob 1.000–1.300 €/Monat.<br>• Der Azubi ist über die <strong>Berufsgenossenschaft</strong> unfallversichert; Berufsschule + überbetriebliche Lehrgänge gehören dazu.<br>• Vertrag über die zuständige Stelle (Landwirtschaftskammer) eintragen lassen.<br><br>Recruiting-Tipp: Azubis findest du am besten früh über GreenCareers – „Azubi GaLaBau" ist eine eigene Stellenkategorie im Bewerber-Bereich.` },
+  { id:'arbeitssicherheit', kw:['arbeitssicherheit','psa','schutzausrüstung','berufsgenossenschaft','sicherheitsschuhe','gefährdungsbeurteilung','arbeitsunfall','unfall','sga','bg bau'],
+    a:`<strong>Arbeitssicherheit</strong> ist Chefsache (und BG-Pflicht):<br>• <strong>PSA</strong> stellen + Tragen durchsetzen: Sicherheitsschuhe, Handschuhe, Gehörschutz, bei Motorsäge Schnittschutz + Helm mit Visier.<br>• <strong>Gefährdungsbeurteilung</strong> je Tätigkeit dokumentieren und <strong>Unterweisungen</strong> mindestens 1×/Jahr (und für Azubis öfter).<br>• <strong>Berufsgenossenschaft (BG Bau)</strong>: Beiträge zahlen, Unfälle melden – ein <strong>Arbeitsunfall</strong> mit >3 Tagen Ausfall ist meldepflichtig.<br>• Maschinen nur mit Einweisung, Prüffristen (z. B. Hebebühne, Leitern) einhalten.<br><br>Unterweisungen und Nachweise kannst du als Dokument in der Personalakte ablegen.` },
+  { id:'fuhrpark', kw:['führerschein','fahrtenbuch','dienstwagen','firmenwagen','fuhrpark','lkw führerschein','anhänger','be führerschein','1 prozent','0,5 prozent','privatnutzung'],
+    a:`Zu <strong>Fahrzeugen &amp; Führerschein</strong>:<br>• <strong>Anhänger/Transporter</strong>: Klasse B reicht bis 3,5 t; mehr Zuglast braucht <strong>BE</strong> oder C1. Im Team die Klassen sauber erfassen, sonst fährt jemand ohne Berechtigung.<br>• <strong>Privatnutzung Firmenwagen</strong>: pauschal <strong>1-%-Regel</strong> (1 % vom Bruttolistenpreis/Monat) oder <strong>Fahrtenbuch</strong> (lohnt bei wenig Privatfahrten).<br>• <strong>Führerschein-Kontrolle</strong>: Als Halter musst du regelmäßig prüfen, dass deine Fahrer eine gültige Fahrerlaubnis haben (Halterhaftung!).<br><br>In der App tauchen <strong>ablaufende Führerscheine</strong> rechtzeitig im „Denk mit"-Feed auf – so vergisst du keine Kontrolle.` },
+  { id:'maschinen', kw:['maschine','leasing','bagger kaufen','geräte anschaff','investition','abschreib','afa','mieten oder kaufen','anschaffung'],
+    a:`<strong>Maschine kaufen, leasen oder mieten?</strong> Faustregel nach Auslastung:<br>• <strong>Kaufen</strong>: lohnt bei hoher, dauerhafter Auslastung. Du schreibst über die <strong>AfA</strong> ab (Bagger meist 7–9 Jahre) und bindest Kapital.<br>• <strong>Leasing</strong>: feste Monatsrate, schont Liquidität, planbar, oft mit Wartung – gut bei mittlerer Nutzung.<br>• <strong>Mieten</strong>: für Spitzen und Spezialgerät, das du selten brauchst – keine Standkosten.<br><br>Rechne bei eigenen Maschinen einen <strong>internen Maschinenstundensatz</strong> (Abschreibung + Reparatur + Sprit + Versicherung) in deine Kalkulation ein – sonst arbeitest du die Geräte „umsonst" ab.` },
+  { id:'wetter', kw:['schlechtwetter','regen','witterung','winterpause','schlechtwettergeld','saison-kurzarbeit','saisonkurzarbeit','frost','wetterausfall'],
+    a:`Bei <strong>Schlechtwetter/Saison</strong> hast du im Baugewerbe besondere Instrumente:<br>• In der <strong>Schlechtwetterzeit (1.12.–31.3.)</strong> gibt es das <strong>Saison-Kurzarbeitergeld</strong> – fällt Arbeit wegen Wetter aus, federn Saison-Kug + ergänzende Leistungen den Lohnausfall ab (über die Agentur für Arbeit/SOKA-Bau).<br>• Vorher werden meist <strong>Arbeitszeitguthaben</strong> (Plusstunden aus dem Sommer) abgebaut.<br>• Plane <strong>Schlechtwetter-Puffer</strong> in Termine ein und halte „Innenarbeiten"/Werkstatt-Tätigkeiten als Alternative bereit.<br><br>Das Wetter-Widget auf der Startseite zeigt dir die nächsten Tage – so kannst du Einsätze vorausschauend umlegen.` },
+  { id:'winterdienst', kw:['winterdienst','räumpflicht','streupflicht','schnee räum','glätte','schneeräum'],
+    a:`<strong>Winterdienst</strong> ist ein gutes Zusatzgeschäft in der GaLaBau-Nebensaison:<br>• Du übernimmst per <strong>Vertrag</strong> die <strong>Räum- und Streupflicht</strong> für Kunden (Gewerbe, Hausverwaltungen) – klar regeln: Flächen, Zeiten (oft ab 7 Uhr werktags), Dokumentation.<br>• <strong>Haftung</strong>: Dokumentiere jeden Einsatz (wann, wo, gestreut/geräumt) – bei Glätteunfällen ist das dein Nachweis. Eine <strong>Dokumentationspflicht</strong> ist Pflicht, kein Nice-to-have.<br>• Abrechnung als <strong>Bereitschaftspauschale + Einsatz</strong> oder Saisonpauschale.<br><br>Lege die Einsatznachweise am besten direkt beim Kunden in der Akte ab.` },
+  { id:'ueberstunden', kw:['überstunde','mehrarbeit','arbeitszeitkonto','plusstunden','überstunden auszahl','mehrstunden','zeitkonto'],
+    a:`<strong>Überstunden</strong> im Griff behalten:<br>• Überstunden müssen <strong>vereinbart</strong> sein (Arbeitsvertrag/Tarif) – pauschal „mit dem Gehalt abgegolten" ist nur in engen Grenzen zulässig.<br>• Üblich im GaLaBau ist ein <strong>Arbeitszeitkonto</strong>: Plusstunden im Sommer ansparen, im Winter abbauen – das glättet die Saison.<br>• <strong>Höchstgrenzen</strong>: i. d. R. max. 10 Std./Tag, im Schnitt 8 Std. (ArbZG).<br>• Auszahlung oder Freizeitausgleich klar regeln und dokumentieren.<br><br>Die Zeiterfassung in der App liefert dir die saubere Grundlage fürs Zeitkonto – jede Stunde inkl. Rüstzeit ist erfasst.` },
+  { id:'feiertage', kw:['feiertag','sonntagsarbeit','sonntag arbeit','feiertagszuschlag','nachtzuschlag','zuschlag'],
+    a:`Zu <strong>Zuschlägen &amp; Feiertagen</strong>:<br>• <strong>Sonn- und Feiertagsarbeit</strong> ist im Bau grundsätzlich die Ausnahme – wenn, dann mit den vereinbarten/tariflichen <strong>Zuschlägen</strong>.<br>• <strong>Steuerfrei</strong> sind Zuschläge nur in Grenzen: Sonntag bis 50 %, Feiertag bis 125 %, Nacht bis 25/40 % des Grundlohns – darüber wird es steuerpflichtig.<br>• <strong>Feiertagslohn</strong>: Fällt die Arbeit wegen eines Feiertags aus, zahlst du den Lohn trotzdem (Entgeltfortzahlung an Feiertagen).<br><br>Erfasste Zeiten + hinterlegte Zuschlagsregeln machen die Lohnabrechnung nachvollziehbar.` },
+  { id:'reisekosten', kw:['reisekosten','auslöse','verpflegungsmehraufwand','spesen','fahrtkosten','übernachtung','montage','fernbaustelle'],
+    a:`Bei <strong>auswärtigen Baustellen</strong> kannst du steuerfrei erstatten:<br>• <strong>Verpflegungsmehraufwand</strong> (Auslöse): bei >8 Std. Abwesenheit <strong>14 €</strong>, bei ganztägig/mit Übernachtung <strong>28 €</strong> pro Tag (Inland).<br>• <strong>Übernachtungskosten</strong> gegen Beleg oder Pauschale.<br>• <strong>Fahrtkosten</strong> zur wechselnden Einsatzstelle: 0,30 €/km (Pkw) bzw. tatsächliche Kosten im Firmenfahrzeug.<br>• Im Tarif kann zusätzlich eine vereinbarte <strong>Auslöse/Wegegeld</strong> gelten.<br><br>Dokumentier Abwesenheitszeiten sauber (die Zeiterfassung hilft) – das ist die Basis für steuerfreie Erstattung.` },
+  { id:'gewaehrleistung', kw:['gewährleistung','mängel','mangel','nachbesserung','vob','garantie','reklamation','abnahme','pfusch'],
+    a:`<strong>Gewährleistung &amp; Abnahme</strong> im GaLaBau:<br>• <strong>Verjährung</strong>: nach BGB 5 Jahre bei „Bauwerk"-nahen Arbeiten, sonst 2 Jahre; bei <strong>VOB/B</strong> meist 4 Jahre. Vereinbare klar, was gilt.<br>• Die <strong>Abnahme</strong> ist der wichtigste Moment: ab da läuft die Frist, die Beweislast dreht sich, und die Schlusszahlung wird fällig. Mach ein <strong>Abnahmeprotokoll</strong>.<br>• Bei Mängeln hat der Kunde Anspruch auf <strong>Nachbesserung</strong> – du hast das Recht (und die Pflicht) zur Nacherfüllung, bevor er mindern oder Ersatz verlangen kann.<br>• <strong>Naturgemäßes</strong> (Anwachsen von Pflanzen) sauber von Werkmängeln abgrenzen – Pflegehinweise schriftlich mitgeben.<br><br>Halte Abnahmeprotokoll und Fotos beim Auftrag fest – das schützt dich bei Streit.` },
+  { id:'subunternehmer', kw:['subunternehmer','nachunternehmer','fremdleistung','freie mitarbeiter','scheinselbst','sub beauftrag','fremdfirma'],
+    a:`Wenn du <strong>Subunternehmer</strong> einsetzt, beachte:<br>• <strong>Scheinselbstständigkeit vermeiden</strong>: Ein Sub muss wirklich selbstständig sein (eigene Geräte, eigene Leute, eigenes Risiko, mehrere Auftraggeber) – sonst drohen Nachzahlungen von Sozialabgaben.<br>• <strong>Bauabzugsteuer</strong>: Ohne gültige <strong>Freistellungsbescheinigung</strong> des Subs musst du 15 % einbehalten und ans Finanzamt abführen.<br>• <strong>Unbedenklichkeitsbescheinigungen</strong> (Finanzamt, SOKA, BG) vom Sub einholen – sonst haftest du u. U. für dessen Abgaben.<br>• Sauberer <strong>Werkvertrag</strong> mit klarem Gewerk, nicht „Stunden schaffen".<br><br>Bewahr die Bescheinigungen auf – bei Prüfung musst du sie vorlegen können.` },
+  { id:'sprache', kw:['sprachsteuerung','spracheingabe','mikrofon','einsprechen','diktier','per sprache','sprachbefehl','sprachassistent','reden statt tippen'],
+    a:`Du kannst die App auch <strong>per Sprache</strong> bedienen:<br>• Im GaLaBrain das <strong>Mikrofon gedrückt halten</strong> und deine Frage sprechen – beim Loslassen wird sie gesendet.<br>• Über den <strong>Sprach-Button unten rechts</strong> gibst du Befehle, z. B. „<em>Mitarbeiter anlegen</em>", „<em>zeig mir die Bewerber</em>", „<em>Urlaub eintragen</em>", „<em>Rechnung schreiben</em>" oder „<em>einstempeln</em>" – die App springt direkt an die richtige Stelle.<br>• Sagst du etwas, das wie eine Frage klingt, beantworte ich es direkt im GaLaBrain.<br><br>Gerade auf der Baustelle mit Handschuhen ist das Gold wert – reden statt tippen.` },
+  { id:'hilfe', kw:['was kann','was kannst du','wie funktioniert die app','wie funktioniert das','überblick','was bietet','welche funktionen','was macht die app','wie nutze ich die app','kann das tool'],
+    a:`Kurzer Überblick, was dein Cockpit alles kann:<br>• <strong>Heute</strong>: dein Tagesstart – offene To-dos, Wetter, Baustellenlage, qualifizierte Bewerber.<br>• <strong>Bewerber</strong>: komplettes Recruiting – Pipeline, Vorqualifizierung, direkt anrufen/WhatsApp/Mail.<br>• <strong>Team</strong>: Zeiterfassung, Urlaub/Krank, Kolonnen und die digitale Personalakte.<br>• <strong>Planung, Kunden, Finanzen, Markt</strong>: als Zusatzmodule freischaltbar (Plantafel, Angebote/Rechnungen, Branchen-Netzwerk).<br>• <strong>GaLaBrain</strong> (ich): Fragen zu Recht, Steuer, Kalkulation – per Text oder Sprache.<br><br>Frag mich einfach konkret, z. B. „Wie kalkuliere ich Pflaster?" oder sag per Sprachbefehl „Mitarbeiter anlegen".` },
+];
+function brainScore(s, kw){ let sc=0; for(const k of kw){ if(s.includes(k)) sc += (k.includes(' ')?3:1); } return sc; }
+function brainBest(s){ let best=null, score=0; for(const e of BRAIN_KB){ const sc=brainScore(s, e.kw); if(sc>score){ score=sc; best=e; } } return {best, score}; }
+function brainSuggestChips(list){
+  return `<div class="brain-fbchips">${list.map(q=>`<button class="brain-chip" onclick="brainSend('${q.replace(/'/g,"\\'")}')">${q}</button>`).join('')}</div>`;
+}
 function brainAnswer(q){
   const s = q.toLowerCase().trim();
   // --- Smalltalk & Begrüßung ---
   if(/^(moin|hallo|hi|hey|servus|guten (morgen|tag|abend)|na)\b/.test(s) && s.length < 30)
     return `Moin! 👋 Schieß los – frag mich z. B. „Wie kalkuliere ich Pflaster?", „Was muss auf eine Rechnung?" oder „Wie lade ich einen Bewerber zum Probetag ein?". Ich antworte in Klartext.`;
   if(/^(danke|merci|top|super|perfekt|alles klar|passt)\b/.test(s) && s.length < 25)
-    return `Immer gerne, Georg. 💪 Wenn noch was ist – einfach fragen.`;
+    return `Immer gerne${(settings.company&&settings.company.owner)?', '+escapeHtml(settings.company.owner.split(' ')[0]):''}. 💪 Wenn noch was ist – einfach fragen.`;
   // --- Rückfrage / "verstehe ich nicht" → letzte Antwort einfacher ---
-  if(/^(hä|haeh|was|wie bitte|versteh|verstehe ich nicht|nochmal|erklär|erkläre|kapier)/.test(s) && s.length < 35){
+  if(((/^(hä+|haeh|wie bitte|versteh|verstehe ich nicht|nochmal|erklär|erkläre|kapier)/.test(s) && s.length < 35) || /^(was|wie)\s*\??$/.test(s))){
     if(_brainLastAnswer) return `Klar, ich sag's einfacher:<br><br>` + _brainLastAnswer;
     return `Kein Ding – stell die Frage gern konkret, dann erkläre ich es Schritt für Schritt. Z. B. „Wie mache ich ein digitales Aufmaß?" oder „Wie viel MwSt. auf Pflanzen?".`;
   }
   if(/^(ja|jo|jap|genau|stimmt)\b/.test(s) && s.length < 12)
     return `Alles klar 👍 Was möchtest du als Nächstes wissen?`;
+  // --- Wissensbasis: bestes Thema per Scoring (gewinnt bei klarem Treffer) ---
+  const _kbHit = brainBest(s);
+  if(_kbHit.best && _kbHit.score >= 2) return _kbHit.best.a;
   // --- Aufmaß / digitale Vermessung ---
   if(/(aufmaß|aufmass|aufmaßen|vermess|aufmessen|flächen messen|fläche messen)/.test(s))
     return `Digitales Aufmaß beim Kunden machst du so:<br>• <strong>Vor Ort</strong> mit dem Handy: Fläche per <strong>Foto + Maße</strong> erfassen (Länge × Breite je Teilfläche), unregelmäßige Flächen in Rechtecke/Dreiecke zerlegen<br>• <strong>Laser-Entfernungsmesser</strong> koppeln spart Zettelwirtschaft – Werte direkt eintragen<br>• Aus dem Aufmaß wird mit einem Klick die <strong>Angebotsposition</strong> (m² × Einheitspreis)<br><br>In GreenCareers OS hängst du das Aufmaß direkt an den Kunden/die Anfrage – Fotos, Maße und Skizze bleiben am Auftrag, sodass nichts auf losen Zetteln verloren geht. Beim nächsten Mal rufst du es per Kunde wieder auf.`;
@@ -6264,27 +6485,124 @@ function brainAnswer(q){
     return `Im Bereich <strong>Bewerber</strong> läuft dein ganzes Recruiting:<br>• Neue Bewerber aus GreenCareers landen automatisch im Board, der <strong>BewerberBot</strong> qualifiziert sie per WhatsApp vor<br>• Du kontaktierst direkt aus dem Profil: <strong>Anrufen</strong>, <strong>WhatsApp</strong> oder <strong>E-Mail</strong> – mit fertigen Vorlagen<br>• Per Status (Neu → In Bearbeitung → Gespräch → Probetag → Eingestellt) behältst du die Pipeline im Blick<br><br>Für einen Probetag öffnest du den Bewerber und drückst „Probetag planen" – Termin landet direkt in deinem Kalender.`;
   if(/(lohn|gehalt zahlen|stundenlohn|mindestlohn|verdienst|was zahl)/.test(s))
     return `Beim Lohn im GaLaBau gilt:<br>• <strong>Branchen-Mindestlohn GaLaBau</strong> liegt über dem gesetzlichen Mindestlohn – prüfe den aktuellen Tarif (gewerbliche Arbeitnehmer)<br>• Üblich sind je nach Qualifikation <strong>14–20 €/Std.</strong>, Vorarbeiter darüber<br>• Denk an <strong>Lohnnebenkosten</strong> (~20–22 % AG-Anteil) bei der Kalkulation deines Stundenverrechnungssatzes<br><br>Faustregel Verrechnungssatz = Bruttolohn × Faktor 2,2–2,8 (deckt Nebenkosten, Urlaub, Gerät, Gewinn).`;
-  // --- Intelligenter Fallback: greift die Frage auf, statt stur dasselbe zu wiederholen ---
+  // --- Intelligenter Fallback: erst schwacher KB-Treffer, dann hilfreiche Vorschläge ---
+  if(_kbHit.best && _kbHit.score >= 1) return _kbHit.best.a;
   const kurz = q.length > 60 ? q.slice(0,57).trim()+'…' : q;
-  return `Zu „<em>${escapeHtml(kurz)}</em>" hab ich gerade keine fertige Antwort parat – aber ich bin stark bei <strong>Rechnung &amp; Steuer, Personal &amp; Urlaub, Kalkulation, Aufmaß, Recruiting und DSGVO</strong>.<br><br>Formulier's gern eine Nummer konkreter, z. B. „Wie viel MwSt. auf Pflanzen?", „Was zahle ich einem Gesellen?" oder „Wie lade ich einen Bewerber zum Probetag ein?" – dann hast du in einem Satz die Antwort.`;
+  return `Zu „<em>${escapeHtml(kurz)}</em>" hab ich gerade keine fertige Antwort parat – aber ich kenne mich aus bei <strong>Kalkulation, Rechnung &amp; Steuer, Personal &amp; Recht, Recruiting</strong> und der <strong>Bedienung der App</strong>.<br><br>Tipp jetzt eines der Themen an oder halt das Mikrofon gedrückt und sprich deine Frage:` + brainSuggestChips(['Wie kalkuliere ich Pflaster?','Stundensatz berechnen','Wie kriege ich mein Team dazu, zu stempeln?','Mitarbeiter anlegen','Was muss auf eine Rechnung?']);
 }
 // Meta-Eingaben (Smalltalk/Rückfrage) sollen die zuletzt gemerkte Sachantwort nicht überschreiben.
 function isBrainMeta(s){
   const t = (s||'').toLowerCase().trim();
-  return (/^(moin|hallo|hi|hey|servus|guten |na\b|danke|merci|top|super|perfekt|alles klar|passt|hä|haeh|was|wie bitte|versteh|nochmal|erklär|kapier|ja\b|jo|jap|genau|stimmt)/.test(t) && t.length < 35);
+  return ((/^(moin|hallo|hi|hey|servus|guten |na\b|danke|merci|top|super|perfekt|alles klar|passt|hä+|haeh|wie bitte|versteh|nochmal|erklär|kapier|ja\b|jo|jap|genau|stimmt)/.test(t) && t.length < 35) || /^(was|wie)\s*\??$/.test(t));
 }
-function brainVoice(){
+let _brainPTT = false;       // Push-to-talk aktiv?
+let _brainHeard = '';        // erkannter Text (final)
+function brainMicDown(ev){
+  if(ev){ ev.preventDefault(); }
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   const mic = document.getElementById('brainMic');
   if(!SR){ toast('Spracheingabe in diesem Browser nicht verfügbar'); return; }
-  if(brainRec){ brainRec.stop(); brainRec=null; if(mic) mic.classList.remove('rec'); return; }
-  brainRec = new SR(); brainRec.lang='de-DE'; brainRec.interimResults=false;
+  if(brainRec){ try{ brainRec.stop(); }catch(e){} brainRec=null; }
+  _brainHeard = ''; _brainPTT = true;
+  brainRec = new SR(); brainRec.lang='de-DE'; brainRec.interimResults=true; brainRec.continuous=true;
   if(mic) mic.classList.add('rec');
-  brainRec.onresult = (e)=>{ const t = e.results[0][0].transcript; brainSend(t); };
-  brainRec.onerror = ()=>{ toast('Spracheingabe abgebrochen'); };
-  brainRec.onend = ()=>{ if(mic) mic.classList.remove('rec'); brainRec=null; };
-  brainRec.start();
-  toast('Sprich jetzt…');
+  const input = document.getElementById('brainText');
+  brainRec.onresult = (e)=>{
+    let fin='', intr='';
+    for(let i=0;i<e.results.length;i++){ const r=e.results[i]; if(r.isFinal) fin+=r[0].transcript; else intr+=r[0].transcript; }
+    _brainHeard = (fin||intr).trim();
+    if(input) input.value = _brainHeard;
+  };
+  brainRec.onerror = (e)=>{ if(e && e.error!=='aborted' && e.error!=='no-speech') toast('Spracheingabe abgebrochen'); };
+  brainRec.onend = ()=>{ if(mic) mic.classList.remove('rec'); };
+  try{ brainRec.start(); }catch(e){}
+}
+function brainMicUp(ev){
+  if(ev){ ev.preventDefault(); }
+  if(!_brainPTT) return;
+  _brainPTT = false;
+  const mic = document.getElementById('brainMic');
+  if(mic) mic.classList.remove('rec');
+  if(brainRec){ try{ brainRec.stop(); }catch(e){} brainRec=null; }
+  const input = document.getElementById('brainText');
+  setTimeout(()=>{
+    const t = (_brainHeard || (input?input.value:'') ).trim();
+    if(input) input.value='';
+    if(t){ brainSend(t); } else { toast('Nichts verstanden – Knopf gedrückt halten und sprechen'); }
+    _brainHeard='';
+  }, 250);
+}
+
+/* ===================== GLOBALE SPRACHSTEUERUNG ===================== */
+let gVoiceRec = null, _voicePTT = false, _voiceHeard = '';
+function voiceFabDown(ev){
+  if(ev){ ev.preventDefault(); }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const btn = document.getElementById('voiceFab');
+  if(!SR){ toast('Sprachsteuerung in diesem Browser nicht verfügbar'); return; }
+  if(gVoiceRec){ try{ gVoiceRec.stop(); }catch(e){} gVoiceRec=null; }
+  _voiceHeard=''; _voicePTT=true;
+  gVoiceRec = new SR(); gVoiceRec.lang='de-DE'; gVoiceRec.interimResults=true; gVoiceRec.continuous=true;
+  if(btn) btn.classList.add('rec');
+  showVoiceHud('Sprich jetzt…');
+  gVoiceRec.onresult = (e)=>{
+    let fin='', intr='';
+    for(let i=0;i<e.results.length;i++){ const r=e.results[i]; if(r.isFinal) fin+=r[0].transcript; else intr+=r[0].transcript; }
+    _voiceHeard = (fin||intr).trim();
+    const t = document.getElementById('voiceHudTxt'); if(t && _voiceHeard) t.textContent = _voiceHeard;
+  };
+  gVoiceRec.onerror = (e)=>{ if(e && e.error!=='aborted' && e.error!=='no-speech') toast('Sprachsteuerung abgebrochen'); };
+  gVoiceRec.onend = ()=>{ if(btn) btn.classList.remove('rec'); };
+  try{ gVoiceRec.start(); }catch(e){}
+}
+function voiceFabUp(ev){
+  if(ev){ ev.preventDefault(); }
+  if(!_voicePTT) return;
+  _voicePTT=false;
+  const btn = document.getElementById('voiceFab'); if(btn) btn.classList.remove('rec');
+  if(gVoiceRec){ try{ gVoiceRec.stop(); }catch(e){} gVoiceRec=null; }
+  setTimeout(()=>{
+    hideVoiceHud();
+    const t = (_voiceHeard||'').trim(); _voiceHeard='';
+    if(t){ voiceCommand(t); } else { toast('Nichts verstanden – Knopf gedrückt halten und sprechen'); }
+  }, 250);
+}
+function showVoiceHud(msg){ const h=document.getElementById('voiceHud'); const t=document.getElementById('voiceHudTxt'); if(t) t.textContent=msg||'Sprich jetzt…'; if(h){ h.classList.remove('hidden'); icons(); } }
+function hideVoiceHud(){ const h=document.getElementById('voiceHud'); if(h) h.classList.add('hidden'); }
+// Befehl interpretieren: Navigation, Aktion oder Frage ans GaLaBrain
+function voiceCommand(raw){
+  const s = raw.toLowerCase().trim();
+  const has = (...ws)=> ws.some(w=> s.includes(w));
+  const isQuestion = /\b(wie|was|warum|wieso|wann|wo|welche|wer|darf|muss|kann ich|kann man|brauche ich|ist es|gibt es)\b/.test(s) || s.includes('?');
+  // 1) Explizit ans GaLaBrain
+  if(has('galabrain','gala brain','frag das brain','frage das brain','frag die ki','assistent')){
+    const q = raw.replace(/.*?(galabrain|gala brain|brain|ki|assistent)\s*/i,'').trim();
+    toast('GaLaBrain'); openBrain(q || undefined); return;
+  }
+  // 2) Konkrete Aktionen (Anlegen / Eintragen)
+  if(has('krank') && has('eintrag','melde','anleg','erfass')){ toast('Krankheit eintragen'); fabGo('team','urlaub'); openAbsenceForm(undefined,undefined,undefined,'krank'); return; }
+  if(has('urlaub','abwesenheit','frei') && has('eintrag','beantrag','anleg','nehmen','erfass')){ toast('Abwesenheit eintragen'); fabGo('team','urlaub'); openAbsenceForm(); return; }
+  if(has('mitarbeiter','kollege','mitarbeiterin','angestellt') && has('anleg','hinzu','erstell','neu','einladen','erfass')){ toast('Mitarbeiter anlegen'); fabGo('team','mitarbeiter'); openEmployeeForm(); return; }
+  if(has('einstempeln','stempeln','einchecken','arbeit beginn','arbeitsbeginn') ){ toast('Einstempeln'); fabGo('team','zeit'); openClockIn(); return; }
+  if(has('rechnung') && has('schreib','anleg','erstell','neu','mach')){ toast('Rechnung schreiben'); openInvoiceForm('rechnung'); return; }
+  if(has('angebot','kostenvoranschlag') && has('schreib','anleg','erstell','neu','mach')){ toast('Angebot schreiben'); openInvoiceForm('angebot'); return; }
+  if(has('kunde','kundin') && has('anleg','hinzu','erstell','neu','erfass')){ toast('Kunde anlegen'); openCustomerForm(); return; }
+  if(has('auftrag') && has('anleg','erstell','neu','erfass')){ toast('Auftrag anlegen'); openAuftragForm(); return; }
+  // 3) Navigation ("zeig mir…", "geh zu…", "öffne…")
+  const navIntent = has('zeig','öffne','geh','gehe','wechsel','springe','navigier','bring mich','geh auf','zu den','zu der','zum','zur') || !isQuestion;
+  if(navIntent){
+    if(has('bewerber','recruiting','kandidat')){ toast('Bewerber'); setView('recruiting'); return; }
+    if(has('zeiterfassung','stempel','zeiten')){ toast('Zeiterfassung'); fabGo('team','zeit'); return; }
+    if(has('personalakte','akte')){ toast('Personalakte'); fabGo('team','mitarbeiter'); return; }
+    if(has('team','mitarbeiter','personal','kolonne')){ toast('Team'); setView('team'); return; }
+    if(has('planung','plantafel','einsatzplan')){ toast('Planung'); setView('planung'); return; }
+    if(has('kunde','kunden')){ toast('Kunden'); setView('kunden'); return; }
+    if(has('finanzen','rechnungen','umsatz','buchhalt')){ toast('Finanzen'); setView('finanzen'); return; }
+    if(has('markt','netzwerk','marktplatz')){ toast('Markt'); setView('markt'); return; }
+    if(has('heute','start','dashboard','übersicht','startseite')){ toast('Heute'); setView('heute'); return; }
+  }
+  // 4) Sonst: als Frage ans GaLaBrain
+  openBrain(raw);
 }
 
 /* ===================== RECHTS-DOKUMENTE (Vorschau-Texte) ===================== */
@@ -9308,6 +9626,7 @@ function icons(){
   if(window.lucide) lucide.createIcons();
 }
 applyTheme(settings.theme);
+applyBranding();
 icons();
 </script>
 </body>
