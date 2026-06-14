@@ -2438,6 +2438,22 @@
   .brain-body{ padding:18px 20px 20px; }
   .brain-chips{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px; }
   .brain-fbchips{ display:flex; flex-wrap:wrap; gap:7px; margin-top:11px; }
+  /* Sprach-Anlage Hinweis im Formular */
+  .vform-hint{ display:flex; gap:12px; align-items:flex-start; background:linear-gradient(135deg,var(--mint),#EAF6EE); border:1px solid #D7EBDD; border-radius:14px; padding:13px 14px; margin-bottom:16px; }
+  .vform-hint__mic{ flex:0 0 auto; width:46px; height:46px; border-radius:50%; background:linear-gradient(135deg,var(--green),var(--green-2)); color:#fff; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 12px rgba(34,153,84,.28); transition:transform .12s, box-shadow .12s; touch-action:none; cursor:pointer; }
+  .vform-hint__mic i{ width:22px; height:22px; }
+  .vform-hint__mic:active{ transform:scale(.94); }
+  .vform-hint__mic.rec{ animation:efMicPulse 1s infinite; background:linear-gradient(135deg,#E11D48,#F43F5E); box-shadow:0 0 0 0 rgba(225,29,72,.5); }
+  @keyframes efMicPulse{ 0%{ box-shadow:0 0 0 0 rgba(225,29,72,.45);} 70%{ box-shadow:0 0 0 12px rgba(225,29,72,0);} 100%{ box-shadow:0 0 0 0 rgba(225,29,72,0);} }
+  .vform-hint__txt{ font-size:12.5px; line-height:1.5; color:var(--green-3); }
+  .vform-hint__txt b{ color:var(--green-2); }
+  .vform-hint__ex{ display:block; margin:6px 0; padding:7px 10px; background:#fff; border-radius:9px; border:1px solid #E2EFE6; color:var(--ink); font-style:italic; font-size:12px; }
+  /* Bestätigungs-Sheet Sprach-Anlage */
+  .vc-heard{ display:flex; gap:8px; align-items:flex-start; font-size:13px; line-height:1.5; color:var(--green-3); background:var(--mint); border:1px solid #D7EBDD; border-radius:11px; padding:10px 12px; margin-bottom:14px; font-style:italic; }
+  .vc-heard i{ width:15px; height:15px; flex:0 0 auto; margin-top:2px; opacity:.6; }
+  .vc-ok{ font-size:10.5px; font-weight:700; color:var(--green-2); background:#E2F3E8; border-radius:999px; padding:2px 8px; margin-left:6px; vertical-align:1px; display:inline-flex; align-items:center; gap:3px; }
+  .vc-ok i{ width:11px; height:11px; }
+  .vc-miss{ font-size:10.5px; font-weight:700; color:#B45309; background:#FEF3C7; border-radius:999px; padding:2px 8px; margin-left:6px; vertical-align:1px; }
   .brain-chip{ font-size:12px; font-weight:600; color:var(--green-3); background:var(--mint); border:1px solid #D7EBDD; border-radius:999px; padding:9px 13px; text-align:left; transition:all .15s; }
   .brain-chip:hover{ border-color:var(--green); color:var(--green-2); background:#E2F3E8; transform:translateY(-1px); }
   .brain-msgs{ display:flex; flex-direction:column; gap:11px; min-height:120px; max-height:46vh; overflow:auto; padding:4px 2px; margin-bottom:12px; }
@@ -6337,7 +6353,7 @@ const BRAIN_CHIPS = [
 function openBrain(prefill){
   if(!brainMsgs.length){
     const vn = ((settings.company && settings.company.owner) ? settings.company.owner.split(' ')[0] : '').trim();
-    brainMsgs = [{ role:'bot', text:`Moin${vn?' '+escapeHtml(vn):''}! Ich bin dein GaLaBrain. Frag mich alles rund um deinen Betrieb – Rechnung, Steuer, Personal, Kalkulation, Recht. Du kannst auch das <strong>Mikrofon gedrückt halten</strong> und deine Frage einfach einsprechen. Ich antworte in Handwerker-Klartext.` }];
+    brainMsgs = [{ role:'bot', text:`Moin${vn?' '+escapeHtml(vn):''}! Ich bin dein GaLaBrain. Frag mich alles rund um deinen Betrieb – Rechnung, Steuer, Personal, Kalkulation, Recht. Du kannst auch das <strong>Mikrofon gedrückt halten</strong> und einfach sprechen.<br><br>💡 <strong>Neuen Mitarbeiter? Sprich mir einfach den ganzen Satz</strong>, z. B. „<em>Ich habe einen neuen Mitarbeiter, der heißt Mirko Mustermann, wohnt in Karlstadt, geboren am 14.08.1994, wird als Landschaftsgärtner eingestellt und startet zum 01.07.2026.</em>" Ich fülle alles aus – du prüfst und speicherst.` }];
   }
   renderBrain();
   if(prefill){ setTimeout(()=> brainSend(prefill), 200); }
@@ -6369,6 +6385,8 @@ function renderBrainMsgs(){ const el=document.getElementById('brainMsgs'); if(el
 function scrollBrain(){ const el=document.getElementById('brainMsgs'); if(el) setTimeout(()=>{ el.scrollTop = el.scrollHeight; }, 20); }
 function brainSend(text){
   text = (text||'').trim(); if(!text) return;
+  // Ganzen Satz "Ich habe einen neuen Mitarbeiter, der heißt …" direkt als Anlage erkennen
+  if(isNewEmployeeUtterance(text)){ const d=parseEmployeeUtterance(text); if(d.name){ brainMsgs.push({role:'me', text:escapeHtml(text)}); brainMsgs.push({role:'bot', text:`Alles klar – ich habe <strong>${escapeHtml(d.name)}</strong> erkannt und das Formular vorausgefüllt. Bitte kurz prüfen und speichern.`}); openEmployeeConfirm(d); return; } }
   brainMsgs.push({role:'me', text:escapeHtml(text)});
   brainMsgs.push({role:'bot', typing:true});
   renderBrainMsgs();
@@ -6388,7 +6406,7 @@ const BRAIN_KB = [
   { id:'stempeln', kw:['stempeln','einstempeln','ausstempeln','zeiterfassung','arbeitszeit erfass','zeiten erfass','stechuhr','zeit buchen','arbeitszeit buchen','kommen gehen'],
     a:`So läuft die <strong>Zeiterfassung</strong> in der App:<br>• Mitarbeiter öffnet am Handy <strong>Team → Zeiterfassung</strong> und tippt <strong>Einstempeln</strong> – wählt den Kunden/die Baustelle, fertig.<br>• <strong>Rüstzeit</strong> (Beladen + Anfahrt) wird – wenn aktiviert – automatisch mitgezählt.<br>• Beim Ein- und Ausstempeln wird <strong>einmalig der Standort</strong> als Nachweis erfasst (keine Dauerortung).<br>• Im Ausnahmefall kann das Büro jemanden <strong>für</strong> einen anderen ein-/ausstempeln.<br><br>Du als Chef siehst in derselben Ansicht live, wer im Einsatz ist, Stunden pro Kopf und Vor-Ort-Bestätigung. Einstellungen (Rüstzeit, Standort, Selbststempeln) änderst du unter <strong>Einstellungen → Zeiterfassung</strong>.` },
   { id:'mitarbeiter_anlegen', kw:['mitarbeiter anleg','mitarbeiter hinzu','neuen mitarbeiter','mitarbeiter erfassen','personal anlegen','kollege anlegen','mitarbeiter einladen','zugang anlegen','mitarbeiter erstellen','neuer kollege'],
-    a:`Einen Mitarbeiter legst du in Sekunden an:<br>• <strong>Team → Personalakte → „Mitarbeiter anlegen"</strong> (oder das grüne <strong>+</strong> unten rechts → „Mitarbeiter anlegen").<br>• Name, Funktion, Kolonne und E-Mail eintragen – mehr braucht es erstmal nicht.<br>• Über <strong>„Zugang &amp; Rolle"</strong> lädst du ihn per E-Mail ein und legst fest, was er darf (nur stempeln, oder mehr).<br>• Die restliche Personalakte (Vertrag, Führerschein, Dokumente) füllst du nach und nach – die App zeigt dir pro Mitarbeiter, was noch fehlt.<br><br>Tipp: Du kannst mir auch einfach sagen „<em>Mitarbeiter anlegen</em>" – per Sprachbefehl öffne ich dir das Formular direkt.` },
+    a:`Einen Mitarbeiter legst du in Sekunden an – <strong>am schnellsten per Sprache</strong>:<br>• Sag mir einfach den ganzen Satz, z. B.: „<em>Ich habe einen neuen Mitarbeiter, der heißt Mirko Mustermann, wohnt in Karlstadt, geboren am 14.08.1994, wird als Landschaftsgärtner eingestellt, startet zum 01.07.2026 und bekommt 3.000 € im Monat.</em>"<br>• Ich <strong>fülle das Formular automatisch aus</strong> – du prüfst kurz und tippst auf <strong>„Stimmt – Mitarbeiter anlegen"</strong>. Fertig.<br><br>Lieber tippen? Geht genauso:<br>• <strong>Team → Personalakte → „Mitarbeiter anlegen"</strong> (oder das grüne <strong>+</strong> unten rechts).<br>• Name, Funktion, Kolonne und E-Mail eintragen – mehr braucht es erstmal nicht. Im Formular findest du oben auch ein <strong>Mikrofon</strong> zum Einsprechen.<br>• Über <strong>„Zugang &amp; Rolle"</strong> lädst du ihn per E-Mail ein und legst fest, was er darf.<br>• Vertrag, Führerschein &amp; Dokumente ergänzt du nach und nach – die App zeigt pro Mitarbeiter, was noch fehlt.` },
   { id:'personalakte', kw:['personalakte','akte','stammdaten mitarbeiter','dokumente hinterleg','qualifikation hinterleg','führerschein hinterleg','zeugnis hochladen','vertrag hinterleg'],
     a:`Die <strong>digitale Personalakte</strong> (Team → Personalakte) bündelt alles zu einem Mitarbeiter an einem Ort:<br>• <strong>Stammdaten &amp; Kontakt</strong>, <strong>Vertrag &amp; Lohn</strong>, <strong>Führerschein &amp; Qualifikationen</strong> (mit Ablaufdaten), <strong>Dokumente</strong> und <strong>Notizen</strong>.<br>• Ein <strong>Fortschrittsbalken</strong> zeigt, wie vollständig die Akte ist – du siehst sofort, wo noch Angaben fehlen.<br>• Ablaufende Führerscheine/Prüfungen tauchen rechtzeitig im „Denk mit"-Feed auf der Startseite auf.<br><br>So hast du bei Kontrolle, Lohnabrechnung oder Urlaubsplanung alles griffbereit – ohne Aktenordner.` },
   { id:'kolonnen', kw:['kolonne','plantafel','einsatzplanung','baustelle planen','wer wohin','team einteilen','disposition','einsatz planen','wochenplan','tagesplanung'],
@@ -6438,7 +6456,7 @@ const BRAIN_KB = [
   { id:'subunternehmer', kw:['subunternehmer','nachunternehmer','fremdleistung','freie mitarbeiter','scheinselbst','sub beauftrag','fremdfirma'],
     a:`Wenn du <strong>Subunternehmer</strong> einsetzt, beachte:<br>• <strong>Scheinselbstständigkeit vermeiden</strong>: Ein Sub muss wirklich selbstständig sein (eigene Geräte, eigene Leute, eigenes Risiko, mehrere Auftraggeber) – sonst drohen Nachzahlungen von Sozialabgaben.<br>• <strong>Bauabzugsteuer</strong>: Ohne gültige <strong>Freistellungsbescheinigung</strong> des Subs musst du 15 % einbehalten und ans Finanzamt abführen.<br>• <strong>Unbedenklichkeitsbescheinigungen</strong> (Finanzamt, SOKA, BG) vom Sub einholen – sonst haftest du u. U. für dessen Abgaben.<br>• Sauberer <strong>Werkvertrag</strong> mit klarem Gewerk, nicht „Stunden schaffen".<br><br>Bewahr die Bescheinigungen auf – bei Prüfung musst du sie vorlegen können.` },
   { id:'sprache', kw:['sprachsteuerung','spracheingabe','mikrofon','einsprechen','diktier','per sprache','sprachbefehl','sprachassistent','reden statt tippen'],
-    a:`Du kannst die App auch <strong>per Sprache</strong> bedienen:<br>• Im GaLaBrain das <strong>Mikrofon gedrückt halten</strong> und deine Frage sprechen – beim Loslassen wird sie gesendet.<br>• Über den <strong>Sprach-Button unten rechts</strong> gibst du Befehle, z. B. „<em>Mitarbeiter anlegen</em>", „<em>zeig mir die Bewerber</em>", „<em>Urlaub eintragen</em>", „<em>Rechnung schreiben</em>" oder „<em>einstempeln</em>" – die App springt direkt an die richtige Stelle.<br>• Sagst du etwas, das wie eine Frage klingt, beantworte ich es direkt im GaLaBrain.<br><br>Gerade auf der Baustelle mit Handschuhen ist das Gold wert – reden statt tippen.` },
+    a:`Du kannst die App auch <strong>per Sprache</strong> bedienen:<br>• <strong>Ganzen Mitarbeiter einsprechen:</strong> Halt das Mikrofon gedrückt und sag z. B. „<em>Ich habe einen neuen Mitarbeiter, der heißt Mirko Mustermann, wohnt in Karlstadt, geboren am 14.08.1994, wird als Landschaftsgärtner eingestellt, startet zum 01.07.2026 und bekommt 3.000 € im Monat.</em>" – ich erkenne Name, Funktion, Geburtsdatum, Eintritt, Wohnort &amp; Gehalt, fülle alles aus und du musst nur noch prüfen &amp; speichern.<br>• Im GaLaBrain das <strong>Mikrofon gedrückt halten</strong> und deine Frage sprechen – beim Loslassen wird sie gesendet.<br>• Über den <strong>Sprach-Button unten rechts</strong> gibst du Befehle, z. B. „<em>zeig mir die Bewerber</em>", „<em>Urlaub eintragen</em>", „<em>Rechnung schreiben</em>" oder „<em>einstempeln</em>" – die App springt direkt an die richtige Stelle.<br>• Sagst du etwas, das wie eine Frage klingt, beantworte ich es direkt im GaLaBrain.<br><br>Gerade auf der Baustelle mit Handschuhen ist das Gold wert – reden statt tippen.` },
   { id:'hilfe', kw:['was kann','was kannst du','wie funktioniert die app','wie funktioniert das','überblick','was bietet','welche funktionen','was macht die app','wie nutze ich die app','kann das tool'],
     a:`Kurzer Überblick, was dein Cockpit alles kann:<br>• <strong>Heute</strong>: dein Tagesstart – offene To-dos, Wetter, Baustellenlage, qualifizierte Bewerber.<br>• <strong>Bewerber</strong>: komplettes Recruiting – Pipeline, Vorqualifizierung, direkt anrufen/WhatsApp/Mail.<br>• <strong>Team</strong>: Zeiterfassung, Urlaub/Krank, Kolonnen und die digitale Personalakte.<br>• <strong>Planung, Kunden, Finanzen, Markt</strong>: als Zusatzmodule freischaltbar (Plantafel, Angebote/Rechnungen, Branchen-Netzwerk).<br>• <strong>GaLaBrain</strong> (ich): Fragen zu Recht, Steuer, Kalkulation – per Text oder Sprache.<br><br>Frag mich einfach konkret, z. B. „Wie kalkuliere ich Pflaster?" oder sag per Sprachbefehl „Mitarbeiter anlegen".` },
 ];
@@ -6582,6 +6600,7 @@ function voiceCommand(raw){
   // 2) Konkrete Aktionen (Anlegen / Eintragen)
   if(has('krank') && has('eintrag','melde','anleg','erfass')){ toast('Krankheit eintragen'); fabGo('team','urlaub'); openAbsenceForm(undefined,undefined,undefined,'krank'); return; }
   if(has('urlaub','abwesenheit','frei') && has('eintrag','beantrag','anleg','nehmen','erfass')){ toast('Abwesenheit eintragen'); fabGo('team','urlaub'); openAbsenceForm(); return; }
+  if(isNewEmployeeUtterance(raw)){ const d=parseEmployeeUtterance(raw); if(d.name||d.role||d.bd||d.start||d.addr||d.salary){ toast('Mitarbeiter erkannt'); openEmployeeConfirm(d); return; } }
   if(has('mitarbeiter','kollege','mitarbeiterin','angestellt') && has('anleg','hinzu','erstell','neu','einladen','erfass')){ toast('Mitarbeiter anlegen'); fabGo('team','mitarbeiter'); openEmployeeForm(); return; }
   if(has('einstempeln','stempeln','einchecken','arbeit beginn','arbeitsbeginn') ){ toast('Einstempeln'); fabGo('team','zeit'); openClockIn(); return; }
   if(has('rechnung') && has('schreib','anleg','erstell','neu','mach')){ toast('Rechnung schreiben'); openInvoiceForm('rechnung'); return; }
@@ -6603,6 +6622,153 @@ function voiceCommand(raw){
   }
   // 4) Sonst: als Frage ans GaLaBrain
   openBrain(raw);
+}
+
+/* ============ SPRACHE → MITARBEITER ANLEGEN (ganze Sätze verstehen) ============ */
+const KNOWN_ROLES = ['Vorarbeiterin','Vorarbeiter','Landschaftsgärtnerin','Landschaftsgärtner','Gärtnerin','Gärtner','Pflastererin','Pflasterer','Gesellin','Geselle','Auszubildende','Auszubildender','Azubi','Maschinistin','Maschinist','Baggerfahrer','Polier','Meisterin','Meister','Bauhelfer','Helfer','Facharbeiter','Gartenbauer','Baumpfleger','Kraftfahrer','Kolonnenführer','Vorarbeiter'];
+const MONTHS_DE = {januar:1,februar:2,'märz':3,maerz:3,april:4,mai:5,juni:6,juli:7,august:8,september:9,oktober:10,november:11,dezember:12};
+function _mkISO(y,mo,d){ y=parseInt(y,10); if(y<100) y += (y>40?1900:2000); return y+'-'+String(parseInt(mo,10)).padStart(2,'0')+'-'+String(parseInt(d,10)).padStart(2,'0'); }
+function _findDates(s){
+  const out=[]; let m;
+  let re=/(\d{1,2})\s*\.\s*(\d{1,2})\s*\.\s*(\d{2,4})/g;
+  while((m=re.exec(s))){ out.push({idx:m.index, iso:_mkISO(m[3],m[2],m[1])}); }
+  re=/(\d{1,2})\.?\s*(januar|februar|märz|maerz|april|mai|juni|juli|august|september|oktober|november|dezember)\s*(\d{2,4})?/gi;
+  while((m=re.exec(s))){ const mo=MONTHS_DE[m[2].toLowerCase()]; if(mo) out.push({idx:m.index, iso:_mkISO(m[3]||String(new Date(TODAY).getFullYear()), mo, m[1])}); }
+  return out;
+}
+function _fmtSalary(raw){ const n=parseInt(String(raw).replace(/[^\d]/g,''),10); if(!n||n<100) return ''; return n.toLocaleString('de-DE')+' € / Monat'; }
+// Erkennt, ob ein Satz das Anlegen eines Mitarbeiters meint (nicht: Frage „wie lege ich…?")
+function isNewEmployeeUtterance(text){
+  const s=(text||'').toLowerCase();
+  const subj=/(mitarbeiter|mitarbeiterin|kollege|kollegin|angestellte|azubi|auszubild|arbeiter|gärtner|geselle|vorarbeiter|pflasterer|maschinist|\bmann\b|\bkraft\b)/.test(s);
+  const act=/(anleg|hinzu|erstell|erfass|einstell|eingestellt|\bneu\b|neuer|neue|neuen|dazu|bekommen|habe einen|habe eine|haben einen|fängt an|kommt neu|stelle? ein|aufnehmen|aufgenommen|anheuern)/.test(s);
+  const hasName=/(heißt|heisst|namens|name ist)/.test(s);
+  const isQ=/^(wie|was|wo|wann|warum|wieso|welche|kann ich|muss ich|darf ich)\b/.test(s) || s.includes('?');
+  if(isQ && !hasName) return false;
+  return subj && (act || hasName);
+}
+// Zieht Name, Funktion, Geburtsdatum, Wohnort, Eintritt, Gehalt, Telefon, Stunden, Mail, Kolonne aus einem Satz
+function parseEmployeeUtterance(text){
+  const orig=(text||'').trim();
+  const s=orig.toLowerCase();
+  const curY=new Date(TODAY).getFullYear();
+  const d={name:'',role:'',addr:'',bd:'',start:'',salary:'',phone:'',hours:'',email:'',crewId:'',raw:orig};
+  const STOP=new Set(['der','die','das','er','sie','wohnt','wohnhaft','lebt','ist','war','geboren','kommt','wird','soll','startet','start','beginnt','fängt','faengt','als','und','am','im','in','aus','zum','zur','ab','hat','bekommt','kriegt','verdient','mit','seit','einen','einer','eine','neuen','neuer','neue','telefon','tel','nummer','handy','anlegen','anleg','erstellen','erstell','hinzufügen','hinzu','erfassen','erfass','einladen','speichern','bitte','mir','uns','noch','dann','sowie','geboren']);
+  // --- Name ---
+  let seg=null, mm;
+  if((mm=orig.match(/(?:heißt|heisst|namens|name ist|name)\s+(.+)/i))) seg=mm[1];
+  else if((mm=orig.match(/(?:mitarbeiterin|mitarbeiter|kollegin|kollege|angestellten?|azubi|arbeiter)\s*,?\s*(?:der|die)?\s*(.+)/i))) seg=mm[1];
+  if(seg){
+    const roleSet=new Set(KNOWN_ROLES.map(r=>r.toLowerCase()));
+    const words=seg.split(/\s+/); const nw=[];
+    for(const w of words){ const c=w.replace(/[.,;:!?]/g,''); if(!c) continue; const lc=c.toLowerCase();
+      if(STOP.has(lc) || roleSet.has(lc)) break;
+      if(/^[A-Za-zÄÖÜäöüß][A-Za-zÄÖÜäöüß-]*$/.test(c) && !/\d/.test(c)){ nw.push(c.charAt(0).toUpperCase()+c.slice(1)); }
+      else break;
+      if(/[,;.:!?]/.test(w) || nw.length>=3) break; // Satzzeichen beendet den Namen
+    }
+    d.name=nw.join(' ');
+  }
+  // --- Funktion ---
+  if((mm=orig.match(/\bals\s+([A-Za-zÄÖÜäöüß]+(?:-[A-Za-zÄÖÜäöüß]+)*)/i))){ const r=mm[1]; if(!/^(neuer?|neue|neuen|mein|unser|mitarbeiter)/i.test(r)) d.role=r.charAt(0).toUpperCase()+r.slice(1); }
+  if(!d.role){ for(const r of KNOWN_ROLES){ if(s.includes(r.toLowerCase())){ d.role=r; break; } } }
+  // --- Wohnort / Adresse ---
+  if((mm=orig.match(/(?:wohnt\s+in|wohnhaft\s+in|lebt\s+in|kommt\s+aus|wohnort\s+ist|adresse\s+ist|wohnt|aus)\s+([A-ZÄÖÜ][a-zäöüß-]+(?:\s+\d[\w.\s-]*?)?(?:\s+[A-ZÄÖÜ][a-zäöüß-]+){0,2})/))){ d.addr=mm[1].trim().replace(/[.,;]$/,''); }
+  // --- Datumsangaben: Geburtsdatum vs. Eintritt ---
+  const dates=_findDates(s);
+  for(const dt of dates){ const near=s.slice(Math.max(0,dt.idx-22),dt.idx); if(/gebor|geburt/.test(near)){ d.bd=dt.iso; } else if(/start|beginn|eintritt|\bab\b|fängt|faengt|antritt|erster tag|ersten|anfang/.test(near)){ d.start=dt.iso; } }
+  for(const dt of dates){ const y=parseInt(dt.iso.slice(0,4),10); if(!d.bd && y<=curY-14) d.bd=dt.iso; else if(!d.start && y>=curY-1 && dt.iso!==d.bd) d.start=dt.iso; }
+  // --- Gehalt ---
+  if((mm=s.match(/(?:gehalt|verdien\w*|lohn|bezahl\w*|kriegt|bekommt|monatlich)\D{0,14}(\d{1,3}(?:[.\s]?\d{3})+|\d{3,5})/))) d.salary=_fmtSalary(mm[1]);
+  if(!d.salary && (mm=s.match(/(\d{1,3}(?:[.\s]?\d{3})+|\d{3,5})\s*(?:€|euro|eur|brutto)/))) d.salary=_fmtSalary(mm[1]);
+  // --- Telefon ---
+  if((mm=orig.match(/(?:telefon|tel\.?|nummer|handy|erreichbar|mobil)\D{0,4}((?:\+?\d[\d \/-]{6,}\d))/i))) d.phone=mm[1].trim();
+  else if((mm=orig.match(/\b(0\d[\d \/-]{6,}\d)/))) d.phone=mm[1].trim();
+  // --- Wochenstunden ---
+  if((mm=s.match(/(\d{1,2})\s*(?:wochenstunden|stunden|std|h)\b/))){ const h=parseInt(mm[1],10); if(h>0&&h<=60) d.hours=String(h); }
+  // --- E-Mail ---
+  if((mm=orig.match(/[\w.+-]+@[\w.-]+\.\w{2,}/))) d.email=mm[0];
+  // --- Kolonne ---
+  for(const c of crews){ if(s.includes(c.label.toLowerCase())){ d.crewId=c.id; break; } }
+  return d;
+}
+// Bestätigungs-Sheet: zeigt alles Erkannte editierbar, Inhaber prüft & speichert
+function openEmployeeConfirm(d){
+  d = d || {raw:''};
+  const crewOpts = `<option value="">Springer (keine feste Kolonne)</option>`+crews.map(c=>`<option value="${c.id}" ${d.crewId===c.id?'selected':''}>${escapeHtml(c.label)}</option>`).join('');
+  const tag = ok => ok ? '<span class="vc-ok"><i data-lucide="check"></i> erkannt</span>' : '<span class="vc-miss">noch offen</span>';
+  openSheet(`
+    <div class="sheet__head">
+      <span class="avatar" style="width:50px;height:50px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="user-plus" style="width:22px;height:22px"></i></span>
+      <div><div class="sheet__title">Passt das so?</div><div class="sheet__sub">Aus deiner Eingabe erkannt – prüfen &amp; speichern</div></div>
+      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+    </div>
+    <div class="sheet__body">
+      ${d.raw?`<div class="vc-heard"><i data-lucide="quote"></i> „${escapeHtml(d.raw)}"</div>`:''}
+      <div class="field"><label>Name ${tag(!!d.name)}</label><input id="vcName" value="${(d.name||'').replace(/"/g,'&quot;')}" placeholder="Vor- und Nachname"></div>
+      <div class="fieldrow">
+        <div class="field"><label>Funktion ${tag(!!d.role)}</label><input id="vcRole" value="${(d.role||'').replace(/"/g,'&quot;')}" placeholder="z. B. Landschaftsgärtner"></div>
+        <div class="field"><label>Kolonne</label><select id="vcCrew">${crewOpts}</select></div>
+      </div>
+      <div class="fieldrow">
+        <div class="field"><label>Geburtsdatum ${tag(!!d.bd)}</label><input id="vcBd" type="date" value="${d.bd||''}"></div>
+        <div class="field"><label>Eintritt zum ${tag(!!d.start)}</label><input id="vcStart" type="date" value="${d.start||''}"></div>
+      </div>
+      <div class="field"><label>Wohnort / Adresse ${tag(!!d.addr)}</label><input id="vcAddr" value="${(d.addr||'').replace(/"/g,'&quot;')}" placeholder="z. B. Karlstadt"></div>
+      <div class="fieldrow">
+        <div class="field"><label>Telefon ${tag(!!d.phone)}</label><input id="vcPhone" value="${(d.phone||'').replace(/"/g,'&quot;')}" placeholder="0170 1234567"></div>
+        <div class="field"><label>Wochenstunden</label><input id="vcHours" type="number" value="${d.hours||''}" placeholder="40"></div>
+      </div>
+      <div class="field"><label>Monatsvergütung ${tag(!!d.salary)} <small style="color:var(--muted);font-weight:500">· nur Personalverwaltung</small></label><input id="vcSalary" value="${(d.salary||'').replace(/"/g,'&quot;')}" placeholder="z. B. 3.000 € / Monat"></div>
+      <div class="field"><label>E-Mail <small style="color:var(--muted);font-weight:500">(für Login &amp; Einladung)</small></label><input id="vcEmail" type="email" value="${(d.email||'').replace(/"/g,'&quot;')}" placeholder="name@firma.de"></div>
+      <div class="sheet-actions">
+        <button class="btn" style="flex:1" onclick="submitVoiceEmployee()"><i data-lucide="check"></i> Stimmt – Mitarbeiter anlegen</button>
+        <button class="btn ghost" onclick="closeSheet()">Abbrechen</button>
+      </div>
+      <p class="sheet-note"><i data-lucide="info" style="width:12px;height:12px;vertical-align:-2px"></i> Du kannst alles korrigieren. Vertrag, Führerschein &amp; Dokumente ergänzt du danach in der Personalakte.</p>
+    </div>`);
+}
+function submitVoiceEmployee(){
+  const g=id=>{ const el=document.getElementById(id); return el?el.value.trim():''; };
+  const name=g('vcName'); if(!name){ toast('Bitte Namen ergänzen'); const el=document.getElementById('vcName'); if(el) el.focus(); return; }
+  const role=g('vcRole')||'Mitarbeiter';
+  const crewSel=document.getElementById('vcCrew'); const crewId=(crewSel&&crewSel.value)||null;
+  const phone=g('vcPhone'), email=g('vcEmail');
+  const startISO=g('vcStart'); const since=startISO?startISO.slice(0,4):String(new Date(TODAY).getFullYear());
+  const newId=empSeq++;
+  employees.push({id:newId,name,role,crewId,phone,since,annual:30,email,sysRole:'mitarbeiter',account: email?'invited':'none', startDate:startISO||''});
+  const hr=hrData(emp(newId));
+  if(g('vcBd')) hr.bd=g('vcBd');
+  if(g('vcAddr')) hr.addr=g('vcAddr');
+  if(g('vcSalary')) hr.salary=g('vcSalary');
+  const hours=g('vcHours'); if(hours){ const h=parseInt(hours,10); if(h>0) hr.hours=h; }
+  closeSheet();
+  openEmployee(newId);
+  toast(email?`${name} angelegt · Einladung an ${email}`:`${name} angelegt`);
+}
+// Push-to-talk direkt im Mitarbeiter-Formular (ganzen Satz sprechen)
+let _efRec=null,_efPTT=false,_efHeard='';
+function empSentenceDown(ev){
+  if(ev) ev.preventDefault();
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){ toast('Spracheingabe in diesem Browser nicht verfügbar'); return; }
+  const btn=document.getElementById('efVoiceBtn');
+  if(_efRec){ try{_efRec.stop();}catch(e){} _efRec=null; }
+  _efHeard=''; _efPTT=true;
+  _efRec=new SR(); _efRec.lang='de-DE'; _efRec.interimResults=true; _efRec.continuous=true;
+  if(btn) btn.classList.add('rec');
+  showVoiceHud('Sprich den ganzen Satz…');
+  _efRec.onresult=(e)=>{ let fin='',intr=''; for(let i=0;i<e.results.length;i++){ const r=e.results[i]; if(r.isFinal) fin+=r[0].transcript; else intr+=r[0].transcript; } _efHeard=(fin||intr).trim(); const t=document.getElementById('voiceHudTxt'); if(t&&_efHeard) t.textContent=_efHeard; };
+  _efRec.onerror=(e)=>{ if(e&&e.error!=='aborted'&&e.error!=='no-speech') toast('Spracheingabe abgebrochen'); };
+  _efRec.onend=()=>{ if(btn) btn.classList.remove('rec'); };
+  try{_efRec.start();}catch(e){}
+}
+function empSentenceUp(ev){
+  if(ev) ev.preventDefault();
+  if(!_efPTT) return; _efPTT=false;
+  const btn=document.getElementById('efVoiceBtn'); if(btn) btn.classList.remove('rec');
+  if(_efRec){ try{_efRec.stop();}catch(e){} _efRec=null; }
+  setTimeout(()=>{ hideVoiceHud(); const t=(_efHeard||'').trim(); _efHeard=''; if(t){ openEmployeeConfirm(parseEmployeeUtterance(t)); } else { toast('Nichts verstanden – Knopf gedrückt halten und sprechen'); } }, 250);
 }
 
 /* ===================== RECHTS-DOKUMENTE (Vorschau-Texte) ===================== */
@@ -9437,6 +9603,13 @@ function openEmployeeForm(id){
       <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body">
+      ${!e ? `<div class="vform-hint">
+        <button class="vform-hint__mic" id="efVoiceBtn" type="button" title="Gedrückt halten und den ganzen Satz sprechen"
+          onpointerdown="empSentenceDown(event)" onpointerup="empSentenceUp(event)" onpointerleave="empSentenceUp(event)" onpointercancel="empSentenceUp(event)"><i data-lucide="mic"></i></button>
+        <div class="vform-hint__txt"><b>Per Sprache anlegen</b> – Mikrofon gedrückt halten und einfach sprechen, z. B.:
+          <span class="vform-hint__ex">„Ich habe einen neuen Mitarbeiter, der heißt Mirko Mustermann, wohnt in Karlstadt, geboren am 14.08.1994, wird als Landschaftsgärtner eingestellt, startet zum 01.07.2026 und bekommt 3.000 € im Monat."</span>
+          Ich fülle alles aus – du prüfst und speicherst.</div>
+      </div>` : ''}
       <div class="field"><label>Name</label><input id="efName" value="${e?e.name.replace(/"/g,'&quot;'):''}" placeholder="Vor- und Nachname"></div>
       <div class="fieldrow">
         <div class="field"><label>Funktion</label><input id="efRole" value="${e?(e.role||'').replace(/"/g,'&quot;'):''}" placeholder="z. B. Landschaftsgärtner"></div>
