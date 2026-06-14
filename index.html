@@ -7187,7 +7187,7 @@ function editAbsence(id){
 }
 function approveAbsence(id){ const a = absences.find(x => x.id === id); if(!a) return; a.status = 'genehmigt'; saveAbsences(); afterAbsChange(); toast(`${emp(a.empId).name}: genehmigt`); }
 function rejectAbsence(id){ const a = absences.find(x => x.id === id); if(!a) return; a.status = 'abgelehnt'; saveAbsences(); afterAbsChange(); toast(`${emp(a.empId).name}: abgelehnt`); }
-function deleteAbsence(id){ const i = absences.findIndex(x => x.id === id); if(i < 0) return; const n = emp(absences[i].empId).name; absences.splice(i,1); saveAbsences(); afterAbsChange(); toast(`${n}: Eintrag gelöscht`); }
+function deleteAbsence(id){ const i = absences.findIndex(x => x.id === id); if(i < 0) return; const e = emp(absences[i].empId); const n = e ? e.name : 'Eintrag'; if(!confirm(`Eintrag von ${n} wirklich löschen?`)) return; absences.splice(i,1); saveAbsences(); afterAbsChange(); toast(`${n}: Eintrag gelöscht`); }
 function afterAbsChange(){ renderUrlaub(); refreshUrlaubBadge(); }
 function viewAu(id){ const url = auImages[id]; if(!url) return; openSheet(`<div class="sheet__head"><div><div class="sheet__title">AU-Bescheinigung</div><div class="sheet__sub">Foto vom Mitarbeiter hochgeladen</div></div><button class="iconbtn sheet__close" onclick="openAbsence(${id})"><i data-lucide="x"></i></button></div><div class="sheet__body"><img src="${url}" alt="AU" style="width:100%;border-radius:10px;border:1px solid var(--line)"></div>`); }
 
@@ -7252,7 +7252,7 @@ function quickSick(id){
   refreshUrlaubBadge();
   toast(e.name.split(' ')[0] + ' für heute krankgemeldet');
 }
-function afType(btn){ btn.parentNode.querySelectorAll('.segb').forEach(b => b.classList.remove('on')); btn.classList.add('on'); document.getElementById('afTypeVal').value = btn.dataset.t; const au = document.getElementById('afAuField'); if(au) au.style.display = btn.dataset.t === 'krank' ? '' : 'none'; absencePreview(); }
+function afType(btn){ btn.parentNode.querySelectorAll('.segb').forEach(b => b.classList.remove('on')); btn.classList.add('on'); document.getElementById('afTypeVal').value = btn.dataset.t; const au = document.getElementById('afAuField'); if(au) au.style.display = btn.dataset.t === 'krank' ? '' : 'none'; if(btn.dataset.t !== 'krank') afAuClear(); absencePreview(); }
 function afAuPick(input){
   const f = input.files && input.files[0]; if(!f) return;
   const r = new FileReader();
@@ -7289,6 +7289,17 @@ function submitAbsence(){
   const to = document.getElementById('afTo').value;
   const note = document.getElementById('afNote').value.trim();
   if(!from || !to || to < from){ toast('Bitte gültigen Zeitraum wählen'); return; }
+  // Resturlaub-Schutz: Urlaubsanträge, die das Kontingent überziehen, brauchen eine bewusste Bestätigung.
+  // In der Bearbeitung zählt der eigene Eintrag noch mit, daher abziehen, um Doppelzählung zu vermeiden.
+  if(type === 'urlaub'){
+    let rest = vacInfo(empId).rest;
+    if(afEditId){ const old = absences.find(x => x.id === afEditId); if(old && old.type === 'urlaub' && old.empId === empId) rest += workdays(old.from, old.to); }
+    const after = rest - workdays(from, to);
+    if(after < 0){
+      const who = emp(empId);
+      if(!confirm(`${who ? who.name : 'Mitarbeiter'} hätte danach ${after} Tage Resturlaub (überzogen um ${Math.abs(after)}). Trotzdem eintragen?`)) return;
+    }
+  }
   // Status-Logik: Krank = sofort gültig. Sonst entscheidet die Rolle:
   // Genehmiger (Admin/Büro mit Recht) = direkt genehmigt, Mitarbeiter = offener Antrag.
   const status = type === 'krank' ? 'genehmigt' : (can('approveAbsence') ? 'genehmigt' : 'offen');
@@ -7437,6 +7448,7 @@ function quickSetStage(id, to){
   a.hot = to === 'inbearb';
   if(currentView === 'recruiting') renderBewerberKanban();
   toast(`${a.name.split(' ')[0]} → ${stageById(to).label}`);
+  if(to === 'eingestellt') offerHireHandover(a);
 }
 // Beim Drehen/Resizen über die Phone-Grenze: Board ↔ Liste automatisch umschalten
 window.addEventListener('resize', () => {
@@ -8011,6 +8023,30 @@ function moveCandidate(id, from, to){
   candidate.hot = to === 'inbearb';
   renderBewerberKanban();
   toast(`${candidate.name} → ${stageById(to).label}`);
+  if(to === 'eingestellt') offerHireHandover(candidate);
+}
+// Recruiting → Personalakte: Wird ein Bewerber auf „Eingestellt" gezogen, bietet das System direkt
+// die Übernahme in die Personalakte an – mit allen schon bekannten Daten vorausgefüllt. So läuft der
+// Trichter (Bewerber → Mitarbeiter) durch und der Inhaber muss nichts doppelt erfassen.
+function offerHireHandover(a){
+  if(!a || a.hired) return;
+  // Bereits als Mitarbeiter vorhanden? Dann nicht erneut anbieten.
+  if(employees.some(e => e.name && a.name && e.name.toLowerCase() === a.name.toLowerCase())){ a.hired = true; return; }
+  const first = (a.name||'').split(' ')[0] || 'Bewerber';
+  if(!confirm(`${first} wurde eingestellt – jetzt in die Personalakte übernehmen? Alle bekannten Daten werden vorausgefüllt.`)) return;
+  a.hired = true;
+  const p = a.pq || {};
+  const j = (typeof job === 'function') ? job(a.jobId) : null;
+  openEmployeeConfirm({
+    raw: `Übernahme aus Recruiting: ${a.name}`,
+    name: a.name || '',
+    role: p.beruf || (j && j.title) || '',
+    phone: a.phone || '',
+    email: a.email || '',
+    addr: p.ort || '',
+    salary: p.gehalt || '',
+    start: ''
+  });
 }
 
 function moveJob(fromCrew, fromDay, index, toCrew, toDay){
@@ -8036,7 +8072,7 @@ function setApplicantStatus(id, toCol){
   a.stage = toCol;
   a.hot = toCol === 'inbearb';
   if(currentView === 'recruiting') renderBewerberKanban();
-  openApplicant(id);
+  if(toCol === 'eingestellt'){ offerHireHandover(a); } else { openApplicant(id); }
   toast(`${a.name.split(' ')[0]} → ${stageById(toCol).label}`);
 }
 // ---- Mehrbenutzer-Kommentare (Verlauf, nur Autor darf bearbeiten/löschen) ----
@@ -8501,8 +8537,15 @@ function saveProbetag(id){
   const a = findCandidate(id); if(!a) return;
   const d = (document.getElementById('ptDate')||{}).value;
   if(!d){ toast('Bitte Datum wählen'); return; }
+  const t = (document.getElementById('ptTime')||{}).value || '07:00';
+  const ort = (document.getElementById('ptOrt')||{}).value || '';
+  // Probetag speichern und Bewerber auf die Stufe „Probetag vereinbart" ziehen (sofern vorhanden),
+  // damit der Status im Recruiting-Board sichtbar ist und die Funktion nicht ins Leere läuft.
+  a.probetag = { date: d, time: t, ort };
+  if(stages.some(s => s.id === 'probetag')){ a.stage = 'probetag'; a.hot = false; }
   closeSheet();
-  toast(`Probetag mit ${a.name.split(' ')[0]} eingetragen`);
+  if(currentView === 'recruiting') renderBewerberKanban();
+  toast(`Probetag mit ${a.name.split(' ')[0]} am ${deDate(d)} eingetragen`);
 }
 /* ===================== BEWERBER HOCHLADEN (NUR GreenCareers-Backend) ===================== */
 // WICHTIG: Im Kunden-OS NICHT verfügbar. Bewerber werden von GreenCareers im internen Backend
@@ -9773,8 +9816,13 @@ function inviteEmployee(id){
 }
 function deleteEmployee(id){
   const e = emp(id); if(!e) return;
+  if(!confirm(`${e.name} wirklich aus der Personalakte entfernen? Alle Abwesenheiten dieser Person werden ebenfalls gelöscht.`)) return;
   const i = employees.findIndex(x => x.id === id);
   if(i >= 0) employees.splice(i,1);
+  // verwaiste Abwesenheiten dieses Mitarbeiters aufräumen (sonst tote Einträge im Urlaubsboard)
+  const before = absences.length;
+  for(let j = absences.length - 1; j >= 0; j--){ if(absences[j].empId === id) absences.splice(j,1); }
+  if(absences.length !== before){ saveAbsences(); refreshUrlaubBadge(); }
   closeSheet(); teamTab('mitarbeiter');
   toast(`${e.name} entfernt`);
 }
