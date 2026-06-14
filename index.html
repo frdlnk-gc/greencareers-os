@@ -829,6 +829,10 @@
   .wa-msg.in{ align-self:flex-end; background:#DCF8C6; color:#17231A; border-bottom-right-radius:4px; }
   .wa-foot{ display:flex; align-items:center; gap:10px; padding:12px 18px; border-top:1px solid var(--line); background:#fff; }
   .wa-foot .pqbadge{ flex:1; }
+  .wa-foot--input{ gap:8px; }
+  .wa-input{ flex:1; min-width:0; border:1px solid var(--line); border-radius:12px; padding:12px 14px; background:#FBFDFB; outline:none; font-size:13px; transition:border-color .15s, box-shadow .15s; }
+  .wa-input:focus{ border-color:var(--green); background:#fff; box-shadow:0 0 0 3px rgba(22,163,74,.13); }
+  .wa-foot--input .brain-send{ width:42px; height:42px; }
   .wa-typing{ display:inline-flex; align-items:center; gap:7px; flex:1; font-size:12px; font-weight:600; color:var(--muted); }
   .wa-typing .lucide{ width:14px; height:14px; color:var(--green); animation:spin 1.4s linear infinite; }
 
@@ -2487,8 +2491,9 @@
   .brain-head > *{ position:relative; z-index:1; }
   .brain-head .sheet__title{ color:#fff; font-size:16.5px; }
   .brain-head .sheet__sub{ color:rgba(255,255,255,.84); }
-  .brain-head .sheet__close{ color:#fff; background:rgba(255,255,255,.18); border-radius:9px; }
-  .brain-head .sheet__close:hover{ background:rgba(255,255,255,.3); }
+  .brain-head .sheet__close{ width:34px; height:34px; flex:none; display:grid; place-items:center; color:#fff; background:rgba(255,255,255,.18); border:0; border-radius:10px; cursor:pointer; transition:background .15s; }
+  .brain-head .sheet__close:hover{ background:rgba(255,255,255,.32); }
+  .brain-head .sheet__close .lucide{ width:18px; height:18px; }
   .brain-av{ width:46px; height:46px; border-radius:13px; display:grid; place-items:center; background:rgba(255,255,255,.2); box-shadow:inset 0 0 0 1px rgba(255,255,255,.22); flex-shrink:0; }
   .brain-av .lucide{ width:22px; height:22px; }
   .bmsg__txt{ overflow-wrap:anywhere; }
@@ -8503,7 +8508,7 @@ function openWaBotOffer(){
 function bookWaBot(){
   settings.waBot = { booked:true };
   saveSettings();
-  toast('WhatsApp-Bot aktiviert (Demo)');
+  toast('WhatsApp-Bewerber-Bot aktiviert');
   openWaBotFlow();
 }
 function unbookWaBot(){
@@ -8648,9 +8653,10 @@ function submitApplicantUpload(){
   toast(`${a.name.split(' ')[0]} hochgeladen – Bot im Profil manuell starten`);
 }
 
-/* ===================== WHATSAPP-VORQUALIFIZIERUNGS-BOT (Simulation) ===================== */
-// Sammelt im lockeren Chat immer dieselben Felder, überspringt bereits Bekanntes und speichert
-// jede Antwort sofort beim Bewerber – auch wenn der Bewerber den Chat nicht zu Ende führt.
+/* ===================== BEWERBER-VORQUALIFIZIERUNG (interaktiver Erfassungs-Chat) ===================== */
+// Stellt dieselben Felder strukturiert ab, überspringt bereits Bekanntes und speichert jede
+// echte Antwort (Telefon-Screening / aus WhatsApp übernommen) sofort beim Bewerber – nichts wird erfunden.
+// Vollautomatischer WhatsApp-Versand/-Empfang = 19-€-Add-on (Meta Business API, Backend).
 const BOT_FIELDS = ['branche','beruf','erfahrung','gehalt','verfuegbar','ort'];
 const BOT_Q = {
   branche:'In welcher Branche möchtest du arbeiten?',
@@ -8660,18 +8666,7 @@ const BOT_Q = {
   verfuegbar:'Ab wann könntest du starten – und suchst du Voll- oder Teilzeit?',
   ort:'Alles klar! Und wo möchtest du arbeiten (Ort oder PLZ)?',
 };
-function botAnswer(a, field){
-  const j = job(a.jobId);
-  switch(field){
-    case 'branche': return 'Garten- & Landschaftsbau';
-    case 'beruf': return j ? j.title.replace(/\s*\(m\/w\/d\)/,'') : (a.pq.beruf || 'Landschaftsgärtner');
-    case 'erfahrung': return String(j ? j.expMin+2 : 4);
-    case 'gehalt': { if(j){ const hi=(j.salary.split('–')[1]||j.salary).trim(); return hi; } return '3.000 €'; }
-    case 'verfuegbar': return 'Ab sofort, Vollzeit';
-    case 'ort': return j ? j.ort : (a.pq.ort || 'Ahrensburg');
-  }
-  return '';
-}
+function botCompanyName(){ return (settings.company && settings.company.name) ? settings.company.name : 'unserem Betrieb'; }
 function scoreApplicant(a){
   let s = 40; const p = a.pq, j = job(a.jobId);
   if(p.branche) s+=10; if(p.beruf) s+=10; if(p.erfahrung!=null) s+=10; if(p.gehalt) s+=5; if(p.verfuegbar) s+=10; if(p.ort) s+=5;
@@ -8698,8 +8693,7 @@ function viewBotChat(id){
 function botTranscript(a){
   const first = a.name.split(' ')[0];
   const msgs = [
-    {who:'bot', text:`Hi ${first} 👋 Ich bin der BewerberBot von Müller GaLaBau. Ich stelle dir kurz ein paar Fragen, dann meldet sich das Team bei dir. Passt das?`},
-    {who:'in', text:'Klar, leg los 🙂'},
+    {who:'bot', text:`Hallo ${first} 👋 Ich bin der Bewerber-Assistent von ${botCompanyName()}. Ich stelle dir kurz ein paar Fragen – deine Antworten gehen direkt an das Team.`},
   ];
   BOT_FIELDS.forEach(f => {
     const v = a.pq[f];
@@ -8707,7 +8701,7 @@ function botTranscript(a){
     msgs.push({who:'bot', text:BOT_Q[f]});
     msgs.push({who:'in', text: f==='erfahrung' ? `${v} Jahre` : String(v)});
   });
-  msgs.push({who:'bot', text:'Top, danke dir! ✅ Ich hab alles notiert – das Team von Müller GaLaBau meldet sich zeitnah bei dir.'});
+  msgs.push({who:'bot', text:`Top, danke dir! ✅ Ich hab alles notiert – das Team von ${botCompanyName()} meldet sich zeitnah bei dir.`});
   return msgs;
 }
 function showBotTranscript(a){
@@ -8717,52 +8711,58 @@ function showBotTranscript(a){
 function startBotPrequal(id){
   const a = findCandidate(id); if(!a) return;
   const queue = BOT_FIELDS.filter(f => { const val=a.pq[f]; return val===''||val==null; });
-  botSession = {id, token:botTokenSeq++, msgs:[], queue, idx:0, done:false};
-  a.pqStatus = 'laufend';
-  botSession.msgs.push({who:'bot', text:`Hi ${a.name.split(' ')[0]} 👋 Ich bin der BewerberBot von Müller GaLaBau. Ich stelle dir kurz ein paar Fragen, dann meldet sich das Team bei dir. Passt das?`});
-  botSession.msgs.push({who:'in', text:'Klar, leg los 🙂'});
-  renderBotSheet();
-  const tk = botSession.token;   // Token festhalten, sonst treibt ein verwaister Timeout eine neue Session
-  if(queue.length) setTimeout(()=>botAsk(tk), 800);
-  else setTimeout(()=>finishBot(tk), 700);
-}
-function botAsk(token){
-  if(!botSession || botSession.token!==token) return;
-  const a = findCandidate(botSession.id); if(!a) return;
-  const field = botSession.queue[botSession.idx];
-  if(!field){ finishBot(token); return; }
-  botSession.msgs.push({who:'bot', text:BOT_Q[field]});
-  renderBotSheet();
-  setTimeout(()=>{
-    if(!botSession || botSession.token!==token) return;
-    const ans = botAnswer(a, field);
-    a.pq[field] = field==='erfahrung' ? (parseInt(ans,10)||0) : ans;   // sofort speichern
-    botSession.msgs.push({who:'in', text:ans});
-    botSession.idx++;
+  botSession = {id, token:botTokenSeq++, msgs:[], queue, idx:0, done:false, awaiting:null};
+  if(a.pqStatus !== 'fertig') a.pqStatus = 'laufend';
+  botSession.msgs.push({who:'bot', text:`Hallo ${a.name.split(' ')[0]} 👋 Ich bin der Bewerber-Assistent von ${botCompanyName()}. Ich stelle dir kurz ein paar Fragen – deine Antworten gehen direkt an das Team.`});
+  if(queue.length){
+    botSession.awaiting = queue[0];
+    botSession.msgs.push({who:'bot', text:BOT_Q[queue[0]]});
     renderBotSheet();
-    if(currentView==='recruiting') renderBewerberKanban();
-    if(botSession.idx < botSession.queue.length) setTimeout(()=>botAsk(token), 850);
-    else setTimeout(()=>finishBot(token), 700);
-  }, 950);
+  } else {
+    finishBotNow(a);
+  }
 }
-function finishBot(token){
-  if(!botSession || botSession.token!==token) return;
+// Echte Antwort des Bewerbers (Telefon-Screening / aus WhatsApp übernommen) speichern und zur nächsten Frage.
+function botSubmitAnswer(text){
+  if(!botSession || botSession.done) return;
+  text = (text||'').trim(); if(!text) return;
   const a = findCandidate(botSession.id); if(!a) return;
+  const field = botSession.awaiting; if(!field) return;
+  a.pq[field] = field==='erfahrung' ? (parseInt(text,10)||0) : text;   // echte Antwort sofort speichern
+  botSession.msgs.push({who:'in', text: field==='erfahrung' ? `${parseInt(text,10)||0} Jahre` : text});
+  botSession.idx++;
+  if(currentView==='recruiting') renderBewerberKanban();
+  const next = botSession.queue[botSession.idx];
+  if(next){
+    botSession.awaiting = next;
+    botSession.msgs.push({who:'bot', text:BOT_Q[next]});
+    renderBotSheet();
+  } else {
+    finishBotNow(a);
+  }
+}
+function finishBotNow(a){
   a.pqStatus = 'fertig';
   a.botScore = scoreApplicant(a);
   a.tags = pqTags(a);
   a.available = a.pq.verfuegbar || a.available;
   a.role = a.pq.beruf || a.role;
-  botSession.msgs.push({who:'bot', text:'Top, danke dir! ✅ Ich hab alles notiert – das Team von Müller GaLaBau meldet sich zeitnah bei dir.'});
+  botSession.awaiting = null;
   botSession.done = true;
+  botSession.msgs.push({who:'bot', text:`Top, danke dir! ✅ Ich hab alles notiert – das Team von ${botCompanyName()} meldet sich zeitnah bei dir.`});
   if(a.stage === 'neu' && a.botScore >= 70){ a.stage = 'inbearb'; a.hot = true; }
   renderBotSheet();
   if(currentView==='recruiting') renderBewerberKanban();
 }
 function botFootHtml(a){
-  return botSession.done
-    ? `<div class="wa-foot"><span class="pqbadge done"><i data-lucide="check-circle-2"></i> ${pqFilled(a)}/6 erfasst · Score ${a.botScore}</span><button class="btn" onclick="closeBot()"><i data-lucide="user"></i> Zum Bewerber</button></div>`
-    : `<div class="wa-foot"><span class="wa-typing"><i data-lucide="loader"></i> Bewerber wird vorqualifiziert… ${pqFilled(a)}/6</span><button class="btn ghost" onclick="abortBot()"><i data-lucide="x"></i> Schließen</button></div>`;
+  if(botSession.done){
+    return `<div class="wa-foot"><span class="pqbadge done"><i data-lucide="check-circle-2"></i> ${pqFilled(a)}/6 erfasst · Score ${a.botScore}</span><button class="btn" onclick="closeBot()"><i data-lucide="user"></i> Zum Bewerber</button></div>`;
+  }
+  return `<div class="wa-foot wa-foot--input">
+      <input class="wa-input" id="botAnsIn" placeholder="Antwort des Bewerbers eintragen…" autocomplete="off"
+        onkeydown="if(event.key==='Enter'){botSubmitAnswer(this.value); this.value='';}">
+      <button class="brain-send" title="Antwort übernehmen" onclick="const i=document.getElementById('botAnsIn'); botSubmitAnswer(i.value); i.value='';"><i data-lucide="arrow-up"></i></button>
+    </div>`;
 }
 function renderBotSheet(){
   if(!botSession) return;
@@ -8777,22 +8777,27 @@ function renderBotSheet(){
     if(footEl) footEl.outerHTML = botFootHtml(a);
     icons();
     threadEl.scrollTop = threadEl.scrollHeight;
+    focusBotInput();
     return;
   }
   openSheet(`
     <div class="sheet__head wa-head">
       <span class="avatar" style="width:44px;height:44px;background:#25D366"><i data-lucide="message-circle" style="width:20px;height:20px;color:#fff"></i></span>
-      <div><div class="sheet__title">BewerberBot</div><div class="sheet__sub">${a.name} · ${a.phone||''}</div></div>
+      <div><div class="sheet__title">Bewerber-Vorqualifizierung</div><div class="sheet__sub">${a.name} · ${a.phone||''}</div></div>
       <button class="iconbtn sheet__close" onclick="botX()"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body wa-body">
-      <div class="wa-note"><i data-lucide="info"></i> <span>Du startest den Bot <b>manuell</b> im Bewerberprofil. Er sammelt nur fehlende Infos – entscheiden tust du.</span></div>
+      <div class="wa-note"><i data-lucide="info"></i> <span>${botSession.done
+        ? 'Vorqualifizierung abgeschlossen – alle Antworten sind beim Bewerber gespeichert.'
+        : 'Stell dem Bewerber die Fragen (Telefon oder WhatsApp) und trage seine Antworten ein. Jede Antwort wird <b>sofort gespeichert</b>.'}</span></div>
       <div class="wa-thread">${bubbles}</div>
     </div>
     ${botFootHtml(a)}`);
   icons();
   const t = document.querySelector('.wa-thread'); if(t) t.scrollTop = t.scrollHeight;
+  focusBotInput();
 }
+function focusBotInput(){ const i=document.getElementById('botAnsIn'); if(i) setTimeout(()=>{ try{ i.focus(); }catch(e){} }, 30); }
 function botX(){ if(botSession && botSession.done) closeBot(); else abortBot(); }
 function abortBot(){
   if(!botSession) return;
@@ -8805,7 +8810,7 @@ function abortBot(){
   botSession = null;
   closeSheet();
   if(currentView==='recruiting') renderBewerberKanban();
-  toast('Vorqualifizierung läuft im Hintergrund weiter');
+  toast(a && pqFilled(a) > 0 ? 'Zwischenstand gespeichert' : 'Vorqualifizierung abgebrochen');
 }
 function closeBot(){
   const id = botSession ? botSession.id : null;
