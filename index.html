@@ -312,14 +312,18 @@
   .weather-mini .bubble{ width:28px; height:28px; border-radius:7px; display:grid; place-items:center; background:var(--mint); color:var(--green-2); }
   .weather-mini b{ color:var(--ink); }
   .bell{ position:relative; }
-  .bell::after{
-    content:'';
+  .bell__badge{
     position:absolute;
-    top:8px; right:8px;
-    width:7px; height:7px;
+    top:1px; right:1px;
+    min-width:16px; height:16px;
+    padding:0 4px;
     border-radius:999px;
-    background:var(--green);
+    background:#C24141;
+    color:#fff;
+    font-size:9.5px; font-weight:800;
+    display:grid; place-items:center;
     border:2px solid #fff;
+    line-height:1;
   }
   .content{
     flex:1;
@@ -2609,7 +2613,7 @@
       <div class="weather-mini"><span class="bubble"><i data-lucide="cloud-sun"></i></span><span><b>21°C</b> · Hamburg<br />trocken - guter Arbeitstag</span></div>
       <button class="brainpill" id="brainPill" onclick="openBrain()" title="GaLaBrain"><i data-lucide="sparkles"></i><span>GaLaBrain</span></button>
       <button class="rolepill" id="rolePill" onclick="openRoleSwitch()" title="Demo-Schalter: Ansicht je Rolle ausprobieren (im echten Produkt nicht vorhanden)"></button>
-      <button class="iconbtn bell" onclick="toast('Keine neuen Benachrichtigungen')" title="Benachrichtigungen"><i data-lucide="bell"></i></button>
+      <button class="iconbtn bell" onclick="openNotifications()" title="Benachrichtigungen"><i data-lucide="bell"></i><span class="bell__badge" id="bellBadge" style="display:none"></span></button>
     </header>
     <div class="previewbar hidden" id="previewBar"></div>
     <section class="content" id="view"></section>
@@ -3499,7 +3503,7 @@ function openSettings(){
       </div>
       <p class="sheet-note" style="margin-top:10px"><i data-lucide="user-check"></i> Betroffenenrechte (Art. 15–20 DSGVO): Daten deiner Mitarbeiter/Kunden exportieren oder löschen.</p>
       <div class="fieldrow">
-        <button class="btn ghost sm" style="flex:1" onclick="toast('Datenexport wird erstellt (Demo)')"><i data-lucide="download"></i> Daten exportieren</button>
+        <button class="btn ghost sm" style="flex:1" onclick="exportGdprData()"><i data-lucide="download"></i> Daten exportieren</button>
         <button class="btn ghost sm danger" style="flex:1" onclick="toast('Löschung anstoßen – im Live-Produkt mit Bestätigung')"><i data-lucide="trash-2"></i> Daten löschen</button>
       </div>
 
@@ -3916,6 +3920,7 @@ function setView(view){
   toggleMobile(false);
   icons();
   afterRender(view);
+  refreshBell();
   closeFab();
 }
 
@@ -3924,7 +3929,7 @@ const FAB_ACTIONS = {
   heute: [
     {grp:'Schnell anlegen'},
     {icon:'plane', label:'Abwesenheit eintragen', fn:'fabGo("team","urlaub");openAbsenceForm()'},
-    {icon:'map-pin', label:'Einsatz planen', fn:'fabGo("planung");toast("Einsatz planen – Plantafel")'},
+    {icon:'map-pin', label:'Einsatz planen', fn:'fabGo("planung");openAuftragForm()'},
     {icon:'file-text', label:'Angebot anlegen', fn:'openInvoiceForm("angebot")'},
   ],
   recruiting: [
@@ -4158,6 +4163,52 @@ function denkMitHtml(){
     ? `<div class="dw-feed">${items.slice(0,7).map(dwRow).join('')}</div>`
     : `<div class="dw-empty"><i data-lucide="check-circle-2"></i> Nichts steht an – alles im grünen Bereich.</div>`;
   return `<div class="panel dw-panel">${head}${body}<button class="dw-add" onclick="openReminderForm()"><i data-lucide="plus"></i> Eigene Erinnerung</button></div>`;
+}
+/* ===================== Benachrichtigungs-Center (Glocke) ===================== */
+// Bündelt das, was JETZT eine Reaktion des Inhabers braucht – aus echten Daten
+function notifItems(){
+  const out=[];
+  // Neue Bewerber zuerst (umsatzrelevant)
+  const neu=applicants.filter(a=>a.stage==='neu');
+  if(neu.length) out.push({icon:'user-plus',color:'#16A34A',title:neu.length+(neu.length===1?' neuer Bewerber':' neue Bewerber'),sub:'Im Recruiting prüfen',act:`closeSheet();setView('recruiting')`});
+  // Offene Urlaubsanträge
+  const off=absences.filter(x=>x.status==='offen');
+  if(off.length) out.push({icon:'plane',color:'#2563EB',title:off.length+(off.length===1?' offener Urlaubsantrag':' offene Urlaubsanträge'),sub:'Genehmigen oder ablehnen',act:`closeSheet();fabGo('team','urlaub')`});
+  // Heute krank gemeldet
+  const krank=employees.filter(e=>{const a=absentToday(e.id);return a&&a.type==='krank';});
+  if(krank.length) out.push({icon:'thermometer',color:'#C24141',title:krank.length+' heute krank gemeldet',sub:krank.map(e=>e.name.split(' ')[0]).join(', '),act:`closeSheet();fabGo('team','urlaub')`});
+  // Dringende „Denk mit"-Meldungen (heute/morgen/überfällig)
+  buildDenkMitFeed().filter(it=>it.days<=2).forEach(it=>{
+    const act = it.tid?`openEventForm({editId:${it.tid}})`:(it.rid?`openReminderForm(${it.rid})`:`closeSheet();setView('heute')`);
+    out.push({icon:it.icon,color:it.color,title:it.title,sub:it.sub+' · '+dwWhen(it.days),act});
+  });
+  return out;
+}
+function notifCount(){ try{ return notifItems().length; }catch(e){ return 0; } }
+function refreshBell(){
+  const b=document.getElementById('bellBadge'); if(!b) return;
+  const n=notifCount();
+  b.textContent=n>9?'9+':String(n);
+  b.style.display=n>0?'grid':'none';
+}
+function openNotifications(){
+  const items=notifItems();
+  const body = items.length
+    ? `<div class="dw-feed">${items.map(it=>`<div class="dw-item" onclick="${it.act}" style="cursor:pointer">
+         <span class="dw-item__ic" style="background:${it.color}1A;color:${it.color}"><i data-lucide="${it.icon}"></i></span>
+         <span class="dw-item__main"><span class="dw-item__t">${it.title}</span><span class="dw-item__s">${it.sub}</span></span>
+         <i data-lucide="chevron-right" style="width:16px;height:16px;color:var(--muted-2)"></i>
+       </div>`).join('')}</div>`
+    : `<div class="dw-empty"><i data-lucide="check-circle-2"></i> Alles erledigt – keine offenen Punkte.</div>`;
+  openSheet(`
+    <div class="sheet__head">
+      <span class="avatar" style="width:46px;height:46px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="bell" style="width:20px;height:20px"></i></span>
+      <div><div class="sheet__title">Benachrichtigungen</div><div class="sheet__sub">${items.length?items.length+' Punkt'+(items.length===1?'':'e')+', die deine Aufmerksamkeit brauchen':'Nichts Offenes'}</div></div>
+      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+    </div>
+    <div class="sheet__body">${body}
+      <p class="sheet-note" style="margin-top:14px"><i data-lucide="lightbulb" style="width:12px;height:12px;vertical-align:-2px"></i> Vorlaufzeiten &amp; Typen stellst du im „Denk mit"-Feed auf der Startseite ein.</p>
+    </div>`);
 }
 function openDenkMitSettings(){
   const rows = Object.keys(DW_TYPES).map(k=>{ const t=DW_TYPES[k], cf=dwConfig[k];
@@ -4515,7 +4566,7 @@ const VIEWS = {
   planung: () => `
     <div class="pagehead">
       <div><h2>Planung</h2><p>Wer ist wann wo? Plantafel zum Verschieben, Zeitstrahl für den Überblick – Urlaub & Krank fließen automatisch ein.</p></div>
-      <button class="mini-btn primary" onclick="toast('Neuer Auftrag folgt')"><i data-lucide="plus"></i> Auftrag</button>
+      <button class="mini-btn primary" onclick="openAuftragForm()"><i data-lucide="plus"></i> Auftrag</button>
     </div>
     <div class="tabs" id="planTabs">
       ${[{id:'tafel',label:'Plantafel'},{id:'zeitstrahl',label:'Zeitstrahl'}].map(t => `<button class="tab ${activePlanTab===t.id?'on':''}" data-ptab="${t.id}" onclick="planTab('${t.id}')">${t.label}</button>`).join('')}
@@ -6114,9 +6165,10 @@ function resolveTxnDiff(txnId, refId, diff){
 /* ----- Angebot/Rechnung-Formular ----- */
 let invDraft = null;
 let custDraft = null;
-function openInvoiceForm(kind){
+function openInvoiceForm(kind, customerId){
   if(currentView!=='finanzen' && !can('finanzen')){ /* erlaubt für admin */ }
-  invDraft = { kind, customerId: customers[0].id, title:'', vat:19,
+  const cid = (customerId && customers.some(c=>c.id===customerId)) ? customerId : customers[0].id;
+  invDraft = { kind, customerId: cid, title:'', vat:19,
     date: dISO(new Date()), due: addDays(dISO(new Date()), kind==='angebot'?14:14),
     items:[ {name:'', qty:1, unit:'pausch.', price:0} ] };
   renderInvoiceForm();
@@ -8919,7 +8971,7 @@ function openTimeEntry(id){
       ${p ? `<div class="protobox"><div class="protobox__h"><i data-lucide="clipboard-check"></i> Tagesprotokoll</div><div class="protobox__txt">${p.text||'—'}</div>${p.photos.length?`<div class="protogrid">${p.photos.map(src=>`<img src="${src}" alt="Baustelle">`).join('')}</div>`:''}${p.damageText?`<div class="protodmg"><i data-lucide="alert-octagon"></i> Schaden: ${p.damageText}${p.damagePhoto?`<img src="${p.damagePhoto}" alt="Schaden">`:''}</div>`:''}</div>` : `<div class="protobox empty2"><i data-lucide="clipboard-list"></i> Noch kein Tagesprotokoll abgegeben.</div>`}
       <div class="sheet-actions">
         <button class="btn ghost" style="flex:1" onclick="${s.customerId?`openCustomer('${s.customerId}')`:`openSiteSheet('${s.id}')`}"><i data-lucide="folder-open"></i> Kundenkartei</button>
-        <button class="btn ghost" style="flex:1" onclick="toast('Mitarbeiter anrufen')"><i data-lucide="phone"></i> Anrufen</button>
+        ${emp_.phone?`<a class="btn ghost" style="flex:1" href="tel:${emp_.phone.replace(/[^\d+]/g,'')}"><i data-lucide="phone"></i> Anrufen</a>`:`<button class="btn ghost" style="flex:1" onclick="toast('Für ${escapeHtml(emp_.name)} ist keine Telefonnummer hinterlegt')"><i data-lucide="phone"></i> Anrufen</button>`}
       </div>
     </div>`);
 }
@@ -8981,8 +9033,8 @@ function openCustomer(custId){
       <div class="zsec-h" style="margin-top:18px"><b>Verlauf</b><span>letzte Aktivitäten</span></div>
       <div class="timeline">${c.history.map(h => `<div class="tl-item"><span class="tl-ico ${h.ch}"><i data-lucide="${chIco[h.ch] || 'circle'}"></i></span><div class="tl-body"><div class="tl-text">${h.text}</div><div class="tl-date">${h.date}</div></div></div>`).join('')}</div>
       <div class="sheet-actions">
-        <button class="btn" style="flex:1" onclick="toast('Anruf wird gestartet')"><i data-lucide="phone"></i> Anrufen</button>
-        <button class="btn ghost" style="flex:1" onclick="toast('Angebot wird erstellt')"><i data-lucide="file-plus"></i> Angebot</button>
+        ${c.phone?`<a class="btn" style="flex:1" href="tel:${c.phone.replace(/[^\d+]/g,'')}"><i data-lucide="phone"></i> Anrufen</a>`:`<button class="btn" style="flex:1" onclick="toast('Für ${escapeHtml(c.name)} ist keine Telefonnummer hinterlegt')"><i data-lucide="phone"></i> Anrufen</button>`}
+        <button class="btn ghost" style="flex:1" onclick="closeSheet(); openInvoiceForm('angebot','${c.id}')"><i data-lucide="file-plus"></i> Angebot</button>
       </div>
     </div>`);
 }
@@ -9411,7 +9463,7 @@ function aktePsaCard(e,hr){
 }
 function akteDocCard(e,hr,priv){
   const list = (hr.docs&&hr.docs.length)
-    ? `<div class="akte-doclist">${hr.docs.map((d,i)=>`<div class="cv-card"><div class="cv-card__ic"><i data-lucide="${docIcon(d.type)}"></i></div><div class="cv-card__main" onclick="toast('Demo · Dokument öffnen')" style="cursor:pointer"><div class="cv-card__title">${escapeHtml(d.name)}</div><div class="cv-card__meta">${escapeHtml(d.type)} · ${deDate(d.date)}</div></div>${priv?`<button class="cv-card__dl" onclick="removeAkteDoc(${i})" title="Entfernen"><i data-lucide="trash-2"></i></button>`:`<i data-lucide="download" style="width:16px;height:16px;color:var(--muted)"></i>`}</div>`).join('')}</div>`
+    ? `<div class="akte-doclist">${hr.docs.map((d,i)=>`<div class="cv-card"><div class="cv-card__ic"><i data-lucide="${docIcon(d.type)}"></i></div><div class="cv-card__main" onclick="openAkteDoc(${i})" style="cursor:pointer"><div class="cv-card__title">${escapeHtml(d.name)}</div><div class="cv-card__meta">${escapeHtml(d.type)} · ${deDate(d.date)}</div></div>${priv?`<button class="cv-card__dl" onclick="removeAkteDoc(${i})" title="Entfernen"><i data-lucide="trash-2"></i></button>`:`<i data-lucide="download" style="width:16px;height:16px;color:var(--muted)"></i>`}</div>`).join('')}</div>`
     : '<p class="compose-hint" style="margin:0 0 4px">Noch keine Dokumente.</p>';
   const add = priv ? `<div class="akte-docadd" style="margin-top:10px" onclick="uploadEmpDoc(${e.id})"><i data-lucide="upload"></i> Dokument hochladen (PDF, JPG, PNG)</div>` : '';
   return akteCard({title:'Dokumente', icon:'folder', section:null, editable:false, body:list+add, priv});
@@ -9574,13 +9626,70 @@ function removeAkteDoc(i){
   if(hr.docs && hr.docs[i]) hr.docs.splice(i,1);
   renderAkte(); toast('Dokument entfernt');
 }
-function setEmpPhoto(id){ toast('Demo · hier würdest du ein Foto hochladen'); }
+// Echte Datei-Auswahl per verstecktem <input type=file>; Datei wird als DataURL im Browser gehalten (kein Server nötig)
+function pickFile(accept, onLoad){
+  const inp=document.createElement('input');
+  inp.type='file'; inp.accept=accept||'*/*'; inp.style.display='none';
+  inp.onchange=()=>{ const f=inp.files&&inp.files[0]; if(!f){ inp.remove(); return; }
+    const r=new FileReader();
+    r.onload=()=>{ try{ onLoad(f, r.result); } finally { inp.remove(); } };
+    r.onerror=()=>{ toast('Datei konnte nicht gelesen werden'); inp.remove(); };
+    r.readAsDataURL(f);
+  };
+  document.body.appendChild(inp); inp.click();
+}
+// Datei-Download im Browser auslösen (Text/JSON/CSV)
+function downloadFile(filename, content, mime){
+  const blob=new Blob([content], {type:(mime||'text/plain')+';charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download=filename;
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 200);
+}
+// DSGVO Art. 20: alle im Tool gehaltenen Personen-/Kundendaten als JSON exportieren
+function exportGdprData(){
+  const data={
+    exportiert_am:new Date().toISOString(),
+    betrieb:(settings&&settings.company)?settings.company:undefined,
+    mitarbeiter:employees.map(e=>{ const hr=hrData(e); return {...e, personalakte:hr}; }),
+    kunden:(typeof customers!=='undefined')?customers:[],
+    bewerber:(typeof applicants!=='undefined')?applicants:(typeof bewerber!=='undefined'?bewerber:[])
+  };
+  downloadFile('greencareers-datenexport-'+TODAY+'.json', JSON.stringify(data,null,2), 'application/json');
+  toast('Datenexport heruntergeladen');
+}
+function setEmpPhoto(id){
+  const e=emp(id); if(!e) return;
+  pickFile('image/*', (file, dataUrl)=>{
+    const hr=hrData(e); hr.photo=dataUrl;
+    if(akteEmpId===id) renderAkte();
+    toast('Foto aktualisiert');
+  });
+}
+function docTypeFromName(name){
+  const n=(name||'').toLowerCase();
+  if(/vertrag/.test(n)) return 'Vertrag';
+  if(/zeugnis/.test(n)) return 'Zeugnis';
+  if(/lohn|gehalt|abrechn/.test(n)) return 'Lohnabrechnung';
+  if(/schein|führerschein|fuehrerschein|lizenz|zertifik/.test(n)) return 'Nachweis';
+  if(/bescheinig|attest/.test(n)) return 'Bescheinigung';
+  return 'Dokument';
+}
 function uploadEmpDoc(id){
   const e = emp(id); if(!e) return;
-  const hr = hrData(e);
-  hr.docs.unshift({name:'Neues_Dokument_'+(hr.docs.length+1)+'.pdf', type:'Bescheinigung', date:TODAY});
-  if(akteEmpId===id) renderAkte();
-  toast('Dokument hochgeladen (Demo)');
+  pickFile('application/pdf,image/*', (file, dataUrl)=>{
+    const hr = hrData(e);
+    hr.docs.unshift({ name:file.name, type:docTypeFromName(file.name), date:TODAY, url:dataUrl });
+    if(akteEmpId===id) renderAkte();
+    toast('„'+file.name+'" hinzugefügt');
+  });
+}
+// Dokument anzeigen: echte Datei im neuen Tab öffnen, sonst ehrlicher Hinweis
+function openAkteDoc(i){
+  const e=emp(akteEmpId); if(!e) return;
+  const hr=hrData(e); const d=hr.docs&&hr.docs[i];
+  if(d&&d.url){ const w=window.open(); if(w){ w.document.write(d.name.match(/\.pdf$/i)?`<iframe src="${d.url}" style="border:0;width:100%;height:100%"></iframe>`:`<img src="${d.url}" style="max-width:100%">`); } else { toast('Pop-up wurde blockiert'); } }
+  else { toast(d?('„'+d.name+'" – Beispiel-Dokument ohne Datei'):'Dokument nicht gefunden'); }
 }
 function addEmpNote(id){
   const ta = document.getElementById('akteNote');
