@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>GreenCareers OS</title>
 <script src="https://unpkg.com/lucide@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap" rel="stylesheet" />
@@ -154,6 +155,8 @@
   .btn.ghost{ color:var(--ink); background:#fff; border:1px solid var(--line); box-shadow:none; }
   .auth__back{ display:inline-flex; align-items:center; gap:7px; color:var(--muted); font-size:12.5px; font-weight:600; margin-bottom:16px; cursor:pointer; }
   .auth__foot{ margin-top:18px; padding-top:16px; border-top:1px solid var(--line); display:flex; align-items:center; justify-content:space-between; gap:12px; color:var(--muted); font-size:11.5px; }
+  .auth__foot a{ color:var(--green); font-weight:700; cursor:pointer; }
+  .auth__err{ background:#fdecec; border:1px solid #f5c2c2; color:#b42318; font-size:12.5px; font-weight:600; padding:9px 12px; border-radius:9px; margin:2px 0 14px; }
 
   /* Shell */
   .app{ min-height:100vh; height:100vh; display:flex; background:var(--sidebar); overflow:hidden; }
@@ -2567,27 +2570,48 @@
         </div>
       </div>
       <h1>Willkommen zurück</h1>
-      <p class="sub" id="loginSubLine">Melde dich an und öffne das Cockpit für Müller GaLaBau.</p>
-      <div class="field"><label for="email">E-Mail</label><input id="email" type="email" value="georg@mueller-galabau.de" autocomplete="email" /></div>
-      <div class="field"><label for="password">Passwort</label><input id="password" type="password" value="demo1234" autocomplete="current-password" /></div>
+      <p class="sub" id="loginSubLine">Melde dich an und öffne dein Cockpit.</p>
+      <div class="field"><label for="email">E-Mail</label><input id="email" type="email" placeholder="name@firma.de" autocomplete="email" /></div>
+      <div class="field"><label for="password">Passwort</label><input id="password" type="password" placeholder="Dein Passwort" autocomplete="current-password" onkeydown="if(event.key==='Enter')login()" /></div>
+      <div class="auth__err" style="display:none"></div>
       <div class="auth__row">
         <label class="auth__chk"><input type="checkbox" checked /> Angemeldet bleiben</label>
         <a onclick="showAuth('reset')">Passwort vergessen?</a>
       </div>
-      <button class="btn full" onclick="login()">Anmelden</button>
-      <div class="auth__foot"><span>Demo-Zugang</span><span>georg@mueller-galabau.de</span></div>
+      <button class="btn full" id="loginBtn" onclick="login()">Anmelden</button>
+      <div class="auth__foot"><span>Noch kein Konto?</span><a onclick="showAuth('register')">Jetzt registrieren</a></div>
+    </div>
+    <div id="registerView" class="hidden">
+      <span class="auth__back" onclick="showAuth('login')"><i data-lucide="arrow-left"></i> Zurück</span>
+      <h1>Konto erstellen</h1>
+      <p class="sub">Starte mit deinem Betrieb in GreenCareers OS. Du bekommst gleich eine Bestätigungs-Mail.</p>
+      <div class="field"><label for="regName">Dein Name</label><input id="regName" type="text" placeholder="Vor- und Nachname" autocomplete="name" /></div>
+      <div class="field"><label for="regEmail">E-Mail</label><input id="regEmail" type="email" placeholder="name@firma.de" autocomplete="email" /></div>
+      <div class="field"><label for="regPassword">Passwort</label><input id="regPassword" type="password" placeholder="Mind. 8 Zeichen" autocomplete="new-password" /></div>
+      <div class="field"><label for="regPassword2">Passwort wiederholen</label><input id="regPassword2" type="password" placeholder="Passwort erneut" autocomplete="new-password" onkeydown="if(event.key==='Enter')doRegister()" /></div>
+      <div class="auth__err" style="display:none"></div>
+      <button class="btn full" id="regBtn" onclick="doRegister()">Konto erstellen</button>
+      <div class="auth__foot"><span>Schon registriert?</span><a onclick="showAuth('login')">Zum Login</a></div>
+    </div>
+    <div id="verifyView" class="hidden">
+      <span class="brandmark" style="margin-bottom:16px"><i data-lucide="mail-check"></i></span>
+      <h1>Bestätige deine E-Mail</h1>
+      <p class="sub">Wir haben einen Bestätigungs-Link an <b id="verifyEmail"></b> geschickt. Klicke ihn an – danach kommst du automatisch in die Einrichtung.</p>
+      <p class="sub" style="font-size:12.5px">Keine Mail erhalten? Prüfe den Spam-Ordner.</p>
+      <button class="btn ghost full" onclick="showAuth('login')">Zurück zum Login</button>
     </div>
     <div id="resetView" class="hidden">
       <span class="auth__back" onclick="showAuth('login')"><i data-lucide="arrow-left"></i> Zurück</span>
       <h1>Passwort zurücksetzen</h1>
       <p class="sub">Gib deine E-Mail ein. Wir schicken dir einen Link zum Zurücksetzen.</p>
-      <div class="field"><label for="resetEmail">E-Mail</label><input id="resetEmail" type="email" value="georg@mueller-galabau.de" /></div>
-      <button class="btn full" onclick="showAuth('sent')">Link senden</button>
+      <div class="field"><label for="resetEmail">E-Mail</label><input id="resetEmail" type="email" placeholder="name@firma.de" /></div>
+      <div class="auth__err" style="display:none"></div>
+      <button class="btn full" id="resetBtn" onclick="doReset()">Link senden</button>
     </div>
     <div id="sentView" class="hidden">
       <span class="brandmark" style="margin-bottom:16px"><i data-lucide="mail-check"></i></span>
       <h1>Link gesendet</h1>
-      <p class="sub">Schau in dein Postfach. Der Login-Link ist gleich da.</p>
+      <p class="sub">Schau in dein Postfach. Der Link zum Zurücksetzen ist gleich da.</p>
       <button class="btn ghost full" onclick="showAuth('login')">Zurück zum Login</button>
     </div>
   </section>
@@ -2615,7 +2639,7 @@
       <button class="iconbtn" onclick="toggleSidebar()" title="Navigation"><i data-lucide="panel-left"></i></button>
       <div class="viewtitle" id="viewTitle"></div>
       <span class="topbar__spacer"></span>
-      <div class="weather-mini"><span class="bubble"><i data-lucide="cloud-sun"></i></span><span><b>21°C</b> · Hamburg<br />trocken - guter Arbeitstag</span></div>
+      <div class="weather-mini" id="weatherMini" onclick="openWeatherForecast()" title="16-Tage-Wetter"><span class="bubble"><i data-lucide="cloud-sun"></i></span><span><b>--°</b> · Hamburg<br />Wetter lädt …</span></div>
       <button class="brainpill" id="brainPill" onclick="openBrain()" title="GaLaBrain"><i data-lucide="sparkles"></i><span>GaLaBrain</span></button>
       <button class="rolepill" id="rolePill" onclick="openRoleSwitch()" title="Demo-Schalter: Ansicht je Rolle ausprobieren (im echten Produkt nicht vorhanden)"></button>
       <button class="iconbtn bell" onclick="openNotifications()" title="Benachrichtigungen"><i data-lucide="bell"></i><span class="bell__badge" id="bellBadge" style="display:none"></span></button>
@@ -2647,22 +2671,18 @@
 <script>
 const NAV = [
   {id:'heute', label:'Heute', icon:'layout-dashboard', badge:''},
-  {id:'recruiting', label:'Bewerber', icon:'user-search', badge:'2'},
+  {id:'recruiting', label:'Bewerber', icon:'user-search', badge:''},
   {id:'team', label:'Team', icon:'users', badge:''},
   {id:'planung', label:'Planung', icon:'calendar-range', badge:''},
-  {id:'kunden', label:'Kunden', icon:'handshake', badge:'5'},
+  {id:'kunden', label:'Kunden', icon:'handshake', badge:''},
   {id:'finanzen', label:'Finanzen', icon:'receipt-euro', badge:''},
   {id:'markt', label:'Markt', icon:'store', badge:''},
 ];
 
 // Offene Stellen (Stellenanzeigen) – im Produktiv-System aus GreenCareers synchronisiert (Unternehmen + Stelle).
 // Im Prototyp Dummy-Daten. expMin = geforderte Mindest-Berufserfahrung (Jahre) für den Vorqual-Abgleich.
-const jobs = [
-  {id:'j1', title:'Landschaftsgärtner (m/w/d)', branche:'Garten- & Landschaftsbau', plz:'22926', ort:'Ahrensburg', employment:'Vollzeit',  expMin:2, salary:'2.800–3.400 €', open:3, synced:true},
-  {id:'j2', title:'Pflasterer (m/w/d)',         branche:'Garten- & Landschaftsbau', plz:'22926', ort:'Ahrensburg', employment:'Vollzeit',  expMin:3, salary:'3.000–3.600 €', open:2, synced:true},
-  {id:'j3', title:'Vorarbeiter Kolonne (m/w/d)',branche:'Garten- & Landschaftsbau', plz:'22926', ort:'Ahrensburg', employment:'Vollzeit',  expMin:5, salary:'3.600–4.200 €', open:1, synced:true},
-  {id:'j4', title:'Azubi GaLaBau (m/w/d)',      branche:'Garten- & Landschaftsbau', plz:'22926', ort:'Ahrensburg', employment:'Ausbildung',expMin:0, salary:'1.000–1.200 €', open:2, synced:true},
-];
+// Stellenanzeigen – im Echtbetrieb aus dem GreenCareers-Netzwerk synchronisiert (leerer Start).
+const jobs = [];
 function job(id){ return jobs.find(j => j.id === id) || null; }
 function jobTitle(id){ const j = job(id); return j ? j.title : null; }
 
@@ -2693,45 +2713,15 @@ function cmt(author, role, text, daysAgo){ return {id:cmtSeq++, author, role, te
 // Bewerber-Datenmodell (gespiegelt am echten GreenCareers-Backend) – FLACHE Liste:
 //   Kontakt (phone/email) · jobId · source · date · letter (Anschreiben) · stage (aktueller Status) · comments[] (interner Verlauf)
 //   pq{} = Vorqualifizierung (vom WhatsApp-Bot eingeholt, darf unvollständig sein) · pqStatus offen|laufend|fertig · botScore
+// Beispiel-Bewerber (genau EINER, damit der Vertrieb das Bewerber-Board zeigen kann).
+// Im Echtbetrieb landen hier die Bewerbungen aus dem GreenCareers-Netzwerk.
 const applicants = [
-  {id:1,name:'Daniel Hoffmann',phone:'0176 5544332',email:'d.hoffmann@web.de',jobId:'j1',source:'WhatsApp',date:'Heute, 08:14', stage:'neu',
-   letter:'Hallo, ich habe 3 Jahre als Landschaftsgärtner gearbeitet und suche eine neue Stelle in der Nähe von Ahrensburg. Führerschein BE ist vorhanden.',
-   cv:{name:'Lebenslauf_Daniel_Hoffmann.pdf', meta:'PDF · 2 Seiten'},
+  {id:1,name:'Max Mustermann',phone:'0170 0000000',email:'max.mustermann@beispiel.de',jobId:null,source:'WhatsApp',date:'Heute, 08:14', stage:'neu',
+   letter:'Beispiel-Bewerbung: So sieht ein neuer Bewerber im Board aus. Echte Bewerbungen erscheinen hier automatisch aus dem GreenCareers-Netzwerk.',
    comments:[],
-   pq:{branche:'Garten- & Landschaftsbau',beruf:'Landschaftsgärtner',erfahrung:3,gehalt:'',verfuegbar:'ab sofort',ort:'Ahrensburg'},
+   pq:{branche:'Garten- & Landschaftsbau',beruf:'Landschaftsgärtner',erfahrung:3,gehalt:'',verfuegbar:'ab sofort',ort:'Musterstadt'},
    pqStatus:'laufend', botScore:null,
-   role:'Landschaftsgärtner',tags:['Führerschein BE','3 J. Erfahrung'],available:'ab sofort',hot:false},
-  {id:2,name:'Erik Lindqvist',phone:'0151 2233445',email:'erik.l@gmail.com',jobId:null,source:'Indeed',date:'Gestern, 16:40', stage:'neu',
-   letter:'Bewerbung als Geselle im GaLaBau. Bin umzugsbereit und kann kurzfristig anfangen.',
-   comments:[],
-   pq:{branche:'',beruf:'Geselle GaLaBau',erfahrung:null,gehalt:'',verfuegbar:'in 4 Wochen',ort:''},
-   pqStatus:'laufend', botScore:null,
-   role:'Geselle GaLaBau',tags:['Umzug möglich'],available:'in 4 Wochen',hot:false},
-  {id:3,name:'Thomas Krause',phone:'0170 9988771',email:'t.krause@gmx.de',jobId:'j3',source:'WhatsApp',date:'Heute, 07:02', stage:'inbearb',
-   letter:'',
-   cv:{name:'CV_Thomas_Krause_Vorarbeiter.pdf', meta:'PDF · 3 Seiten'},
-   comments:[cmt('Georg Müller','Inhaber','Klingt sehr passend – hat Baggerschein und Vorarbeiter-Erfahrung. Anrufen!',1)],
-   pq:{branche:'Garten- & Landschaftsbau',beruf:'Vorarbeiter',erfahrung:8,gehalt:'3.800 €',verfuegbar:'ab sofort',ort:'Bargteheide'},
-   pqStatus:'fertig', botScore:87,
-   role:'Vorarbeiter',tags:['Führerschein BE','Bagger','8 J.'],available:'ab sofort',hot:true},
-  {id:4,name:'Murat Yilmaz',phone:'0172 4455661',email:'murat.y@web.de',jobId:'j2',source:'Meta',date:'Heute, 09:21', stage:'inbearb',
-   letter:'',
-   comments:[],
-   pq:{branche:'Garten- & Landschaftsbau',beruf:'Pflasterer',erfahrung:10,gehalt:'3.400 €',verfuegbar:'ab 15.06.',ort:'Norderstedt'},
-   pqStatus:'fertig', botScore:82,
-   role:'Pflasterer',tags:['10 J. Erfahrung','Pflasterbau'],available:'ab 15.06.',hot:true},
-  {id:5,name:'Lukas Berger',phone:'0151 7788990',email:'lukas.berger@gmail.com',jobId:'j4',source:'Web',date:'06.06.2026', stage:'probetag',
-   letter:'',
-   comments:[cmt('Georg Müller','Inhaber','Probetag 14.06. vereinbart.',2)],
-   pq:{branche:'Garten- & Landschaftsbau',beruf:'Azubi GaLaBau',erfahrung:0,gehalt:'',verfuegbar:'Sommer 2026',ort:'Ahrensburg'},
-   pqStatus:'fertig', botScore:74,
-   role:'Azubi GaLaBau',tags:['Probetag 14.06.'],available:'Sommer 2026',hot:false},
-  {id:6,name:'Jonas Weber',phone:'0170 5566778',email:'j.weber@web.de',jobId:'j1',source:'Empfehlung',date:'28.05.2026', stage:'eingestellt',
-   letter:'',
-   comments:[cmt('Georg Müller','Inhaber','Vertrag unterschrieben, Start 01.07.',5)],
-   pq:{branche:'Garten- & Landschaftsbau',beruf:'Landschaftsgärtner',erfahrung:4,gehalt:'3.200 €',verfuegbar:'01.07.',ort:'Ahrensburg'},
-   pqStatus:'fertig', botScore:90,
-   role:'Landschaftsgärtner',tags:['Start 01.07.'],available:'01.07.',hot:false},
+   role:'Landschaftsgärtner',tags:['Beispiel'],available:'ab sofort',hot:false},
 ];
 let appSeq = 100;
 // Filter im Bewerber-Board (Stelle × Status) – spiegelt den Filter im echten Kunden-Dashboard
@@ -2756,30 +2746,10 @@ function loadStages(){
 }
 function saveStages(){ try{ localStorage.setItem('gcos_stages_v1', JSON.stringify(stages)); }catch(e){} }
 function stageById(id){ return stages.find(s => s.id === id) || stages[0]; }
-const employees = [
-  {id:1,name:'Sven Albrecht',role:'Vorarbeiter',crewId:'k1',phone:'0171 2345678',since:'2019',annual:30},
-  {id:2,name:'Mehmet Kaya',role:'Pflasterer',crewId:'k2',phone:'0152 9876543',since:'2021',annual:28},
-  {id:3,name:'Tim Schulz',role:'Landschaftsgärtner',crewId:'k3',phone:'0176 4455667',since:'2022',annual:28},
-  {id:4,name:'Ali Demir',role:'Geselle',crewId:'k2',phone:'0163 1122334',since:'2020',annual:28},
-  {id:5,name:'Lukas Berger',role:'Azubi',crewId:'k1',phone:'0151 7788990',since:'2024',annual:26},
-  {id:6,name:'Jonas Weber',role:'Landschaftsgärtner',crewId:'k3',phone:'0170 5566778',since:'2023',annual:28},
-  {id:7,name:'Peter Krause',role:'Vorarbeiter',crewId:'k3',phone:'0172 9988776',since:'2018',annual:30},
-  {id:8,name:'Marek Nowak',role:'Pflasterer',crewId:'k2',phone:'0159 4433221',since:'2022',annual:28},
-  {id:9,name:'Finn Hansen',role:'Geselle',crewId:null,phone:'0162 1212343',since:'2023',annual:28},
-  {id:10,name:'Stefan Vogt',role:'Maschinist',crewId:null,phone:'0177 7676545',since:'2017',annual:30},
-];
+// Mitarbeiterstamm – im Echtbetrieb legt der Betrieb sein Team selbst an (leerer Start).
+const employees = [];
 // Abwesenheiten: type urlaub|krank|sonder · status offen|genehmigt|abgelehnt · ISO-Datum, to inklusive ('' = offen/laufend)
-const DEFAULT_ABSENCES = [
-  {id:1, empId:4, type:'krank',  from:'2026-06-02', to:'',           note:'AU liegt vor (bis 12.06.)', status:'genehmigt', au:'au_ali_demir.jpg'},
-  {id:2, empId:9, type:'krank',  from:'2026-06-09', to:'2026-06-11', note:'Erkältung',                 status:'genehmigt'},
-  {id:3, empId:2, type:'urlaub', from:'2026-06-04', to:'2026-06-05', note:'Brückentage',               status:'genehmigt'},
-  {id:4, empId:5, type:'urlaub', from:'2026-06-15', to:'2026-06-19', note:'',                          status:'genehmigt'},
-  {id:5, empId:8, type:'sonder', from:'2026-06-11', to:'2026-06-12', note:'Umzug',                      status:'genehmigt'},
-  {id:6, empId:3, type:'urlaub', from:'2026-06-22', to:'2026-06-26', note:'Familienurlaub',            status:'offen'},
-  {id:7, empId:10,type:'urlaub', from:'2026-06-23', to:'2026-06-25', note:'',                          status:'offen'},
-  {id:8, empId:1, type:'urlaub', from:'2026-07-06', to:'2026-07-17', note:'Sommerurlaub',              status:'offen'},
-  {id:9, empId:7, type:'urlaub', from:'2026-08-10', to:'2026-08-21', note:'',                          status:'genehmigt'},
-];
+const DEFAULT_ABSENCES = [];
 // Demo-Abwesenheiten relativ zum echten Heute verschieben (siehe DEMO_SHIFT)
 function seedAbsences(){ return DEFAULT_ABSENCES.map(a => ({...a, from: shiftISO(a.from), to: shiftISO(a.to)})); }
 let absences = loadAbsences();
@@ -2804,39 +2774,24 @@ function resetAbsences(){
 // „Jetzt" für die Zeiterfassung (Prototyp-Uhrzeit am Mittwoch, 3. Juni)
 const NOW = '11:12';
 // Baustellen = aktive Kunden-Einsatzorte (mit Adresse, Geo, Aufgaben & Material zum Beladen)
+// Baustellen – im Echtbetrieb legt der Betrieb seine Baustellen selbst an.
+// Der „Bauhof" bleibt als fester Standort-Anker erhalten.
 const sites = [
-  {id:'s1', customerId:'c1', customer:'Familie Brandt', label:'Pflaster Brandt', addr:'Hauptstr. 12, 22926 Ahrensburg', lat:53.6745, lng:10.2389,
-   tasks:['Pflasterfläche 60 m² verlegen','Randsteine setzen','Fläche abrütteln'],
-   material:['Pflastersteine grau · 3 Paletten','Splitt 0/5 · 1 t','Randsteine · 40 lfm','Rüttelplatte','Kantenschneider']},
-  {id:'s2', customerId:'c2', customer:'Familie Schmidt', label:'Garten Schmidt', addr:'Am Wäldchen 4, 22846 Norderstedt', lat:53.7065, lng:10.0112,
-   tasks:['Beet ausheben','Mutterboden auffüllen','Rollrasen verlegen'],
-   material:['Rollrasen · 120 m²','Mutterboden · 4 m³','Beeteinfassung · 30 lfm','Spaten, Rechen, Schubkarre']},
-  {id:'s3', customerId:'c3', customer:'Herr Petersen', label:'Hecke Petersen', addr:'Dorfstr. 8, 22359 Volksdorf', lat:53.6512, lng:10.1789,
-   tasks:['Hecke auf 1,80 m schneiden','Schnittgut häckseln & abfahren'],
-   material:['Heckenschere','Astschere','Häcksler','Anhänger']},
-  {id:'s0', customerId:null, customer:'Bauhof / Werkstatt', label:'Bauhof', addr:'Gewerbestr. 5, 22844 Norderstedt', lat:53.7012, lng:9.9842,
-   tasks:['Maschinen warten','Material kommissionieren'], material:[]},
+  {id:'s0', customerId:null, customer:'Bauhof / Werkstatt', label:'Bauhof', addr:'', lat:53.5511, lng:9.9937,
+   tasks:[], material:[]},
 ];
 // Stempel-Einträge heute · in/out HH:MM · ruest = Rüstzeit (Beladen+Anfahrt) · dist km zur Baustelle · geoOk = vor Ort
-let timeEntries = [
-  {id:1, empId:1, siteId:'s2', in:'06:58', out:null,    ruest:true,  pauseMin:0,  dist:0.1, geoOk:true,  proto:false},
-  {id:2, empId:2, siteId:'s1', in:'06:31', out:null,    ruest:true,  pauseMin:30, dist:0.2, geoOk:true,  proto:false},
-  {id:3, empId:7, siteId:'s1', in:'06:34', out:null,    ruest:true,  pauseMin:30, dist:0.2, geoOk:true,  proto:false},
-  {id:4, empId:8, siteId:'s1', in:'06:36', out:null,    ruest:false, pauseMin:30, dist:0.2, geoOk:true,  proto:false},
-  {id:5, empId:3, siteId:'s3', in:'07:45', out:null,    ruest:false, pauseMin:0,  dist:3.9, geoOk:false, proto:false},
-  {id:6, empId:5, siteId:'s2', in:'07:01', out:null,    ruest:true,  pauseMin:0,  dist:0.1, geoOk:true,  proto:false},
-  {id:7, empId:9, siteId:'s0', in:'06:30', out:'10:50', ruest:false, pauseMin:20, dist:0.0, geoOk:true,  proto:true},
-];
+let timeEntries = [];
 let timeSeq = 100;
-let myEntry = null;            // Selbst-Stempelung (Du = Georg) – Demo des Mitarbeiter-Flows
+let myEntry = null;            // Selbst-Stempelung des eingeloggten Nutzers
 let protocols = [];            // Tagesprotokolle dieser Session {empId, siteId, text, photos[], damageText, damagePhoto}
 let protoPhotos = [];          // temp Fotos im offenen Protokoll-Formular
 let protoDamage = null;        // temp Schaden-Foto im offenen Protokoll-Formular
 let voiceRec = null;           // laufende SpeechRecognition
 const plan = {
-  k1:{neu:[{t:'Garten Schmidt',o:'Norderstedt · Neuanlage',c:'#16A34A'}],di:[{t:'Garten Schmidt',o:'Norderstedt',c:'#16A34A'}],mi:[{t:'Pflege Stadtpark',o:'Hamburg-Nord',c:'#2563EB'}],do:[],fr:[{t:'Hecke Voss',o:'Pinneberg',c:'#7C3AED'}]},
-  k2:{neu:[{t:'Pflaster Brandt',o:'Ahrensburg',c:'#B7791F'}],di:[{t:'Pflaster Brandt',o:'Ahrensburg',c:'#B7791F'}],mi:[{t:'Pflaster Brandt',o:'Ahrensburg',c:'#B7791F'}],do:[{t:'Mauer Köhler',o:'Reinbek',c:'#16A34A'}],fr:[]},
-  k3:{neu:[{t:'Hecke Petersen',o:'Volksdorf',c:'#7C3AED'}],di:[],mi:[{t:'Rasen Sülldorf',o:'Hamburg-West',c:'#16A34A'}],do:[{t:'Rasen Sülldorf',o:'Hamburg-West',c:'#16A34A'}],fr:[{t:'Pflege Tour',o:'Diverse',c:'#2563EB'}]},
+  k1:{neu:[],di:[],mi:[],do:[],fr:[]},
+  k2:{neu:[],di:[],mi:[],do:[],fr:[]},
+  k3:{neu:[],di:[],mi:[],do:[],fr:[]},
 };
 // Plantafel-Spalten: heute + die nächsten 4 Werktage (Wochenende übersprungen).
 // IDs bleiben fix (neu/di/mi/do/fr), weil die plan-Struktur darauf verweist – nur Datum/Label sind dynamisch.
@@ -2858,6 +2813,12 @@ const days = (function(){
 const WD_LANG = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 const MO_LANG = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
 function greetWord(){ const h = new Date().getHours(); return h < 11 ? 'Guten Morgen' : h < 18 ? 'Guten Tag' : 'Guten Abend'; }
+// Anrede-Vorname: aus Firmen-Inhaber bzw. eingeloggtem Nutzer, sonst neutral.
+function greetName(){
+  const o = (settings.company && settings.company.owner) ? settings.company.owner.trim() : '';
+  const n = o || (typeof GC_USER!=='undefined' && GC_USER && GC_USER.user_metadata && GC_USER.user_metadata.name) || '';
+  return n ? escapeHtml(n.split(' ')[0]) : 'willkommen';
+}
 function cockpitDateLine(){
   const dt = dParse(TODAY);
   const aktiv = employees.filter(e => !absentToday(e.id)).length;
@@ -2870,71 +2831,28 @@ const crews = [
   {id:'k3', label:'Kolonne LKW',   color:'#2563EB', icon:'truck'},
 ];
 let crewSeq = 4;
-const inbox = [
-  {id:1,ch:'wa',customerId:'c1',from:'Familie Brandt',sub:'Gartenneuanlage gewünscht',pre:'Hallo, wir möchten unseren Garten neu anlegen lassen. Können Sie kurzfristig vorbeikommen?',time:'vor 20 Min.',unread:true},
-  {id:2,ch:'mail',customerId:'c4',from:'Stadtwerke Nord',sub:'Ausschreibung Grünpflege 2026/27',pre:'Sehr geehrte Damen und Herren, anbei die Unterlagen zur Ausschreibung.',time:'vor 1 Std.',unread:true},
-  {id:3,ch:'tel',customerId:'c3',from:'Herr Petersen',sub:'Rückruf erbeten - Heckenschnitt',pre:'Verpasster Anruf · Mailbox: wegen dem Heckenschnitt im Juni.',time:'vor 2 Std.',unread:true},
-  {id:4,ch:'web',customerId:'c5',from:'Anja Bauer',sub:'Anfrage über Website',pre:'Terrasse pflastern, ca. 40 m², Wunschtermin im Juli.',time:'gestern',unread:false},
-  {id:5,ch:'wa',customerId:'c6',from:'Klaus Möller',sub:'Frage zu Angebot',pre:'Passt der Termin am Freitag noch für die Besichtigung?',time:'gestern',unread:false},
-];
-// Kundenstamm – jeder Kunde hängt an Baustellen (sites), Anfragen (inbox) & Verlauf zusammen
+// Anfragen-Inbox – im Echtbetrieb laufen hier Anfragen aus WhatsApp, Mail, Telefon & Website ein.
+const inbox = [];
+// Kundenstamm – genau EIN Beispielkunde (Max Mustermann) als Vorlage.
+// Im Echtbetrieb legt der Betrieb seine Kunden selbst an bzw. sie entstehen aus Anfragen.
 const customers = [
-  {id:'c1', name:'Familie Brandt', contact:'Sabine Brandt', city:'Ahrensburg',
-   addr:'Hauptstr. 12, 22926 Ahrensburg', phone:'04102 445566', email:'s.brandt@web.de',
-   type:'Bestand', since:'2024', value:'14.200 € offen', status:['Aktiv','g'],
+  {id:'c1', name:'Max Mustermann', contact:'Max Mustermann', city:'Musterstadt',
+   addr:'Musterweg 1, 12345 Musterstadt', phone:'0170 0000000', email:'max.mustermann@beispiel.de',
+   type:'Beispiel', since:'2026', value:'Beispielkunde', status:['Beispiel','g'],
    history:[
-     {date:'03.06.2026', ch:'wa',   text:'Neue Anfrage: Gartenneuanlage gewünscht'},
-     {date:'12.05.2026', ch:'note', text:'Pflasterarbeiten Einfahrt beauftragt · 14.200 €'},
-     {date:'28.04.2026', ch:'tel',  text:'Aufmaß-Termin vor Ort vereinbart'},
-   ]},
-  {id:'c2', name:'Familie Schmidt', contact:'Markus Schmidt', city:'Norderstedt',
-   addr:'Am Wäldchen 4, 22846 Norderstedt', phone:'040 5267788', email:'m.schmidt@gmx.de',
-   type:'Bestand', since:'2023', value:'21.800 €', status:['Aktiv','g'],
-   history:[
-     {date:'02.06.2026', ch:'note', text:'Neuanlage gestartet · Kolonne 1 vor Ort'},
-     {date:'15.05.2026', ch:'mail', text:'Angebot Gartenneuanlage angenommen'},
-   ]},
-  {id:'c3', name:'Herr Petersen', contact:'Klaus Petersen', city:'Volksdorf',
-   addr:'Dorfstr. 8, 22359 Volksdorf', phone:'040 6039922', email:'petersen@t-online.de',
-   type:'Bestand', since:'2021', value:'1.200 € / Jahr', status:['Aktiv','g'],
-   history:[
-     {date:'03.06.2026', ch:'tel',  text:'Rückruf erbeten · Heckenschnitt Juni'},
-     {date:'10.06.2025', ch:'note', text:'Heckenschnitt jährlich · Wartungsvertrag'},
-   ]},
-  {id:'c4', name:'Stadtwerke Nord', contact:'Dr. Reimers', city:'Hamburg',
-   addr:'Überseering 30, 22297 Hamburg', phone:'040 808000', email:'vergabe@stadtwerke-nord.de',
-   type:'Bestand', since:'2022', value:'42.000 € / Jahr', status:['Aktiv','g'],
-   history:[
-     {date:'03.06.2026', ch:'mail', text:'Ausschreibung Grünpflege 2026/27 eingegangen'},
-     {date:'01.01.2026', ch:'note', text:'Rahmenvertrag Grünpflege läuft'},
-   ]},
-  {id:'c5', name:'Anja Bauer', contact:'Anja Bauer', city:'Pinneberg',
-   addr:'Rosenweg 5, 25421 Pinneberg', phone:'04101 332211', email:'anja.bauer@web.de',
-   type:'Neukunde', since:'2026', value:'~ 9.000 €', status:['Angebot','a'],
-   history:[
-     {date:'02.06.2026', ch:'web',  text:'Website-Anfrage: Terrasse pflastern, ca. 40 m²'},
-   ]},
-  {id:'c6', name:'Klaus Möller', contact:'Klaus Möller', city:'Reinbek',
-   addr:'Buchenallee 2, 21465 Reinbek', phone:'040 7228899', email:'k.moeller@gmx.de',
-   type:'Bestand', since:'2023', value:'6.400 €', status:['Aktiv','g'],
-   history:[
-     {date:'02.06.2026', ch:'wa',   text:'Frage zu Angebot · Besichtigung Freitag?'},
-     {date:'20.05.2026', ch:'note', text:'Mauerbau + Beet angefragt'},
+     {date:'Heute', ch:'note', text:'Beispielkunde – so sieht ein Kundeneintrag aus. Echte Kunden hier selbst anlegen.'},
    ]},
 ];
 
 /* ===================== ROLLEN, RECHTE & EINSTELLUNGEN ===================== */
-// Mitarbeiter um Account-/System-Rolle ergänzen (Demo)
+// Mitarbeiter um Account-/System-Rolle ergänzen (greift erst, wenn der Betrieb Team anlegt)
 employees.forEach(e => {
-  e.email = e.name.toLowerCase()
+  if(!e.email) e.email = e.name.toLowerCase()
     .replace(/ä/g,'ae').replace(/ö/g,'oe').replace(/ü/g,'ue').replace(/ß/g,'ss')
-    .replace(/[^a-z ]/g,'').trim().replace(/ +/g,'.') + '@mueller-galabau.de';
-  e.sysRole = 'mitarbeiter';   // 'admin' | 'buero' | 'mitarbeiter'
-  e.account = 'active';        // 'active' (kann sich anmelden) | 'invited' (eingeladen) | 'none' (kein Zugang)
+    .replace(/[^a-z ]/g,'').trim().replace(/ +/g,'.') + '@firma.de';
+  e.sysRole = e.sysRole || 'mitarbeiter';   // 'admin' | 'buero' | 'mitarbeiter'
+  e.account = e.account || 'active';          // 'active' | 'invited' | 'none'
 });
-employees.push({id:11, name:'Sandra Krüger', role:'Personalverwaltung', crewId:null, phone:'040 5550022', since:'2020', annual:30, email:'sandra.krueger@mueller-galabau.de', sysRole:'buero', account:'active'});
-emp(6).account = 'invited';    // Jonas Weber – eingeladen, noch nicht angemeldet
-emp(10).account = 'none';      // Stefan Vogt – noch kein Zugang
 let empSeq = employees.reduce((m,e) => Math.max(m, e.id), 0) + 1;
 
 const ROLES = {
@@ -2964,11 +2882,11 @@ const DEFAULT_SETTINGS = {
   branchen: [],        // gewählte Branchen (Mehrfachauswahl); erste = Primärbranche → Farbschema
   theme: 'galabau',    // galabau (grün) | tiefbau (orange) | landwirtschaft (gold)
   consent: null,       // {version, acceptedAt, by, items:{avv,datenschutz,agb,vollmacht}} – DSGVO-Einwilligung
-  company: {name:'Müller GaLaBau', owner:'Georg Müller', email:'georg@mueller-galabau.de', start:'06:30',
+  company: {name:'', owner:'', email:'', start:'07:00',
     logo:'', color:'',
-    street:'Gärtnerweg 14', zip:'22926', city:'Ahrensburg', phone:'04102 88990',
-    taxNo:'18/123/45678', ustId:'DE312345678',
-    bank:'Sparkasse Holstein', iban:'DE89 3704 0044 0532 0130 00', bic:'NOLADE21HOL',
+    street:'', zip:'', city:'', phone:'',
+    taxNo:'', ustId:'',
+    bank:'', iban:'', bic:'',
     zahlungsziel:14, skonto:0, kleinunternehmer:false,
     angebotFuss:'Wir freuen uns auf Ihren Auftrag. Dieses Angebot ist 21 Tage gültig.',
     rechnungFuss:'Vielen Dank für Ihren Auftrag. Bitte überweisen Sie den Betrag innerhalb der Zahlungsfrist.'},
@@ -3259,10 +3177,110 @@ let draggedJob = null;
 let dragClickBlockUntil = 0;
 
 function showAuth(view){
-  ['login','reset','sent'].forEach(id => document.getElementById(`${id}View`).classList.toggle('hidden', id !== view));
+  ['login','register','verify','reset','sent'].forEach(id => { const el=document.getElementById(`${id}View`); if(el) el.classList.toggle('hidden', id !== view); });
+  authErr('');
   icons();
 }
-function login(){
+/* ===================== ECHTE AUTHENTIFIZIERUNG (Supabase) ===================== */
+const SB_URL  = 'https://tfoopogxaqvfwbonabpi.supabase.co';
+const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmb29wb2d4YXF2Zndib25hYnBpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEyNTQzMjQsImV4cCI6MjA5NjgzMDMyNH0.udWRPszXVOj7EG4bspmsU9HXbZYFRDn8QO9kZi2tw8M';
+const sbAuth = (window.supabase && window.supabase.createClient)
+  ? window.supabase.createClient(SB_URL, SB_ANON, { auth:{ persistSession:true, autoRefreshToken:true, detectSessionInUrl:true } })
+  : null;
+let GC_USER = null;       // aktuell eingeloggter auth-User
+let GC_PROFILE = null;    // profiles-Zeile (role, customer_id)
+let _enteredApp = false;
+
+function authErr(msg){ document.querySelectorAll('.auth__err').forEach(e=>{ e.textContent=msg||''; e.style.display=msg?'block':'none'; }); }
+function authBusy(on,btnId){ const b=document.getElementById(btnId); if(b){ b.disabled=!!on; if(on){ b.dataset._t=b.textContent; b.textContent='Bitte warten…'; } else if(b.dataset._t){ b.textContent=b.dataset._t; } } }
+
+// Registrierung: E-Mail + Passwort -> Supabase schickt Bestätigungs-Mail
+async function doRegister(){
+  authErr('');
+  const email=(document.getElementById('regEmail')||{}).value?.trim().toLowerCase();
+  const pw=(document.getElementById('regPassword')||{}).value||'';
+  const pw2=(document.getElementById('regPassword2')||{}).value||'';
+  const name=(document.getElementById('regName')||{}).value?.trim()||'';
+  if(!email||!/.+@.+\..+/.test(email)){ authErr('Bitte eine gültige E-Mail eingeben.'); return; }
+  if(pw.length<8){ authErr('Das Passwort muss mindestens 8 Zeichen haben.'); return; }
+  if(pw!==pw2){ authErr('Die Passwörter stimmen nicht überein.'); return; }
+  if(!sbAuth){ authErr('Auth-Dienst nicht geladen. Seite neu laden.'); return; }
+  authBusy(true,'regBtn');
+  const { data, error } = await sbAuth.auth.signUp({
+    email, password:pw,
+    options:{ data:{ name }, emailRedirectTo: window.location.origin + window.location.pathname }
+  });
+  authBusy(false,'regBtn');
+  if(error){ authErr(error.message.includes('already registered')?'Diese E-Mail ist bereits registriert. Bitte einloggen.':error.message); return; }
+  // Bei aktivierter E-Mail-Bestätigung gibt es noch keine Session -> Hinweis zeigen
+  const vEmail=document.getElementById('verifyEmail'); if(vEmail) vEmail.textContent=email;
+  showAuth('verify');
+}
+
+// Login: echtes Passwort gegen Supabase
+async function login(){
+  authErr('');
+  const email=(document.getElementById('email')||{}).value?.trim().toLowerCase();
+  const pw=(document.getElementById('password')||{}).value||'';
+  if(!email||!pw){ authErr('Bitte E-Mail und Passwort eingeben.'); return; }
+  if(!sbAuth){ authErr('Auth-Dienst nicht geladen. Seite neu laden.'); return; }
+  authBusy(true,'loginBtn');
+  const { data, error } = await sbAuth.auth.signInWithPassword({ email, password:pw });
+  authBusy(false,'loginBtn');
+  if(error){
+    authErr(error.message.includes('Email not confirmed')?'Bitte bestätige zuerst deine E-Mail (Link im Postfach).'
+      : error.message.includes('Invalid login')?'E-Mail oder Passwort falsch.' : error.message);
+    return;
+  }
+  await afterAuth(data.session);
+}
+
+// Passwort vergessen: echte Reset-Mail
+async function doReset(){
+  authErr('');
+  const email=(document.getElementById('resetEmail')||{}).value?.trim().toLowerCase();
+  if(!email){ authErr('Bitte E-Mail eingeben.'); return; }
+  if(!sbAuth){ authErr('Auth-Dienst nicht geladen.'); return; }
+  authBusy(true,'resetBtn');
+  const { error } = await sbAuth.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + window.location.pathname });
+  authBusy(false,'resetBtn');
+  if(error){ authErr(error.message); return; }
+  showAuth('sent');
+}
+
+async function gcLogout(){
+  if(sbAuth) await sbAuth.auth.signOut();
+  GC_USER=null; GC_PROFILE=null; _enteredApp=false;
+  location.reload();
+}
+
+// Nach erfolgreicher Authentifizierung: Profil laden, App betreten
+async function afterAuth(session){
+  if(!session||!session.user) return;
+  GC_USER = session.user;
+  // Profil (role + customer_id) laden; existiert via Trigger handle_new_user
+  try{
+    const { data:prof } = await sbAuth.from('profiles').select('*').eq('id',GC_USER.id).maybeSingle();
+    GC_PROFILE = prof||null;
+  }catch(e){ GC_PROFILE=null; }
+  // Firmenstammdaten aus Supabase ziehen, falls schon ein Betrieb verknüpft ist
+  if(GC_PROFILE && GC_PROFILE.customer_id){
+    try{
+      const { data:cust } = await sbAuth.from('customers').select('*').eq('id',GC_PROFILE.customer_id).maybeSingle();
+      if(cust){
+        settings.company = Object.assign({}, settings.company, { name:cust.name, ort:cust.ort||settings.company.ort, email:cust.email||GC_USER.email });
+        if(cust.branchen&&cust.branchen.length) settings.branchen = cust.branchen.slice();
+        if(cust.theme){ settings.theme = cust.theme; }
+        settings.onboarded = true; saveSettings();
+      }
+    }catch(e){}
+  }
+  enterApp();
+}
+
+// App betreten (UI freigeben) – ersetzt das alte Demo-„login"
+function enterApp(){
+  if(_enteredApp) return; _enteredApp=true;
   document.getElementById('auth').classList.add('hidden');
   document.getElementById('app').classList.remove('hidden');
   document.body.classList.add('authed');
@@ -3270,8 +3288,20 @@ function login(){
   applyBranding();
   initCalDrag();
   applyRole();
-  // Reihenfolge nach „Kauf erfolgreich": 1) AVV/DSGVO bestätigen  2) Einrichtung  3) Tour
-  openConsentGate(); // Testversion: Einwilligung bei jedem Login zeigen
+  loadWeather();
+  // Erstnutzung: 1) AVV/DSGVO  2) Einrichtung  3) Tour. Danach direkt ins Cockpit.
+  if(!settings.onboarded || !(GC_PROFILE&&GC_PROFILE.customer_id)) openConsentGate();
+}
+
+// Beim Laden: bestehende Session prüfen + auf Login/Logout/E-Mail-Bestätigung reagieren
+async function gcAuthBoot(){
+  if(!sbAuth){ return; }
+  sbAuth.auth.onAuthStateChange((event, session)=>{
+    if((event==='SIGNED_IN'||event==='INITIAL_SESSION') && session && !_enteredApp){ afterAuth(session); }
+    if(event==='PASSWORD_RECOVERY'){ /* optional: eigenes Passwort-neu-setzen-Formular */ }
+  });
+  const { data:{ session } } = await sbAuth.auth.getSession();
+  if(session && !_enteredApp){ afterAuth(session); }
 }
 // Welche Navigationspunkte sieht die aktuelle Rolle?
 function navForRole(){
@@ -3307,8 +3337,11 @@ function renderNav(){
 // Rolle anwenden: Sidebar-User, Rollen-Pill, Preview-Bar, Nav & Default-View
 function applyRole(){
   const r = ROLES[viewRole];
-  const person = viewRole === 'mitarbeiter' ? selfEmp() : (viewRole === 'buero' ? emp(11) : (viewRole === 'buchhaltung' ? {name:'Bianca Roth'} : {name:'Georg Müller'}));
-  const name = person ? person.name : 'Georg Müller';
+  const ownerName = (settings.company && settings.company.owner && settings.company.owner.trim())
+    || (typeof GC_USER!=='undefined' && GC_USER && GC_USER.user_metadata && GC_USER.user_metadata.name)
+    || 'Inhaber';
+  const person = viewRole === 'mitarbeiter' ? selfEmp() : (viewRole === 'buero' ? emp(11) : (viewRole === 'buchhaltung' ? {name:'Buchhaltung'} : {name:ownerName}));
+  const name = person ? person.name : ownerName;
   document.getElementById('sideUserName').textContent = name;
   document.getElementById('sideUserRole').textContent = r.label;
   document.getElementById('sideAvatar').textContent = initials(name);
@@ -3419,7 +3452,7 @@ function openSettings(){
       <div class="field"><label>Straße &amp; Nr.</label><input value="${escapeHtml(c.street)}" onchange="settings.company.street=this.value;saveSettings()"></div>
       <div class="fieldrow">
         <div class="field" style="max-width:120px"><label>PLZ</label><input value="${escapeHtml(c.zip)}" onchange="settings.company.zip=this.value;saveSettings()"></div>
-        <div class="field"><label>Ort</label><input value="${escapeHtml(c.city)}" onchange="settings.company.city=this.value;saveSettings()"></div>
+        <div class="field"><label>Ort</label><input value="${escapeHtml(c.city)}" onchange="settings.company.city=this.value;saveSettings();loadWeather(true)"></div>
       </div>
 
       <div class="setsec">Steuer</div>
@@ -3513,6 +3546,10 @@ function openSettings(){
       </div>
 
       <button class="btn ghost btn--block" style="margin-top:16px" onclick="closeSheet();startOnboarding()"><i data-lucide="wand-2"></i> Einrichtungs-Assistent erneut starten</button>
+
+      <div class="setsec">Konto</div>
+      ${GC_USER ? `<p class="sheet-note"><i data-lucide="user-check"></i> Angemeldet als <strong>${escapeHtml(GC_USER.email)}</strong>.</p>` : ''}
+      <button class="btn ghost btn--block danger" style="margin-top:8px" onclick="gcLogout()"><i data-lucide="log-out"></i> Abmelden</button>
     </div>`);
 }
 function toggleSetting(key){ settings[key] = !settings[key]; saveSettings(); refreshSettings(); rerenderCurrent(); }
@@ -3752,13 +3789,27 @@ function obNext(){
   // 'zeit' & 'rechte' werden live über obToggle/togglePerm gespeichert
   obStep++; renderOnboard();
 }
-function finishOnboarding(){
+async function finishOnboarding(){
   settings.company = Object.assign({}, settings.company, OB_DRAFT.company);
   settings.ruestzeit = OB_DRAFT.ruestzeit; settings.geo = OB_DRAFT.geo; settings.selfClockIn = OB_DRAFT.selfClockIn;
   settings.branchen = (OB_DRAFT.branchen||[]).slice();
   settings.theme = OB_DRAFT.theme || brancheTheme(settings.branchen[0]);
   applyTheme(settings.theme);
   settings.onboarded = true; saveSettings();
+  // Betrieb in Supabase anlegen + Profil verknüpfen (sichere RPC; nur wenn eingeloggt + noch kein Betrieb)
+  if(sbAuth && GC_USER && !(GC_PROFILE && GC_PROFILE.customer_id)){
+    try{
+      const { data, error } = await sbAuth.rpc('create_my_company', {
+        p_name: settings.company.name || 'Mein Betrieb',
+        p_branchen: settings.branchen || [],
+        p_theme: settings.theme || 'galabau',
+        p_ort: settings.company.ort || null,
+        p_telefon: settings.company.telefon || null
+      });
+      if(!error && data){ GC_PROFILE = GC_PROFILE||{}; GC_PROFILE.customer_id = data; }
+      else if(error){ console.warn('create_my_company:', error.message); /* Fallback: lokal gespeichert, Persistenz nach SQL-Migration */ }
+    }catch(e){ console.warn('create_my_company exception:', e); }
+  }
   // Stammdaten + White-Label-Branding in die App übernehmen
   applyBranding();
   closeSheet();
@@ -3883,10 +3934,19 @@ function startModuleTour(id){
   setTimeout(() => startTour(steps), 360);
 }
 
+function navBadgeCount(id){
+  try{
+    if(id==='recruiting') return (typeof applicants!=='undefined') ? applicants.filter(a=>a.stage==='neu').length : 0;
+    if(id==='kunden')     return (typeof inbox!=='undefined') ? inbox.length : 0;
+  }catch(e){}
+  return 0;
+}
 function navButton(item,mode){
   const active = item.id === currentView ? 'on' : '';
   const locked = isLocked(item.id);
-  const badge = locked ? `<i data-lucide="sparkles" class="navitem__soon"></i>` : (item.badge ? `<span class="navitem__badge">${item.badge}</span>` : '');
+  const cnt = navBadgeCount(item.id);
+  const badgeVal = item.badge || (cnt>0 ? String(cnt) : '');
+  const badge = locked ? `<i data-lucide="sparkles" class="navitem__soon"></i>` : (badgeVal ? `<span class="navitem__badge">${badgeVal}</span>` : '');
   const click = locked ? `openComingSoon('${item.id}')` : `navTo('${item.id}')`;
   if(mode === 'mobile'){
     return `<button class="${active} ${locked?'locked':''}" onclick="${click}"><i data-lucide="${item.icon}"></i><span>${item.label}</span>${badge}</button>`;
@@ -4093,22 +4153,13 @@ function openQuickSickPicker(){
 
 /* ===================== „Denk mit"-Feed (Vorlaufmeldungen) ===================== */
 // Fuhrpark-Dummy für TÜV/HU-Erinnerungen
-const VEHICLES = [
-  {name:'MAN TGE Pritsche',   plate:'HH-MG 1234', tuev:'2026-07-05'},
-  {name:'Multicar M27',       plate:'HH-MG 88',   tuev:'2026-09-20'},
-  {name:'Anhänger Humbaur',   plate:'HH-MG 412',  tuev:'2026-06-30'},
-];
+const VEHICLES = [];
 // Frei definierbare eigene Erinnerungen (auch privat/wiederkehrend)
 let dwSeq = 3;
-let customReminders = [
-  {id:1, title:'Tochter Zahnarzt',               date:'2026-06-18', recur:'none',   lead:10, priv:true},
-  {id:2, title:'Gewerbeversicherung verlängern', date:'2026-07-02', recur:'yearly', lead:14, priv:false},
-];
+let customReminders = [];
 // Termine/Events (Bewerbungsgespräche etc.) – Google-artiges Event-System
 let tmSeq = 2;
-let termine = [
-  {id:1, title:'Bewerbungsgespräch · Murat Yıldız', date:dwTomorrowISO(), start:'10:00', end:'10:45', guests:'Murat Yıldız', meet:'meet.google.com/qab-rmxt-kdo', loc:'', candId:null},
-];
+let termine = [];
 // Konfiguration: welche Typen aktiv + Vorlaufzeit (Tage)
 const DW_TYPES = {
   termin:    {label:'Termine & Gespräche',    icon:'calendar-clock',color:'#2563EB'},
@@ -4350,59 +4401,120 @@ function saveEvent(editId){
 function deleteEvent(id){ termine = termine.filter(x=>x.id!==id); closeSheet(); if(currentView==='heute') setView('heute'); toast('Termin gelöscht'); }
 function planInterview(id){ const a=findCandidate(id); if(!a) return; closeSheet(); openEventForm({title:`Bewerbungsgespräch · ${a.name}`, guests:a.name, withMeet:true, candId:id}); }
 
-// ── Wetter (Demo-Daten im finalen UI) ──────────────────────────────────
-// HINWEIS für echte Daten: wetter.com / wetter.de bieten KEINE freie API.
-// Empfehlung: Open-Meteo (open-meteo.com) bzw. DWD – kostenlos, deutsche
-// Behördendaten, stundengenau inkl. Regenwahrscheinlichkeit & Niederschlag.
-// Anbindung = Backend (später). Hier realistische Dummy-Daten im finalen UI.
-const WEATHER_LOC = 'Hamburg';
+// ── Wetter (Live über Open-Meteo – kostenlose EU/DWD-Wetterdaten, kein API-Key) ──
+// Quelle: api.open-meteo.com (Geocoding + 16-Tage-Forecast), stündlich aktualisiert.
+// Standort = Firmen-Ort/PLZ aus den Einstellungen, Fallback Hamburg.
 const WX = {
   sun:    {icon:'sun',           label:'Sonnig'},
   psun:   {icon:'cloud-sun',     label:'Heiter'},
   cloud:  {icon:'cloud',         label:'Bewölkt'},
-  rain:   {icon:'cloud-rain',    label:'Regen'},
+  fog:    {icon:'cloud-fog',     label:'Nebel'},
   drizzle:{icon:'cloud-drizzle', label:'Nieselregen'},
+  rain:   {icon:'cloud-rain',    label:'Regen'},
+  snow:   {icon:'cloud-snow',    label:'Schnee'},
   storm:  {icon:'cloud-lightning',label:'Gewitter'},
 };
 const WX_DOW_S = ['So','Mo','Di','Mi','Do','Fr','Sa'];
 const WX_DOW_L = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 function wxDow(iso){ return WX_DOW_S[new Date(iso).getDay()]; }
 function wxDowLong(iso){ return WX_DOW_L[new Date(iso).getDay()]; }
-function wxIconColor(k){ return (k==='rain'||k==='storm')?'#2563EB':k==='drizzle'?'#3B82F6':k==='cloud'?'#64748B':'#B7791F'; }
+function wxIconColor(k){ return (k==='rain'||k==='storm')?'#2563EB':k==='drizzle'?'#3B82F6':k==='snow'?'#60A5FA':(k==='cloud'||k==='fog')?'#64748B':'#B7791F'; }
+// WMO-Wettercode → internes Icon-Kürzel
+function wxCode(c){
+  if(c===0) return 'sun';
+  if(c===1||c===2) return 'psun';
+  if(c===3) return 'cloud';
+  if(c===45||c===48) return 'fog';
+  if(c>=51&&c<=57) return 'drizzle';
+  if((c>=61&&c<=67)||(c>=80&&c<=82)) return 'rain';
+  if((c>=71&&c<=77)||c===85||c===86) return 'snow';
+  if(c>=95) return 'storm';
+  return 'cloud';
+}
 function weatherWork(pop, wind, t){
   if(pop>=80 || wind>=35) return {st:'bad',  txt:'kritisch – Außenarbeit kaum möglich'};
   if(pop>=45 || wind>=25) return {st:'warn', txt:'wechselhaft – Regenpausen einplanen'};
   if(t<=3)                return {st:'warn', txt:'frostig – Pflanzarbeiten meiden'};
   return {st:'ok', txt:'guter Arbeitstag'};
 }
-function weatherDays(){
-  const seq  = ['psun','sun','cloud','rain','drizzle','psun','cloud','sun','rain','storm','cloud','psun','sun','drizzle','cloud','psun'];
-  const tmax = [21,24,19,16,17,20,18,23,15,17,19,22,25,18,20,21];
-  const pops = [10, 0,40,80,60,20,45, 5,75,90,35,15, 0,55,40,20];
-  const t0 = dwTodayMid(); const out = [];
-  for(let i=0;i<16;i++){
-    const d = new Date(t0); d.setDate(t0.getDate()+i);
-    const k = seq[i], w = WX[k]; const hi = tmax[i], lo = hi-7-(i%3); const pop = pops[i];
-    const mm = pop>=90?6.5:pop>=80?3.2:pop>=40?0.8:0;
-    const wind = 8+((i*7)%18); const uv = hi>=23?'hoch':hi>=18?'mittel':'niedrig';
-    out.push({iso:dwISO(d), idx:i, k, icon:w.icon, label:w.label, tmax:hi, tmin:lo, pop, mm, wind, uv, work:weatherWork(pop,wind,hi)});
+// Live-Wetter-State
+let WX_STATE = { loc:'Hamburg', days:[], hourly:{}, status:'idle', ts:0 }; // status: idle|loading|ok|error
+function weatherLoc(){ return WX_STATE.loc || ((settings.company&&settings.company.city)||'Hamburg'); }
+function weatherDays(){ return WX_STATE.days; }
+function weatherHourly(iso){ return WX_STATE.hourly[iso] || []; }
+async function loadWeather(force){
+  if(WX_STATE.status==='loading') return;
+  if(WX_STATE.status==='ok' && !force && (Date.now()-WX_STATE.ts)<30*60*1000) return; // 30 Min Cache
+  WX_STATE.status='loading';
+  try{
+    const c = (typeof settings!=='undefined' && settings.company) ? settings.company : {};
+    const q = ((c.city||'').trim()) || ((c.zip||'').trim()) || 'Hamburg';
+    let lat=53.5511, lon=9.9937, locName='Hamburg';
+    try{
+      const geo = await fetch('https://geocoding-api.open-meteo.com/v1/search?count=1&language=de&country=DE&name='+encodeURIComponent(q)).then(r=>r.json());
+      const g = geo && geo.results && geo.results[0];
+      if(g){ lat=g.latitude; lon=g.longitude; locName=g.name; }
+      else { locName = c.city || 'Hamburg'; }
+    }catch(_){ locName = c.city || 'Hamburg'; }
+    WX_STATE.loc = locName;
+    const url='https://api.open-meteo.com/v1/forecast?latitude='+lat+'&longitude='+lon
+      +'&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,wind_speed_10m_max,uv_index_max'
+      +'&hourly=weather_code,temperature_2m,precipitation_probability,precipitation'
+      +'&timezone=Europe%2FBerlin&forecast_days=16';
+    const d = await fetch(url).then(r=>r.json());
+    const D = d.daily, days=[];
+    for(let i=0;i<D.time.length;i++){
+      const k=wxCode(D.weather_code[i]); const w=WX[k];
+      const hi=Math.round(D.temperature_2m_max[i]), lo=Math.round(D.temperature_2m_min[i]);
+      const pop=Math.round(D.precipitation_probability_max[i]||0);
+      const mm=+(D.precipitation_sum[i]||0).toFixed(1);
+      const wind=Math.round(D.wind_speed_10m_max[i]||0);
+      const uvv=D.uv_index_max[i]||0; const uv=uvv>=6?'hoch':uvv>=3?'mittel':'niedrig';
+      days.push({iso:D.time[i], idx:i, k, icon:w.icon, label:w.label, tmax:hi, tmin:lo, pop, mm, wind, uv, work:weatherWork(pop,wind,hi)});
+    }
+    WX_STATE.days = days;
+    const H=d.hourly, hourly={};
+    for(let i=0;i<H.time.length;i++){
+      const t=H.time[i], date=t.slice(0,10), h=+t.slice(11,13);
+      if(h<6||h>19) continue;
+      (hourly[date]=hourly[date]||[]).push({
+        h, pop:Math.round(H.precipitation_probability[i]||0),
+        mm:+(H.precipitation[i]||0).toFixed(1),
+        temp:Math.round(H.temperature_2m[i]),
+        icon:WX[wxCode(H.weather_code[i])].icon
+      });
+    }
+    WX_STATE.hourly = hourly;
+    WX_STATE.status='ok'; WX_STATE.ts=Date.now();
+  }catch(e){
+    console.warn('[weather] Laden fehlgeschlagen', e);
+    WX_STATE.status='error';
   }
-  return out;
+  refreshWeatherUi();
 }
-function weatherHourly(iso){
-  const day = weatherDays().find(d=>d.iso===iso) || weatherDays()[0]; const out = [];
-  for(let h=6; h<=19; h++){
-    const f = 0.55 + 0.45*Math.sin((h-6)/13*Math.PI);
-    const pop = Math.round(Math.min(99, day.pop*f));
-    const mm  = pop>=70 ? +(day.mm*f*0.4).toFixed(1) : pop>=40 ? +(day.mm*f*0.15).toFixed(1) : 0;
-    const temp = Math.round(day.tmin + (day.tmax-day.tmin)*Math.sin((h-5)/16*Math.PI));
-    const icon = pop>=70?'cloud-rain':pop>=40?'cloud-drizzle':day.icon;
-    out.push({h, pop, mm, temp, icon});
-  }
-  return out;
+function weatherMiniHtml(){
+  const d = WX_STATE.days[0];
+  if(!d) return `<span class="bubble"><i data-lucide="cloud-sun"></i></span><span><b>--°</b> · ${weatherLoc()}<br />${WX_STATE.status==='error'?'Wetter offline':'Wetter lädt …'}</span>`;
+  return `<span class="bubble"><i data-lucide="${d.icon}"></i></span><span><b>${d.tmax}°C</b> · ${weatherLoc()}<br />${d.work.txt}</span>`;
+}
+function refreshWeatherUi(){
+  const mini=document.getElementById('weatherMini');
+  if(mini) mini.innerHTML = weatherMiniHtml();
+  const card=document.querySelector('.weather-card');
+  if(card) card.outerHTML = weatherCardHtml();
+  if(typeof icons==='function') icons();
 }
 function weatherCardHtml(){
-  const days = weatherDays(); const t = days[0]; const w = t.work;
+  if(WX_STATE.status==='idle') loadWeather();
+  const days = weatherDays();
+  if(!days.length){
+    const msg = WX_STATE.status==='error' ? 'Wetter aktuell nicht verfügbar' : 'Wetter wird geladen …';
+    return `<div class="panel weather-card"><div class="weather-card__main">
+      <span class="weather-card__icon"><i data-lucide="${WX_STATE.status==='error'?'cloud-off':'loader'}"></i></span>
+      <div><div class="weather-card__temp">--°</div><div class="weather-card__meta">${weatherLoc()} · ${msg}</div></div>
+    </div></div>`;
+  }
+  const t = days[0]; const w = t.work;
   const strip = days.slice(0,7).map((d,i)=>`
     <button class="wx-day${i===0?' on':''}" onclick="openWeatherDay('${d.iso}')">
       <span class="wx-day__dow">${i===0?'Heute':wxDow(d.iso)}</span>
@@ -4413,7 +4525,7 @@ function weatherCardHtml(){
   return `<div class="panel weather-card">
     <div class="weather-card__main">
       <span class="weather-card__icon"><i data-lucide="${t.icon}"></i></span>
-      <div><div class="weather-card__temp">${t.tmax}°C</div><div class="weather-card__meta">${WEATHER_LOC} · ${t.label} · <span class="wx-work wx-work--${w.st}">${w.txt}</span></div></div>
+      <div><div class="weather-card__temp">${t.tmax}°C</div><div class="weather-card__meta">${weatherLoc()} · ${t.label} · <span class="wx-work wx-work--${w.st}">${w.txt}</span></div></div>
     </div>
     <div class="weather-bar">
       <div><b>Wind</b>${t.wind} km/h</div>
@@ -4425,7 +4537,9 @@ function weatherCardHtml(){
   </div>`;
 }
 function openWeatherDay(iso){
-  const days = weatherDays(); const d = days.find(x=>x.iso===iso) || days[0];
+  const days = weatherDays();
+  if(!days.length){ loadWeather(); toast('Wetter wird geladen …'); return; }
+  const d = days.find(x=>x.iso===iso) || days[0];
   const hrs = weatherHourly(iso); const isToday = iso===days[0].iso;
   const bars = hrs.map(h=>`
     <div class="wxh">
@@ -4438,7 +4552,7 @@ function openWeatherDay(iso){
   openSheet(`
     <div class="sheet__head">
       <span class="avatar" style="width:46px;height:46px;background:linear-gradient(135deg,#3B82F6,#2563EB)"><i data-lucide="${d.icon}" style="width:22px;height:22px"></i></span>
-      <div><div class="sheet__title">${isToday?'Heute':wxDowLong(iso)} · ${deDate(iso)}</div><div class="sheet__sub">${WEATHER_LOC} · ${d.label}</div></div>
+      <div><div class="sheet__title">${isToday?'Heute':wxDowLong(iso)} · ${deDate(iso)}</div><div class="sheet__sub">${weatherLoc()} · ${d.label}</div></div>
       <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body">
@@ -4452,11 +4566,12 @@ function openWeatherDay(iso){
       <div class="wx-work-banner wx-work-banner--${d.work.st}"><i data-lucide="hard-hat"></i> ${d.work.txt}</div>
       <div class="setsec">Regen &amp; Temperatur stündlich <span class="setsec__hint">Arbeitszeit 6–19 Uhr · Balken = Regenwahrscheinlichkeit, mm = Menge</span></div>
       <div class="wxh-grid">${bars}</div>
-      <p class="wx-src">Demo-Daten im finalen Layout. Für Live-Wetter empfiehlt sich <b>Open-Meteo / DWD</b> – kostenlos, stundengenau, deutsche Behördendaten (Anbindung später).</p>
+      <p class="wx-src">Live-Daten via <b>Open-Meteo</b> (EU-/DWD-Modelle) · ${weatherLoc()} · stündlich aktualisiert.</p>
     </div>`);
 }
 function openWeatherForecast(){
   const days = weatherDays();
+  if(!days.length){ loadWeather(); toast('Wetter wird geladen …'); return; }
   const rows = days.map((d,i)=>{
     const lbl = i===0?'Heute':i===1?'Morgen':wxDowLong(d.iso);
     const dt  = deDate(d.iso).replace(/\.\d{4}$/,'.');
@@ -4471,43 +4586,58 @@ function openWeatherForecast(){
   openSheet(`
     <div class="sheet__head">
       <span class="avatar" style="width:46px;height:46px;background:linear-gradient(135deg,#3B82F6,#2563EB)"><i data-lucide="calendar-days" style="width:22px;height:22px"></i></span>
-      <div><div class="sheet__title">16-Tage-Wetter</div><div class="sheet__sub">${WEATHER_LOC} · Tag antippen für Stunden-Details</div></div>
+      <div><div class="sheet__title">16-Tage-Wetter</div><div class="sheet__sub">${weatherLoc()} · Tag antippen für Stunden-Details</div></div>
       <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body">
       <div class="wx-list">${rows}</div>
-      <p class="wx-src">Demo-Daten im finalen Layout. Für Live-Wetter empfiehlt sich <b>Open-Meteo / DWD</b> – kostenlos, stundengenau, deutsche Behördendaten (Anbindung später).</p>
+      <p class="wx-src">Live-Daten via <b>Open-Meteo</b> (EU-/DWD-Modelle) · ${weatherLoc()} · stündlich aktualisiert.</p>
     </div>`);
 }
 
 function staticModuleHtml(key){
   switch(key){
     case 'denkmit': return denkMitHtml();
-    case 'kpi': return `<div class="kpi-grid">
-          ${kpi('phone-call','2','Bewerber anrufen','vom BewerberBot qualifiziert',true,"setView('recruiting')")}
-          ${kpi('inbox','5','Neue Anfragen','WhatsApp · Mail · Tel.',false,"goModule('kunden')")}
+    case 'kpi': {
+      const neuB = applicants.filter(a=>a.stage==='neu').length;
+      const anfr = inbox.length;
+      return `<div class="kpi-grid">
+          ${kpi('phone-call',String(neuB),neuB===1?'Bewerber ansehen':'Bewerber ansehen','neu im Board',neuB>0,"setView('recruiting')")}
+          ${kpi('inbox',String(anfr),'Neue Anfragen','WhatsApp · Mail · Tel.',false,"goModule('kunden')")}
         </div>`;
-    case 'wichtig': return `<div class="panel">
-          ${panelHead('list-checks','Das ist heute wichtig',{label:'Alle ansehen',action:"toast('Alle Aufgaben geöffnet')"})}
-          <div class="tasklist">
-            <div class="task hot" onclick="setView('recruiting')"><span class="task__icon"><i data-lucide="phone"></i></span><span class="task__copy"><span class="task__title">2 qualifizierte Bewerber anrufen</span><span class="task__meta">Thomas K. (Vorarbeiter) · Murat Y. (Pflasterer)</span></span><button class="mini-btn primary">Öffnen</button></div>
-            <div class="task" onclick="goModule('kunden')"><span class="task__icon"><i data-lucide="message-circle"></i></span><span class="task__copy"><span class="task__title">Anfrage Familie Brandt beantworten</span><span class="task__meta">Gartenneuanlage · WhatsApp · vor 20 Min.</span></span><button class="mini-btn">Öffnen</button></div>
-            <div class="task" onclick="teamTab('urlaub');urlaubTab('antraege')"><span class="task__icon"><i data-lucide="calendar-clock"></i></span><span class="task__copy"><span class="task__title">3 Urlaubsanträge prüfen</span><span class="task__meta">u. a. Tim &amp; Stefan · Überschneidung in Kolonne 3</span></span><button class="mini-btn">Prüfen</button></div>
-          </div>
-        </div>`;
-    case 'baustellen': return `<div class="panel">
-          ${panelHead('route','Baustellenlage heute')}
-          <div class="daymap">
-            ${[['Garten Schmidt · Neuanlage läuft nach Plan'],['Pflaster Brandt · Material 14:00 Uhr prüfen'],['Hecke Petersen · Abschlussfotos fehlen']].map((d,i) => crews[i] ? `<div class="daymap__item"><span class="crewtag__dot" style="background:${crews[i].color}"></span><b>${crews[i].label}</b><span>${d[0]}</span></div>` : '').join('')}
-          </div>
-        </div>`;
+    }
+    case 'wichtig': {
+      const tasks=[];
+      const neuB = applicants.filter(a=>a.stage==='neu');
+      if(neuB.length) tasks.push({icon:'phone',hot:true,title:`${neuB.length} ${neuB.length===1?'neuer Bewerber':'neue Bewerber'} ansehen`,meta:neuB.slice(0,2).map(a=>a.name).join(' · '),btn:'Öffnen',action:"setView('recruiting')"});
+      const unread = inbox.filter(m=>m.unread);
+      if(unread.length) tasks.push({icon:'message-circle',title:`${unread.length} ${unread.length===1?'Anfrage':'Anfragen'} beantworten`,meta:unread.slice(0,2).map(m=>m.from).join(' · '),btn:'Öffnen',action:"goModule('kunden')"});
+      const pend = absences.filter(a=>a.status==='offen');
+      if(pend.length) tasks.push({icon:'calendar-clock',title:`${pend.length} ${pend.length===1?'Antrag':'Anträge'} prüfen`,meta:'Urlaub & Abwesenheit',btn:'Prüfen',action:"teamTab('urlaub');urlaubTab('antraege')"});
+      const body = tasks.length
+        ? `<div class="tasklist">${tasks.map(t=>`<div class="task${t.hot?' hot':''}" onclick="${t.action}"><span class="task__icon"><i data-lucide="${t.icon}"></i></span><span class="task__copy"><span class="task__title">${t.title}</span><span class="task__meta">${t.meta}</span></span><button class="mini-btn${t.hot?' primary':''}">${t.btn}</button></div>`).join('')}</div>`
+        : `<div class="empty sm"><i data-lucide="check-circle-2"></i><div>Alles erledigt – aktuell nichts Dringendes.</div></div>`;
+      return `<div class="panel">${panelHead('list-checks','Das ist heute wichtig')}${body}</div>`;
+    }
+    case 'baustellen': {
+      const aktiv = sites.filter(s=>s.id!=='s0');
+      const body = aktiv.length
+        ? `<div class="daymap">${aktiv.slice(0,4).map(s=>`<div class="daymap__item" onclick="setView('planung')"><span class="crewtag__dot" style="background:var(--green)"></span><b>${s.label}</b><span>${s.customer||s.addr||''}</span></div>`).join('')}</div>`
+        : `<div class="empty sm"><i data-lucide="route"></i><div>Noch keine Baustellen geplant. Lege deinen ersten Auftrag in der Planung an.</div></div>`;
+      return `<div class="panel">${panelHead('route','Baustellenlage heute')}${body}</div>`;
+    }
     case 'wetter': return weatherCardHtml();
-    case 'recruiting': return `<div class="panel recruiting-panel">
+    case 'recruiting': {
+      const monat = applicants.length;
+      const qual = applicants.filter(a=>a.stage!=='neu'&&a.stage!=='abgelehnt').length;
+      const role = (typeof jobs!=='undefined' && jobs[0]) ? jobs[0].title : 'Offene Stelle';
+      return `<div class="panel recruiting-panel">
           <div class="recruiting-panel__label"><i data-lucide="sparkles"></i> Bewerber-Suche</div>
-          <div class="recruiting-panel__role">Landschaftsgärtner (m/w/d)</div>
-          <div class="recruiting-panel__grid"><div class="recruiting-panel__metric"><b>7</b><span>Bewerber / Monat</span></div><div class="recruiting-panel__metric"><b>2</b><span>qualifiziert</span></div></div>
+          <div class="recruiting-panel__role">${role}</div>
+          <div class="recruiting-panel__grid"><div class="recruiting-panel__metric"><b>${monat}</b><span>Bewerber im Board</span></div><div class="recruiting-panel__metric"><b>${qual}</b><span>in Bearbeitung</span></div></div>
           <button class="btn full" style="margin-top:13px;box-shadow:none" onclick="setView('recruiting')">Bewerber ansehen</button>
         </div>`;
+    }
     case 'quick': return quickGridHtml();
     default: return null;
   }
@@ -4523,7 +4653,7 @@ function persistLayout(){
 const VIEWS = {
   heute: () => `
     <div class="hello">
-      <div><h2>${greetWord()}, <em>Georg</em></h2><p>${cockpitDateLine()}</p></div>
+      <div><h2>${greetWord()}, <em>${greetName()}</em></h2><p>${cockpitDateLine()}</p></div>
       <div class="statusline"><i data-lucide="move"></i> Module per Drag &amp; Drop anordnen</div>
     </div>
     <div class="dashboard">
@@ -4956,33 +5086,13 @@ function viewDoc(doc){
 
 /* ===================== FINANZEN (Angebote + Rechnungen) ===================== */
 let invSeq = 94;
+// Rechnungen & Angebote – genau EINE Beispielrechnung (Max Mustermann) als Vorlage.
+// Im Echtbetrieb schreibt der Betrieb seine Angebote & Rechnungen selbst.
 const invoices = [
-  {id:'r1', kind:'rechnung', no:'RE-2026-0091', customerId:'c2', title:'Gartenneuanlage – 1. Teilrechnung',
-   date:'2026-05-15', due:'2026-05-29', vat:19, status:'bezahlt',
-   items:[ {name:'Erdarbeiten & Modellierung', qty:1, unit:'pausch.', price:3200},
-           {name:'Pflanzarbeiten inkl. Material', qty:1, unit:'pausch.', price:4850},
-           {name:'Rollrasen verlegen', qty:180, unit:'m²', price:9.5} ]},
-  {id:'r2', kind:'rechnung', no:'RE-2026-0092', customerId:'c1', title:'Pflasterarbeiten Einfahrt',
-   date:'2026-05-28', due:'2026-06-11', vat:19, status:'offen',
-   items:[ {name:'Pflasterfläche herstellen', qty:64, unit:'m²', price:89},
-           {name:'Randsteine setzen', qty:38, unit:'lfm', price:24},
-           {name:'Anfahrt & Geräteeinsatz', qty:1, unit:'pausch.', price:420} ]},
-  {id:'r3', kind:'rechnung', no:'RE-2026-0090', customerId:'c3', title:'Heckenschnitt & Pflege Mai',
-   date:'2026-05-06', due:'2026-05-20', vat:19, status:'ueberfaellig',
-   items:[ {name:'Heckenschnitt (3 Einsätze)', qty:3, unit:'Einsatz', price:180},
-           {name:'Grünschnitt-Entsorgung', qty:1, unit:'pausch.', price:140} ]},
-  {id:'a1', kind:'angebot', no:'AN-2026-0042', customerId:'c4', title:'Grünpflege Rahmenvertrag 2026/27',
-   date:'2026-06-04', due:'2026-06-30', vat:19, status:'versendet',
-   items:[ {name:'Grünpflege Außenanlagen (mtl.)', qty:12, unit:'Monat', price:2850},
-           {name:'Baumkontrolle & -pflege', qty:1, unit:'Jahr', price:3400} ]},
-  {id:'a2', kind:'angebot', no:'AN-2026-0043', customerId:'c5', title:'Terrasse & Sichtschutz',
-   date:'2026-06-02', due:'2026-06-20', vat:19, status:'entwurf',
-   items:[ {name:'Terrassendielen WPC verlegen', qty:32, unit:'m²', price:115},
-           {name:'Sichtschutz-Elemente montieren', qty:8, unit:'Stk', price:240} ]},
-  {id:'a3', kind:'angebot', no:'AN-2026-0041', customerId:'c1', title:'Gartenneuanlage Hinterhof',
-   date:'2026-05-30', due:'2026-06-15', vat:19, status:'angenommen',
-   items:[ {name:'Planung & Aufmaß', qty:1, unit:'pausch.', price:480},
-           {name:'Erd- & Pflanzarbeiten', qty:1, unit:'pausch.', price:8900} ]},
+  {id:'r1', kind:'rechnung', no:'RE-2026-0001', customerId:'c1', title:'Beispielrechnung – Gartenpflege',
+   date:'2026-06-01', due:'2026-06-15', vat:19, status:'offen',
+   items:[ {name:'Rasen mähen & Pflege', qty:4, unit:'Std', price:65},
+           {name:'Grünschnitt-Entsorgung', qty:1, unit:'pausch.', price:90} ]},
 ];
 function invNet(inv){ return inv.items.reduce((s,i)=> s + i.qty*i.price, 0); }
 function invVatAmt(inv){ return invNet(inv) * inv.vat/100; }
@@ -5000,26 +5110,15 @@ function invStatusPill(s){ const m = INV_STATUS[s] || INV_STATUS.entwurf; return
 
 /* ===== Ausgaben / Belege (eingehende Rechnungen) ===== */
 const EXP_CATS = ['Material','Fahrzeuge','Maschinen','Personal','Büro','Versicherung','Steuer','Sonstiges'];
-let expenses = [
-  {id:'b1', vendor:'Hornbach Baustoffe AG', cat:'Material',      date:'2026-06-08', amount:-1284.50, status:'zu_pruefen', file:'RE_hornbach_4471.pdf', matched:'t2'},
-  {id:'b2', vendor:'Aral Tankstelle 1452',  cat:'Fahrzeuge',     date:'2026-06-07', amount:-43.12,   status:'geprueft',   file:'tankbeleg.jpg',       matched:'t3'},
-  {id:'b3', vendor:'Kubota Ersatzteile',    cat:'Maschinen',     date:'2026-06-05', amount:-389.00,  status:'zu_pruefen', file:'kubota_re_8830.pdf',  matched:null},
-  {id:'b4', vendor:'Allianz Versicherung',  cat:'Versicherung',  date:'2026-06-03', amount:-218.40,  status:'geprueft',   file:'allianz_betrieb.pdf', matched:null},
-  {id:'b5', vendor:'OpenAI ChatGPT',        cat:'Büro',          date:'2026-06-07', amount:-108.40,  status:'zu_pruefen', file:'openai_invoice.pdf',  matched:null},
-];
+// Ausgaben / Belege – im Echtbetrieb per Gmail/Upload/DATEV eingelesen (leerer Start).
+let expenses = [];
 const EXP_STATUS = { zu_pruefen:{label:'Zu prüfen', cls:'a'}, geprueft:{label:'Geprüft', cls:'g'}, abgelehnt:{label:'Abgelehnt', cls:'n'} };
 function expPill(s){ const m = EXP_STATUS[s] || EXP_STATUS.zu_pruefen; return `<span class="pill ${m.cls}">${m.label}</span>`; }
 
 /* ===== Bank-Umsätze (synchronisiertes Konto, Demo) ===== */
-let bankTxns = [
-  {id:'t1', desc:'Familie Brandt',        purpose:'RE-2026-0091 Gartenneuanlage 1. Teilrechnung', date:'2026-06-09', amount:11840.50, matched:'r1'},
-  {id:'t2', desc:'Hornbach Baustoffe',    purpose:'Lastschrift Material Kto. 10232',              date:'2026-06-08', amount:-1284.50, matched:'b1'},
-  {id:'t3', desc:'Aral',                  purpose:'Kartenzahlung Diesel SB-Tank 1452',            date:'2026-06-07', amount:-43.12,   matched:'b2'},
-  {id:'t4', desc:'STEUERVERWALTUNG NRW',  purpose:'Stnr 215/5911/1999 Umsatzsteuer Mai 26',        date:'2026-06-10', amount:-4380.00, matched:null},
-  {id:'t5', desc:'Familie Brandt',        purpose:'RE-2026-0092 Pflasterarbeiten, abzgl. 2% Skonto', date:'2026-06-06', amount:8195.85,  matched:null},
-  {id:'t6', desc:'Kubota Deutschland',    purpose:'Ersatzteile Rechnung 8830',                     date:'2026-06-05', amount:-389.00,  matched:null},
-];
-let bankConnected = true;  // Demo-Konto standardmäßig verbunden (siehe connectedInts.bank)
+// Bank-Umsätze – erscheinen erst nach echter Konto-Anbindung (PSD2/FinAPI/Tink). Leerer Start.
+let bankTxns = [];
+let bankConnected = false;  // Bank erst nach echter Anbindung verbunden
 function txnById(id){ return bankTxns.find(t=>t.id===id) || null; }
 
 /* ===== Integrationen (Connect-Status, Demo) ===== */
@@ -5033,7 +5132,7 @@ const INTEGRATIONS = [
   {key:'zapier',    name:'Zapier',         ic:'zap',           desc:'5.000+ Apps ohne Code verknüpfen.',                      cat:'Automatisierung'},
   {key:'api',       name:'API & Webhooks', ic:'plug',          desc:'Eigene Tools per REST-API & Webhooks andocken.',          cat:'Automatisierung'},
 ];
-let connectedInts = { bank:true };  // Bank-Sync standardmäßig „verbunden" für die Demo
+let connectedInts = {};  // Integrationen erst nach echter Anbindung verbunden
 function intConnected(k){ return !!connectedInts[k]; }
 function toggleIntegration(k){
   connectedInts[k] = !connectedInts[k];
@@ -5175,14 +5274,9 @@ const POS_TEMPLATES = [
 ];
 function posById(id){ return POS_TEMPLATES.find(p=>p.id===id) || null; }
 // Aktuelle Kalkulation (Aufmaß-Zeilen): {tid, menge, schwierig}
-let kalkLines = [
-  {tid:'p2', menge:38, schwierig:false},
-  {tid:'p6', menge:64, schwierig:false},
-  {tid:'p7', menge:64, schwierig:true},
-  {tid:'p10', menge:32, schwierig:false},
-];
+let kalkLines = [];
 let kalkCustomerId = null;
-let kalkTitle = 'Gartenneuanlage';
+let kalkTitle = '';
 // Berechnung einer Zeile – Vorlage (Aufwand) ODER eigener Artikel (Festpreis)
 function kalkLineCalc(line){
   const menge = line.menge || 0;
@@ -7474,7 +7568,9 @@ function customerTab(tab){
   icons();
 }
 const CUSTOMERS = {
-  anfragen: () => `<div class="inbox">${inbox.map(messageCard).join('')}</div>`,
+  anfragen: () => inbox.length
+    ? `<div class="inbox">${inbox.map(messageCard).join('')}</div>`
+    : `<div class="empty"><i data-lucide="inbox"></i><div>Noch keine Anfragen. Anfragen aus WhatsApp, E-Mail, Telefon &amp; Website landen automatisch hier.</div></div>`,
   liste: () => `<div class="panel"><div class="panel__head"><h3>Kundenstamm</h3><button class="mini-btn primary" onclick="openCustomerForm()"><i data-lucide="user-round-plus"></i> Kunde anlegen</button></div><div class="table-wrap"><table><thead><tr><th>Kunde</th><th>Ort</th><th>Typ</th><th>Baustelle heute</th><th>Wert</th><th>Status</th></tr></thead><tbody>
     ${customers.map(c => {
       const sts = sitesForCustomer(c.id);
@@ -10005,6 +10101,7 @@ function icons(){
 applyTheme(settings.theme);
 applyBranding();
 icons();
+gcAuthBoot();   // bestehende Session prüfen / auf E-Mail-Bestätigung reagieren
 </script>
 </body>
 </html>
