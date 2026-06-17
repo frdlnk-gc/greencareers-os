@@ -460,7 +460,32 @@
     white-space:nowrap;
   }
   .mini-btn.primary{ color:#fff; background:var(--green); border-color:var(--green); }
+  .mini-btn.go{ color:#fff; background:var(--green-2); border-color:var(--green-2); }
   .mini-btn .lucide{ width:14px; height:14px; }
+  a.mini-btn{ text-decoration:none; }
+  /* ---- Stellen-Verwaltung ---- */
+  .stellen-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:14px; }
+  .stelle-card{ background:#fff; border:1px solid var(--line); border-radius:12px; padding:16px 16px 14px; display:flex; flex-direction:column; gap:12px; box-shadow:0 1px 2px rgba(20,25,29,.04); }
+  .stelle-card__hd{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+  .stelle-card__t h3{ font-size:15.5px; font-weight:750; color:var(--ink); line-height:1.25; letter-spacing:-.01em; }
+  .stelle-card__meta{ display:flex; flex-wrap:wrap; gap:10px; margin-top:6px; }
+  .stelle-card__meta span{ display:inline-flex; align-items:center; gap:4px; font-size:12px; color:var(--muted); }
+  .stelle-card__meta .lucide{ width:13px; height:13px; }
+  .stelle-status{ display:inline-flex; align-items:center; gap:6px; flex-shrink:0; font-size:11.5px; font-weight:700; padding:4px 9px; border-radius:100px; border:1px solid var(--line); white-space:nowrap; }
+  .stelle-status .dot{ width:7px; height:7px; border-radius:50%; }
+  .stelle-status.st-live{ background:#EAF7EF; border-color:#BFE6CD; color:#0E7A43; }
+  .stelle-status.st-draft{ background:#FBF3E4; border-color:#EBD6AE; color:#9A6B12; }
+  .stelle-status.st-closed{ background:#F2F3F2; border-color:var(--line); color:var(--muted); }
+  .stelle-card__bew{ display:flex; align-items:center; gap:7px; font-size:13px; color:var(--ink); padding:9px 11px; background:#FBFDFB; border:1px solid var(--line); border-radius:9px; }
+  .stelle-card__bew .lucide{ width:15px; height:15px; color:var(--green-2); }
+  .stelle-card__bew b{ font-weight:750; }
+  .bew-neu{ margin-left:auto; font-size:11px; font-weight:700; color:#fff; background:var(--green); padding:2px 8px; border-radius:100px; }
+  .stelle-card__actions{ display:flex; flex-wrap:wrap; gap:7px; align-items:center; }
+  .icon-btn{ display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px; border:1px solid var(--line); border-radius:8px; background:#fff; color:var(--muted); cursor:pointer; }
+  .icon-btn:hover{ color:var(--ink); border-color:var(--green); }
+  .icon-btn .lucide{ width:15px; height:15px; }
+  .icon-btn.danger:hover{ color:var(--red); border-color:#E6CFCF; background:var(--red-soft); }
+  .btn.go{ color:#fff; background:var(--green-2); border-color:var(--green-2); }
   .daymap{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; padding:14px; }
   .daymap__item{
     border:1px solid var(--line);
@@ -2671,6 +2696,7 @@
 <script>
 const NAV = [
   {id:'heute', label:'Heute', icon:'layout-dashboard', badge:''},
+  {id:'stellen', label:'Stellen', icon:'briefcase', badge:''},
   {id:'recruiting', label:'Bewerber', icon:'user-search', badge:''},
   {id:'team', label:'Team', icon:'users', badge:''},
   {id:'planung', label:'Planung', icon:'calendar-range', badge:''},
@@ -2922,7 +2948,7 @@ function can(cap){
   return !!(p && p[cap]);
 }
 // Personal-Startmodul: solange aktiv, sind alle Bereiche außer „Heute" und „Team" gesperrt.
-const STARTMODUL_FREI = ['heute', 'recruiting', 'team'];
+const STARTMODUL_FREI = ['heute', 'stellen', 'recruiting', 'team'];
 function isLocked(id){
   if(STARTMODUL_FREI.includes(id)) return false;   // Heute/Bewerber/Team immer frei
   if(!settings.startModul) return false;            // „voller Funktionsumfang"-Schalter aus → alles frei
@@ -3276,6 +3302,7 @@ async function afterAuth(session){
     }catch(e){}
   }
   enterApp();
+  loadPortalData();   // echte Stellen + Bewerber des Betriebs aus Supabase ziehen
 }
 
 // App betreten (UI freigeben) – ersetzt das alte Demo-„login"
@@ -4690,6 +4717,8 @@ const VIEWS = {
       </div>
     </div>
     <div id="kanbanWrap">${bewerberKanbanHtml()}</div>`,
+
+  stellen: () => stellenViewHtml(),
 
   team: () => `
     <div class="pagehead"><div><h2>${viewRole==='mitarbeiter'?'Mein Bereich':'Team'}</h2><p>${viewRole==='mitarbeiter'?'Deine Zeiten und Abwesenheiten – immer dabei.':'Mitarbeiter, Kolonnen, Urlaub &amp; Zeiten an einem Ort.'}</p></div></div>
@@ -7507,6 +7536,237 @@ function candidateRow(a){
   </div>`;
 }
 
+/* ===================== STELLEN-VERWALTUNG (echt, Supabase) + Portal-Verknüpfung =====================
+   Eine einzige Anmeldung: Der Betrieb loggt sich hier ins GreenCareers OS ein und verwaltet
+   alle Stellen. Veröffentlichen = status 'aktiv' -> erscheint automatisch über die public_jobs-View
+   auf dem öffentlichen Portal (strassen-tiefbau.green-careers.de). Bewerbungen kommen per
+   apply_to_job-RPC zurück in dieselbe Supabase und tauchen direkt im Bewerber-Kanban auf.
+   Das Portal hat KEINEN eigenen Login – es ist reines Frontend. */
+const PORTAL_BASE = 'https://strassen-tiefbau.green-careers.de';
+const STATUS_META = {
+  aktiv:       {label:'Live',        cls:'st-live',   dot:'#16A34A'},
+  pausiert:    {label:'Entwurf',     cls:'st-draft',  dot:'#B7791F'},
+  geschlossen: {label:'Geschlossen', cls:'st-closed', dot:'#9AA59B'},
+};
+let OS_DATA_LOADED = false;
+function portalJobUrl(slug){ return PORTAL_BASE + '/?job=' + encodeURIComponent(slug||''); }
+function osSlugify(s){
+  return (s||'stelle').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/ß/g,'ss').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,60) || 'stelle';
+}
+function genSlug(titel){ return osSlugify(titel) + '-' + Math.random().toString(36).slice(2,8); }
+function quelleToSource(q){ return ({indeed:'Indeed',meta:'Meta',website:'Web',csv:'manuell',manuell:'manuell'})[q] || 'manuell'; }
+
+function mapStelleRow(r){
+  return {id:r.id, title:r.titel||'Stelle', slug:r.slug||'', branche:r.branche||'', ort:r.ort||'',
+          status:r.status||'pausiert', beschreibung:r.beschreibung||'',
+          beschaeftigungsart:r.beschaeftigungsart||'', gehalt:r.gehalt||'', expMin:0, _raw:r};
+}
+function mapBewerberRow(r){
+  const ex = r.extra || {};
+  return {id: appSeq++, _uuid:r.id, name:r.name||'—', phone:r.telefon||'', email:r.email||'',
+    jobId: r.stellenanzeige_id || null, source: quelleToSource(r.quelle),
+    date: r.created_at ? dDE(dISO(new Date(r.created_at))) : 'neu',
+    stage: r.status || 'neu', letter: ex.nachricht || '', comments: [],
+    pq: ex.pq || {branche:'',beruf:'',erfahrung:'',gehalt:'',verfuegbar:'',ort:''},
+    pqStatus:'offen', botScore:null, role: ex.beruf || '', tags:[], available:'', hot:false};
+}
+// Echte Stellen + Bewerber des eingeloggten Betriebs laden (RLS scoped automatisch auf die Firma).
+// Nur für verbundene Betriebe – sonst bleiben die Demo-Daten des Prototyps stehen.
+async function loadPortalData(){
+  if(!sbAuth || !(GC_PROFILE && GC_PROFILE.customer_id)) return;
+  try{
+    const [st, bw] = await Promise.all([
+      sbAuth.from('stellenanzeigen').select('*').order('created_at',{ascending:false}),
+      sbAuth.from('bewerber').select('*').order('created_at',{ascending:false})
+    ]);
+    if(st && !st.error){ jobs.length = 0; (st.data||[]).forEach(r => jobs.push(mapStelleRow(r))); }
+    if(bw && !bw.error){ applicants.length = 0; (bw.data||[]).forEach(r => applicants.push(mapBewerberRow(r))); }
+    OS_DATA_LOADED = true;
+    if(_enteredApp && ['stellen','recruiting','heute'].includes(currentView)) setView(currentView);
+    refreshBell();
+  }catch(e){ console.warn('Portal-Daten konnten nicht geladen werden', e); }
+}
+function bewCountForJob(jobId){ return applicants.filter(a => a.jobId === jobId).length; }
+function bewNeuForJob(jobId){ return applicants.filter(a => a.jobId === jobId && a.stage === 'neu').length; }
+
+// ---- Stellen-Ansicht (Liste + Status + „X Bewerbungen eingegangen" + Portal-/Kanban-Buttons) ----
+function stellenViewHtml(){
+  if(!(GC_PROFILE && GC_PROFILE.customer_id)){
+    return `<div class="pagehead"><div><h2>Stellen</h2><p>Lege Stellen an und veröffentliche sie mit einem Klick aufs GreyCareers-Portal.</p></div></div>
+      <div class="panel" style="padding:36px;text-align:center;color:var(--muted)">
+        <i data-lucide="briefcase" style="width:32px;height:32px;opacity:.5"></i>
+        <h3 style="margin:12px 0 4px;color:var(--ink)">Betrieb noch nicht verbunden</h3>
+        <p>Schließe zuerst die Einrichtung deines Betriebs ab – danach kannst du hier Stellen anlegen und veröffentlichen.</p>
+      </div>`;
+  }
+  const list = jobs.slice();
+  return `<div class="pagehead">
+      <div><h2>Stellen</h2><p>Anlegen, veröffentlichen und Bewerber verwalten – alles an einem Ort. Veröffentlichte Stellen erscheinen automatisch auf dem GreyCareers-Portal.</p></div>
+      <button class="mini-btn primary" onclick="openStelleForm()"><i data-lucide="plus"></i> Stelle anlegen</button>
+    </div>
+    ${list.length
+      ? `<div class="stellen-grid">${list.map(stelleCard).join('')}</div>`
+      : `<div class="panel" style="padding:44px;text-align:center;color:var(--muted)">
+           <i data-lucide="briefcase" style="width:34px;height:34px;opacity:.5"></i>
+           <h3 style="margin:12px 0 4px;color:var(--ink)">Noch keine Stelle angelegt</h3>
+           <p>Leg deine erste Stelle an – sobald du sie veröffentlichst, erscheint sie automatisch auf dem GreyCareers-Portal und Bewerbungen landen direkt hier im Kanban.</p>
+           <button class="mini-btn primary" style="margin-top:14px" onclick="openStelleForm()"><i data-lucide="plus"></i> Erste Stelle anlegen</button>
+         </div>`}`;
+}
+function stelleCard(j){
+  const sm = STATUS_META[j.status] || STATUS_META.pausiert;
+  const n = bewCountForJob(j.id), neu = bewNeuForJob(j.id);
+  const live = j.status === 'aktiv';
+  const meta = [
+    j.branche ? `<span><i data-lucide="layers"></i>${escapeHtml(j.branche)}</span>` : '',
+    j.ort ? `<span><i data-lucide="map-pin"></i>${escapeHtml(j.ort)}</span>` : '',
+    j.beschaeftigungsart ? `<span><i data-lucide="clock"></i>${escapeHtml(j.beschaeftigungsart)}</span>` : ''
+  ].filter(Boolean).join('');
+  return `<div class="stelle-card">
+    <div class="stelle-card__hd">
+      <div class="stelle-card__t">
+        <h3>${escapeHtml(j.title)}</h3>
+        ${meta ? `<div class="stelle-card__meta">${meta}</div>` : ''}
+      </div>
+      <span class="stelle-status ${sm.cls}"><span class="dot" style="background:${sm.dot}"></span>${sm.label}</span>
+    </div>
+    <div class="stelle-card__bew">
+      <i data-lucide="users"></i><b>${n}</b> ${n===1?'Bewerbung':'Bewerbungen'} eingegangen${neu?`<span class="bew-neu">${neu} neu</span>`:''}
+    </div>
+    <div class="stelle-card__actions">
+      <button class="mini-btn primary" onclick="manageBewerber('${j.id}')"><i data-lucide="kanban-square"></i> Bewerber verwalten</button>
+      ${live
+        ? `<a class="mini-btn" href="${portalJobUrl(j.slug)}" target="_blank" rel="noopener"><i data-lucide="external-link"></i> Stellenanzeige ansehen</a>
+           <button class="mini-btn" onclick="setStelleStatus('${j.id}','pausiert')"><i data-lucide="eye-off"></i> Offline nehmen</button>`
+        : `<button class="mini-btn go" onclick="setStelleStatus('${j.id}','aktiv')"><i data-lucide="rocket"></i> Veröffentlichen</button>`}
+      <button class="icon-btn" title="Bearbeiten" onclick="openStelleForm('${j.id}')"><i data-lucide="pencil"></i></button>
+      <button class="icon-btn danger" title="Löschen" onclick="deleteStelle('${j.id}')"><i data-lucide="trash-2"></i></button>
+    </div>
+  </div>`;
+}
+// „Bewerber verwalten" -> Kanban, vorgefiltert auf genau diese Stelle
+function manageBewerber(jobId){ bewerberFilter.job = jobId; bewerberFilter.status = ''; setView('recruiting'); }
+
+// ---- CRUD gegen Supabase (RLS erlaubt dem Betrieb volle Rechte auf seine eigenen Stellen) ----
+async function setStelleStatus(id, status){
+  const j = job(id); if(!j || !sbAuth) return;
+  const patch = { status };
+  if(status === 'aktiv'){
+    if(!j.slug) patch.slug = genSlug(j.title);
+    patch.published_at = new Date().toISOString();
+  }
+  await _stelleSave(id, patch, status==='aktiv' ? 'Stelle veröffentlicht – jetzt live auf dem Portal.' : 'Stelle offline genommen.');
+}
+async function _stelleSave(id, patch, okMsg){
+  if(!sbAuth) return;
+  try{
+    const { error } = await sbAuth.from('stellenanzeigen').update(patch).eq('id', id);
+    if(error) throw error;
+    await loadPortalData();
+    if(okMsg) toast(okMsg);
+  }catch(e){ toast('Konnte nicht speichern: ' + (e.message||e)); }
+}
+async function deleteStelle(id){
+  const j = job(id); if(!j) return;
+  if(!confirm(`Stelle „${j.title}" wirklich löschen?\n\nBereits eingegangene Bewerbungen bleiben erhalten, werden aber von dieser Stelle gelöst.`)) return;
+  if(!sbAuth) return;
+  try{
+    const { error } = await sbAuth.from('stellenanzeigen').delete().eq('id', id);
+    if(error) throw error;
+    await loadPortalData();
+    toast('Stelle gelöscht.');
+  }catch(e){ toast('Löschen fehlgeschlagen: ' + (e.message||e)); }
+}
+
+// ---- Stelle anlegen / bearbeiten (Sheet-Formular) ----
+let stelleDraft = null;
+const BESCHAEFT_OPTS = ['Vollzeit','Teilzeit','Minijob','Ausbildung'];
+function openStelleForm(id){
+  const j = id ? job(id) : null;
+  stelleDraft = j
+    ? {id:j.id, titel:j.title, branche:j.branche, ort:j.ort, beschaeftigungsart:j.beschaeftigungsart,
+       gehalt:j.gehalt, beschreibung:j.beschreibung, status:j.status, slug:j.slug,
+       aufgaben:(j._raw&&j._raw.aufgaben)||'', profil:(j._raw&&j._raw.profil)||''}
+    : {id:null, titel:'', branche:(settings.branchen&&settings.branchen[0])||'', ort:(settings.company&&settings.company.ort)||'',
+       beschaeftigungsart:'Vollzeit', gehalt:'', beschreibung:'', status:'pausiert', slug:'', aufgaben:'', profil:''};
+  renderStelleForm();
+}
+function renderStelleForm(){
+  const d = stelleDraft; if(!d) return;
+  const v = s => escapeHtml(s||'');
+  const editing = !!d.id;
+  openSheet(`
+    <div class="sheet__head">
+      <span class="avatar" style="width:44px;height:44px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="briefcase" style="width:20px;height:20px"></i></span>
+      <div><div class="sheet__title">${editing?'Stelle bearbeiten':'Stelle anlegen'}</div><div class="sheet__sub">${editing?'Änderungen wirken sofort – auch auf dem Portal, wenn die Stelle live ist.':'Speichern als Entwurf, danach mit einem Klick veröffentlichen.'}</div></div>
+      <button class="sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+    </div>
+    <div class="sheet__body">
+      <div class="field"><label>Stellentitel *</label><input value="${v(d.titel)}" placeholder="z. B. Baugeräteführer (m/w/d)" oninput="stelleDraft.titel=this.value"></div>
+      <div class="fieldrow">
+        <div class="field"><label>Branche</label><input value="${v(d.branche)}" placeholder="z. B. Straßen- &amp; Tiefbau" oninput="stelleDraft.branche=this.value"></div>
+        <div class="field"><label>Ort</label><input value="${v(d.ort)}" placeholder="z. B. Köln" oninput="stelleDraft.ort=this.value"></div>
+      </div>
+      <div class="fieldrow">
+        <div class="field"><label>Beschäftigungsart</label>
+          <select onchange="stelleDraft.beschaeftigungsart=this.value">${BESCHAEFT_OPTS.map(o=>`<option ${d.beschaeftigungsart===o?'selected':''}>${o}</option>`).join('')}</select>
+        </div>
+        <div class="field"><label>Gehalt (Freitext)</label><input value="${v(d.gehalt)}" placeholder="z. B. 3.200 – 3.800 € / Monat" oninput="stelleDraft.gehalt=this.value"></div>
+      </div>
+      <div class="field"><label>Kurzbeschreibung</label><textarea rows="3" placeholder="Worum geht es in dieser Stelle?" oninput="stelleDraft.beschreibung=this.value">${v(d.beschreibung)}</textarea></div>
+      <div class="field"><label>Deine Aufgaben</label><textarea rows="3" placeholder="Eine Aufgabe pro Zeile" oninput="stelleDraft.aufgaben=this.value">${v(d.aufgaben)}</textarea></div>
+      <div class="field"><label>Dein Profil</label><textarea rows="3" placeholder="Eine Anforderung pro Zeile" oninput="stelleDraft.profil=this.value">${v(d.profil)}</textarea></div>
+      <div class="sheet-actions">
+        <button class="btn" style="flex:1" onclick="submitStelle(false)"><i data-lucide="save"></i> ${editing?'Speichern':'Als Entwurf speichern'}</button>
+        ${editing && d.status==='aktiv' ? '' : `<button class="btn go" onclick="submitStelle(true)"><i data-lucide="rocket"></i> Speichern &amp; veröffentlichen</button>`}
+        <button class="btn ghost" onclick="closeSheet()">Abbrechen</button>
+      </div>
+    </div>`);
+}
+async function submitStelle(publish){
+  const d = stelleDraft; if(!d) return;
+  if(!d.titel.trim()){ toast('Bitte einen Stellentitel eingeben'); return; }
+  if(!sbAuth || !(GC_PROFILE && GC_PROFILE.customer_id)){ toast('Betrieb nicht verbunden.'); return; }
+  const status = publish ? 'aktiv' : (d.status || 'pausiert');
+  const row = {
+    titel:d.titel.trim(), branche:d.branche.trim()||null, ort:d.ort.trim()||null,
+    beschaeftigungsart:d.beschaeftigungsart||null, gehalt:d.gehalt.trim()||null,
+    beschreibung:d.beschreibung.trim()||null, aufgaben:d.aufgaben.trim()||null,
+    profil:d.profil.trim()||null, status
+  };
+  if(status === 'aktiv'){
+    row.slug = d.slug || genSlug(d.titel);
+    row.published_at = new Date().toISOString();
+  }
+  try{
+    if(d.id){
+      const { error } = await sbAuth.from('stellenanzeigen').update(row).eq('id', d.id);
+      if(error) throw error;
+    }else{
+      row.customer_id = GC_PROFILE.customer_id;
+      if(!row.slug) row.slug = genSlug(d.titel);   // Slug von Anfang an, auch für Entwürfe
+      const { error } = await sbAuth.from('stellenanzeigen').insert(row);
+      if(error) throw error;
+    }
+    stelleDraft = null; closeSheet();
+    await loadPortalData();
+    toast(publish ? 'Stelle veröffentlicht – jetzt live auf dem Portal.' : (d.id?'Stelle gespeichert.':'Entwurf gespeichert.'));
+    if(currentView !== 'stellen') setView('stellen');
+  }catch(e){ toast('Speichern fehlgeschlagen: ' + (e.message||e)); }
+}
+// Bewerber-Statuswechsel in Supabase spiegeln (nur echte, aus Supabase geladene Bewerber)
+async function persistBewerberStatus(localId, status){
+  const a = findCandidate(localId);
+  if(!a || !a._uuid || !sbAuth) return;
+  try{ await sbAuth.from('bewerber').update({status}).eq('id', a._uuid); }catch(e){}
+}
+async function persistBewerberJob(localId, jobId){
+  const a = findCandidate(localId);
+  if(!a || !a._uuid || !sbAuth) return;
+  try{ await sbAuth.from('bewerber').update({stellenanzeige_id: jobId || null}).eq('id', a._uuid); }catch(e){}
+}
+
 // ---- Status-Popover (öffnet direkt an der angetippten Karte) ----
 let _lastPhone = null;
 function openStagePop(ev, id){
@@ -7545,6 +7805,7 @@ function quickSetStage(id, to){
   if(!a || a.stage === to) return;
   a.stage = to;
   a.hot = to === 'inbearb';
+  persistBewerberStatus(id, to);
   if(currentView === 'recruiting') renderBewerberKanban();
   toast(`${a.name.split(' ')[0]} → ${stageById(to).label}`);
   if(to === 'eingestellt') offerHireHandover(a);
@@ -7775,6 +8036,7 @@ function wireKanban(){
       if(!candidate) return;
       candidate.stage = to;
       candidate.hot = to === 'inbearb';
+      persistBewerberStatus(id, to);
       renderBewerberKanban();
       toast(`${candidate.name} → ${stageById(to).label}`);
     });
@@ -8164,6 +8426,7 @@ function moveCandidate(id, from, to){
   if(!candidate) return;
   candidate.stage = to;
   candidate.hot = to === 'inbearb';
+  persistBewerberStatus(id, to);
   renderBewerberKanban();
   toast(`${candidate.name} → ${stageById(to).label}`);
   if(to === 'eingestellt') offerHireHandover(candidate);
@@ -8206,6 +8469,7 @@ function applicantById(id){ return findCandidate(id); }
 function assignApplicantJob(id, jobId){
   const a = findCandidate(id); if(!a) return;
   a.jobId = jobId || null;
+  persistBewerberJob(id, a.jobId);
   if(currentView === 'recruiting') renderBewerberKanban();
   openApplicant(id);
 }
