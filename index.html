@@ -143,8 +143,11 @@
     min-height:42px;
     border-radius:8px;
     padding:11px 15px;
-    background:linear-gradient(135deg,var(--green),var(--green-2));
-    color:#fff;
+    /* Solider Farb-Fallback ZUERST, Gradient darüber: falls ein Browser/Extension
+       (Dark-Mode/Kontrast) background-image strippt, bleibt der Button grün statt weiß. */
+    background-color:var(--green-2);
+    background-image:linear-gradient(135deg,var(--green),var(--green-2));
+    color:#fff !important;
     font-weight:600;
     font-size:14px;
     box-shadow:0 12px 24px rgba(22,163,74,.22);
@@ -152,11 +155,12 @@
   }
   .btn:hover{ transform:translateY(-1px); box-shadow:0 16px 30px rgba(22,163,74,.30); }
   .btn.full{ width:100%; }
-  .btn.ghost{ color:var(--ink); background:#fff; border:1px solid var(--line); box-shadow:none; }
+  .btn.ghost{ color:var(--ink) !important; background-color:#fff; background-image:none; border:1px solid var(--line); box-shadow:none; }
   .auth__back{ display:inline-flex; align-items:center; gap:7px; color:var(--muted); font-size:12.5px; font-weight:600; margin-bottom:16px; cursor:pointer; }
   .auth__foot{ margin-top:18px; padding-top:16px; border-top:1px solid var(--line); display:flex; align-items:center; justify-content:space-between; gap:12px; color:var(--muted); font-size:11.5px; }
   .auth__foot a{ color:var(--green); font-weight:700; cursor:pointer; }
   .auth__err{ background:#fdecec; border:1px solid #f5c2c2; color:#b42318; font-size:12.5px; font-weight:600; padding:9px 12px; border-radius:9px; margin:2px 0 14px; }
+  .auth__ok{ background:#e9f8ef; border:1px solid #b7e5c8; color:#0E7A43; font-size:12.5px; font-weight:600; padding:10px 12px; border-radius:9px; margin:2px 0 14px; display:flex; gap:8px; align-items:flex-start; }
 
   /* Shell */
   .app{ min-height:100vh; height:100vh; display:flex; background:var(--sidebar); overflow:hidden; }
@@ -475,7 +479,11 @@
   .stelle-status .dot{ width:7px; height:7px; border-radius:50%; }
   .stelle-status.st-live{ background:#EAF7EF; border-color:#BFE6CD; color:#0E7A43; }
   .stelle-status.st-draft{ background:#FBF3E4; border-color:#EBD6AE; color:#9A6B12; }
+  .stelle-status.st-wait{ background:#FEF6E7; border-color:#F4D9A0; color:#A66400; }
+  .stelle-status.st-ok{ background:#EAF1FE; border-color:#BBD2F7; color:#1D4ED8; }
   .stelle-status.st-closed{ background:#F2F3F2; border-color:var(--line); color:var(--muted); }
+  .stelle-card__note{ display:flex; align-items:flex-start; gap:7px; font-size:12px; line-height:1.45; color:#A66400; background:#FEF6E7; border:1px solid #F4D9A0; border-radius:9px; padding:8px 10px; }
+  .stelle-card__note .lucide{ width:14px; height:14px; flex-shrink:0; margin-top:1px; }
   .stelle-card__bew{ display:flex; align-items:center; gap:7px; font-size:13px; color:var(--ink); padding:9px 11px; background:#FBFDFB; border:1px solid var(--line); border-radius:9px; }
   .stelle-card__bew .lucide{ width:15px; height:15px; color:var(--green-2); }
   .stelle-card__bew b{ font-weight:750; }
@@ -2596,6 +2604,7 @@
       </div>
       <h1>Willkommen zurück</h1>
       <p class="sub" id="loginSubLine">Melde dich an und öffne dein Cockpit.</p>
+      <div class="auth__ok" id="loginOk" style="display:none"></div>
       <div class="field"><label for="email">E-Mail</label><input id="email" type="email" placeholder="name@firma.de" autocomplete="email" /></div>
       <div class="field"><label for="password">Passwort</label><input id="password" type="password" placeholder="Dein Passwort" autocomplete="current-password" onkeydown="if(event.key==='Enter')login()" /></div>
       <div class="auth__err" style="display:none"></div>
@@ -3205,6 +3214,7 @@ let dragClickBlockUntil = 0;
 function showAuth(view){
   ['login','register','verify','reset','sent'].forEach(id => { const el=document.getElementById(`${id}View`); if(el) el.classList.toggle('hidden', id !== view); });
   authErr('');
+  const ok=document.getElementById('loginOk'); if(ok){ ok.style.display='none'; ok.innerHTML=''; }
   icons();
 }
 /* ===================== ECHTE AUTHENTIFIZIERUNG (Supabase) ===================== */
@@ -3320,10 +3330,56 @@ function enterApp(){
   if(!settings.onboarded || !(GC_PROFILE&&GC_PROFILE.customer_id)) openConsentGate();
 }
 
+// Erkennt, ob die Seite gerade über einen Auth-Mail-Link (E-Mail-Bestätigung / Reset) geöffnet wurde.
+// Supabase hängt die Tokens als URL-Fragment an, z. B. #access_token=…&type=signup
+function _authLinkType(){
+  const h = (window.location.hash || '').replace(/^#/, '');
+  const p = new URLSearchParams(h);
+  if(p.get('type')) return p.get('type');                 // signup | recovery | invite | magiclink
+  // Fehlerfall (Link abgelaufen o. Ä.): Supabase liefert error/error_description im Fragment
+  if(p.get('error')) return 'error:' + (p.get('error_description') || p.get('error'));
+  return null;
+}
+function _clearAuthHash(){
+  history.replaceState(null, '', window.location.pathname + window.location.search);
+}
+
 // Beim Laden: bestehende Session prüfen + auf Login/Logout/E-Mail-Bestätigung reagieren
+let _confirmFlow = false;   // true, solange wir einen frischen E-Mail-Bestätigungs-Link abarbeiten
 async function gcAuthBoot(){
   if(!sbAuth){ return; }
+  const linkType = _authLinkType();
+
+  // 1) Frische E-Mail-BESTÄTIGUNG nach Registrierung:
+  //    Nutzer soll NICHT automatisch ins Cockpit, sondern bewusst neu einloggen (Wunsch-Flow).
+  if(linkType === 'signup'){
+    _confirmFlow = true;
+    try{ await sbAuth.auth.signOut(); }catch(e){}   // frische Session beenden -> sauberer Login
+    _clearAuthHash();
+    showAuth('login');
+    const ok = document.getElementById('loginOk');
+    if(ok){ ok.style.display='flex'; ok.innerHTML = '<i data-lucide="check-circle-2"></i><span><b>E-Mail bestätigt.</b> Dein Konto ist jetzt aktiv – melde dich mit deinen Zugangsdaten an.</span>'; }
+    icons();
+    return;   // KEIN afterAuth
+  }
+
+  // 2) Passwort-Reset-Link
+  if(linkType === 'recovery'){
+    _clearAuthHash();
+    showAuth('reset');   // (eigenes Neu-Setzen-Formular folgt separat)
+    return;
+  }
+
+  // 3) Abgelaufener / ungültiger Link
+  if(linkType && linkType.startsWith('error:')){
+    _clearAuthHash();
+    showAuth('login');
+    authErr('Der Link ist abgelaufen oder ungültig. Bitte registriere dich erneut oder fordere einen neuen Link an.');
+    return;
+  }
+
   sbAuth.auth.onAuthStateChange((event, session)=>{
+    if(_confirmFlow) return;   // während Bestätigungs-Flow nichts automatisch betreten
     if((event==='SIGNED_IN'||event==='INITIAL_SESSION') && session && !_enteredApp){ afterAuth(session); }
     if(event==='PASSWORD_RECOVERY'){ /* optional: eigenes Passwort-neu-setzen-Formular */ }
   });
@@ -7544,9 +7600,11 @@ function candidateRow(a){
    Das Portal hat KEINEN eigenen Login – es ist reines Frontend. */
 const PORTAL_BASE = 'https://strassen-tiefbau.green-careers.de';
 const STATUS_META = {
-  aktiv:       {label:'Live',        cls:'st-live',   dot:'#16A34A'},
-  pausiert:    {label:'Entwurf',     cls:'st-draft',  dot:'#B7791F'},
-  geschlossen: {label:'Geschlossen', cls:'st-closed', dot:'#9AA59B'},
+  aktiv:          {label:'Live',         cls:'st-live',   dot:'#16A34A'},
+  wartet_freigabe:{label:'Wird geprüft', cls:'st-wait',   dot:'#A66400'},
+  freigegeben:    {label:'Freigegeben',  cls:'st-ok',     dot:'#1D4ED8'},
+  pausiert:       {label:'Entwurf',      cls:'st-draft',  dot:'#B7791F'},
+  geschlossen:    {label:'Geschlossen',  cls:'st-closed', dot:'#9AA59B'},
 };
 let OS_DATA_LOADED = false;
 function portalJobUrl(slug){ return PORTAL_BASE + '/?job=' + encodeURIComponent(slug||''); }
@@ -7617,12 +7675,28 @@ function stellenViewHtml(){
 function stelleCard(j){
   const sm = STATUS_META[j.status] || STATUS_META.pausiert;
   const n = bewCountForJob(j.id), neu = bewNeuForJob(j.id);
-  const live = j.status === 'aktiv';
+  const st = j.status;
   const meta = [
     j.branche ? `<span><i data-lucide="layers"></i>${escapeHtml(j.branche)}</span>` : '',
     j.ort ? `<span><i data-lucide="map-pin"></i>${escapeHtml(j.ort)}</span>` : '',
     j.beschaeftigungsart ? `<span><i data-lucide="clock"></i>${escapeHtml(j.beschaeftigungsart)}</span>` : ''
   ].filter(Boolean).join('');
+  let actions;
+  if(st === 'aktiv'){
+    actions = `<a class="mini-btn" href="${portalJobUrl(j.slug)}" target="_blank" rel="noopener"><i data-lucide="external-link"></i> Stellenanzeige ansehen</a>
+       <button class="mini-btn" onclick="setStelleStatus('${j.id}','pausiert')"><i data-lucide="eye-off"></i> Offline nehmen</button>`;
+  } else if(st === 'wartet_freigabe'){
+    actions = `<button class="mini-btn" onclick="setStelleStatus('${j.id}','pausiert')"><i data-lucide="undo-2"></i> Freigabe zurückziehen</button>`;
+  } else if(st === 'freigegeben'){
+    actions = `<button class="mini-btn go" onclick="setStelleStatus('${j.id}','aktiv')"><i data-lucide="rocket"></i> Jetzt live schalten</button>`;
+  } else {
+    actions = `<button class="mini-btn go" onclick="setStelleStatus('${j.id}','wartet_freigabe')"><i data-lucide="send"></i> Veröffentlichen</button>`;
+  }
+  const note = st === 'wartet_freigabe'
+    ? `<div class="stelle-card__note"><i data-lucide="clock"></i><span>Deine Stelle wird gerade von GreenCareers geprüft &amp; freigegeben. Sobald sie freigegeben ist, kannst du sie mit einem Klick live schalten.</span></div>`
+    : (st === 'freigegeben'
+      ? `<div class="stelle-card__note" style="color:#1D4ED8;background:#EAF1FE;border-color:#BBD2F7"><i data-lucide="badge-check"></i><span>Freigegeben! Klick auf <b>„Jetzt live schalten"</b>, damit deine Stelle im Karrierenetzwerk erscheint.</span></div>`
+      : '');
   return `<div class="stelle-card">
     <div class="stelle-card__hd">
       <div class="stelle-card__t">
@@ -7631,15 +7705,13 @@ function stelleCard(j){
       </div>
       <span class="stelle-status ${sm.cls}"><span class="dot" style="background:${sm.dot}"></span>${sm.label}</span>
     </div>
+    ${note}
     <div class="stelle-card__bew">
       <i data-lucide="users"></i><b>${n}</b> ${n===1?'Bewerbung':'Bewerbungen'} eingegangen${neu?`<span class="bew-neu">${neu} neu</span>`:''}
     </div>
     <div class="stelle-card__actions">
       <button class="mini-btn primary" onclick="manageBewerber('${j.id}')"><i data-lucide="kanban-square"></i> Bewerber verwalten</button>
-      ${live
-        ? `<a class="mini-btn" href="${portalJobUrl(j.slug)}" target="_blank" rel="noopener"><i data-lucide="external-link"></i> Stellenanzeige ansehen</a>
-           <button class="mini-btn" onclick="setStelleStatus('${j.id}','pausiert')"><i data-lucide="eye-off"></i> Offline nehmen</button>`
-        : `<button class="mini-btn go" onclick="setStelleStatus('${j.id}','aktiv')"><i data-lucide="rocket"></i> Veröffentlichen</button>`}
+      ${actions}
       <button class="icon-btn" title="Bearbeiten" onclick="openStelleForm('${j.id}')"><i data-lucide="pencil"></i></button>
       <button class="icon-btn danger" title="Löschen" onclick="deleteStelle('${j.id}')"><i data-lucide="trash-2"></i></button>
     </div>
@@ -7656,7 +7728,14 @@ async function setStelleStatus(id, status){
     if(!j.slug) patch.slug = genSlug(j.title);
     patch.published_at = new Date().toISOString();
   }
-  await _stelleSave(id, patch, status==='aktiv' ? 'Stelle veröffentlicht – jetzt live auf dem Portal.' : 'Stelle offline genommen.');
+  if(status === 'wartet_freigabe' && !j.slug){ patch.slug = genSlug(j.title); }
+  const msgs = {
+    aktiv: 'Stelle ist jetzt live auf dem Portal.',
+    wartet_freigabe: 'Zur Freigabe eingereicht – GreenCareers prüft deine Stelle.',
+    freigegeben: 'Stelle freigegeben.',
+    pausiert: 'Stelle offline genommen.'
+  };
+  await _stelleSave(id, patch, msgs[status] || 'Status aktualisiert.');
 }
 async function _stelleSave(id, patch, okMsg){
   if(!sbAuth) return;
@@ -7728,16 +7807,15 @@ async function submitStelle(publish){
   const d = stelleDraft; if(!d) return;
   if(!d.titel.trim()){ toast('Bitte einen Stellentitel eingeben'); return; }
   if(!sbAuth || !(GC_PROFILE && GC_PROFILE.customer_id)){ toast('Betrieb nicht verbunden.'); return; }
-  const status = publish ? 'aktiv' : (d.status || 'pausiert');
+  const status = publish ? 'wartet_freigabe' : (d.status || 'pausiert');
   const row = {
     titel:d.titel.trim(), branche:d.branche.trim()||null, ort:d.ort.trim()||null,
     beschaeftigungsart:d.beschaeftigungsart||null, gehalt:d.gehalt.trim()||null,
     beschreibung:d.beschreibung.trim()||null, aufgaben:d.aufgaben.trim()||null,
     profil:d.profil.trim()||null, status
   };
-  if(status === 'aktiv'){
+  if(status === 'wartet_freigabe'){
     row.slug = d.slug || genSlug(d.titel);
-    row.published_at = new Date().toISOString();
   }
   try{
     if(d.id){
@@ -7751,7 +7829,7 @@ async function submitStelle(publish){
     }
     stelleDraft = null; closeSheet();
     await loadPortalData();
-    toast(publish ? 'Stelle veröffentlicht – jetzt live auf dem Portal.' : (d.id?'Stelle gespeichert.':'Entwurf gespeichert.'));
+    toast(publish ? 'Zur Freigabe eingereicht – GreenCareers prüft deine Stelle.' : (d.id?'Stelle gespeichert.':'Entwurf gespeichert.'));
     if(currentView !== 'stellen') setView('stellen');
   }catch(e){ toast('Speichern fehlgeschlagen: ' + (e.message||e)); }
 }

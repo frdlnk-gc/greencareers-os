@@ -1,0 +1,84 @@
+<!--
+  GreenCareers OS – Bestätigungs-E-Mail (Supabase Auth Template "Confirm signup")
+  Einsetzen unter: Supabase Dashboard -> Authentication -> Emails -> "Confirm signup"
+  Betreff (Subject heading): GreenCareers – bitte bestätige deine E-Mail
+  Komplett selbst gebrandet, kein Supabase-Hinweis. Funktioniert mit {{ .ConfirmationURL }}.
+-->
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>E-Mail bestätigen</title>
+</head>
+<body style="margin:0; padding:0; background:#F6F5F2; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F6F5F2; padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px; background:#FFFFFF; border-radius:16px; overflow:hidden; box-shadow:0 8px 30px rgba(16,25,29,.08);">
+
+          <!-- Header / Logo -->
+          <tr>
+            <td style="padding:30px 36px 18px;">
+              <table role="presentation" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="width:40px; height:40px; background:linear-gradient(135deg,#16A34A,#0E7A43); border-radius:10px; text-align:center; vertical-align:middle; color:#fff; font-weight:800; font-size:16px;">GC</td>
+                  <td style="padding-left:12px; vertical-align:middle;">
+                    <div style="font-weight:800; font-size:17px; color:#16191D;">GreenCareers <span style="color:#0E7A43;">OS</span></div>
+                    <div style="font-size:12px; color:#6B7480;">Betriebssoftware für dein Unternehmen</div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="padding:8px 36px 4px;">
+              <h1 style="margin:0 0 12px; font-size:22px; line-height:1.25; color:#16191D; font-weight:800;">Nur noch ein Klick: bestätige deine E-Mail</h1>
+              <p style="margin:0 0 22px; font-size:15px; line-height:1.6; color:#3A4047;">
+                Schön, dass du dabei bist! Klicke auf den Button, um deine E-Mail-Adresse zu bestätigen und dein Konto zu aktivieren. Danach kannst du dich ganz normal einloggen.
+              </p>
+
+              <!-- Button -->
+              <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 22px;">
+                <tr>
+                  <td style="border-radius:10px; background:#16A34A; background-image:linear-gradient(135deg,#16A34A,#0E7A43);">
+                    <a href="{{ .ConfirmationURL }}" target="_blank"
+                       style="display:inline-block; padding:14px 30px; font-size:15px; font-weight:700; color:#FFFFFF; text-decoration:none; border-radius:10px;">
+                      E-Mail jetzt bestätigen
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin:0 0 8px; font-size:13px; line-height:1.6; color:#6B7480;">
+                Falls der Button nicht angezeigt wird, kopiere diesen Link in deinen Browser:
+              </p>
+              <p style="margin:0 0 24px; font-size:13px; line-height:1.5; word-break:break-all;">
+                <a href="{{ .ConfirmationURL }}" target="_blank" style="color:#0E7A43; text-decoration:underline;">{{ .ConfirmationURL }}</a>
+              </p>
+            </td>
+          </tr>
+
+          <!-- Divider -->
+          <tr><td style="padding:0 36px;"><div style="height:1px; background:#E6E3DD;"></div></td></tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding:18px 36px 30px;">
+              <p style="margin:0; font-size:12px; line-height:1.6; color:#9AA2AB;">
+                Du hast dich nicht bei GreenCareers registriert? Dann ignoriere diese E-Mail einfach – ohne Bestätigung passiert nichts.
+              </p>
+              <p style="margin:12px 0 0; font-size:12px; color:#9AA2AB;">
+                © GreenCareers · Greenfield Digital GmbH · <a href="https://www.green-careers.de" style="color:#9AA2AB;">green-careers.de</a>
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
