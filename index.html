@@ -163,6 +163,13 @@
   .auth__foot{ margin-top:18px; padding-top:16px; border-top:1px solid var(--line); display:flex; align-items:center; justify-content:space-between; gap:12px; color:var(--muted); font-size:11.5px; }
   .auth__foot a{ color:var(--green); font-weight:700; cursor:pointer; }
   .auth__err{ background:#fdecec; border:1px solid #f5c2c2; color:#b42318; font-size:12.5px; font-weight:600; padding:9px 12px; border-radius:9px; margin:2px 0 14px; }
+  /* Auth-Primärbuttons hart gegen Background-Stripping absichern (Extensions/Kontrast-Modi/
+     Cache-Reste haben den Button sonst transparent = weiß auf weißer Karte gerendert). */
+  #regBtn, #loginBtn, #resetBtn, #newPwBtn{
+    background-color:var(--green-2) !important;
+    background-image:linear-gradient(135deg,var(--green),var(--green-2)) !important;
+    color:#fff !important;
+  }
   .pw-wrap{ position:relative; }
   .pw-wrap input{ padding-right:44px; }
   .pw-eye{ position:absolute; top:50%; right:6px; transform:translateY(-50%); width:34px; height:34px; display:grid; place-items:center; border:0; background:transparent; color:var(--muted); cursor:pointer; border-radius:7px; }
@@ -2704,6 +2711,14 @@
       <p class="sub">Schau in dein Postfach. Der Link zum Zurücksetzen ist gleich da.</p>
       <button class="btn ghost full" onclick="showAuth('login')">Zurück zum Login</button>
     </div>
+    <div id="newpwView" class="hidden">
+      <h1>Neues Passwort</h1>
+      <p class="sub">Vergib jetzt ein neues Passwort für dein Konto. Danach bist du direkt eingeloggt.</p>
+      <div class="field"><label for="newPw">Neues Passwort</label><div class="pw-wrap"><input id="newPw" type="password" placeholder="Mind. 8 Zeichen" autocomplete="new-password" /><button type="button" class="pw-eye" aria-label="Passwort anzeigen" onclick="togglePw('newPw',this)"><i data-lucide="eye"></i></button></div></div>
+      <div class="field"><label for="newPw2">Passwort wiederholen</label><div class="pw-wrap"><input id="newPw2" type="password" placeholder="Passwort erneut" autocomplete="new-password" onkeydown="if(event.key==='Enter')doSetNewPassword()" /><button type="button" class="pw-eye" aria-label="Passwort anzeigen" onclick="togglePw('newPw2',this)"><i data-lucide="eye"></i></button></div></div>
+      <div class="auth__err" style="display:none"></div>
+      <button class="btn full" id="newPwBtn" onclick="doSetNewPassword()">Passwort speichern</button>
+    </div>
   </section>
 </div>
 
@@ -3574,7 +3589,7 @@ let draggedJob = null;
 let dragClickBlockUntil = 0;
 
 function showAuth(view){
-  ['login','register','verify','reset','sent'].forEach(id => { const el=document.getElementById(`${id}View`); if(el) el.classList.toggle('hidden', id !== view); });
+  ['login','register','verify','reset','sent','newpw'].forEach(id => { const el=document.getElementById(`${id}View`); if(el) el.classList.toggle('hidden', id !== view); });
   authErr('');
   const ok=document.getElementById('loginOk'); if(ok){ ok.style.display='none'; ok.innerHTML=''; }
   icons();
@@ -3657,10 +3672,41 @@ async function doReset(){
   if(!email){ authErr('Bitte E-Mail eingeben.'); return; }
   if(!sbAuth){ authErr('Auth-Dienst nicht geladen.'); return; }
   authBusy(true,'resetBtn');
-  const { error } = await sbAuth.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + window.location.pathname });
+  const { error } = await sbAuth.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + window.location.pathname + entryQueryString() });
   authBusy(false,'resetBtn');
   if(error){ authErr(error.message); return; }
   showAuth('sent');
+}
+
+// Neues Passwort setzen (nach Klick auf den Recovery-Link). Nutzt die temporäre
+// Recovery-Session, die Supabase über den Link aufgebaut hat.
+async function doSetNewPassword(){
+  authErr('');
+  const pw=(document.getElementById('newPw')||{}).value||'';
+  const pw2=(document.getElementById('newPw2')||{}).value||'';
+  if(pw.length<8){ authErr('Das Passwort muss mindestens 8 Zeichen haben.'); return; }
+  if(pw!==pw2){ authErr('Die Passwörter stimmen nicht überein.'); return; }
+  if(!sbAuth){ authErr('Auth-Dienst nicht geladen. Seite neu laden.'); return; }
+  authBusy(true,'newPwBtn');
+  const { data, error } = await sbAuth.auth.updateUser({ password: pw });
+  authBusy(false,'newPwBtn');
+  if(error){
+    authErr(error.message.includes('Auth session missing')||error.message.includes('session')
+      ? 'Der Reset-Link ist abgelaufen. Bitte fordere unter „Passwort vergessen" einen neuen an.'
+      : error.message);
+    return;
+  }
+  // Passwort gesetzt -> mit der jetzt gültigen Session direkt in die App.
+  _confirmFlow = false;
+  try{
+    const { data:{ session } } = await sbAuth.auth.getSession();
+    if(session){ await afterAuth(session); return; }
+  }catch(e){}
+  // Fallback: sauberer Login
+  showAuth('login');
+  const ok=document.getElementById('loginOk');
+  if(ok){ ok.style.display='flex'; ok.innerHTML='<i data-lucide="check-circle-2"></i><span><b>Passwort gespeichert.</b> Melde dich jetzt mit deinem neuen Passwort an.</span>'; }
+  icons();
 }
 
 async function gcLogout(){
@@ -3736,19 +3782,32 @@ async function gcAuthBoot(){
   //    Nutzer soll NICHT automatisch ins Cockpit, sondern bewusst neu einloggen (Wunsch-Flow).
   if(linkType === 'signup'){
     _confirmFlow = true;
+    // E-Mail des gerade bestätigten Kontos noch aus der frischen Session lesen,
+    // BEVOR wir ausloggen – damit wir das Login-Feld korrekt vorbefüllen können.
+    let confirmedEmail = '';
+    try{ const { data:{ session:s } } = await sbAuth.auth.getSession(); confirmedEmail = (s && s.user && s.user.email) || ''; }catch(e){}
     try{ await sbAuth.auth.signOut(); }catch(e){}   // frische Session beenden -> sauberer Login
     _clearAuthHash();
     showAuth('login');
+    // E-Mail-Feld setzen (überschreibt evtl. falsches Browser-Autofill, z. B. den Namen)
+    // und Fokus auf das Passwort, damit der Nutzer direkt sein Passwort eintippt.
+    const lEmail=document.getElementById('email');
+    if(lEmail && confirmedEmail){ lEmail.value=confirmedEmail; lEmail.readOnly=true; }
+    const lPw=document.getElementById('password'); if(lPw) setTimeout(()=>lPw.focus(),50);
     const ok = document.getElementById('loginOk');
     if(ok){ ok.style.display='flex'; ok.innerHTML = '<i data-lucide="check-circle-2"></i><span><b>E-Mail bestätigt.</b> Dein Konto ist jetzt aktiv – melde dich mit deinen Zugangsdaten an.</span>'; }
     icons();
     return;   // KEIN afterAuth
   }
 
-  // 2) Passwort-Reset-Link
+  // 2) Passwort-Reset-Link: Supabase hat über den Link eine temporäre Recovery-Session
+  //    aufgebaut (detectSessionInUrl). NICHT ausloggen – diese Session brauchen wir, um
+  //    das neue Passwort zu setzen. Direkt das Neu-Setzen-Formular zeigen.
   if(linkType === 'recovery'){
+    _confirmFlow = true;              // verhindert, dass onAuthStateChange uns ins Cockpit wirft
     _clearAuthHash();
-    showAuth('reset');   // (eigenes Neu-Setzen-Formular folgt separat)
+    showAuth('newpw');
+    icons();
     return;
   }
 
