@@ -148,8 +148,8 @@
     padding:11px 15px;
     /* Solider Farb-Fallback ZUERST, Gradient darüber: falls ein Browser/Extension
        (Dark-Mode/Kontrast) background-image strippt, bleibt der Button grün statt weiß. */
-    background-color:var(--green-2);
-    background-image:linear-gradient(135deg,var(--green),var(--green-2));
+    background-color:var(--green-2,#0E7A43);
+    background-image:linear-gradient(135deg,var(--green,#16A34A),var(--green-2,#0E7A43));
     color:#fff !important;
     font-weight:600;
     font-size:14px;
@@ -2198,6 +2198,9 @@
   /* ===== Consent-Gate (AVV/DSGVO) ===== */
   .gate{ position:fixed; inset:0; z-index:500; display:grid; place-items:center; padding:18px;
     background:radial-gradient(700px 420px at 50% -10%, rgba(22,163,74,.18), transparent 60%), rgba(10,20,13,.62); backdrop-filter:blur(3px); }
+  /* Checkout ist ein verbindlicher Zahl-Schritt: OS darf NICHT durchscheinen
+     und es gibt keinen Weg ins Cockpit ohne Zahlung -> deckender Hintergrund. */
+  #checkout{ background:radial-gradient(760px 460px at 50% -8%, rgba(var(--brand-rgb),.30), transparent 62%), #0B130E; backdrop-filter:none; }
   .gate__card{ width:min(100%,520px); max-height:92vh; overflow:auto; background:#fff; border-radius:18px; box-shadow:var(--shadow-strong); }
   .gate__top{ padding:22px 22px 0; }
   .gate__paid{ display:inline-flex; align-items:center; gap:7px; font-size:12px; font-weight:700; color:var(--green-2); background:var(--mint); border:1px solid #CDEBD8; padding:6px 11px; border-radius:999px; }
@@ -3059,8 +3062,9 @@ function entryQueryString(){
 function initEntryBrand(){
   captureEntry();
   const b = entryBrand();
-  const hasCompany = !!(settings.company && settings.company.name && settings.company.name.trim());
-  if(b && !hasCompany){ settings.theme = b.theme; }
+  // Pre-Login bestimmt die Eintritts-Marke das Theme (Grey -> tiefbau/orange).
+  // Kein Gate mehr auf einen evtl. gespeicherten Firmennamen eines Alt-Accounts.
+  if(b){ settings.theme = b.theme; }
   try{ applyTheme(settings.theme); }catch(e){}
   try{ applyBranding(); }catch(e){}
 }
@@ -3131,8 +3135,9 @@ function coCalc(){
 }
 
 function openCheckout(){
-  // Restdaten aus Auth/Settings vorbelegen
-  coState.firma = (settings.company && settings.company.name) || '';
+  // Firmenname nur vorbelegen, wenn dieser Account schon einen Betrieb hat
+  // (Neukäufer tippen ihn selbst – kein alter Name aus localStorage).
+  coState.firma = (GC_PROFILE && GC_PROFILE.customer_id && settings.company && settings.company.name) || '';
   coState.name  = (GC_USER && GC_USER.user_metadata && GC_USER.user_metadata.name) || coState.name || '';
   document.getElementById('checkout').classList.remove('hidden');
   renderCheckout();
@@ -3145,11 +3150,6 @@ function coCaptureFields(){
   coState.name  = g('coName').trim();
   coState.tel   = g('coTel').trim();
   coState.vat   = g('coVat').trim();
-}
-function coNamePreview(){
-  const v = (document.getElementById('coFirma')||{}).value || '';
-  const el = document.getElementById('coOsPrev');
-  if(el) el.innerHTML = `Dein Cockpit heißt dann <b>${escapeHtml((v.trim()||'[Firmenname]'))} OS</b>`;
 }
 function coErr(msg){ const e=document.getElementById('coErr'); if(e){ e.textContent=msg||''; e.classList.toggle('show', !!msg); } }
 
@@ -3180,11 +3180,9 @@ function renderCheckout(){
         <div class="co-sum__p">${priceLine}</div>
       </div>
 
-      <div class="co-osprev" id="coOsPrev"><i data-lucide="building-2"></i> Dein Cockpit heißt dann <b>${escapeHtml((coState.firma||'[Firmenname]'))} OS</b></div>
-
       <div class="co-field">
         <label>Firmenname</label>
-        <input id="coFirma" type="text" placeholder="z. B. Müller Tiefbau GmbH" value="${escapeHtml(coState.firma)}" oninput="coNamePreview()">
+        <input id="coFirma" type="text" placeholder="z. B. Müller Tiefbau GmbH" value="${escapeHtml(coState.firma)}">
       </div>
       <div class="co-field--row">
         <div class="co-field"><label>Ansprechpartner</label><input id="coName" type="text" placeholder="Vor- und Nachname" value="${escapeHtml(coState.name)}"></div>
@@ -3214,14 +3212,8 @@ function renderCheckout(){
       <button class="btn full" style="margin-top:13px" id="coSubmitBtn" onclick="coSubmit()">
         <i data-lucide="${coState.method==='rechnung'?'file-check':'lock'}"></i> ${coState.method==='rechnung'?'Zahlungspflichtig bestellen':'Weiter zur Zahlung'}
       </button>
-      <span class="co-skip" onclick="coSkip()">Später erledigen – erst ins Cockpit</span>
     </div>`;
   icons();
-}
-
-function coSkip(){
-  document.getElementById('checkout').classList.add('hidden');
-  try{ openConsentGate(); }catch(e){}
 }
 
 async function coSubmit(){
@@ -4134,9 +4126,15 @@ function osBranchePhrase(){
   const t = settings.theme || 'galabau';
   return t==='tiefbau' ? 'den Straßen- & Tiefbau' : t==='landwirtschaft' ? 'die Landwirtschaft' : 'den GaLaBau';
 }
+// Eingeloggt? Pre-Login dürfen KEINE gespeicherten Firmendaten (Name/Logo/Farbe)
+// eines früheren Accounts auf die Auth-Screens lecken (sonst „Willkommen zurück,
+// [fremde Firma]" + weißer Button durch fremde Markenfarbe).
+function gcAuthed(){ return !!GC_USER; }
 function osBase(){
-  const c = (settings.company && settings.company.name) ? settings.company.name.trim() : '';
-  if(c) return c;                                   // Firmenname hat immer Vorrang -> „[Firmenname] OS"
+  if(gcAuthed()){
+    const c = (settings.company && settings.company.name) ? settings.company.name.trim() : '';
+    if(c) return c;                                 // eingeloggt: Firmenname -> „[Firmenname] OS"
+  }
   const b = entryBrand(); if(b) return b.name;      // sonst Eintritts-Marke -> „Grey/Green Careers OS"
   return osBrandLabel();                            // Fallback: Branchen-Label
 }
@@ -4156,7 +4154,12 @@ function applyBrandColorValue(col){
     root.style.removeProperty('--green-3');
   }
 }
-function applyBrandColor(){ applyBrandColorValue(settings.company && settings.company.color ? settings.company.color.trim() : ''); }
+function applyBrandColor(){
+  // Pre-Login: KEIN gespeichertes Firmen-Farb-Override -> Theme-Standardfarbe greift
+  // (verhindert weißen Button durch eine helle Markenfarbe eines alten Accounts).
+  if(!gcAuthed()){ applyBrandColorValue(''); return; }
+  applyBrandColorValue(settings.company && settings.company.color ? settings.company.color.trim() : '');
+}
 function applyBranding(){
   const co = settings.company || {};
   const base = osBase();
@@ -4164,13 +4167,13 @@ function applyBranding(){
   // Login
   const ln = document.getElementById('loginBrandName'); if(ln) ln.innerHTML = `${escapeHtml(base)} <small>OS</small>`;
   const ls = document.getElementById('loginBrandSub'); if(ls) ls.textContent = `Betriebssoftware für ${osBranchePhrase()}`;
-  const lsl = document.getElementById('loginSubLine'); if(lsl && co.name) lsl.textContent = `Melde dich an und öffne das Cockpit für ${co.name}.`;
+  const lsl = document.getElementById('loginSubLine'); if(lsl) lsl.textContent = (gcAuthed() && co.name) ? `Melde dich an und öffne das Cockpit für ${co.name}.` : 'Melde dich an und öffne dein Cockpit.';
   const rsl = document.getElementById('regSubLine'); if(rsl) rsl.textContent = `Starte mit deinem Betrieb in ${osName()}. Du bekommst gleich eine Bestätigungs-Mail.`;
   const pos = document.getElementById('poweredOs'); if(pos) pos.textContent = osName();
   // Sidebar Name
   const sb = document.querySelector('.sidebrand__text b'); if(sb) sb.textContent = co.name || 'GreenCareers';
-  // Logo (Sidebar + Login-Brandmark)
-  const logo = co.logo || '';
+  // Logo (Sidebar + Login-Brandmark) – pre-login neutrales Blatt statt fremdem Firmenlogo
+  const logo = gcAuthed() ? (co.logo || '') : '';
   document.querySelectorAll('#sideBrandmark, .auth__brand .brandmark').forEach(mark=>{
     if(!mark) return;
     if(logo){ mark.innerHTML = `<img src="${logo}" alt="Logo" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">`; mark.style.background='transparent'; }
