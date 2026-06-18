@@ -3058,6 +3058,15 @@ function coParseCodePct(raw){
   return (pct>0 && pct<=60) ? pct : 0;
 }
 function buyFlowPending(){ const e = gcEntry(); return e.flow==='buy' && !e.paid && !!e.pkg; }
+// Rückkehr von Stripe: success_url = os.green-careers.de/?paid=1&session_id=…
+function coStripeReturn(){ try{ return new URLSearchParams(window.location.search).get('paid')==='1'; }catch(_){ return false; } }
+function openCheckoutSuccess(){
+  const e = gcEntry(); e.paid = true; saveEntry(e);
+  coState.firma = (settings.company && settings.company.name) || coState.firma || '';
+  try{ history.replaceState(null,'',window.location.pathname); }catch(_){}   // ?paid=1 aus URL entfernen
+  document.getElementById('checkout').classList.remove('hidden');
+  coDone(false);
+}
 function coEur(n){ return n.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' €'; }
 
 // Anzeige-Preis (autoritativ rechnet die Edge Function neu)
@@ -3213,6 +3222,8 @@ async function coSubmit(){
   const payload = {
     mode: c.mode, pkg: c.pkgKey, qty: String(c.qty), method: coState.method,
     term: e.term||'', ref: e.ref||'', codeRaw: e.code||'',
+    customerId: (GC_PROFILE && GC_PROFILE.customer_id) || null,   // Bestellung↔Account verknüpfen
+    authUserId: (GC_USER && GC_USER.id) || null,
     customer: { name: coState.name, firma: coState.firma, email: (GC_USER&&GC_USER.email)||'', tel: coState.tel||'', vat: coState.vat||'' }
   };
   try{
@@ -3631,6 +3642,7 @@ function enterApp(){
   applyRole();
   loadWeather();
   // Kauf-Flow (Option B): nach Registrierung+Login zuerst die Zahlungsseite, dann Consent+Einrichtung.
+  if(coStripeReturn()){ openCheckoutSuccess(); return; }   // zurück von Stripe -> Erfolgs-View
   if(buyFlowPending()){ openCheckout(); return; }
   // Erstnutzung: 1) AVV/DSGVO  2) Einrichtung  3) Tour. Danach direkt ins Cockpit.
   if(!settings.onboarded || !(GC_PROFILE&&GC_PROFILE.customer_id)) openConsentGate();
