@@ -2244,6 +2244,19 @@
   .co-done{ text-align:center; }
   .co-done h3{ font-size:19px; font-weight:800; letter-spacing:-.01em; margin:0 0 7px; }
   .co-done p{ font-size:13px; color:var(--muted); line-height:1.55; margin:0 0 6px; }
+  .co-status{ text-align:left; margin:16px 0 4px; display:flex; flex-direction:column; gap:9px; }
+  .co-step{ display:flex; gap:11px; align-items:flex-start; padding:11px 13px; border:1px solid var(--line); border-radius:12px; background:#fff; }
+  .co-step__ic{ flex:0 0 28px; width:28px; height:28px; border-radius:9px; display:grid; place-items:center; background:var(--canvas); color:var(--muted); margin-top:1px; }
+  .co-step__ic .lucide{ width:16px; height:16px; }
+  .co-step__tx{ flex:1; min-width:0; }
+  .co-step__tx > strong{ display:block; font-size:13px; font-weight:700; line-height:1.4; color:var(--ink); }
+  .co-step__tx > span{ display:block; font-size:11.5px; color:var(--muted); margin-top:2px; line-height:1.45; }
+  .co-step--done{ border-color:rgba(var(--brand-rgb),.30); background:rgba(var(--brand-rgb),.05); }
+  .co-step--done .co-step__ic{ background:var(--green); color:#fff; }
+  .co-step--now .co-step__ic{ background:rgba(var(--brand-rgb),.12); color:var(--green); }
+  .co-step--now .co-step__ic .lucide{ animation:coSpin 1.4s linear infinite; }
+  @keyframes coSpin{ to{ transform:rotate(360deg); } }
+  .co-note{ display:block; font-size:11.5px; color:var(--muted-2); line-height:1.5; margin-top:11px; }
 
   /* ===== Finanzen ===== */
   .fin-kpis{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:13px; margin-bottom:16px; }
@@ -3247,17 +3260,43 @@ async function coSubmit(){
 // Erfolgs-Ansicht (für Rechnung; Stripe kehrt über success_url zurück)
 function coDone(isInvoice){
   const ent = gcEntry(); ent.paid = true; saveEntry(ent);
+  const firma = escapeHtml(coState.firma || (settings.company && settings.company.name) || 'deinem Betrieb');
   const card = document.getElementById('checkoutCard');
-  card.innerHTML = `
-    <div class="co-done" style="padding:30px 24px 26px">
-      <div class="co-check"><i data-lucide="check"></i></div>
-      <h3>Das hat geklappt!</h3>
-      <p>${isInvoice
-        ? 'Deine Bestellung ist eingegangen. Du bekommst die Rechnung per E-Mail – sobald die Zahlung da ist, schalten wir dein Kontingent frei.'
-        : 'Deine Zahlung ist eingegangen und dein Kontingent ist freigeschaltet.'}</p>
-      <p>Richte jetzt deinen Betrieb in <b>${escapeHtml(coState.firma)} OS</b> ein.</p>
-      <button class="btn full" style="margin-top:16px" onclick="coFinish()"><i data-lucide="arrow-right"></i> Weiter zur Einrichtung</button>
-    </div>`;
+  if(isInvoice){
+    // Rechnung: glasklar machen, dass die Bestellung da ist, geprüft wird und nach
+    // Zahlungseingang automatisch innerhalb 24 h freigeschaltet wird (Vertriebs-Hebel: Geld -> Stelle live).
+    card.innerHTML = `
+      <div class="co-done" style="padding:28px 22px 24px">
+        <div class="co-check"><i data-lucide="check"></i></div>
+        <h3>Bestellung eingegangen!</h3>
+        <p>Vielen Dank – deine Bestellung für <b>${firma} OS</b> ist bei uns eingegangen.</p>
+        <div class="co-status">
+          <div class="co-step co-step--done">
+            <span class="co-step__ic"><i data-lucide="check"></i></span>
+            <span class="co-step__tx"><strong>Bestellung eingegangen</strong><span>Deine Bestellung liegt uns vor und ist verbindlich erfasst.</span></span>
+          </div>
+          <div class="co-step co-step--now">
+            <span class="co-step__ic"><i data-lucide="loader"></i></span>
+            <span class="co-step__tx"><strong>Wird jetzt geprüft</strong><span>Du bekommst die Rechnung in Kürze per E-Mail an deine hinterlegte Adresse.</span></span>
+          </div>
+          <div class="co-step">
+            <span class="co-step__ic"><i data-lucide="rocket"></i></span>
+            <span class="co-step__tx"><strong>Automatische Freischaltung</strong><span>Sobald deine Zahlung eingeht, schalten wir dein Kontingent <b>automatisch frei – innerhalb von 24 Stunden.</b> Danach kannst du deine Stelle sofort veröffentlichen.</span></span>
+          </div>
+        </div>
+        <button class="btn full" style="margin-top:16px" onclick="coFinish()"><i data-lucide="arrow-right"></i> Betrieb schon einrichten</button>
+        <span class="co-note">Tipp: Richte deinen Betrieb jetzt schon ein – dann geht deine Stelle nach Zahlungseingang ohne Umweg live.</span>
+      </div>`;
+  } else {
+    card.innerHTML = `
+      <div class="co-done" style="padding:30px 24px 26px">
+        <div class="co-check"><i data-lucide="check"></i></div>
+        <h3>Das hat geklappt!</h3>
+        <p>Deine Zahlung ist eingegangen und dein Kontingent ist <b>sofort freigeschaltet.</b></p>
+        <p>Richte jetzt deinen Betrieb in <b>${firma} OS</b> ein – dann kannst du direkt deine erste Stelle veröffentlichen.</p>
+        <button class="btn full" style="margin-top:16px" onclick="coFinish()"><i data-lucide="arrow-right"></i> Weiter zur Einrichtung</button>
+      </div>`;
+  }
   icons();
 }
 function coFinish(){
