@@ -3029,11 +3029,11 @@ function saveSettings(){ try{ localStorage.setItem('gcos_settings_v2', JSON.stri
    Über welche Marke kam der Nutzer rein? Das Portal hängt beim Weiterleiten in die
    Registrierung Parameter an, z. B. os.green-careers.de/?brand=grey&flow=buy&pkg=premium&mode=einmal&qty=2
    - brand=grey  -> Name-Fallback „GreyCareers", Farbschema tiefbau (orange)
-   - brand=green -> Name-Fallback „Green Careers", Farbschema galabau (grün)
+   - brand=green -> Name-Fallback „GreenCareers", Farbschema galabau (grün)
    Sobald ein Firmenname gesetzt ist, greift weiterhin „[Firmenname] OS".
    Die Auswahl wird in localStorage gespiegelt, damit sie den E-Mail-Verify-Roundtrip übersteht. */
 const ENTRY_BRANDS = {
-  green: { name:'Green Careers', theme:'galabau' },
+  green: { name:'GreenCareers', theme:'galabau' },
   grey:  { name:'GreyCareers',  theme:'tiefbau'  },
 };
 const ENTRY_KEYS = ['flow','pkg','mode','qty','term','ref','code'];
@@ -3205,7 +3205,7 @@ function renderCheckout(){
 
       <label class="consent-row ${coState.agb?'on':''}" style="margin-top:12px" onclick="coToggleAgb()">
         <span class="consent-box"><i data-lucide="check"></i></span>
-        <span class="consent-txt"><strong>AGB &amp; Datenschutz akzeptieren</strong><span>Ich stimme den AGB und der Datenschutzerklärung der Green Careers GmbH zu und beauftrage kostenpflichtig.</span></span>
+        <span class="consent-txt"><strong>AGB &amp; Datenschutz akzeptieren</strong><span>Ich stimme den AGB und der Datenschutzerklärung der GreenCareers GmbH zu und beauftrage kostenpflichtig.</span></span>
       </label>
 
       <div class="co-err" id="coErr"></div>
@@ -4166,7 +4166,7 @@ function osBase(){
     const c = (settings.company && settings.company.name) ? settings.company.name.trim() : '';
     if(c) return c;                                 // eingeloggt: Firmenname -> „[Firmenname] OS"
   }
-  const b = entryBrand(); if(b) return b.name;      // sonst Eintritts-Marke -> „Grey/Green Careers OS"
+  const b = entryBrand(); if(b) return b.name;      // sonst Eintritts-Marke -> „Grey/GreenCareers OS"
   return osBrandLabel();                            // Fallback: Branchen-Label
 }
 function osName(){ return osBase() + ' OS'; }
@@ -10951,7 +10951,7 @@ function toast(message){
 function icons(){
   if(window.lucide) lucide.createIcons();
 }
-initEntryBrand();  // Eintritts-Marke (Grey/Green Careers) erfassen + Farbe/Name vor dem Login setzen
+initEntryBrand();  // Eintritts-Marke (Grey/GreenCareers) erfassen + Farbe/Name vor dem Login setzen
 icons();
 gcAuthBoot();   // bestehende Session prüfen / auf E-Mail-Bestätigung reagieren
 </script>
