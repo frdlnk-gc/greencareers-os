@@ -141,6 +141,9 @@
     justify-content:center;
     gap:8px;
     min-height:42px;
+    border:0;
+    -webkit-appearance:none;
+    appearance:none;
     border-radius:8px;
     padding:11px 15px;
     /* Solider Farb-Fallback ZUERST, Gradient darüber: falls ein Browser/Extension
@@ -160,6 +163,11 @@
   .auth__foot{ margin-top:18px; padding-top:16px; border-top:1px solid var(--line); display:flex; align-items:center; justify-content:space-between; gap:12px; color:var(--muted); font-size:11.5px; }
   .auth__foot a{ color:var(--green); font-weight:700; cursor:pointer; }
   .auth__err{ background:#fdecec; border:1px solid #f5c2c2; color:#b42318; font-size:12.5px; font-weight:600; padding:9px 12px; border-radius:9px; margin:2px 0 14px; }
+  .pw-wrap{ position:relative; }
+  .pw-wrap input{ padding-right:44px; }
+  .pw-eye{ position:absolute; top:50%; right:6px; transform:translateY(-50%); width:34px; height:34px; display:grid; place-items:center; border:0; background:transparent; color:var(--muted); cursor:pointer; border-radius:7px; }
+  .pw-eye:hover{ color:var(--green-2); background:var(--mint); }
+  .pw-eye .lucide{ width:18px; height:18px; }
   .auth__ok{ background:#e9f8ef; border:1px solid #b7e5c8; color:#0E7A43; font-size:12.5px; font-weight:600; padding:10px 12px; border-radius:9px; margin:2px 0 14px; display:flex; gap:8px; align-items:flex-start; }
 
   /* Shell */
@@ -2654,7 +2662,7 @@
       <p class="sub" id="loginSubLine">Melde dich an und öffne dein Cockpit.</p>
       <div class="auth__ok" id="loginOk" style="display:none"></div>
       <div class="field"><label for="email">E-Mail</label><input id="email" type="email" placeholder="name@firma.de" autocomplete="email" /></div>
-      <div class="field"><label for="password">Passwort</label><input id="password" type="password" placeholder="Dein Passwort" autocomplete="current-password" onkeydown="if(event.key==='Enter')login()" /></div>
+      <div class="field"><label for="password">Passwort</label><div class="pw-wrap"><input id="password" type="password" placeholder="Dein Passwort" autocomplete="current-password" onkeydown="if(event.key==='Enter')login()" /><button type="button" class="pw-eye" aria-label="Passwort anzeigen" onclick="togglePw('password',this)"><i data-lucide="eye"></i></button></div></div>
       <div class="auth__err" style="display:none"></div>
       <div class="auth__row">
         <label class="auth__chk"><input type="checkbox" checked /> Angemeldet bleiben</label>
@@ -2669,8 +2677,8 @@
       <p class="sub" id="regSubLine">Starte mit deinem Betrieb in GreenCareers OS. Du bekommst gleich eine Bestätigungs-Mail.</p>
       <div class="field"><label for="regName">Dein Name</label><input id="regName" type="text" placeholder="Vor- und Nachname" autocomplete="name" /></div>
       <div class="field"><label for="regEmail">E-Mail</label><input id="regEmail" type="email" placeholder="name@firma.de" autocomplete="email" /></div>
-      <div class="field"><label for="regPassword">Passwort</label><input id="regPassword" type="password" placeholder="Mind. 8 Zeichen" autocomplete="new-password" /></div>
-      <div class="field"><label for="regPassword2">Passwort wiederholen</label><input id="regPassword2" type="password" placeholder="Passwort erneut" autocomplete="new-password" onkeydown="if(event.key==='Enter')doRegister()" /></div>
+      <div class="field"><label for="regPassword">Passwort</label><div class="pw-wrap"><input id="regPassword" type="password" placeholder="Mind. 8 Zeichen" autocomplete="new-password" /><button type="button" class="pw-eye" aria-label="Passwort anzeigen" onclick="togglePw('regPassword',this)"><i data-lucide="eye"></i></button></div></div>
+      <div class="field"><label for="regPassword2">Passwort wiederholen</label><div class="pw-wrap"><input id="regPassword2" type="password" placeholder="Passwort erneut" autocomplete="new-password" onkeydown="if(event.key==='Enter')doRegister()" /><button type="button" class="pw-eye" aria-label="Passwort anzeigen" onclick="togglePw('regPassword2',this)"><i data-lucide="eye"></i></button></div></div>
       <div class="auth__err" style="display:none"></div>
       <button class="btn full" id="regBtn" onclick="doRegister()">Konto erstellen</button>
       <div class="auth__foot"><span>Schon registriert?</span><a onclick="showAuth('login')">Zum Login</a></div>
@@ -3183,7 +3191,7 @@ function renderCheckout(){
 
       <label class="consent-row ${coState.agb?'on':''}" style="margin-top:12px" onclick="coToggleAgb()">
         <span class="consent-box"><i data-lucide="check"></i></span>
-        <span class="consent-txt"><strong>AGB &amp; Datenschutz akzeptieren</strong><span>Ich stimme den AGB und der Datenschutzerklärung zu und beauftrage kostenpflichtig.</span></span>
+        <span class="consent-txt"><strong>AGB &amp; Datenschutz akzeptieren</strong><span>Ich stimme den AGB und der Datenschutzerklärung der Green Careers GmbH zu und beauftrage kostenpflichtig.</span></span>
       </label>
 
       <div class="co-err" id="coErr"></div>
@@ -3582,6 +3590,14 @@ let GC_PROFILE = null;    // profiles-Zeile (role, customer_id)
 let _enteredApp = false;
 
 function authErr(msg){ document.querySelectorAll('.auth__err').forEach(e=>{ e.textContent=msg||''; e.style.display=msg?'block':'none'; }); }
+// Passwort ein-/ausblenden (Auge-Toggle)
+function togglePw(id,btn){
+  const inp=document.getElementById(id); if(!inp) return;
+  const show=inp.type==='password';
+  inp.type=show?'text':'password';
+  if(btn){ btn.setAttribute('aria-label', show?'Passwort verbergen':'Passwort anzeigen'); btn.innerHTML='<i data-lucide="'+(show?'eye-off':'eye')+'"></i>'; if(window.lucide) lucide.createIcons(); }
+  inp.focus();
+}
 function authBusy(on,btnId){ const b=document.getElementById(btnId); if(b){ b.disabled=!!on; if(on){ b.dataset._t=b.textContent; b.textContent='Bitte warten…'; } else if(b.dataset._t){ b.textContent=b.dataset._t; } } }
 
 // Registrierung: E-Mail + Passwort -> Supabase schickt Bestätigungs-Mail
@@ -3602,6 +3618,15 @@ async function doRegister(){
   });
   authBusy(false,'regBtn');
   if(error){ authErr(error.message.includes('already registered')?'Diese E-Mail ist bereits registriert. Bitte einloggen.':error.message); return; }
+  // Anti-Enumeration: Supabase liefert bei einer BEREITS BESTÄTIGTEN E-Mail eine
+  // Erfolg-Antwort OHNE neue Mail. Erkennbar an leerer identities-Liste -> nicht den
+  // Verify-Screen zeigen (sonst wartet der Nutzer auf eine Mail, die nie kommt).
+  if(data && data.user && Array.isArray(data.user.identities) && data.user.identities.length===0){
+    const lEmail=document.getElementById('email'); if(lEmail) lEmail.value=email;
+    showAuth('login');
+    authErr('Diese E-Mail ist bereits registriert. Bitte logge dich ein (oder nutze „Passwort vergessen").');
+    return;
+  }
   // Bei aktivierter E-Mail-Bestätigung gibt es noch keine Session -> Hinweis zeigen
   const vEmail=document.getElementById('verifyEmail'); if(vEmail) vEmail.textContent=email;
   showAuth('verify');
