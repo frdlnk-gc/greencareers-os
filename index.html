@@ -3025,16 +3025,16 @@ function loadSettings(){
 function resetDemoModules(s){ s.owned = []; s.startModul = true; return s; }
 function saveSettings(){ try{ localStorage.setItem('gcos_settings_v2', JSON.stringify(settings)); }catch(e){} }
 
-/* ===================== ENTRY-BRAND (Green vs Grey Careers OS) =====================
+/* ===================== ENTRY-BRAND (GreenCareers vs GreyCareers OS) =====================
    Über welche Marke kam der Nutzer rein? Das Portal hängt beim Weiterleiten in die
    Registrierung Parameter an, z. B. os.green-careers.de/?brand=grey&flow=buy&pkg=premium&mode=einmal&qty=2
-   - brand=grey  -> Name-Fallback „Grey Careers", Farbschema tiefbau (orange)
+   - brand=grey  -> Name-Fallback „GreyCareers", Farbschema tiefbau (orange)
    - brand=green -> Name-Fallback „Green Careers", Farbschema galabau (grün)
    Sobald ein Firmenname gesetzt ist, greift weiterhin „[Firmenname] OS".
    Die Auswahl wird in localStorage gespiegelt, damit sie den E-Mail-Verify-Roundtrip übersteht. */
 const ENTRY_BRANDS = {
   green: { name:'Green Careers', theme:'galabau' },
-  grey:  { name:'Grey Careers',  theme:'tiefbau'  },
+  grey:  { name:'GreyCareers',  theme:'tiefbau'  },
 };
 const ENTRY_KEYS = ['flow','pkg','mode','qty','term','ref','code'];
 function gcEntry(){ try{ return JSON.parse(localStorage.getItem('gcos_entry')||'{}')||{}; }catch(e){ return {}; } }
@@ -3139,6 +3139,7 @@ function openCheckout(){
   // (Neukäufer tippen ihn selbst – kein alter Name aus localStorage).
   coState.firma = (GC_PROFILE && GC_PROFILE.customer_id && settings.company && settings.company.name) || '';
   coState.name  = (GC_USER && GC_USER.user_metadata && GC_USER.user_metadata.name) || coState.name || '';
+  coEnforceBrand();
   document.getElementById('checkout').classList.remove('hidden');
   renderCheckout();
 }
@@ -3272,35 +3273,44 @@ async function coSubmit(){
   }
 }
 
+// Kauf-Flow IMMER in der Eintritts-Marken-Farbe (Grey=orange / Green=grün) – nie in der
+// gespeicherten Firmen-Farbe eines eingeloggten Accounts (sonst leakt z.B. ein lila Custom-Ton
+// in Buttons/Texte des Checkouts). Theme der Eintritts-Marke setzen + Inline-Override löschen.
+function coEnforceBrand(){
+  try{
+    const eb = entryBrand();
+    if(eb) applyTheme(eb.theme);
+    applyBrandColorValue('');   // Custom-Firmenfarbe im Checkout deaktivieren -> Theme-Standardfarbe greift
+  }catch(_){}
+}
+
 // Erfolgs-Ansicht (für Rechnung; Stripe kehrt über success_url zurück)
 function coDone(isInvoice){
+  coEnforceBrand();
   const ent = gcEntry(); ent.paid = true; saveEntry(ent);
   const firma = escapeHtml(coState.firma || (settings.company && settings.company.name) || 'deinem Betrieb');
   const card = document.getElementById('checkoutCard');
   if(isInvoice){
-    // Rechnung: glasklar machen, dass die Bestellung da ist, geprüft wird und nach
-    // Zahlungseingang automatisch innerhalb 24 h freigeschaltet wird (Vertriebs-Hebel: Geld -> Stelle live).
+    // Rechnung: Druck zum schnellen Überweisen. Zwei klare Schritte für den Kunden:
+    // (1) Rechnung jetzt überweisen, (2) Betrieb schon einrichten. Kontingent erst NACH
+    // Zahlungseingang frei -> „heute überweisen = morgen live" (Vertriebs-Hebel).
     card.innerHTML = `
       <div class="co-done" style="padding:28px 22px 24px">
         <div class="co-check"><i data-lucide="check"></i></div>
         <h3>Bestellung eingegangen!</h3>
-        <p>Vielen Dank – deine Bestellung für <b>${firma} OS</b> ist bei uns eingegangen.</p>
+        <p>Vielen Dank – deine Bestellung für <b>${firma}</b> ist bei uns. Jetzt fehlen nur noch zwei Schritte, bis du Stellen schalten und Bewerber finden kannst:</p>
         <div class="co-status">
-          <div class="co-step co-step--done">
-            <span class="co-step__ic"><i data-lucide="check"></i></span>
-            <span class="co-step__tx"><strong>Bestellung eingegangen</strong><span>Deine Bestellung liegt uns vor und ist verbindlich erfasst.</span></span>
-          </div>
           <div class="co-step co-step--now">
-            <span class="co-step__ic"><i data-lucide="loader"></i></span>
-            <span class="co-step__tx"><strong>Wird jetzt geprüft</strong><span>Du bekommst die Rechnung in Kürze per E-Mail an deine hinterlegte Adresse.</span></span>
+            <span class="co-step__ic"><i data-lucide="banknote"></i></span>
+            <span class="co-step__tx"><strong>1. Rechnung überweisen</strong><span>Deine Rechnung ist in den nächsten Minuten per E-Mail bei dir. Überweise sie am besten <b>noch heute</b> – sobald deine Zahlung bei uns eingeht, schalten wir dein Kontingent frei. Überweist du heute, ist das Geld morgen da und es geht direkt los.</span></span>
           </div>
           <div class="co-step">
             <span class="co-step__ic"><i data-lucide="rocket"></i></span>
-            <span class="co-step__tx"><strong>Automatische Freischaltung</strong><span>Sobald deine Zahlung eingeht, schalten wir dein Kontingent <b>automatisch frei – innerhalb von 24 Stunden.</b> Danach kannst du deine Stelle sofort veröffentlichen.</span></span>
+            <span class="co-step__tx"><strong>2. Betrieb schon einrichten</strong><span>Richte währenddessen schon alles ein. Dann ist deine erste Stelle in der Sekunde live, in der deine Zahlung bei uns ankommt – ganz ohne Wartezeit.</span></span>
           </div>
         </div>
-        <button class="btn full" style="margin-top:16px" onclick="coFinish()"><i data-lucide="arrow-right"></i> Betrieb schon einrichten</button>
-        <span class="co-note">Tipp: Richte deinen Betrieb jetzt schon ein – dann geht deine Stelle nach Zahlungseingang ohne Umweg live.</span>
+        <button class="btn full" style="margin-top:16px" onclick="coFinish()"><i data-lucide="arrow-right"></i> Jetzt einrichten</button>
+        <span class="co-note">So bist du startklar, sobald deine Überweisung bei uns ankommt.</span>
       </div>`;
   } else {
     card.innerHTML = `
@@ -3308,7 +3318,7 @@ function coDone(isInvoice){
         <div class="co-check"><i data-lucide="check"></i></div>
         <h3>Das hat geklappt!</h3>
         <p>Deine Zahlung ist eingegangen und dein Kontingent ist <b>sofort freigeschaltet.</b></p>
-        <p>Richte jetzt deinen Betrieb in <b>${firma} OS</b> ein – dann kannst du direkt deine erste Stelle veröffentlichen.</p>
+        <p>Richte jetzt <b>${firma}</b> ein – dann kannst du direkt deine erste Stelle veröffentlichen.</p>
         <button class="btn full" style="margin-top:16px" onclick="coFinish()"><i data-lucide="arrow-right"></i> Weiter zur Einrichtung</button>
       </div>`;
   }
