@@ -94,9 +94,9 @@
     place-items:center;
     padding:22px;
     background:
-      radial-gradient(820px 440px at 86% 0%, rgba(22,163,74,.24), transparent 58%),
-      radial-gradient(620px 380px at 10% 100%, rgba(37,99,235,.12), transparent 55%),
-      linear-gradient(145deg,#101D15 0%,#0B140D 100%);
+      radial-gradient(820px 440px at 86% 0%, rgba(var(--brand-rgb),.24), transparent 58%),
+      radial-gradient(620px 380px at 10% 100%, rgba(var(--brand-rgb),.10), transparent 55%),
+      linear-gradient(145deg,var(--sidebar) 0%,var(--sidebar-2) 100%);
   }
   .auth__card{
     width:min(100%,430px);
@@ -2210,6 +2210,41 @@
   .doc li{ margin-bottom:3px; }
   .gate__back{ display:inline-flex; align-items:center; gap:6px; font-size:12.5px; font-weight:600; color:var(--muted); margin-bottom:6px; }
 
+  /* ===== Checkout (Zahlungsseite im OS) ===== */
+  .co-sum{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; background:var(--canvas); border:1px solid var(--line); border-radius:13px; padding:13px 14px; margin:12px 0 14px; }
+  .co-sum__l > strong{ display:block; font-size:14px; font-weight:800; line-height:1.35; }
+  .co-sum__l > span{ display:block; font-size:11.5px; color:var(--muted); margin-top:3px; line-height:1.45; }
+  .co-sum__p{ text-align:right; flex-shrink:0; }
+  .co-sum__p b{ font-size:18px; font-weight:800; letter-spacing:-.01em; white-space:nowrap; }
+  .co-sum__p small{ display:block; font-size:11px; color:var(--muted); margin-top:1px; }
+  .co-osprev{ display:flex; align-items:center; gap:8px; font-size:12px; color:var(--muted-2); background:rgba(var(--brand-rgb),.07); border:1px solid rgba(var(--brand-rgb),.16); border-radius:10px; padding:9px 12px; margin-bottom:14px; line-height:1.45; }
+  .co-osprev .lucide{ width:15px; height:15px; flex-shrink:0; color:var(--green); }
+  .co-osprev b{ color:var(--ink); font-weight:800; }
+  .co-field{ margin-bottom:10px; }
+  .co-field > label{ display:block; font-size:11.5px; font-weight:700; color:var(--ink-2); margin-bottom:4px; }
+  .co-field input{ width:100%; height:42px; border:1px solid var(--line-2); border-radius:10px; padding:0 12px; font-size:13.5px; font-family:inherit; color:var(--ink); background:#fff; transition:border-color .14s; }
+  .co-field input:focus{ outline:none; border-color:var(--green); }
+  .co-field--row{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  @media(max-width:460px){ .co-field--row{ grid-template-columns:1fr; } }
+  .co-lbl{ font-size:11.5px; font-weight:800; color:var(--muted-2); text-transform:uppercase; letter-spacing:.04em; margin:14px 0 8px; }
+  .co-methods{ display:grid; grid-template-columns:1fr 1fr; gap:9px; margin-bottom:6px; }
+  @media(max-width:460px){ .co-methods{ grid-template-columns:1fr; } }
+  .co-m{ display:flex; align-items:center; gap:9px; padding:11px 12px; border:1px solid var(--line); border-radius:11px; cursor:pointer; font-size:13px; font-weight:600; transition:border-color .14s, background .14s; }
+  .co-m:hover{ border-color:var(--line-2); }
+  .co-m.on{ border-color:var(--green); background:var(--mint-2); }
+  .co-m .lucide{ width:17px; height:17px; color:var(--muted); }
+  .co-m.on .lucide{ color:var(--green); }
+  .co-m small{ display:block; font-weight:500; font-size:11px; color:var(--muted); margin-top:1px; }
+  .co-err{ display:none; font-size:12px; font-weight:600; color:#DC2626; background:#FEF2F2; border:1px solid #FECACA; border-radius:9px; padding:9px 11px; margin:6px 0 0; }
+  .co-err.show{ display:block; }
+  .co-skip{ display:block; text-align:center; font-size:11.5px; font-weight:600; color:var(--muted); margin-top:11px; cursor:pointer; }
+  .co-check{ width:64px; height:64px; border-radius:999px; background:var(--mint); display:grid; place-items:center; margin:6px auto 14px; animation:coPop .4s cubic-bezier(.2,.8,.3,1.3); }
+  .co-check .lucide{ width:34px; height:34px; color:var(--green); }
+  @keyframes coPop{ 0%{ transform:scale(.4); opacity:0; } 100%{ transform:scale(1); opacity:1; } }
+  .co-done{ text-align:center; }
+  .co-done h3{ font-size:19px; font-weight:800; letter-spacing:-.01em; margin:0 0 7px; }
+  .co-done p{ font-size:13px; color:var(--muted); line-height:1.55; margin:0 0 6px; }
+
   /* ===== Finanzen ===== */
   .fin-kpis{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:13px; margin-bottom:16px; }
   @media(max-width:880px){ .fin-kpis{ grid-template-columns:repeat(2,1fr); } }
@@ -2618,7 +2653,7 @@
     <div id="registerView" class="hidden">
       <span class="auth__back" onclick="showAuth('login')"><i data-lucide="arrow-left"></i> Zurück</span>
       <h1>Konto erstellen</h1>
-      <p class="sub">Starte mit deinem Betrieb in GreenCareers OS. Du bekommst gleich eine Bestätigungs-Mail.</p>
+      <p class="sub" id="regSubLine">Starte mit deinem Betrieb in GreenCareers OS. Du bekommst gleich eine Bestätigungs-Mail.</p>
       <div class="field"><label for="regName">Dein Name</label><input id="regName" type="text" placeholder="Vor- und Nachname" autocomplete="name" /></div>
       <div class="field"><label for="regEmail">E-Mail</label><input id="regEmail" type="email" placeholder="name@firma.de" autocomplete="email" /></div>
       <div class="field"><label for="regPassword">Passwort</label><input id="regPassword" type="password" placeholder="Mind. 8 Zeichen" autocomplete="new-password" /></div>
@@ -2660,7 +2695,7 @@
     </div>
     <nav class="nav" id="sideNav"></nav>
     <div class="sidefoot">
-      <div class="powered"><i data-lucide="leaf"></i><span>läuft auf <b>GreenCareers OS</b></span></div>
+      <div class="powered"><i data-lucide="leaf"></i><span>läuft auf <b id="poweredOs">GreenCareers OS</b></span></div>
       <button class="sideuser" id="sideUser" onclick="openSettings()">
         <span class="avatar" id="sideAvatar">GM</span>
         <span class="sideuser__text"><b id="sideUserName">Georg Müller</b><span id="sideUserRole">Inhaber · Admin</span></span>
@@ -2687,6 +2722,7 @@
 <div class="overlay hidden" id="modal"><div class="sheet" id="sheet"></div></div>
 <div class="upgrade hidden" id="upgrade"><div class="upgrade__inner" id="upgradeInner"></div></div>
 <div class="gate hidden" id="gate"><div class="gate__card" id="gateCard"></div></div>
+<div class="gate hidden" id="checkout"><div class="gate__card" id="checkoutCard" style="max-width:560px"></div></div>
 <div class="toast" id="toast"><i data-lucide="check-circle-2"></i><span id="toastText"></span></div>
 
 <div class="fab-scrim" id="fabScrim" onclick="closeFab()"></div>
@@ -2949,6 +2985,274 @@ function loadSettings(){
 // sieht – Planung/Kunden/Finanzen/Markt bleiben ausgegraut, auch wenn vorher „gekauft".
 function resetDemoModules(s){ s.owned = []; s.startModul = true; return s; }
 function saveSettings(){ try{ localStorage.setItem('gcos_settings_v2', JSON.stringify(settings)); }catch(e){} }
+
+/* ===================== ENTRY-BRAND (Green vs Grey Careers OS) =====================
+   Über welche Marke kam der Nutzer rein? Das Portal hängt beim Weiterleiten in die
+   Registrierung Parameter an, z. B. os.green-careers.de/?brand=grey&flow=buy&pkg=premium&mode=einmal&qty=2
+   - brand=grey  -> Name-Fallback „Grey Careers", Farbschema tiefbau (orange)
+   - brand=green -> Name-Fallback „Green Careers", Farbschema galabau (grün)
+   Sobald ein Firmenname gesetzt ist, greift weiterhin „[Firmenname] OS".
+   Die Auswahl wird in localStorage gespiegelt, damit sie den E-Mail-Verify-Roundtrip übersteht. */
+const ENTRY_BRANDS = {
+  green: { name:'Green Careers', theme:'galabau' },
+  grey:  { name:'Grey Careers',  theme:'tiefbau'  },
+};
+const ENTRY_KEYS = ['flow','pkg','mode','qty','term','ref','code'];
+function gcEntry(){ try{ return JSON.parse(localStorage.getItem('gcos_entry')||'{}')||{}; }catch(e){ return {}; } }
+function saveEntry(e){ try{ localStorage.setItem('gcos_entry', JSON.stringify(e||{})); }catch(_){} }
+function entryBrand(){ const e=gcEntry(); return ENTRY_BRANDS[e.brand]||null; }
+// URL-Parameter einsammeln und in localStorage mergen (überlebt Verify-Roundtrip)
+function captureEntry(){
+  let cur = gcEntry();
+  try{
+    const q = new URLSearchParams(window.location.search);
+    const brand = (q.get('brand')||'').toLowerCase();
+    if(ENTRY_BRANDS[brand]) cur.brand = brand;
+    ENTRY_KEYS.forEach(k=>{ const v=q.get(k); if(v) cur[k]=v; });
+    saveEntry(cur);
+  }catch(e){}
+  return cur;
+}
+function entryQueryString(){
+  const e = gcEntry(); const q = new URLSearchParams();
+  if(e.brand) q.set('brand', e.brand);
+  ENTRY_KEYS.forEach(k=>{ if(e[k]) q.set(k, e[k]); });
+  const s = q.toString(); return s ? ('?'+s) : '';
+}
+// Vor dem Login Farbe + Name passend zur Eintritts-Marke setzen (nur solange noch kein Firmenname existiert)
+function initEntryBrand(){
+  captureEntry();
+  const b = entryBrand();
+  const hasCompany = !!(settings.company && settings.company.name && settings.company.name.trim());
+  if(b && !hasCompany){ settings.theme = b.theme; }
+  try{ applyTheme(settings.theme); }catch(e){}
+  try{ applyBranding(); }catch(e){}
+}
+
+/* ===================== CHECKOUT / ZAHLUNGSSEITE IM OS =====================
+   Kauf-Flow (Option B): Portal -> Registrierung im OS -> E-Mail-Bestätigung ->
+   Login -> DIESE Zahlungsseite (Paket ist über gcEntry schon vorausgewählt).
+   Der Nutzer gibt nur noch Firmenname + Ansprechpartner + Zahlart ein.
+   Preis wird hier nur ZUR ANZEIGE gerechnet – verbindlich rechnet die Edge
+   Function (dynamic-responder = create-checkout.ts) server-seitig neu. */
+const CO_PKG_EINMAL = { smart:{name:'Smart',price:2190,days:60}, premium:{name:'Premium',price:3190,days:60}, exzellenz:{name:'Exzellenz',price:5490,days:90} };
+const CO_PKG_ABO    = { smart:{name:'Smart',price:399}, premium:{name:'Premium',price:599}, exzellenz:{name:'Exzellenz',price:799} };
+const CO_QTY_DISC   = { 1:0, 2:10, 3:20, 4:30 };
+const CO_TERM_DISC  = { '6m':0, '12m':20 };
+const CO_TERM_MONTHS= { '6m':6, '12m':12 };
+const CO_VAT = 0.19;
+const CO_RABATT_PREFIX = 'Sale';
+const CO_METHODS = [
+  { key:'card',     icon:'credit-card', label:'Kreditkarte', sub:'Sofort freigeschaltet' },
+  { key:'paypal',   icon:'wallet',      label:'PayPal',      sub:'Sofort freigeschaltet' },
+  { key:'sepa',     icon:'banknote',    label:'SEPA-Lastschrift', sub:'Sofort freigeschaltet' },
+  { key:'rechnung', icon:'file-text',   label:'Kauf auf Rechnung', sub:'Freigabe nach Zahlungseingang' },
+];
+let coState = { method:'card', agb:false, firma:'', name:'', tel:'', vat:'' };
+
+function coParseCodePct(raw){
+  if(!raw) return 0;
+  const re = new RegExp('^\\s*'+CO_RABATT_PREFIX+'\\s*([0-9]{1,2}(?:[.,][0-9]{1,2})?)\\s*$','i');
+  const m = String(raw).match(re); if(!m) return 0;
+  const pct = parseFloat(m[1].replace(',','.'));
+  return (pct>0 && pct<=60) ? pct : 0;
+}
+function buyFlowPending(){ const e = gcEntry(); return e.flow==='buy' && !e.paid && !!e.pkg; }
+function coEur(n){ return n.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' €'; }
+
+// Anzeige-Preis (autoritativ rechnet die Edge Function neu)
+function coCalc(){
+  const e = gcEntry();
+  const mode = e.mode==='abo' ? 'abo' : 'einmal';
+  const pkgKey = String(e.pkg||'');
+  const qty = Math.min(Math.max(parseInt(e.qty,10)||1,1),4);
+  const qtyPct = CO_QTY_DISC[qty]||0;
+  const codePct = coParseCodePct(e.code||'');
+  let unitNet, months=1, termPct=0, pkgName='', days=0, term='6m';
+  if(mode==='abo'){
+    const pk = CO_PKG_ABO[pkgKey]; if(!pk) return null;
+    pkgName = pk.name; term = (e.term==='12m')?'12m':'6m';
+    months = CO_TERM_MONTHS[term]; termPct = CO_TERM_DISC[term]||0;
+    unitNet = pk.price*(1-termPct/100);
+  } else {
+    const pk = CO_PKG_EINMAL[pkgKey]; if(!pk) return null;
+    pkgName = pk.name; days = pk.days; unitNet = pk.price;
+  }
+  const baseNet = unitNet*qty;
+  const afterQty = baseNet*(1-qtyPct/100);
+  const finalNet = afterQty*(1-codePct/100);
+  const grossUnit = finalNet*(1+CO_VAT);
+  return { mode, pkgKey, pkgName, qty, qtyPct, codePct, term, months, termPct, days, finalNet, grossUnit };
+}
+
+function openCheckout(){
+  // Restdaten aus Auth/Settings vorbelegen
+  coState.firma = (settings.company && settings.company.name) || '';
+  coState.name  = (GC_USER && GC_USER.user_metadata && GC_USER.user_metadata.name) || coState.name || '';
+  document.getElementById('checkout').classList.remove('hidden');
+  renderCheckout();
+}
+function coSetMethod(k){ coCaptureFields(); coState.method = k; renderCheckout(); }
+function coToggleAgb(){ coCaptureFields(); coState.agb = !coState.agb; renderCheckout(); }
+function coCaptureFields(){
+  const g = id => (document.getElementById(id)||{}).value || '';
+  coState.firma = g('coFirma').trim();
+  coState.name  = g('coName').trim();
+  coState.tel   = g('coTel').trim();
+  coState.vat   = g('coVat').trim();
+}
+function coNamePreview(){
+  const v = (document.getElementById('coFirma')||{}).value || '';
+  const el = document.getElementById('coOsPrev');
+  if(el) el.innerHTML = `Dein Cockpit heißt dann <b>${escapeHtml((v.trim()||'[Firmenname]'))} OS</b>`;
+}
+function coErr(msg){ const e=document.getElementById('coErr'); if(e){ e.textContent=msg||''; e.classList.toggle('show', !!msg); } }
+
+function renderCheckout(){
+  const card = document.getElementById('checkoutCard');
+  const c = coCalc();
+  if(!c){ // Paket unbekannt -> nicht blockieren, ab ins Cockpit
+    document.getElementById('checkout').classList.add('hidden');
+    try{ openConsentGate(); }catch(e){}
+    return;
+  }
+  const priceLine = c.mode==='abo'
+    ? `<b>${coEur(c.grossUnit)}</b><small>pro Monat · ${c.months} Monate${c.qty>1?` · ${c.qty} Stellen`:''}</small>`
+    : `<b>${coEur(c.grossUnit)}</b><small>einmalig · ${c.days} Tage${c.qty>1?` · ${c.qty} Stellen`:''}</small>`;
+  const rabatt = (c.qtyPct||c.codePct)
+    ? `<span>Inkl. ${[c.qtyPct?`${c.qtyPct}% Mengenrabatt`:'', c.codePct?`${String(c.codePct).replace('.',',')}% Code`:''].filter(Boolean).join(' + ')} · alle Preise inkl. 19% USt.</span>`
+    : `<span>Alle Preise inkl. 19% USt.</span>`;
+  const subLabel = c.mode==='abo' ? 'Recruiting-Abo' : 'Stellen-Kontingent';
+
+  card.innerHTML = `
+    <div style="padding:20px 20px 22px">
+      <div class="gate__top"><span class="gate__paid" style="background:rgba(var(--brand-rgb),.10); color:var(--green-2); border-color:rgba(var(--brand-rgb),.22)"><i data-lucide="lock"></i> Sichere Zahlung · Schritt 2 von 2</span></div>
+      <div class="gate__h">Bestellung abschließen</div>
+      <div class="gate__sub">Dein Konto ist erstellt. Jetzt nur noch Betrieb &amp; Zahlart angeben – dann ist dein Kontingent freigeschaltet.</div>
+
+      <div class="co-sum">
+        <div class="co-sum__l"><strong>${c.pkgName} · ${subLabel}</strong>${rabatt}</div>
+        <div class="co-sum__p">${priceLine}</div>
+      </div>
+
+      <div class="co-osprev" id="coOsPrev"><i data-lucide="building-2"></i> Dein Cockpit heißt dann <b>${escapeHtml((coState.firma||'[Firmenname]'))} OS</b></div>
+
+      <div class="co-field">
+        <label>Firmenname</label>
+        <input id="coFirma" type="text" placeholder="z. B. Müller Tiefbau GmbH" value="${escapeHtml(coState.firma)}" oninput="coNamePreview()">
+      </div>
+      <div class="co-field--row">
+        <div class="co-field"><label>Ansprechpartner</label><input id="coName" type="text" placeholder="Vor- und Nachname" value="${escapeHtml(coState.name)}"></div>
+        <div class="co-field"><label>Telefon <span style="font-weight:500;color:var(--muted)">(optional)</span></label><input id="coTel" type="tel" placeholder="" value="${escapeHtml(coState.tel)}"></div>
+      </div>
+      <div class="co-field">
+        <label>USt-IdNr. <span style="font-weight:500;color:var(--muted)">(optional)</span></label>
+        <input id="coVat" type="text" placeholder="DE…" value="${escapeHtml(coState.vat)}">
+      </div>
+
+      <div class="co-lbl">Zahlungsart</div>
+      <div class="co-methods">
+        ${CO_METHODS.map(m=>`
+          <label class="co-m ${coState.method===m.key?'on':''}" onclick="coSetMethod('${m.key}')">
+            <i data-lucide="${m.icon}"></i>
+            <span><span>${m.label}</span><small>${m.sub}</small></span>
+          </label>`).join('')}
+      </div>
+
+      <label class="consent-row ${coState.agb?'on':''}" style="margin-top:12px" onclick="coToggleAgb()">
+        <span class="consent-box"><i data-lucide="check"></i></span>
+        <span class="consent-txt"><strong>AGB &amp; Datenschutz akzeptieren</strong><span>Ich stimme den AGB und der Datenschutzerklärung zu und beauftrage kostenpflichtig.</span></span>
+      </label>
+
+      <div class="co-err" id="coErr"></div>
+
+      <button class="btn full" style="margin-top:13px" id="coSubmitBtn" onclick="coSubmit()">
+        <i data-lucide="${coState.method==='rechnung'?'file-check':'lock'}"></i> ${coState.method==='rechnung'?'Zahlungspflichtig bestellen':'Weiter zur Zahlung'}
+      </button>
+      <span class="co-skip" onclick="coSkip()">Später erledigen – erst ins Cockpit</span>
+    </div>`;
+  icons();
+}
+
+function coSkip(){
+  document.getElementById('checkout').classList.add('hidden');
+  try{ openConsentGate(); }catch(e){}
+}
+
+async function coSubmit(){
+  coCaptureFields();
+  coErr('');
+  if(!coState.firma){ coErr('Bitte gib deinen Firmennamen ein.'); return; }
+  if(!coState.name){ coErr('Bitte gib einen Ansprechpartner an.'); return; }
+  if(!coState.agb){ coErr('Bitte bestätige AGB und Datenschutz.'); return; }
+  const c = coCalc(); if(!c){ coErr('Paket nicht erkannt. Bitte erneut über das Portal starten.'); return; }
+
+  const btn = document.getElementById('coSubmitBtn');
+  if(btn){ btn.disabled=true; btn.dataset._t=btn.innerHTML; btn.innerHTML='Bitte warten…'; }
+
+  // Firmenname sofort übernehmen -> OS heißt ab jetzt „[Firmenname] OS"
+  settings.company = Object.assign({}, settings.company, { name:coState.firma, telefon:coState.tel||settings.company?.telefon });
+  saveSettings();
+  try{ applyBranding(); }catch(e){}
+
+  // Betrieb in Supabase anlegen + Profil verknüpfen (falls noch nicht verknüpft)
+  if(sbAuth && GC_USER && !(GC_PROFILE && GC_PROFILE.customer_id)){
+    try{
+      const e = gcEntry();
+      const { data, error } = await sbAuth.rpc('create_my_company', {
+        p_name: coState.firma, p_branchen: settings.branchen||[],
+        p_theme: settings.theme||'galabau', p_ort: settings.company?.ort||null, p_telefon: coState.tel||null
+      });
+      if(!error && data){ GC_PROFILE = GC_PROFILE||{}; GC_PROFILE.customer_id = data; }
+      else if(error){ console.warn('create_my_company:', error.message); }
+    }catch(err){ console.warn('create_my_company exception:', err); }
+  }
+
+  // Edge Function ruft Preis-/Stripe-Logik (rechnet server-seitig neu)
+  const e = gcEntry();
+  const payload = {
+    mode: c.mode, pkg: c.pkgKey, qty: String(c.qty), method: coState.method,
+    term: e.term||'', ref: e.ref||'', codeRaw: e.code||'',
+    customer: { name: coState.name, firma: coState.firma, email: (GC_USER&&GC_USER.email)||'', tel: coState.tel||'', vat: coState.vat||'' }
+  };
+  try{
+    const res = await fetch(SB_URL+'/functions/v1/dynamic-responder', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'apikey':SB_ANON, 'Authorization':'Bearer '+SB_ANON },
+      body: JSON.stringify(payload)
+    });
+    const out = await res.json().catch(()=>({}));
+    if(!res.ok || out.error){ coErr(out.error || ('Fehler ('+res.status+'). Bitte erneut versuchen.')); if(btn){ btn.disabled=false; btn.innerHTML=btn.dataset._t; } return; }
+    if(out.checkoutUrl){ window.location.href = out.checkoutUrl; return; }   // Stripe-Checkout
+    if(out.pending){ coDone(true); return; }                                 // Rechnung
+    coErr('Unerwartete Antwort. Bitte erneut versuchen.');
+    if(btn){ btn.disabled=false; btn.innerHTML=btn.dataset._t; }
+  }catch(err){
+    coErr('Verbindung fehlgeschlagen: '+(err&&err.message||err));
+    if(btn){ btn.disabled=false; btn.innerHTML=btn.dataset._t; }
+  }
+}
+
+// Erfolgs-Ansicht (für Rechnung; Stripe kehrt über success_url zurück)
+function coDone(isInvoice){
+  const ent = gcEntry(); ent.paid = true; saveEntry(ent);
+  const card = document.getElementById('checkoutCard');
+  card.innerHTML = `
+    <div class="co-done" style="padding:30px 24px 26px">
+      <div class="co-check"><i data-lucide="check"></i></div>
+      <h3>Das hat geklappt!</h3>
+      <p>${isInvoice
+        ? 'Deine Bestellung ist eingegangen. Du bekommst die Rechnung per E-Mail – sobald die Zahlung da ist, schalten wir dein Kontingent frei.'
+        : 'Deine Zahlung ist eingegangen und dein Kontingent ist freigeschaltet.'}</p>
+      <p>Richte jetzt deinen Betrieb in <b>${escapeHtml(coState.firma)} OS</b> ein.</p>
+      <button class="btn full" style="margin-top:16px" onclick="coFinish()"><i data-lucide="arrow-right"></i> Weiter zur Einrichtung</button>
+    </div>`;
+  icons();
+}
+function coFinish(){
+  document.getElementById('checkout').classList.add('hidden');
+  try{ openConsentGate(); }catch(e){}
+}
 
 // Rechte-Check: Admin darf alles, Büro/Mitarbeiter laut Einstellungen
 function can(cap){
@@ -3244,7 +3548,7 @@ async function doRegister(){
   authBusy(true,'regBtn');
   const { data, error } = await sbAuth.auth.signUp({
     email, password:pw,
-    options:{ data:{ name }, emailRedirectTo: window.location.origin + window.location.pathname }
+    options:{ data:{ name }, emailRedirectTo: window.location.origin + window.location.pathname + entryQueryString() }
   });
   authBusy(false,'regBtn');
   if(error){ authErr(error.message.includes('already registered')?'Diese E-Mail ist bereits registriert. Bitte einloggen.':error.message); return; }
@@ -3326,6 +3630,8 @@ function enterApp(){
   initCalDrag();
   applyRole();
   loadWeather();
+  // Kauf-Flow (Option B): nach Registrierung+Login zuerst die Zahlungsseite, dann Consent+Einrichtung.
+  if(buyFlowPending()){ openCheckout(); return; }
   // Erstnutzung: 1) AVV/DSGVO  2) Einrichtung  3) Tour. Danach direkt ins Cockpit.
   if(!settings.onboarded || !(GC_PROFILE&&GC_PROFILE.customer_id)) openConsentGate();
 }
@@ -3385,6 +3691,7 @@ async function gcAuthBoot(){
   });
   const { data:{ session } } = await sbAuth.auth.getSession();
   if(session && !_enteredApp){ afterAuth(session); }
+  else if(!session && buyFlowPending()){ showAuth('register'); }   // Kauf-Flow: direkt zur Registrierung
 }
 // Welche Navigationspunkte sieht die aktuelle Rolle?
 function navForRole(){
@@ -3675,7 +3982,9 @@ function osBranchePhrase(){
 }
 function osBase(){
   const c = (settings.company && settings.company.name) ? settings.company.name.trim() : '';
-  return c || osBrandLabel();
+  if(c) return c;                                   // Firmenname hat immer Vorrang -> „[Firmenname] OS"
+  const b = entryBrand(); if(b) return b.name;      // sonst Eintritts-Marke -> „Grey/Green Careers OS"
+  return osBrandLabel();                            // Fallback: Branchen-Label
 }
 function osName(){ return osBase() + ' OS'; }
 function hexToRgb(h){ h=(h||'').replace('#',''); if(h.length===3) h=h.split('').map(x=>x+x).join(''); const n=parseInt(h,16); return isNaN(n)?null:{r:(n>>16)&255,g:(n>>8)&255,b:n&255}; }
@@ -3702,6 +4011,8 @@ function applyBranding(){
   const ln = document.getElementById('loginBrandName'); if(ln) ln.innerHTML = `${escapeHtml(base)} <small>OS</small>`;
   const ls = document.getElementById('loginBrandSub'); if(ls) ls.textContent = `Betriebssoftware für ${osBranchePhrase()}`;
   const lsl = document.getElementById('loginSubLine'); if(lsl && co.name) lsl.textContent = `Melde dich an und öffne das Cockpit für ${co.name}.`;
+  const rsl = document.getElementById('regSubLine'); if(rsl) rsl.textContent = `Starte mit deinem Betrieb in ${osName()}. Du bekommst gleich eine Bestätigungs-Mail.`;
+  const pos = document.getElementById('poweredOs'); if(pos) pos.textContent = osName();
   // Sidebar Name
   const sb = document.querySelector('.sidebrand__text b'); if(sb) sb.textContent = co.name || 'GreenCareers';
   // Logo (Sidebar + Login-Brandmark)
@@ -10440,8 +10751,7 @@ function toast(message){
 function icons(){
   if(window.lucide) lucide.createIcons();
 }
-applyTheme(settings.theme);
-applyBranding();
+initEntryBrand();  // Eintritts-Marke (Grey/Green Careers) erfassen + Farbe/Name vor dem Login setzen
 icons();
 gcAuthBoot();   // bestehende Session prüfen / auf E-Mail-Bestätigung reagieren
 </script>
