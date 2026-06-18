@@ -3605,6 +3605,27 @@ let GC_PROFILE = null;    // profiles-Zeile (role, customer_id)
 let _enteredApp = false;
 
 function authErr(msg){ document.querySelectorAll('.auth__err').forEach(e=>{ e.textContent=msg||''; e.style.display=msg?'block':'none'; }); }
+// Technische Supabase-Meldungen -> freundliches Deutsch (Fallback: Originaltext).
+function friendlyAuthError(msg){
+  const m=String(msg||'').toLowerCase();
+  if(m.includes('rate limit')||m.includes('too many request')||m.includes('over_email_send_rate'))
+    return 'Wir können dir gerade keine weitere E-Mail schicken. Bitte versuche es in ein paar Minuten noch einmal.';
+  if(m.includes('already registered')||m.includes('user already'))
+    return 'Diese E-Mail ist bereits registriert. Bitte logge dich ein (oder nutze „Passwort vergessen").';
+  if(m.includes('email not confirmed'))
+    return 'Bitte bestätige zuerst deine E-Mail über den Link, den wir dir geschickt haben.';
+  if(m.includes('invalid login')||m.includes('invalid credentials'))
+    return 'E-Mail oder Passwort falsch.';
+  if(m.includes('email address') && m.includes('invalid'))
+    return 'Diese E-Mail-Adresse sieht ungültig aus. Bitte prüfe die Schreibweise.';
+  if(m.includes('password should be')||m.includes('password is too'))
+    return 'Das Passwort ist zu kurz. Bitte mindestens 8 Zeichen verwenden.';
+  if(m.includes('auth session missing')||m.includes('session'))
+    return 'Der Link ist abgelaufen. Bitte fordere unter „Passwort vergessen" einen neuen an.';
+  if(m.includes('failed to fetch')||m.includes('networkerror')||m.includes('load failed'))
+    return 'Keine Verbindung zum Server. Bitte prüfe deine Internetverbindung und versuche es erneut.';
+  return msg || 'Etwas ist schiefgelaufen. Bitte versuche es erneut.';
+}
 // Passwort ein-/ausblenden (Auge-Toggle)
 function togglePw(id,btn){
   const inp=document.getElementById(id); if(!inp) return;
@@ -3632,7 +3653,14 @@ async function doRegister(){
     options:{ data:{ name }, emailRedirectTo: window.location.origin + window.location.pathname + entryQueryString() }
   });
   authBusy(false,'regBtn');
-  if(error){ authErr(error.message.includes('already registered')?'Diese E-Mail ist bereits registriert. Bitte einloggen.':error.message); return; }
+  if(error){
+    // Bereits registriert -> direkt auf den Login-Screen führen
+    if(String(error.message||'').toLowerCase().includes('already registered')){
+      const lEmail=document.getElementById('email'); if(lEmail) lEmail.value=email;
+      showAuth('login');
+    }
+    authErr(friendlyAuthError(error.message)); return;
+  }
   // Anti-Enumeration: Supabase liefert bei einer BEREITS BESTÄTIGTEN E-Mail eine
   // Erfolg-Antwort OHNE neue Mail. Erkennbar an leerer identities-Liste -> nicht den
   // Verify-Screen zeigen (sonst wartet der Nutzer auf eine Mail, die nie kommt).
@@ -3657,11 +3685,7 @@ async function login(){
   authBusy(true,'loginBtn');
   const { data, error } = await sbAuth.auth.signInWithPassword({ email, password:pw });
   authBusy(false,'loginBtn');
-  if(error){
-    authErr(error.message.includes('Email not confirmed')?'Bitte bestätige zuerst deine E-Mail (Link im Postfach).'
-      : error.message.includes('Invalid login')?'E-Mail oder Passwort falsch.' : error.message);
-    return;
-  }
+  if(error){ authErr(friendlyAuthError(error.message)); return; }
   await afterAuth(data.session);
 }
 
@@ -3674,7 +3698,7 @@ async function doReset(){
   authBusy(true,'resetBtn');
   const { error } = await sbAuth.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + window.location.pathname + entryQueryString() });
   authBusy(false,'resetBtn');
-  if(error){ authErr(error.message); return; }
+  if(error){ authErr(friendlyAuthError(error.message)); return; }
   showAuth('sent');
 }
 
@@ -3690,12 +3714,7 @@ async function doSetNewPassword(){
   authBusy(true,'newPwBtn');
   const { data, error } = await sbAuth.auth.updateUser({ password: pw });
   authBusy(false,'newPwBtn');
-  if(error){
-    authErr(error.message.includes('Auth session missing')||error.message.includes('session')
-      ? 'Der Reset-Link ist abgelaufen. Bitte fordere unter „Passwort vergessen" einen neuen an.'
-      : error.message);
-    return;
-  }
+  if(error){ authErr(friendlyAuthError(error.message)); return; }
   // Passwort gesetzt -> mit der jetzt gültigen Session direkt in die App.
   _confirmFlow = false;
   try{
