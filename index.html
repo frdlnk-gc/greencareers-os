@@ -2668,14 +2668,14 @@
           <div class="brandsub" id="loginBrandSub">Betriebssoftware für GaLaBau</div>
         </div>
       </div>
-      <h1>Willkommen zurück</h1>
+      <h1 id="loginTitle">Herzlich willkommen</h1>
       <p class="sub" id="loginSubLine">Melde dich an und öffne dein Cockpit.</p>
       <div class="auth__ok" id="loginOk" style="display:none"></div>
       <div class="field"><label for="email">E-Mail</label><input id="email" type="email" placeholder="name@firma.de" autocomplete="email" /></div>
       <div class="field"><label for="password">Passwort</label><div class="pw-wrap"><input id="password" type="password" placeholder="Dein Passwort" autocomplete="current-password" onkeydown="if(event.key==='Enter')login()" /><button type="button" class="pw-eye" aria-label="Passwort anzeigen" onclick="togglePw('password',this)"><i data-lucide="eye"></i></button></div></div>
       <div class="auth__err" style="display:none"></div>
       <div class="auth__row">
-        <label class="auth__chk"><input type="checkbox" checked /> Angemeldet bleiben</label>
+        <label class="auth__chk"><input type="checkbox" id="loginRemember" checked /> Für 90 Tage angemeldet bleiben</label>
         <a onclick="showAuth('reset')">Passwort vergessen?</a>
       </div>
       <button class="btn full" id="loginBtn" onclick="login()">Anmelden</button>
@@ -3589,8 +3589,24 @@ function showAuth(view){
 /* ===================== ECHTE AUTHENTIFIZIERUNG (Supabase) ===================== */
 const SB_URL  = 'https://tfoopogxaqvfwbonabpi.supabase.co';
 const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmb29wb2d4YXF2Zndib25hYnBpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEyNTQzMjQsImV4cCI6MjA5NjgzMDMyNH0.udWRPszXVOj7EG4bspmsU9HXbZYFRDn8QO9kZi2tw8M';
+// ---- "Angemeldet bleiben" (Speicher-Weiche) -------------------------------
+// Angehakt  -> Session in localStorage: bleibt ueber Browser-Neustarts erhalten,
+//              bis die Supabase-Session-Grenze greift (Dashboard: Auth -> Sessions
+//              -> "Time-box user sessions" = 90 Tage einstellen).
+// Nicht angehakt -> Session in sessionStorage: Logout, sobald der Browser/Tab zu ist.
+const GC_REMEMBER_KEY = 'gc_remember';
+function gcRemember(){ try{ return localStorage.getItem(GC_REMEMBER_KEY) !== '0'; }catch(e){ return true; } } // Default: ja
+function gcSetRemember(v){ try{ localStorage.setItem(GC_REMEMBER_KEY, v ? '1' : '0'); }catch(e){} }
+const gcAuthStorage = {
+  getItem(k){ try{ const s=sessionStorage.getItem(k); return (s!==null && s!==undefined) ? s : localStorage.getItem(k); }catch(e){ return null; } },
+  setItem(k,v){ try{
+      if(gcRemember()){ localStorage.setItem(k,v); try{ sessionStorage.removeItem(k); }catch(_){ } }
+      else { sessionStorage.setItem(k,v); try{ localStorage.removeItem(k); }catch(_){ } }
+    }catch(e){} },
+  removeItem(k){ try{ localStorage.removeItem(k); }catch(e){} try{ sessionStorage.removeItem(k); }catch(e){} }
+};
 const sbAuth = (window.supabase && window.supabase.createClient)
-  ? window.supabase.createClient(SB_URL, SB_ANON, { auth:{ persistSession:true, autoRefreshToken:true, detectSessionInUrl:true } })
+  ? window.supabase.createClient(SB_URL, SB_ANON, { auth:{ persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, storage: gcAuthStorage } })
   : null;
 let GC_USER = null;       // aktuell eingeloggter auth-User
 let GC_PROFILE = null;    // profiles-Zeile (role, customer_id)
@@ -3674,6 +3690,8 @@ async function login(){
   const pw=(document.getElementById('password')||{}).value||'';
   if(!email||!pw){ authErr('Bitte E-Mail und Passwort eingeben.'); return; }
   if(!sbAuth){ authErr('Auth-Dienst nicht geladen. Seite neu laden.'); return; }
+  // "Angemeldet bleiben" VOR dem Login setzen -> Speicher-Weiche entscheidet, wohin die Session geschrieben wird
+  const rem=document.getElementById('loginRemember'); gcSetRemember(rem ? rem.checked : true);
   authBusy(true,'loginBtn');
   const { data, error } = await sbAuth.auth.signInWithPassword({ email, password:pw });
   authBusy(false,'loginBtn');
@@ -3807,6 +3825,9 @@ async function gcAuthBoot(){
     const lPw=document.getElementById('password'); if(lPw) setTimeout(()=>lPw.focus(),50);
     const ok = document.getElementById('loginOk');
     if(ok){ ok.style.display='flex'; ok.innerHTML = '<i data-lucide="check-circle-2"></i><span><b>E-Mail bestätigt.</b> Dein Konto ist jetzt aktiv – melde dich mit deinen Zugangsdaten an.</span>'; }
+    // Er war gerade kurz im E-Mail-Postfach und kommt zurück -> "Willkommen zurück"
+    // (der reguläre Tages-Login zeigt dagegen "Herzlich willkommen").
+    const lt=document.getElementById('loginTitle'); if(lt) lt.textContent='Willkommen zurück';
     icons();
     return;   // KEIN afterAuth
   }
