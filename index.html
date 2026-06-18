@@ -4,6 +4,9 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>GreenCareers OS</title>
+<!-- Marken-Favicon: orangefarbenes „C" (statt Browser-Standard-Weltkugel). Farbe wird per JS
+     an die aktive Markenfarbe angepasst (grey=orange, green=grün). -->
+<link id="favicon" rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Crect%20width='32'%20height='32'%20rx='7'%20fill='%23ffffff'/%3E%3Ctext%20x='16'%20y='24'%20font-family='Arial,sans-serif'%20font-size='24'%20font-weight='800'%20fill='%23EA580C'%20text-anchor='middle'%3EC%3C/text%3E%3C/svg%3E" />
 <script src="https://unpkg.com/lucide@latest"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -4147,6 +4150,18 @@ function applyTheme(theme){
   const t = theme || 'galabau';
   if(t === 'galabau') document.documentElement.removeAttribute('data-theme');
   else document.documentElement.dataset.theme = t;
+  setFavicon();
+}
+// Marken-Favicon (orangefarbenes/grünes „C") an die aktive Akzentfarbe (--green) anpassen.
+function setFavicon(){
+  try{
+    const link = document.getElementById('favicon'); if(!link) return;
+    let col = getComputedStyle(document.documentElement).getPropertyValue('--green').trim() || '#EA580C';
+    const svg = "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'>"
+      + "<rect width='32' height='32' rx='7' fill='#ffffff'/>"
+      + "<text x='16' y='24' font-family='Arial,sans-serif' font-size='24' font-weight='800' fill='" + col + "' text-anchor='middle'>C</text></svg>";
+    link.href = 'data:image/svg+xml,' + encodeURIComponent(svg);
+  }catch(_){}
 }
 /* ---- Dynamisches White-Label-Branding (OS-Name, Logo, Markenfarbe) ---- */
 function osBrandLabel(theme){
@@ -4196,6 +4211,7 @@ function applyBrandColorValue(col){
     root.style.removeProperty('--green-2');
     root.style.removeProperty('--green-3');
   }
+  setFavicon();
 }
 function applyBrandColor(){
   // Pre-Login: KEIN gespeichertes Firmen-Farb-Override -> Theme-Standardfarbe greift
