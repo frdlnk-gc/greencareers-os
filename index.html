@@ -2256,6 +2256,8 @@
   .co-m .lucide{ width:17px; height:17px; color:var(--muted); }
   .co-m.on .lucide{ color:var(--green); }
   .co-m small{ display:block; font-weight:500; font-size:11px; color:var(--muted); margin-top:1px; }
+  .co-m .pmlogos{ display:flex; align-items:center; gap:4px; flex:none; }
+  .co-m .pmlogos svg{ display:block; flex:none; border-radius:2px; }
   .co-err{ display:none; font-size:12px; font-weight:600; color:#DC2626; background:#FEF2F2; border:1px solid #FECACA; border-radius:9px; padding:9px 11px; margin:6px 0 0; }
   .co-err.show{ display:block; }
   .co-skip{ display:block; text-align:center; font-size:11.5px; font-weight:600; color:var(--muted); margin-top:11px; cursor:pointer; }
@@ -3085,9 +3087,16 @@ const CO_TERM_DISC  = { '6m':0, '12m':20 };
 const CO_TERM_MONTHS= { '6m':6, '12m':12 };
 const CO_VAT = 0.19;
 const CO_RABATT_PREFIX = 'Sale';
+// Echte Marken-Logos (SVG) für die Zahlungs-Kacheln – statt generischer Icons.
+const CO_PM_SVG = {
+  visa: '<svg width="34" height="12" viewBox="0 0 46 16" role="img" aria-label="Visa"><text x="0" y="14" font-family="Arial,Helvetica,sans-serif" font-style="italic" font-weight="800" font-size="16" letter-spacing="-0.5" fill="#1434CB">VISA</text></svg>',
+  mc:   '<svg width="20" height="12" viewBox="0 0 36 24" role="img" aria-label="Mastercard"><circle cx="14" cy="12" r="9" fill="#EB001B"/><circle cx="22" cy="12" r="9" fill="#F79E1B"/><path d="M18 5.2a9 9 0 0 0 0 13.6 9 9 0 0 0 0-13.6z" fill="#FF5F00"/></svg>',
+  amex: '<svg width="20" height="12" viewBox="0 0 40 24" role="img" aria-label="American Express"><rect width="40" height="24" rx="3" fill="#006FCF"/><text x="20" y="10.5" font-family="Arial,Helvetica,sans-serif" font-weight="700" font-size="6" fill="#fff" text-anchor="middle">AMERICAN</text><text x="20" y="18.5" font-family="Arial,Helvetica,sans-serif" font-weight="700" font-size="6" fill="#fff" text-anchor="middle">EXPRESS</text></svg>',
+  paypal:'<svg width="42" height="12" viewBox="0 0 58 16" role="img" aria-label="PayPal"><text x="0" y="13" font-family="Arial,Helvetica,sans-serif" font-style="italic" font-weight="800" font-size="15" letter-spacing="-0.5"><tspan fill="#003087">Pay</tspan><tspan fill="#009CDE">Pal</tspan></text></svg>',
+};
 const CO_METHODS = [
-  { key:'card',     icon:'credit-card', label:'Kreditkarte', sub:'Sofort freigeschaltet' },
-  { key:'paypal',   icon:'wallet',      label:'PayPal',      sub:'Sofort freigeschaltet' },
+  { key:'card',     icon:'credit-card', label:'Kreditkarte', sub:'Sofort freigeschaltet', logos: CO_PM_SVG.visa + CO_PM_SVG.mc + CO_PM_SVG.amex },
+  { key:'paypal',   icon:'wallet',      label:'PayPal',      sub:'Sofort freigeschaltet', logos: CO_PM_SVG.paypal },
   { key:'sepa',     icon:'banknote',    label:'SEPA-Lastschrift', sub:'Sofort freigeschaltet' },
   { key:'rechnung', icon:'file-text',   label:'Kauf auf Rechnung', sub:'Freigabe nach Zahlungseingang' },
 ];
@@ -3201,7 +3210,7 @@ function renderCheckout(){
       <div class="co-methods">
         ${CO_METHODS.map(m=>`
           <label class="co-m ${coState.method===m.key?'on':''}" onclick="coSetMethod('${m.key}')">
-            <i data-lucide="${m.icon}"></i>
+            ${m.logos ? `<span class="pmlogos">${m.logos}</span>` : `<i data-lucide="${m.icon}"></i>`}
             <span><span>${m.label}</span><small>${m.sub}</small></span>
           </label>`).join('')}
       </div>
