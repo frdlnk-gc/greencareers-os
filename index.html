@@ -2927,7 +2927,7 @@ const sites = [
   {id:'s0', customerId:null, customer:'Bauhof / Werkstatt', label:'Bauhof', addr:'', lat:53.5511, lng:9.9937,
    tasks:[], material:[]},
 ];
-// Stempel-Einträge heute · in/out HH:MM · ruest = Rüstzeit (Beladen+Anfahrt) · dist km zur Baustelle · geoOk = vor Ort
+// Stempel-Einträge heute · in/out HH:MM · ruest = Rüstzeit (Beladen+Anfahrt) · geo = {lat,lng,acc,at}: wo gestempelt wurde (punktuell)
 let timeEntries = [];
 let timeSeq = 100;
 let myEntry = null;            // Selbst-Stempelung des eingeloggten Nutzers
@@ -4097,7 +4097,7 @@ function openSettings(){
       <div class="setsec">Zeiterfassung</div>
       <div class="field" style="max-width:180px"><label>Arbeitsbeginn</label><input type="time" value="${c.start}" onchange="settings.company.start=this.value;saveSettings()"></div>
       ${swRow('Mit Rüstzeit rechnen','Beladen &amp; Anfahrt zählen als Arbeitszeit. Gilt für alle Aufträge – nicht pro Auftrag wählbar.', s.ruestzeit, "toggleSetting('ruestzeit')")}
-      ${swRow('Standortnachweis beim Stempeln','Einmaliger Standort beim Ein-/Ausstempeln als Nachweis vor Ort. Keine Dauerortung – nur der Zeitpunkt des Stempelns wird festgehalten.', s.geo, "toggleSetting('geo')")}
+      ${swRow('Standortnachweis beim Stempeln','Einmaliger Standort beim Ein-/Ausstempeln – hält fest, wo gestempelt wird. Keine Dauerortung, nur der Zeitpunkt des Stempelns wird erfasst.', s.geo, "toggleSetting('geo')")}
       <div class="setsub">Wer stempelt?</div>
       ${clockModeSeg(clockMode(), "setClockMode('$ID')")}
 
@@ -4193,29 +4193,19 @@ function setClockMode(v){ settings.clockMode = v; saveSettings(); refreshSetting
 function obSetClockMode(v){ OB_DRAFT.clockMode = v; renderOnboard(); }
 
 /* ---- Echtes Geo: Standort beim Stempeln (einmalig, kein Dauer-Tracking) ---- */
-// Liefert ein unveränderliches Geo-Objekt {lat,lng,acc,dist,geoOk,at}. Distanz per Haversine
-// zur Baustellen-Position. Innerhalb GEO_RADIUS_M => vor Ort bestätigt. Bei Verweigerung/
-// Fehler => geoOk:null (nicht bestätigt) – wir faken KEINE Bestätigung.
-const GEO_RADIUS_M = 300;   // Toleranz „vor Ort" (Baustellen sind weitläufig)
-function haversineKm(aLat, aLng, bLat, bLng){
-  const R = 6371, toRad = d => d*Math.PI/180;
-  const dLat = toRad(bLat-aLat), dLng = toRad(bLng-aLng);
-  const x = Math.sin(dLat/2)**2 + Math.cos(toRad(aLat))*Math.cos(toRad(bLat))*Math.sin(dLng/2)**2;
-  return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1-x));
-}
-function geoStamp(siteId){
+// Liefert ein unveränderliches Geo-Objekt {lat,lng,acc,at}: WO sich die Person im Moment des
+// Stempelns befindet (Handy-GPS, punktuell, wenige Meter genau). KEIN Abgleich mit der Baustelle,
+// KEINE Bewertung „vor Ort/außerhalb". Der Arbeitgeber sieht einfach, wo an-/abgestochen wurde –
+// nachvollziehbar, nicht wertend. Bei Verweigerung/Fehler bleibt der Ort leer (lat:null); das ist
+// KEIN Fehler – gestempelt wird trotzdem, nur ohne Standort.
+function geoStamp(){
   return new Promise(resolve => {
-    if(!settings.geo){ resolve(null); return; }           // Standortnachweis deaktiviert
-    const s = site(siteId);
+    if(!settings.geo){ resolve(null); return; }           // Standorterfassung deaktiviert
     const done = (g) => resolve(Object.freeze(g));         // unveränderlich -> Mitarbeiter kann nicht manipulieren
-    if(!navigator.geolocation){ done({ lat:null, lng:null, acc:null, dist:null, geoOk:null, at:NOW }); return; }
+    if(!navigator.geolocation){ done({ lat:null, lng:null, acc:null, at:NOW }); return; }
     navigator.geolocation.getCurrentPosition(
-      pos => {
-        const { latitude:lat, longitude:lng, accuracy:acc } = pos.coords;
-        const distKm = (s && s.lat && s.lng) ? haversineKm(lat, lng, s.lat, s.lng) : null;
-        done({ lat, lng, acc:Math.round(acc), dist:distKm, geoOk: distKm==null ? null : distKm*1000 <= GEO_RADIUS_M, at:NOW });
-      },
-      _err => done({ lat:null, lng:null, acc:null, dist:null, geoOk:null, at:NOW }),  // verweigert/Fehler
+      pos => { const { latitude:lat, longitude:lng, accuracy:acc } = pos.coords; done({ lat, lng, acc:Math.round(acc), at:NOW }); },
+      _err => done({ lat:null, lng:null, acc:null, at:NOW }),  // verweigert/Fehler -> kein Standort, aber kein Fehler
       { enableHighAccuracy:true, timeout:8000, maximumAge:0 }
     );
   });
@@ -4262,7 +4252,7 @@ function openGeoConsent(){
       </div>
       <div class="sheet__body">
         <div class="consentbox">
-          <div class="consentbox__row"><i data-lucide="map-pin"></i><span><b>Was passiert:</b> Beim Ein- und Ausstempeln wird <b>einmalig dein Standort</b> erfasst und mit der Baustelle abgeglichen – als Nachweis, dass du vor Ort warst.</span></div>
+          <div class="consentbox__row"><i data-lucide="map-pin"></i><span><b>Was passiert:</b> Beim Ein- und Ausstempeln wird <b>einmalig dein Standort</b> erfasst und deinem Stempel-Eintrag beigefügt – damit nachvollziehbar ist, wann und wo gestempelt wurde.</span></div>
           <div class="consentbox__row"><i data-lucide="shield-check"></i><span><b>Was nicht passiert:</b> <b>Keine laufende Ortung.</b> Zwischen den Stempel-Zeitpunkten wirst du nicht verfolgt – nur der Moment des Stempelns wird gespeichert.</span></div>
           <div class="consentbox__row"><i data-lucide="eye"></i><span><b>Wer es sieht:</b> ${firma} (Büro/Inhaber) sieht den erfassten Standort zu deinen Stempel-Zeiten.</span></div>
           <div class="consentbox__row"><i data-lucide="undo-2"></i><span><b>Deine Rechte:</b> Du kannst deine Einwilligung jederzeit mit Wirkung für die Zukunft bei ${firma} widerrufen. Rechtsgrundlage: Art. 6 Abs. 1 lit. a, Art. 88 DSGVO i.V.m. § 26 BDSG.</span></div>
@@ -4532,7 +4522,7 @@ function renderOnboard(){
     body = `
       <div class="obhead"><span class="obnum">3 / 4</span><h3>Zeiterfassung</h3><p>So stempelt dein Team. Später jederzeit änderbar.</p></div>
       ${swRow('Mit Rüstzeit rechnen','Beladen &amp; Anfahrt zählen als Arbeitszeit – gilt einheitlich für alle Aufträge.', OB_DRAFT.ruestzeit, "obToggle('ruestzeit')")}
-      ${swRow('Standortnachweis beim Stempeln','Einmaliger Standort als Nachweis vor Ort. Keine Dauerortung.', OB_DRAFT.geo, "obToggle('geo')")}
+      ${swRow('Standortnachweis beim Stempeln','Einmaliger Standort beim Stempeln – hält fest, wo gestempelt wird. Keine Dauerortung.', OB_DRAFT.geo, "obToggle('geo')")}
       <div class="setsub" style="padding:0 2px">Wer stempelt im Alltag?</div>
       ${clockModeSeg(OB_DRAFT.clockMode||'self', "obSetClockMode('$ID')")}`;
   } else if(step === 'rechte'){
@@ -10045,11 +10035,9 @@ function distStr(km){ return km < 1 ? Math.round(km*1000) + ' m' : km.toFixed(1)
 function geoBadge(e){
   if(e.manual) return `<span class="geo na"><i data-lucide="user-cog"></i> manuell erfasst</span>`;
   if(!settings.geo) return '';   // Standortnachweis per Einstellung deaktiviert
-  if(e.geoOk === null || typeof e.geoOk === 'undefined' || e.dist == null)
-    return `<span class="geo na"><i data-lucide="map-pin-off"></i> Standort nicht bestätigt</span>`;
-  return e.geoOk
-    ? `<span class="geo ok"><i data-lucide="map-pin"></i> vor Ort · ${distStr(e.dist)}</span>`
-    : `<span class="geo warn"><i data-lucide="alert-triangle"></i> ${distStr(e.dist)} entfernt</span>`;
+  if(!e.geo || e.geo.lat == null)
+    return `<span class="geo na"><i data-lucide="map-pin-off"></i> kein Standort</span>`;
+  return `<span class="geo ok"><i data-lucide="map-pin"></i> Standort erfasst</span>`;
 }
 function hasProto(empId, siteId){ return protocols.some(p => p.empId === empId && p.siteId === siteId); }
 
@@ -10074,7 +10062,7 @@ function zeitViewSelf(){
     <div class="zsec-h"><b>Meine Zeiterfassung</b><span>${dDEs(TODAY)} · auf Kunde stechen</span></div>
     ${selfClockArea()}
     ${mine.length ? `<div class="zsec-h" style="margin-top:16px"><b>Meine Zeiten heute</b><span>${mine.length} Eintrag(e)</span></div><div class="tlist">${mine.map(timeRow).join('')}</div>` : ''}
-    ${settings.geo?`<div class="dsgvo"><i data-lucide="shield-check"></i> <span><b>Datenschutz:</b> Dein Standort wird <b>nur beim Ein- &amp; Ausstempeln</b> einmalig erfasst – als Nachweis vor Ort. Keine laufende Ortung während der Arbeit.</span></div>`:''}
+    ${settings.geo?`<div class="dsgvo"><i data-lucide="shield-check"></i> <span><b>Datenschutz:</b> Dein Standort wird <b>nur beim Ein- &amp; Ausstempeln</b> einmalig erfasst – damit nachvollziehbar ist, wo gestempelt wurde. Keine laufende Ortung während der Arbeit.</span></div>`:''}
   </div>`;
 }
 // Admin/Büro-Sicht: Team-Überblick. Stempeln machen im Alltag die Mitarbeiter selbst.
@@ -10082,11 +10070,10 @@ function zeitViewTeam(){
   if(settings.geo && !hasGeoConsent('owner')) return geoOwnerGate();   // Inhaber bestätigt einmal, bevor er Standorte sieht
   const running = timeEntries.filter(e => !e.out);
   const done = timeEntries.filter(e => e.out);
-  const onSite = running.filter(e => e.geoOk === true).length;
-  const flags = running.filter(e => e.geoOk === false).length;   // nur echte „zu weit weg"-Fälle, nicht „nicht erfasst"/manuell
+  const located = running.filter(e => e.geo && e.geo.lat != null).length;
   const totalMin = timeEntries.reduce((n,e) => n + entryMin(e), 0);
   const avg = timeEntries.length ? totalMin/timeEntries.length : 0;
-  const geoKpi = settings.geo ? kpi('map-pin', String(onSite), 'Vor Ort bestätigt', 'per Standort', false) : kpi('briefcase', String(new Set(timeEntries.map(e=>e.siteId)).size), 'Baustellen', 'heute aktiv', false);
+  const geoKpi = settings.geo ? kpi('map-pin', String(located), 'Standort erfasst', 'beim Stempeln', false) : kpi('briefcase', String(new Set(timeEntries.map(e=>e.siteId)).size), 'Baustellen', 'heute aktiv', false);
   return `
   <div class="zeit">
     ${can('clockOthers') ? adminClockCard() : ''}
@@ -10094,7 +10081,7 @@ function zeitViewTeam(){
       ${kpi('users', String(running.length), 'Eingestempelt', 'aktuell im Einsatz', true)}
       ${geoKpi}
       ${kpi('timer', hoursStr(avg).replace(' h',''), 'Ø Stunden', 'heute pro Kopf', false)}
-      ${kpi(flags&&settings.geo?'alert-triangle':'check-circle-2', String(done.length), 'Feierabend', flags&&settings.geo?`${flags} Standort prüfen`:'heute fertig', false)}
+      ${kpi('check-circle-2', String(done.length), 'Feierabend', 'heute fertig', false)}
     </div>
     ${absentStrip()}
     <div class="zsec-h"><b>Live im Einsatz</b><span>${running.length} eingestempelt · tippen für Details</span></div>
@@ -10102,7 +10089,7 @@ function zeitViewTeam(){
       ${running.map(timeRow).join('') || `<div class="empty"><i data-lucide="clock"></i><div>Noch niemand eingestempelt.</div></div>`}
     </div>
     ${done.length ? `<div class="zsec-h" style="margin-top:16px"><b>Feierabend</b><span>heute fertig</span></div><div class="tlist">${done.map(timeRow).join('')}</div>` : ''}
-    ${settings.geo?`<div class="dsgvo"><i data-lucide="shield-check"></i> <span><b>Datenschutz:</b> Der Standort wird <b>nur beim Ein- &amp; Ausstempeln</b> einmalig erfasst – als Nachweis vor Ort. Keine laufende Ortung während der Arbeitszeit.</span></div>`:''}
+    ${settings.geo?`<div class="dsgvo"><i data-lucide="shield-check"></i> <span><b>Datenschutz:</b> Der Standort wird <b>nur beim Ein- &amp; Ausstempeln</b> einmalig erfasst – damit nachvollziehbar ist, wo gestempelt wurde. Keine laufende Ortung während der Arbeitszeit.</span></div>`:''}
   </div>`;
 }
 // Verkettung Zeit ↔ Urlaub: „wer fehlt heute" direkt im Zeit-Einstieg, tippbar → Urlaub & Krank.
@@ -10169,7 +10156,7 @@ function openClockOtherSite(){
 function clockOtherDo(siteId){
   // Manuell vom Büro/Inhaber gestempelt → kein Standortnachweis des Mitarbeiters (er ist nicht am Gerät).
   // Als „manuell" markiert, damit nicht fälschlich „vor Ort bestätigt" erscheint.
-  timeEntries.push({ id: timeSeq++, empId: clockOtherEmp, siteId, in: NOW, out: null, ruest: settings.ruestzeit, pauseMin: 0, geo:null, dist: null, geoOk: null, manual:true, proto: false });
+  timeEntries.push({ id: timeSeq++, empId: clockOtherEmp, siteId, in: NOW, out: null, ruest: settings.ruestzeit, pauseMin: 0, geo:null, manual:true, proto: false });
   const n = emp(clockOtherEmp).name; clockOtherEmp = null;
   closeSheet(); renderZeit();
   toast(`${n} eingestempelt um ${NOW}`);
@@ -10196,7 +10183,7 @@ function leadClockCard(){
   }).join('') || `<div class="cust-empty">Keine aktiven Mitglieder in dieser Kolonne.</div>`;
   return `<div class="clockcard ${running.length?'running':'in'}">
     <div class="clockcard__top"><span class="clockcard__lbl"><i data-lucide="users"></i> ${lbl} stempeln</span><span class="clockcard__time">${NOW}</span></div>
-    <div class="clockcard__sub">Du stempelst als Kolonnenführer den ganzen Trupp. Dein Standort gilt als Nachweis für die Kolonne.</div>
+    <div class="clockcard__sub">Du stempelst als Kolonnenführer den ganzen Trupp. Dein Standort wird beim Stempeln einmalig für die Kolonne erfasst.</div>
     <div class="leadlist">${rows}</div>
     <div class="clockcard__row">
       ${running.length < crew.length ? `<button class="clockbtn go" onclick="openLeadClockIn()"><i data-lucide="play"></i> Kolonne einstempeln</button>` : ''}
@@ -10218,7 +10205,7 @@ function openLeadClockIn(){
       <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body">
-      ${settings.geo?`<div class="geonote"><i data-lucide="map-pin"></i> <span>Dein <b>Standort</b> wird einmalig erfasst und gilt als Nachweis vor Ort für die ganze Kolonne.</span></div>`:''}
+      ${settings.geo?`<div class="geonote"><i data-lucide="map-pin"></i> <span>Der <b>Standort</b> der Kolonne wird beim Stempeln einmalig erfasst – damit nachvollziehbar ist, wo gestempelt wurde.</span></div>`:''}
       <div class="sitepicks">${cards}</div>
       <button class="sitepick ghost" onclick="leadClockDo('s0')"><span class="sitepick__ico"><i data-lucide="warehouse"></i></span><span class="sitepick__txt"><b>Bauhof / Werkstatt</b><small>interne Arbeiten</small></span><i data-lucide="chevron-right"></i></button>
     </div>`);
@@ -10228,7 +10215,7 @@ async function leadClockDo(siteId){
   const btn = document.querySelector('.sitepicks');   // visuelles Feedback ist optional
   const g = await geoStamp(siteId);                    // ein Stempel für die ganze Kolonne
   const crew = leadCrewMembers().filter(e => !leadRunningFor(e.id));
-  crew.forEach(e => timeEntries.push({ id: timeSeq++, empId: e.id, siteId, in: NOW, out: null, ruest: settings.ruestzeit, pauseMin: 0, geo:g, dist:g?g.dist:null, geoOk:g?g.geoOk:null, byLead:true, proto:false }));
+  crew.forEach(e => timeEntries.push({ id: timeSeq++, empId: e.id, siteId, in: NOW, out: null, ruest: settings.ruestzeit, pauseMin: 0, geo:g, byLead:true, proto:false }));
   closeSheet(); renderZeit();
   toast(`${crew.length} Mitarbeiter eingestempelt um ${NOW}`);
 }
@@ -10274,7 +10261,7 @@ function clockCard(){
 function timeRow(e){
   const emp_ = emp(e.empId); const s = site(e.siteId); const min = entryMin(e);
   const st = e.out ? `<span class="pill n">fertig</span>` : (e.pauseMin && !e.out ? '' : '');
-  return `<button class="trow ${!e.geoOk?'flag':''}" onclick="openTimeEntry(${e.id})">
+  return `<button class="trow" onclick="openTimeEntry(${e.id})">
     <span class="avatar">${initials(emp_.name)}</span>
     <span class="trow__main">
       <span class="trow__top"><b>${emp_.name}</b>${e.out?`<span class="pill n">fertig</span>`:`<span class="dotlive"></span>`}</span>
@@ -10324,7 +10311,7 @@ function clockConfirm(siteId){
       ${tasks}
       ${mat}
       ${settings.ruestzeit?`<div class="rzinfo"><i data-lucide="truck"></i> <span><b>Mit Rüstzeit</b> – Beladen &amp; Anfahrt zählen mit. Die Uhr läuft ab jetzt.</span></div>`:''}
-      ${settings.geo?`<div class="geonote"><i data-lucide="map-pin"></i> <span>Dein <b>Standort</b> wird beim Stempeln einmalig erfasst (Nachweis vor Ort). Keine Dauerortung.</span></div>`:''}
+      ${settings.geo?`<div class="geonote"><i data-lucide="map-pin"></i> <span>Dein <b>Standort</b> wird beim Stempeln einmalig erfasst – damit nachvollziehbar ist, wo gestempelt wurde. Keine Dauerortung.</span></div>`:''}
       <div class="sheet-actions">
         <button class="btn" style="flex:1" onclick="doClockIn('${siteId}')"><i data-lucide="play"></i> Jetzt einstempeln</button>
       </div>
@@ -10335,30 +10322,49 @@ async function doClockIn(siteId){
   const ruest = settings.ruestzeit;     // Rüstzeit ist eine Betriebs-Einstellung, nicht pro Auftrag
   const btn = document.querySelector('.sheet-actions .btn');
   if(btn){ btn.disabled = true; btn.innerHTML = settings.geo ? '<i data-lucide="loader"></i> Standort wird erfasst …' : '<i data-lucide="loader"></i> Stempeln …'; icons(); }
-  // Echter Standort-Nachweis: einmalige Erfassung beim Stempeln (geoStamp = navigator.geolocation + Haversine zur Baustelle).
+  // Echter Standort-Nachweis: einmalige Erfassung beim Stempeln (geoStamp = navigator.geolocation, punktuell).
   // Der erfasste Punkt ist unveränderlich (Object.freeze) – der Mitarbeiter kann ihn nicht nachträglich bearbeiten.
   const g = await geoStamp(siteId);
-  myEntry = { empId:'self', siteId, in:NOW, out:null, ruest, pauseMin:0, geo:g, dist:g?g.dist:null, geoOk:g?g.geoOk:null };
+  myEntry = { empId:'self', siteId, in:NOW, out:null, ruest, pauseMin:0, geo:g };
   closeSheet(); renderZeit();
   toast(`Eingestempelt um ${NOW} · ${site(siteId).customer}`);
 }
 function myPause(){ if(!myEntry) return; myEntry.pauseMin = (myEntry.pauseMin||0) + 30; renderZeit(); toast('30 Min Pause erfasst'); }
 async function myClockOut(){ if(!myEntry) return; if(!ensureGeoConsent(() => myClockOut())) return; myEntry.out = NOW; myEntry.geoOut = await geoStamp(myEntry.siteId); renderZeit(); toast(`Ausgestempelt um ${NOW} · ${hoursStr(entryMin(myEntry))}`); }
 
+// Reverse-Geocoding: macht aus den GPS-Koordinaten eine lesbare Adresse (Straße/Hausnr · PLZ Ort).
+// Rein informativ für den Arbeitgeber – er sieht WO gestempelt wurde, ohne Koordinaten lesen zu müssen.
+// Ergebnis wird gecacht (gleicher Punkt wird nicht doppelt abgefragt). Bei Fehler bleibt es bei den Koordinaten.
+const _geoPlaceCache = {};
+function geoReverse(lat, lng, elId){
+  const key = lat.toFixed(5) + ',' + lng.toFixed(5);
+  const fill = (txt) => { const el = document.getElementById(elId); if(el && txt) el.textContent = txt; };
+  if(_geoPlaceCache[key] !== undefined){ fill(_geoPlaceCache[key]); return; }
+  fetch(`https://nominatim.openstreetmap.org/reverse?format=json&zoom=18&addressdetails=1&lat=${lat}&lon=${lng}`, { headers:{ 'Accept':'application/json' } })
+    .then(r => r.ok ? r.json() : null)
+    .then(d => {
+      if(!d || !d.address){ _geoPlaceCache[key] = ''; return; }
+      const a = d.address;
+      const street = [a.road, a.house_number].filter(Boolean).join(' ');
+      const city = [a.postcode, a.city || a.town || a.village || a.municipality || a.suburb].filter(Boolean).join(' ');
+      const txt = [street, city].filter(Boolean).join(' · ');
+      _geoPlaceCache[key] = txt;
+      fill(txt);
+    })
+    .catch(() => { _geoPlaceCache[key] = ''; });
+}
 // Read-only Standort-Nachweis eines einzelnen Stempel-Zeitpunkts (Ein- ODER Ausstempeln).
-// Zeigt erfasste Koordinaten, Genauigkeit, Uhrzeit der Erfassung + Kartenlink. Wird vom Mitarbeiter NICHT bearbeitet.
-function geoPointRow(label, g, dist, geoOk){
+// Zeigt WO gestempelt wurde (Adresse + Koordinaten, Genauigkeit, Uhrzeit) + Kartenlink. Neutral, nicht wertend.
+// Kein Abgleich mit der Baustelle, keine „vor Ort/entfernt"-Bewertung. Wird vom Mitarbeiter NICHT bearbeitet.
+function geoPointRow(label, g){
   if(!g || g.lat == null){
     return `<div class="detail-row"><dt>${label}</dt><dd><span style="color:var(--muted)"><i data-lucide="map-pin-off" style="width:14px;height:14px;vertical-align:-2px"></i> kein Standort erfasst</span></dd></div>`;
   }
   const mapUrl = `https://www.openstreetmap.org/?mlat=${g.lat}&mlon=${g.lng}#map=17/${g.lat}/${g.lng}`;
-  const status = geoOk === true
-    ? `<span style="color:var(--green-2);font-weight:600"><i data-lucide="map-pin" style="width:14px;height:14px;vertical-align:-2px"></i> vor Ort bestätigt${dist!=null?` · ${distStr(dist)} zur Baustelle`:''}</span>`
-    : geoOk === false
-      ? `<span style="color:var(--amber);font-weight:600"><i data-lucide="alert-triangle" style="width:14px;height:14px;vertical-align:-2px"></i> ${distStr(dist)} von der Baustelle entfernt – bitte prüfen</span>`
-      : `<span style="color:var(--muted);font-weight:600"><i data-lucide="map-pin" style="width:14px;height:14px;vertical-align:-2px"></i> Standort erfasst</span>`;
+  const placeId = 'geoplace_' + Math.random().toString(36).slice(2);
+  setTimeout(() => geoReverse(g.lat, g.lng, placeId), 0);
   return `<div class="detail-row"><dt>${label}</dt><dd>
-    ${status}
+    <span style="color:var(--ink);font-weight:600"><i data-lucide="map-pin" style="width:14px;height:14px;vertical-align:-2px"></i> <span id="${placeId}">${g.lat.toFixed(5)}, ${g.lng.toFixed(5)}</span></span>
     <div style="font-size:11.5px;color:var(--muted);margin-top:3px">${g.lat.toFixed(5)}, ${g.lng.toFixed(5)}${g.acc!=null?` · ±${g.acc} m`:''}${g.at?` · erfasst ${g.at} Uhr`:''}</div>
     <a href="${mapUrl}" target="_blank" rel="noopener" style="font-size:11.5px;font-weight:600;color:var(--green-2);text-decoration:none"><i data-lucide="external-link" style="width:12px;height:12px;vertical-align:-1px"></i> Auf Karte ansehen</a>
   </dd></div>`;
@@ -10389,7 +10395,7 @@ function openTimeEntry(id){
         <div class="detail-row"><dt>Baustelle</dt><dd>${s.customer} · ${s.label}</dd></div>
         <div class="detail-row"><dt>Zeit</dt><dd>${e.in}${e.out?' – '+e.out:' – läuft'} Uhr · <b>${hoursStr(min)}</b>${e.pauseMin?` · ${e.pauseMin} Min Pause`:''}</dd></div>
         ${e.manual ? `<div class="detail-row"><dt>Standort</dt><dd><span style="color:var(--muted);font-weight:600"><i data-lucide="user-cog" style="width:14px;height:14px;vertical-align:-2px"></i> manuell vom Büro erfasst – kein Standortnachweis</span></dd></div>`
-          : settings.geo ? `${geoPointRow('Standort Start', e.geo, e.dist, e.geoOk)}${e.out ? geoPointRow('Standort Ende', e.geoOut, e.geoOut?e.geoOut.dist:null, e.geoOut?e.geoOut.geoOk:null) : ''}${geoConsentLine(e.empId)}` : ''}
+          : settings.geo ? `${geoPointRow('Standort Start', e.geo)}${e.out ? geoPointRow('Standort Ende', e.geoOut) : ''}${geoConsentLine(e.empId)}` : ''}
         <div class="detail-row"><dt>Adresse</dt><dd>${s.addr}</dd></div>
       </dl>
       ${(settings.geo && !e.manual) ? `<div class="dsgvo" style="margin-top:6px"><i data-lucide="lock"></i> <span>Der Standort wurde <b>einmalig beim Stempeln</b> erfasst und ist <b>unveränderlich</b> – Mitarbeiter können ihn nicht nachträglich bearbeiten.</span></div>` : ''}
