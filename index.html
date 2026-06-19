@@ -851,6 +851,16 @@
 
   /* Bewerber-Toolbar */
   .bewerber-bar{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:14px; }
+  .akte-promo{ display:flex; gap:16px; align-items:flex-start; margin-top:18px; padding:18px; border:1px solid var(--line); border-radius:16px; background:linear-gradient(135deg,var(--mint),#fff); }
+  .akte-promo__ico{ flex-shrink:0; width:46px; height:46px; border-radius:13px; display:flex; align-items:center; justify-content:center; background:var(--green); color:#fff; }
+  .akte-promo__ico .lucide{ width:23px; height:23px; }
+  .akte-promo__body{ flex:1; min-width:0; }
+  .akte-promo__tag{ display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.04em; color:var(--green-2); background:#fff; border:1px solid var(--line); border-radius:999px; padding:3px 10px; margin-bottom:8px; }
+  .akte-promo__tag .lucide{ width:13px; height:13px; }
+  .akte-promo__body h3{ margin:0 0 5px; font-size:16px; color:var(--ink); }
+  .akte-promo__body p{ margin:0 0 13px; font-size:13px; line-height:1.55; color:var(--muted); }
+  .akte-promo__btns{ display:flex; gap:9px; flex-wrap:wrap; }
+  @media(max-width:560px){ .akte-promo{ flex-direction:column; gap:12px; } .akte-promo__btns{ flex-direction:column; } .akte-promo__btns .btn{ width:100%; } }
   .bewerber-bar__l{ flex:1; min-width:200px; }
   .bewerber-bar__r{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
   .hint.inline{ display:inline-flex; align-items:center; gap:7px; font-size:12px; color:var(--muted); }
@@ -1947,6 +1957,10 @@
   .clockcard__meta{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-bottom:13px; }
   .clockcard__since{ font-size:11.5px; color:var(--muted); font-weight:600; }
   .clockcard__row{ display:flex; gap:9px; flex-wrap:wrap; }
+  .leadlist{ display:flex; flex-direction:column; gap:6px; margin:4px 0 12px; }
+  .leadrow{ display:flex; align-items:center; gap:9px; background:rgba(255,255,255,.14); border-radius:10px; padding:7px 10px; font-size:12.5px; }
+  .leadrow__txt{ flex:1; display:flex; flex-direction:column; line-height:1.25; }
+  .leadrow__txt small{ opacity:.8; font-size:11px; }
   .clockcard__ok{ display:inline-flex; align-items:center; gap:6px; margin-top:10px; font-size:12.5px; font-weight:600; color:var(--green-2); }
   .clockcard__ok .lucide{ width:15px; height:15px; }
   .clockbtn{ display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:12px 16px; border-radius:11px; font-size:14px; font-weight:700; cursor:pointer; border:1px solid transparent; }
@@ -1965,6 +1979,7 @@
   .geo .lucide{ width:13px; height:13px; }
   .geo.ok{ color:var(--green-3); background:var(--mint); }
   .geo.warn{ color:#B45309; background:#FEF3E2; }
+  .geo.na{ color:var(--muted); background:var(--canvas-2); }
   .zsec-h{ display:flex; align-items:baseline; justify-content:space-between; margin:0 2px 9px; }
   .zsec-h b{ font-size:14px; }
   .zsec-h span{ font-size:12px; color:var(--muted); }
@@ -2059,6 +2074,7 @@
   .fieldhint .lucide{ width:13px; height:13px; flex-shrink:0; margin-top:1px; color:var(--green-2); }
   /* Einstellungen */
   .setsec{ font-size:11.5px; font-weight:800; text-transform:uppercase; letter-spacing:.04em; color:var(--green-2); margin:20px 0 10px; }
+  .setsub{ font-size:12.5px; font-weight:700; color:var(--ink); margin:14px 0 6px; }
   .data-vault{ border:1px solid var(--line); border-radius:14px; background:linear-gradient(180deg,var(--mint),#fff); padding:14px; margin-bottom:6px; }
   .data-vault__head{ display:flex; align-items:center; gap:8px; font-size:13.5px; color:var(--text); }
   .data-vault__head i{ width:18px; height:18px; color:var(--green-2); }
@@ -2422,6 +2438,10 @@
   .seg--4 .segb{ padding:9px 4px; font-size:12px; flex-direction:column; gap:4px; }
   .seg--4 .segb .lucide{ width:17px; height:17px; }
   @media(max-width:520px){ .seg--4{ grid-template-columns:repeat(2,1fr); } }
+  .seg--3{ display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
+  .seg--3 .segb{ padding:10px 6px; font-size:12px; flex-direction:column; gap:5px; text-align:center; line-height:1.2; }
+  .seg--3 .segb .lucide{ width:18px; height:18px; }
+  @media(max-width:520px){ .seg--3{ grid-template-columns:1fr; } .seg--3 .segb{ flex-direction:row; justify-content:flex-start; gap:8px; text-align:left; } }
   .art-grp{ display:flex; align-items:center; gap:8px; margin:16px 0 6px; padding:0 16px; font-size:13px; }
   .syn-chip{ display:inline-block; background:var(--canvas-2); border:1px solid var(--line); border-radius:6px; padding:1px 6px; margin:1px 3px 1px 0; font-size:10.5px; color:var(--muted); }
   .empty.sm{ padding:14px; font-size:12.5px; }
@@ -3012,7 +3032,7 @@ const DEFAULT_SETTINGS = {
   botFlow: null,                              // null = Default-Fragen (DEFAULT_BOT_FLOW); sonst eigene
   ruestzeit: true,     // Rüstzeit (Beladen + Anfahrt) sichtbar & wird mitgezählt
   geo: true,           // Standortnachweis beim Stempeln
-  selfClockIn: true,   // Mitarbeiter dürfen selbst stempeln
+  clockMode: 'self',   // WER stempelt: 'self' = jeder Mitarbeiter selbst per Handy | 'lead' = nur Kolonnenführer/Vorarbeiter für seine Kolonne | 'admin' = nur Inhaber/Büro manuell
   perms: {
     buero:       {approveAbsence:true, editEmployees:true, manageCustomers:true, clockOthers:true},
     buchhaltung: {manageFinances:true, manageCustomers:true, viewReports:true},
@@ -3021,7 +3041,7 @@ const DEFAULT_SETTINGS = {
 };
 let settings = loadSettings();
 function loadSettings(){
-  try{ const r = localStorage.getItem('gcos_settings_v2'); if(r){ const s = JSON.parse(r); s.perms = s.perms || {}; s.perms.buero = Object.assign({}, DEFAULT_SETTINGS.perms.buero, s.perms.buero); s.perms.buchhaltung = Object.assign({}, DEFAULT_SETTINGS.perms.buchhaltung, s.perms.buchhaltung); s.perms.mitarbeiter = Object.assign({}, DEFAULT_SETTINGS.perms.mitarbeiter, s.perms.mitarbeiter); s.company = Object.assign({}, DEFAULT_SETTINGS.company, s.company); const merged = Object.assign(JSON.parse(JSON.stringify(DEFAULT_SETTINGS)), s); return resetDemoModules(merged); } }catch(e){}
+  try{ const r = localStorage.getItem('gcos_settings_v2'); if(r){ const s = JSON.parse(r); s.perms = s.perms || {}; s.perms.buero = Object.assign({}, DEFAULT_SETTINGS.perms.buero, s.perms.buero); s.perms.buchhaltung = Object.assign({}, DEFAULT_SETTINGS.perms.buchhaltung, s.perms.buchhaltung); s.perms.mitarbeiter = Object.assign({}, DEFAULT_SETTINGS.perms.mitarbeiter, s.perms.mitarbeiter); s.company = Object.assign({}, DEFAULT_SETTINGS.company, s.company); const merged = Object.assign(JSON.parse(JSON.stringify(DEFAULT_SETTINGS)), s); if(typeof s.clockMode==='undefined' && typeof s.selfClockIn!=='undefined'){ merged.clockMode = s.selfClockIn ? 'self' : 'admin'; } return resetDemoModules(merged); } }catch(e){}
   return JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
 }
 // Testversion: Modul-Status bei JEDEM Laden auf das Basisprodukt zuruecksetzen.
@@ -4064,8 +4084,9 @@ function openSettings(){
       <div class="setsec">Zeiterfassung</div>
       <div class="field" style="max-width:180px"><label>Arbeitsbeginn</label><input type="time" value="${c.start}" onchange="settings.company.start=this.value;saveSettings()"></div>
       ${swRow('Mit Rüstzeit rechnen','Beladen &amp; Anfahrt zählen als Arbeitszeit. Gilt für alle Aufträge – nicht pro Auftrag wählbar.', s.ruestzeit, "toggleSetting('ruestzeit')")}
-      ${swRow('Standortnachweis beim Stempeln','Einmaliger Standort beim Ein-/Ausstempeln als Nachweis vor Ort. Keine Dauerortung.', s.geo, "toggleSetting('geo')")}
-      ${swRow('Mitarbeiter stempeln selbst','Mitarbeiter stempeln per Handy „auf Kunde". Aus = nur Personalverwaltung/Admin stempelt.', s.selfClockIn, "toggleSetting('selfClockIn')")}
+      ${swRow('Standortnachweis beim Stempeln','Einmaliger Standort beim Ein-/Ausstempeln als Nachweis vor Ort. Keine Dauerortung – nur der Zeitpunkt des Stempelns wird festgehalten.', s.geo, "toggleSetting('geo')")}
+      <div class="setsub">Wer stempelt?</div>
+      ${clockModeSeg(clockMode(), "setClockMode('$ID')")}
 
       <div class="setsec">Rechte „Personalverwaltung"</div>
       <p class="sheet-note"><i data-lucide="user-cog"></i> Lege fest, was die Personalverwaltung (z. B. Sekretariat/Bürokraft) selbstständig darf.</p>
@@ -4136,6 +4157,56 @@ function toggleSetting(key){ settings[key] = !settings[key]; saveSettings(); ref
 function togglePerm(role, cap){ settings.perms[role] = settings.perms[role] || {}; settings.perms[role][cap] = !settings.perms[role][cap]; saveSettings(); refreshSettings(); }
 function refreshSettings(){ const open = document.getElementById('settingsBody'); if(open){ const sc = open.scrollTop; closeSheet(); openSettings(); const nb = document.getElementById('settingsBody'); if(nb) nb.scrollTop = sc; } }
 function rerenderCurrent(){ renderNav(); if(currentView === 'team'){ teamTab(activeTeamTab); } else { setView(currentView); } }
+
+/* ===================== ZEITERFASSUNG: WER STEMPELT (3 Modi) ===================== */
+// 'self'  = jeder Mitarbeiter stempelt selbst per Handy (eigener Login, nur eigene Ansicht)
+// 'lead'  = nur der Kolonnenführer/Vorarbeiter stempelt seine ganze Kolonne
+// 'admin' = nur Inhaber/Büro stempelt jeden manuell
+const CLOCK_MODES = [
+  { id:'self',  icon:'smartphone', label:'Jeder selbst', sub:'Mitarbeiter stempeln per Handy „auf Kunde". Jeder hat seinen eigenen Login und sieht nur seine Zeiten.' },
+  { id:'lead',  icon:'users',      label:'Kolonnenführer', sub:'Nur der Vorarbeiter/Kolonnenführer stempelt seine ganze Kolonne auf einmal ein und aus.' },
+  { id:'admin', icon:'user-cog',   label:'Inhaber/Büro', sub:'Nur du bzw. das Büro stempelt jeden Mitarbeiter manuell – z. B. nach Stundenzettel.' },
+];
+function clockMode(){ return settings.clockMode || 'self'; }
+function clockModeMeta(id){ return CLOCK_MODES.find(m => m.id === (id||clockMode())) || CLOCK_MODES[0]; }
+// Segmented-Control für die Modus-Wahl. cur = aktiver Modus, fn = JS-Aufruf mit '$ID' als Platzhalter.
+function clockModeSeg(cur, fnTemplate){
+  const btns = CLOCK_MODES.map(m => `<button class="segb ${cur===m.id?'on':''}" onclick="${fnTemplate.replace('$ID', m.id)}"><i data-lucide="${m.icon}"></i> ${m.label}</button>`).join('');
+  const meta = clockModeMeta(cur);
+  return `<div class="seg seg--type seg--3" style="margin:2px 0 8px">${btns}</div>
+    <p class="sheet-note" style="margin:0 0 6px"><i data-lucide="info"></i> ${meta.sub}</p>`;
+}
+function setClockMode(v){ settings.clockMode = v; saveSettings(); refreshSettings(); rerenderCurrent(); }
+function obSetClockMode(v){ OB_DRAFT.clockMode = v; renderOnboard(); }
+
+/* ---- Echtes Geo: Standort beim Stempeln (einmalig, kein Dauer-Tracking) ---- */
+// Liefert ein unveränderliches Geo-Objekt {lat,lng,acc,dist,geoOk,at}. Distanz per Haversine
+// zur Baustellen-Position. Innerhalb GEO_RADIUS_M => vor Ort bestätigt. Bei Verweigerung/
+// Fehler => geoOk:null (nicht bestätigt) – wir faken KEINE Bestätigung.
+const GEO_RADIUS_M = 300;   // Toleranz „vor Ort" (Baustellen sind weitläufig)
+function haversineKm(aLat, aLng, bLat, bLng){
+  const R = 6371, toRad = d => d*Math.PI/180;
+  const dLat = toRad(bLat-aLat), dLng = toRad(bLng-aLng);
+  const x = Math.sin(dLat/2)**2 + Math.cos(toRad(aLat))*Math.cos(toRad(bLat))*Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1-x));
+}
+function geoStamp(siteId){
+  return new Promise(resolve => {
+    if(!settings.geo){ resolve(null); return; }           // Standortnachweis deaktiviert
+    const s = site(siteId);
+    const done = (g) => resolve(Object.freeze(g));         // unveränderlich -> Mitarbeiter kann nicht manipulieren
+    if(!navigator.geolocation){ done({ lat:null, lng:null, acc:null, dist:null, geoOk:null, at:NOW }); return; }
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        const { latitude:lat, longitude:lng, accuracy:acc } = pos.coords;
+        const distKm = (s && s.lat && s.lng) ? haversineKm(lat, lng, s.lat, s.lng) : null;
+        done({ lat, lng, acc:Math.round(acc), dist:distKm, geoOk: distKm==null ? null : distKm*1000 <= GEO_RADIUS_M, at:NOW });
+      },
+      _err => done({ lat:null, lng:null, acc:null, dist:null, geoOk:null, at:NOW }),  // verweigert/Fehler
+      { enableHighAccuracy:true, timeout:8000, maximumAge:0 }
+    );
+  });
+}
 
 /* ===================== ONBOARDING-ASSISTENT ===================== */
 let obStep = 0;
@@ -4284,7 +4355,7 @@ function maybeOnboard(){
     </div>`);
 }
 function skipOnboarding(){ settings.onboarded = true; applyTheme(settings.theme); saveSettings(); closeSheet(); setTimeout(startTour, 360); }
-function startOnboarding(){ obStep = 0; OB_DRAFT.company = Object.assign({}, settings.company); OB_DRAFT.ruestzeit = settings.ruestzeit; OB_DRAFT.geo = settings.geo; OB_DRAFT.selfClockIn = settings.selfClockIn; OB_DRAFT.branchen = (settings.branchen||[]).slice(); OB_DRAFT.theme = settings.theme || 'galabau'; renderOnboard(); }
+function startOnboarding(){ obStep = 0; OB_DRAFT.company = Object.assign({}, settings.company); OB_DRAFT.ruestzeit = settings.ruestzeit; OB_DRAFT.geo = settings.geo; OB_DRAFT.clockMode = settings.clockMode || 'self'; OB_DRAFT.branchen = (settings.branchen||[]).slice(); OB_DRAFT.theme = settings.theme || 'galabau'; renderOnboard(); }
 const OB_STEPS = ['branche','betrieb','zeit','rechte','fertig'];
 function renderOnboard(){
   const step = OB_STEPS[obStep];
@@ -4343,7 +4414,8 @@ function renderOnboard(){
       <div class="obhead"><span class="obnum">3 / 4</span><h3>Zeiterfassung</h3><p>So stempelt dein Team. Später jederzeit änderbar.</p></div>
       ${swRow('Mit Rüstzeit rechnen','Beladen &amp; Anfahrt zählen als Arbeitszeit – gilt einheitlich für alle Aufträge.', OB_DRAFT.ruestzeit, "obToggle('ruestzeit')")}
       ${swRow('Standortnachweis beim Stempeln','Einmaliger Standort als Nachweis vor Ort. Keine Dauerortung.', OB_DRAFT.geo, "obToggle('geo')")}
-      ${swRow('Mitarbeiter stempeln selbst','Im Alltag stempeln die Mitarbeiter per Handy „auf Kunde".', OB_DRAFT.selfClockIn, "obToggle('selfClockIn')")}`;
+      <div class="setsub" style="padding:0 2px">Wer stempelt im Alltag?</div>
+      ${clockModeSeg(OB_DRAFT.clockMode||'self', "obSetClockMode('$ID')")}`;
   } else if(step === 'rechte'){
     body = `
       <div class="obhead"><span class="obnum">4 / 4</span><h3>Rechte der Personalverwaltung</h3><p>Was darf die Personalverwaltung selbstständig erledigen?</p></div>
@@ -4415,7 +4487,7 @@ function obNext(){
 }
 async function finishOnboarding(){
   settings.company = Object.assign({}, settings.company, OB_DRAFT.company);
-  settings.ruestzeit = OB_DRAFT.ruestzeit; settings.geo = OB_DRAFT.geo; settings.selfClockIn = OB_DRAFT.selfClockIn;
+  settings.ruestzeit = OB_DRAFT.ruestzeit; settings.geo = OB_DRAFT.geo; settings.clockMode = OB_DRAFT.clockMode || 'self';
   settings.branchen = (OB_DRAFT.branchen||[]).slice();
   settings.theme = OB_DRAFT.theme || brancheTheme(settings.branchen[0]);
   applyTheme(settings.theme);
@@ -4439,6 +4511,10 @@ async function finishOnboarding(){
   closeSheet();
   applyRole();
   toast('Einrichtung abgeschlossen');
+  // Der Inhaber landet direkt im Bewerber-Bereich – das ist die Eintrittstür ins Produkt
+  // (Recruiting → später Personalakte). Danach die kurze Orientierungs-Tour.
+  bewerberFilter = { job:'', status:'' };
+  setView('recruiting');
   setTimeout(startTour, 360);
 }
 
@@ -5313,7 +5389,8 @@ const VIEWS = {
         </select>
       </div>
     </div>
-    <div id="kanbanWrap">${bewerberKanbanHtml()}</div>`,
+    <div id="kanbanWrap">${bewerberKanbanHtml()}</div>
+    ${personalaktePromo()}`,
 
   stellen: () => stellenViewHtml(),
 
@@ -8106,6 +8183,48 @@ function renderBewerberKanban(){
 }
 function setBewerberFilter(key, val){ bewerberFilter[key] = val; renderBewerberKanban(); }
 
+// ---- Überführung Recruiting → Personalakte (nächstes, kostenloses Produkt) ----
+// Eingestellte Bewerber, die noch keine Personalakte haben (Namensabgleich).
+function hiredNotInAkte(){
+  return applicants.filter(a => a.stage === 'eingestellt'
+    && a.name && !employees.some(e => e.name && e.name.toLowerCase() === a.name.toLowerCase()));
+}
+// Nimmt den nächsten eingestellten Bewerber in die Personalakte (Formular vorausgefüllt). Re-rendert danach.
+function handoverNextHired(){
+  const pend = hiredNotInAkte();
+  if(!pend.length){ toast('Alle eingestellten Bewerber sind bereits in der Personalakte.'); return; }
+  const a = pend[0];
+  a.hired = true;
+  const p = a.pq || {};
+  const j = (typeof job === 'function') ? job(a.jobId) : null;
+  openEmployeeConfirm({
+    raw: `Übernahme aus Recruiting: ${a.name}`,
+    name: a.name || '', role: p.beruf || (j && j.title) || '',
+    phone: a.phone || '', email: a.email || '', addr: p.ort || '',
+    salary: p.gehalt || '', start: ''
+  });
+}
+function goPersonalakte(){ bewerberFilter.status=''; setView('team'); teamTab('mitarbeiter'); }
+// Banner unter dem Bewerber-Board: führt den Inhaber ins Personalakte-Produkt – für eingestellte Bewerber UND bestehendes Team.
+function personalaktePromo(){
+  if(!(GC_PROFILE && GC_PROFILE.customer_id)) return '';
+  const pend = hiredNotInAkte();
+  const teamN = employees.length;
+  const pendBtn = pend.length
+    ? `<button class="btn primary" onclick="handoverNextHired()"><i data-lucide="user-check"></i> ${pend.length===1?'Eingestellten Bewerber':pend.length+' eingestellte Bewerber'} übernehmen</button>`
+    : '';
+  const openBtn = `<button class="btn ${pend.length?'ghost':'primary'}" onclick="goPersonalakte()"><i data-lucide="folder-open"></i> Personalakte öffnen${teamN?` · ${teamN} im Team`:''}</button>`;
+  return `<div class="akte-promo">
+    <div class="akte-promo__ico"><i data-lucide="folder-heart"></i></div>
+    <div class="akte-promo__body">
+      <span class="akte-promo__tag"><i data-lucide="gift"></i> Nächster Schritt · kostenlos enthalten</span>
+      <h3>Aus Bewerbern wird dein Team – lege jetzt die Personalakten an</h3>
+      <p>Alles an einem Ort: Vertrag, Führerschein, Dokumente, Urlaub &amp; Zeiten. Übernimm eingestellte Bewerber mit einem Klick – und leg auch für deine <b>bestehenden Mitarbeiter</b> eine digitale Personalakte an. Wenn alle drin sind, läuft Urlaub, Krankmeldung und Zeiterfassung wie von selbst.</p>
+      <div class="akte-promo__btns">${pendBtn}${openBtn}</div>
+    </div>
+  </div>`;
+}
+
 function candidateCard(a){
   const src = srcMeta(a.source);
   const j = job(a.jobId);
@@ -9805,7 +9924,10 @@ function hoursStr(min){ return (Math.max(0,min)/60).toFixed(1).replace('.',',') 
 function entryMin(e){ const end = e.out ? hm2min(e.out) : hm2min(NOW); return Math.max(0, end - hm2min(e.in) - (e.pauseMin||0)); }
 function distStr(km){ return km < 1 ? Math.round(km*1000) + ' m' : km.toFixed(1).replace('.',',') + ' km'; }
 function geoBadge(e){
+  if(e.manual) return `<span class="geo na"><i data-lucide="user-cog"></i> manuell erfasst</span>`;
   if(!settings.geo) return '';   // Standortnachweis per Einstellung deaktiviert
+  if(e.geoOk === null || typeof e.geoOk === 'undefined' || e.dist == null)
+    return `<span class="geo na"><i data-lucide="map-pin-off"></i> Standort nicht bestätigt</span>`;
   return e.geoOk
     ? `<span class="geo ok"><i data-lucide="map-pin"></i> vor Ort · ${distStr(e.dist)}</span>`
     : `<span class="geo warn"><i data-lucide="alert-triangle"></i> ${distStr(e.dist)} entfernt</span>`;
@@ -9815,14 +9937,23 @@ function hasProto(empId, siteId){ return protocols.some(p => p.empId === empId &
 function zeitView(){
   return viewRole === 'mitarbeiter' ? zeitViewSelf() : zeitViewTeam();
 }
-// Mitarbeiter-Sicht: nur die eigene Stempeluhr + eigene Zeiten von heute
+// Mitarbeiter-Sicht: Stempeluhr je nach Modus (selbst / Kolonnenführer / Büro) + eigene Zeiten von heute
+function selfClockArea(){
+  const m = clockMode();
+  if(m === 'lead') return leadClockCard();
+  if(m === 'admin') return `<div class="clockcard">
+      <div class="clockcard__top"><span class="clockcard__lbl"><i data-lucide="building-2"></i> Zeiterfassung</span><span class="clockcard__time">${NOW}</span></div>
+      <div class="clockcard__sub">In deinem Betrieb stempelt das Büro die Arbeitszeiten. Du musst dich nicht selbst einstempeln.</div>
+    </div>`;
+  return clockCard();
+}
 function zeitViewSelf(){
   const me = selfEmp();
   const mine = timeEntries.filter(e => e.empId === me.id);
   return `
   <div class="zeit">
     <div class="zsec-h"><b>Meine Zeiterfassung</b><span>${dDEs(TODAY)} · auf Kunde stechen</span></div>
-    ${clockCard()}
+    ${selfClockArea()}
     ${mine.length ? `<div class="zsec-h" style="margin-top:16px"><b>Meine Zeiten heute</b><span>${mine.length} Eintrag(e)</span></div><div class="tlist">${mine.map(timeRow).join('')}</div>` : ''}
     ${settings.geo?`<div class="dsgvo"><i data-lucide="shield-check"></i> <span><b>Datenschutz:</b> Dein Standort wird <b>nur beim Ein- &amp; Ausstempeln</b> einmalig erfasst – als Nachweis vor Ort. Keine laufende Ortung während der Arbeit.</span></div>`:''}
   </div>`;
@@ -9831,8 +9962,8 @@ function zeitViewSelf(){
 function zeitViewTeam(){
   const running = timeEntries.filter(e => !e.out);
   const done = timeEntries.filter(e => e.out);
-  const onSite = running.filter(e => e.geoOk).length;
-  const flags = running.filter(e => !e.geoOk).length;
+  const onSite = running.filter(e => e.geoOk === true).length;
+  const flags = running.filter(e => e.geoOk === false).length;   // nur echte „zu weit weg"-Fälle, nicht „nicht erfasst"/manuell
   const totalMin = timeEntries.reduce((n,e) => n + entryMin(e), 0);
   const avg = timeEntries.length ? totalMin/timeEntries.length : 0;
   const geoKpi = settings.geo ? kpi('map-pin', String(onSite), 'Vor Ort bestätigt', 'per Standort', false) : kpi('briefcase', String(new Set(timeEntries.map(e=>e.siteId)).size), 'Baustellen', 'heute aktiv', false);
@@ -9866,10 +9997,17 @@ function absentStrip(){
   </button>`;
 }
 function adminClockCard(){
+  const m = clockMode();
+  const sub = m === 'admin'
+    ? 'In deinem Betrieb stempelst du bzw. das Büro die Mitarbeiter manuell ein und aus – z. B. nach Stundenzettel.'
+    : m === 'lead'
+      ? 'Im Alltag stempelt der Kolonnenführer seinen Trupp. Hier kannst du im Ausnahmefall jemanden ein- oder ausstempeln.'
+      : 'Im Alltag stempeln sich die Mitarbeiter selbst per Handy. Hier kannst du im Ausnahmefall jemanden ein- oder ausstempeln.';
+  const btnLbl = m === 'admin' ? 'Mitarbeiter einstempeln' : 'Mitarbeiter einstempeln (Ausnahme)';
   return `<div class="clockcard admin">
     <div class="clockcard__top"><span class="clockcard__lbl"><i data-lucide="fingerprint"></i> Mitarbeiter stempeln</span><span class="clockcard__time">${NOW}</span></div>
-    <div class="clockcard__sub">Im Alltag stempeln sich die Mitarbeiter selbst per Handy. Hier kannst du im Ausnahmefall jemanden ein- oder ausstempeln.</div>
-    <button class="clockbtn go" onclick="openClockOther()"><i data-lucide="user-plus"></i> Mitarbeiter einstempeln</button>
+    <div class="clockcard__sub">${sub}</div>
+    <button class="clockbtn go" onclick="openClockOther()"><i data-lucide="user-plus"></i> ${btnLbl}</button>
   </div>`;
 }
 // Admin stempelt einen Mitarbeiter ein (Ausnahmefall)
@@ -9909,10 +10047,77 @@ function openClockOtherSite(){
     </div>`);
 }
 function clockOtherDo(siteId){
-  timeEntries.push({ id: timeSeq++, empId: clockOtherEmp, siteId, in: NOW, out: null, ruest: settings.ruestzeit, pauseMin: 0, dist: 0.1, geoOk: true, proto: false });
+  // Manuell vom Büro/Inhaber gestempelt → kein Standortnachweis des Mitarbeiters (er ist nicht am Gerät).
+  // Als „manuell" markiert, damit nicht fälschlich „vor Ort bestätigt" erscheint.
+  timeEntries.push({ id: timeSeq++, empId: clockOtherEmp, siteId, in: NOW, out: null, ruest: settings.ruestzeit, pauseMin: 0, geo:null, dist: null, geoOk: null, manual:true, proto: false });
   const n = emp(clockOtherEmp).name; clockOtherEmp = null;
   closeSheet(); renderZeit();
   toast(`${n} eingestempelt um ${NOW}`);
+}
+
+/* ---- Kolonnenführer stempelt seine ganze Kolonne auf einmal ---- */
+// Der Lead steht mit dem Trupp vor Ort → ein Standort-Nachweis (sein Gerät) gilt für die ganze Kolonne.
+function leadCrewMembers(){ const me = selfEmp(); return me.crewId ? crewMembers(me.crewId).filter(e => empStatus(e.id)[0] === 'Aktiv') : []; }
+function leadRunningFor(empId){ return timeEntries.find(t => t.empId === empId && !t.out); }
+function leadClockCard(){
+  const me = selfEmp();
+  if(!me.crewId){
+    return `<div class="clockcard">
+      <div class="clockcard__top"><span class="clockcard__lbl"><i data-lucide="users"></i> Kolonne stempeln</span><span class="clockcard__time">${NOW}</span></div>
+      <div class="clockcard__sub">Du bist keiner Kolonne fest zugeordnet. Sobald dir eine Kolonne zugewiesen ist, stempelst du hier den ganzen Trupp auf einmal ein und aus.</div>
+    </div>`;
+  }
+  const crew = leadCrewMembers();
+  const running = crew.filter(e => leadRunningFor(e.id));
+  const lbl = crewLabelOf(me.crewId);
+  const rows = crew.map(e => {
+    const r = leadRunningFor(e.id);
+    return `<div class="leadrow"><span class="avatar sm">${initials(e.name)}</span><span class="leadrow__txt"><b>${e.name}</b><small>${e.role}</small></span>${r?`<span class="crow__live"><span class="dotlive"></span> seit ${r.in}</span>`:`<span class="pill n">aus</span>`}</div>`;
+  }).join('') || `<div class="cust-empty">Keine aktiven Mitglieder in dieser Kolonne.</div>`;
+  return `<div class="clockcard ${running.length?'running':'in'}">
+    <div class="clockcard__top"><span class="clockcard__lbl"><i data-lucide="users"></i> ${lbl} stempeln</span><span class="clockcard__time">${NOW}</span></div>
+    <div class="clockcard__sub">Du stempelst als Kolonnenführer den ganzen Trupp. Dein Standort gilt als Nachweis für die Kolonne.</div>
+    <div class="leadlist">${rows}</div>
+    <div class="clockcard__row">
+      ${running.length < crew.length ? `<button class="clockbtn go" onclick="openLeadClockIn()"><i data-lucide="play"></i> Kolonne einstempeln</button>` : ''}
+      ${running.length ? `<button class="clockbtn stop" onclick="leadClockOutAll()"><i data-lucide="square"></i> Kolonne ausstempeln</button>` : ''}
+    </div>
+  </div>`;
+}
+function openLeadClockIn(){
+  const cards = sites.filter(s => s.id !== 's0').map(s => `
+    <button class="sitepick" onclick="leadClockDo('${s.id}')">
+      <span class="sitepick__ico"><i data-lucide="hard-hat"></i></span>
+      <span class="sitepick__txt"><b>${s.customer}</b><small>${s.label}</small></span>
+      <i data-lucide="chevron-right"></i>
+    </button>`).join('');
+  openSheet(`
+    <div class="sheet__head">
+      <span class="avatar" style="width:50px;height:50px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="users" style="width:22px;height:22px"></i></span>
+      <div><div class="sheet__title">Kolonne einstempeln</div><div class="sheet__sub">Auf welche Baustelle steht der Trupp?</div></div>
+      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+    </div>
+    <div class="sheet__body">
+      ${settings.geo?`<div class="geonote"><i data-lucide="map-pin"></i> <span>Dein <b>Standort</b> wird einmalig erfasst und gilt als Nachweis vor Ort für die ganze Kolonne.</span></div>`:''}
+      <div class="sitepicks">${cards}</div>
+      <button class="sitepick ghost" onclick="leadClockDo('s0')"><span class="sitepick__ico"><i data-lucide="warehouse"></i></span><span class="sitepick__txt"><b>Bauhof / Werkstatt</b><small>interne Arbeiten</small></span><i data-lucide="chevron-right"></i></button>
+    </div>`);
+}
+async function leadClockDo(siteId){
+  const btn = document.querySelector('.sitepicks');   // visuelles Feedback ist optional
+  const g = await geoStamp(siteId);                    // ein Stempel für die ganze Kolonne
+  const crew = leadCrewMembers().filter(e => !leadRunningFor(e.id));
+  crew.forEach(e => timeEntries.push({ id: timeSeq++, empId: e.id, siteId, in: NOW, out: null, ruest: settings.ruestzeit, pauseMin: 0, geo:g, dist:g?g.dist:null, geoOk:g?g.geoOk:null, byLead:true, proto:false }));
+  closeSheet(); renderZeit();
+  toast(`${crew.length} Mitarbeiter eingestempelt um ${NOW}`);
+}
+async function leadClockOutAll(){
+  const g = await geoStamp(null);
+  const crew = leadCrewMembers();
+  let n = 0;
+  crew.forEach(e => { const r = leadRunningFor(e.id); if(r){ r.out = NOW; r.geoOut = g; n++; } });
+  renderZeit();
+  toast(`${n} Mitarbeiter ausgestempelt um ${NOW}`);
 }
 function clockCard(){
   if(!myEntry){
@@ -10003,21 +10208,38 @@ function clockConfirm(siteId){
       </div>
     </div>`);
 }
-function doClockIn(siteId){
+async function doClockIn(siteId){
   const ruest = settings.ruestzeit;     // Rüstzeit ist eine Betriebs-Einstellung, nicht pro Auftrag
   const btn = document.querySelector('.sheet-actions .btn');
   if(btn){ btn.disabled = true; btn.innerHTML = settings.geo ? '<i data-lucide="loader"></i> Standort wird erfasst …' : '<i data-lucide="loader"></i> Stempeln …'; icons(); }
-  // Prototyp: Standort-Erfassung simulieren (in Produktion: navigator.geolocation.getCurrentPosition + Haversine zur Baustelle)
-  setTimeout(() => {
-    const dist = Math.round((0.05 + Math.random()*0.2)*1000)/1000;
-    myEntry = { empId:'self', siteId, in:NOW, out:null, ruest, pauseMin:0, dist, geoOk:settings.geo?true:true };
-    closeSheet(); renderZeit();
-    toast(`Eingestempelt um ${NOW} · ${site(siteId).customer}`);
-  }, settings.geo ? 750 : 250);
+  // Echter Standort-Nachweis: einmalige Erfassung beim Stempeln (geoStamp = navigator.geolocation + Haversine zur Baustelle).
+  // Der erfasste Punkt ist unveränderlich (Object.freeze) – der Mitarbeiter kann ihn nicht nachträglich bearbeiten.
+  const g = await geoStamp(siteId);
+  myEntry = { empId:'self', siteId, in:NOW, out:null, ruest, pauseMin:0, geo:g, dist:g?g.dist:null, geoOk:g?g.geoOk:null };
+  closeSheet(); renderZeit();
+  toast(`Eingestempelt um ${NOW} · ${site(siteId).customer}`);
 }
 function myPause(){ if(!myEntry) return; myEntry.pauseMin = (myEntry.pauseMin||0) + 30; renderZeit(); toast('30 Min Pause erfasst'); }
-function myClockOut(){ if(!myEntry) return; myEntry.out = NOW; renderZeit(); toast(`Ausgestempelt um ${NOW} · ${hoursStr(entryMin(myEntry))}`); }
+async function myClockOut(){ if(!myEntry) return; myEntry.out = NOW; myEntry.geoOut = await geoStamp(myEntry.siteId); renderZeit(); toast(`Ausgestempelt um ${NOW} · ${hoursStr(entryMin(myEntry))}`); }
 
+// Read-only Standort-Nachweis eines einzelnen Stempel-Zeitpunkts (Ein- ODER Ausstempeln).
+// Zeigt erfasste Koordinaten, Genauigkeit, Uhrzeit der Erfassung + Kartenlink. Wird vom Mitarbeiter NICHT bearbeitet.
+function geoPointRow(label, g, dist, geoOk){
+  if(!g || g.lat == null){
+    return `<div class="detail-row"><dt>${label}</dt><dd><span style="color:var(--muted)"><i data-lucide="map-pin-off" style="width:14px;height:14px;vertical-align:-2px"></i> kein Standort erfasst</span></dd></div>`;
+  }
+  const mapUrl = `https://www.openstreetmap.org/?mlat=${g.lat}&mlon=${g.lng}#map=17/${g.lat}/${g.lng}`;
+  const status = geoOk === true
+    ? `<span style="color:var(--green-2);font-weight:600"><i data-lucide="map-pin" style="width:14px;height:14px;vertical-align:-2px"></i> vor Ort bestätigt${dist!=null?` · ${distStr(dist)} zur Baustelle`:''}</span>`
+    : geoOk === false
+      ? `<span style="color:var(--amber);font-weight:600"><i data-lucide="alert-triangle" style="width:14px;height:14px;vertical-align:-2px"></i> ${distStr(dist)} von der Baustelle entfernt – bitte prüfen</span>`
+      : `<span style="color:var(--muted);font-weight:600"><i data-lucide="map-pin" style="width:14px;height:14px;vertical-align:-2px"></i> Standort erfasst</span>`;
+  return `<div class="detail-row"><dt>${label}</dt><dd>
+    ${status}
+    <div style="font-size:11.5px;color:var(--muted);margin-top:3px">${g.lat.toFixed(5)}, ${g.lng.toFixed(5)}${g.acc!=null?` · ±${g.acc} m`:''}${g.at?` · erfasst ${g.at} Uhr`:''}</div>
+    <a href="${mapUrl}" target="_blank" rel="noopener" style="font-size:11.5px;font-weight:600;color:var(--green-2);text-decoration:none"><i data-lucide="external-link" style="width:12px;height:12px;vertical-align:-1px"></i> Auf Karte ansehen</a>
+  </dd></div>`;
+}
 /* ---- Owner-Detail eines Stempel-Eintrags ---- */
 function openTimeEntry(id){
   const e = timeEntries.find(x => x.id === id); if(!e) return;
@@ -10034,9 +10256,11 @@ function openTimeEntry(id){
       <dl>
         <div class="detail-row"><dt>Baustelle</dt><dd>${s.customer} · ${s.label}</dd></div>
         <div class="detail-row"><dt>Zeit</dt><dd>${e.in}${e.out?' – '+e.out:' – läuft'} Uhr · <b>${hoursStr(min)}</b>${e.pauseMin?` · ${e.pauseMin} Min Pause`:''}</dd></div>
-        <div class="detail-row"><dt>Standort</dt><dd>${e.geoOk?`<span style="color:var(--green-2);font-weight:600"><i data-lucide="map-pin" style="width:14px;height:14px;vertical-align:-2px"></i> vor Ort bestätigt · ${distStr(e.dist)} zur Baustelle</span>`:`<span style="color:var(--amber);font-weight:600"><i data-lucide="alert-triangle" style="width:14px;height:14px;vertical-align:-2px"></i> ${distStr(e.dist)} von der Baustelle entfernt – bitte prüfen</span>`}</dd></div>
+        ${e.manual ? `<div class="detail-row"><dt>Standort</dt><dd><span style="color:var(--muted);font-weight:600"><i data-lucide="user-cog" style="width:14px;height:14px;vertical-align:-2px"></i> manuell vom Büro erfasst – kein Standortnachweis</span></dd></div>`
+          : settings.geo ? `${geoPointRow('Standort Start', e.geo, e.dist, e.geoOk)}${e.out ? geoPointRow('Standort Ende', e.geoOut, e.geoOut?e.geoOut.dist:null, e.geoOut?e.geoOut.geoOk:null) : ''}` : ''}
         <div class="detail-row"><dt>Adresse</dt><dd>${s.addr}</dd></div>
       </dl>
+      ${(settings.geo && !e.manual) ? `<div class="dsgvo" style="margin-top:6px"><i data-lucide="lock"></i> <span>Der Standort wurde <b>einmalig beim Stempeln</b> erfasst und ist <b>unveränderlich</b> – Mitarbeiter können ihn nicht nachträglich bearbeiten.</span></div>` : ''}
       ${p ? `<div class="protobox"><div class="protobox__h"><i data-lucide="clipboard-check"></i> Tagesprotokoll</div><div class="protobox__txt">${p.text||'—'}</div>${p.photos.length?`<div class="protogrid">${p.photos.map(src=>`<img src="${src}" alt="Baustelle">`).join('')}</div>`:''}${p.damageText?`<div class="protodmg"><i data-lucide="alert-octagon"></i> Schaden: ${p.damageText}${p.damagePhoto?`<img src="${p.damagePhoto}" alt="Schaden">`:''}</div>`:''}</div>` : `<div class="protobox empty2"><i data-lucide="clipboard-list"></i> Noch kein Tagesprotokoll abgegeben.</div>`}
       <div class="sheet-actions">
         <button class="btn ghost" style="flex:1" onclick="${s.customerId?`openCustomer('${s.customerId}')`:`openSiteSheet('${s.id}')`}"><i data-lucide="folder-open"></i> Kundenkartei</button>
