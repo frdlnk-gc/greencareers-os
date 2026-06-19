@@ -2139,6 +2139,18 @@
   .geonote{ display:flex; align-items:flex-start; gap:8px; padding:11px 13px; background:var(--mint); border-radius:10px; font-size:12px; color:var(--green-3); line-height:1.45; margin-bottom:4px; }
   .geonote b{ font-weight:700; }
   .geonote .lucide{ width:16px; height:16px; flex-shrink:0; margin-top:1px; }
+  /* Standort-Einwilligung */
+  .consentbox{ display:flex; flex-direction:column; gap:11px; background:var(--canvas); border:1px solid var(--line); border-radius:13px; padding:15px 16px; margin-bottom:12px; }
+  .consentbox__row{ display:flex; align-items:flex-start; gap:11px; font-size:13px; color:var(--ink); line-height:1.5; }
+  .consentbox__row b{ font-weight:740; }
+  .consentbox__row .lucide{ width:18px; height:18px; flex-shrink:0; margin-top:1px; color:var(--green); }
+  .consent-foot{ font-size:11.5px; color:var(--muted); margin:0 2px 14px; line-height:1.45; }
+  .geogate{ display:flex; flex-direction:column; align-items:center; text-align:center; gap:11px; max-width:440px; margin:18px auto; padding:26px 22px; background:var(--card); border:1px solid var(--line); border-radius:16px; }
+  .geogate__ic{ width:54px; height:54px; border-radius:14px; display:grid; place-items:center; background:var(--mint); color:var(--green); }
+  .geogate__ic .lucide{ width:26px; height:26px; }
+  .geogate h3{ margin:0; font-size:17px; font-weight:780; color:var(--ink); }
+  .geogate p{ margin:0; font-size:13px; color:var(--muted); line-height:1.55; }
+  .geogate .btn{ margin-top:4px; }
   .rzinfo{ display:flex; align-items:flex-start; gap:8px; padding:11px 13px; background:var(--mint); border-radius:10px; font-size:12px; color:var(--green-3); line-height:1.45; margin-bottom:13px; }
   .rzinfo b{ font-weight:700; }
   .rzinfo .lucide{ width:16px; height:16px; flex-shrink:0; margin-top:1px; }
@@ -3017,6 +3029,7 @@ const DEFAULT_SETTINGS = {
   branchen: [],        // gewählte Branchen (Mehrfachauswahl); erste = Primärbranche → Farbschema
   theme: 'galabau',    // galabau (grün) | tiefbau (orange) | landwirtschaft (gold)
   consent: null,       // {version, acceptedAt, by, items:{avv,datenschutz,agb,vollmacht}} – DSGVO-Einwilligung
+  geoConsent: {},      // Standort-Einwilligung je Person: { 'owner'|'emp:<id>': {accepted,at,name,role,version,type} } – DSGVO-Nachweis
   company: {name:'', owner:'', email:'', start:'07:00',
     logo:'', color:'',
     street:'', zip:'', city:'', phone:'',
@@ -4206,6 +4219,112 @@ function geoStamp(siteId){
       { enableHighAccuracy:true, timeout:8000, maximumAge:0 }
     );
   });
+}
+
+/* ---- Standort-Einwilligung (DSGVO): jeder bestätigt EINMAL, bevor Standortdaten verarbeitet werden ----
+   Mitarbeiter: willigt ein, dass beim Stempeln sein Standort erfasst wird (Art. 6 Abs. 1 a, Art. 88 DSGVO i.V.m. § 26 BDSG).
+   Inhaber/Büro: bestätigt als Verantwortlicher die Zweckbindung (nur Arbeitszeit-Nachweis, keine Verhaltenskontrolle).
+   Beleg wird unveränderlich (Object.freeze) mit Name + Zeitpunkt gespeichert -> wasserdichter Nachweis für den Arbeitgeber. */
+const GEO_CONSENT_VERSION = 'v1';
+let _geoConsentRetry = null;     // Aktion, die nach Zustimmung fortgesetzt wird (z. B. einstempeln)
+function geoActorType(){ return viewRole === 'mitarbeiter' ? 'employee' : 'owner'; }
+function geoActorKey(){ return viewRole === 'mitarbeiter' ? ('emp:' + viewEmpId) : 'owner'; }
+function geoActorName(){ try{ return currentUser().name; }catch(e){ return ''; } }
+function hasGeoConsent(key){
+  const r = settings.geoConsent && settings.geoConsent[key || geoActorKey()];
+  return !!(r && r.accepted && r.version === GEO_CONSENT_VERSION);
+}
+function recordGeoConsent(key, type, accepted){
+  if(!settings.geoConsent) settings.geoConsent = {};
+  settings.geoConsent[key] = Object.freeze({
+    accepted: !!accepted, version: GEO_CONSENT_VERSION, type,
+    name: geoActorName(), role: (ROLES[viewRole] ? ROLES[viewRole].label : ''),
+    at: (typeof dDEs==='function' && typeof TODAY!=='undefined' ? dDEs(TODAY) + ' ' : '') + NOW
+  });
+  saveSettings();
+}
+// Gibt true zurück, wenn fortgefahren werden darf. Sonst öffnet es die Einwilligung und gibt false zurück.
+function ensureGeoConsent(retry){
+  if(!settings.geo) return true;                 // Standortnachweis aus -> nichts zu erfassen
+  if(hasGeoConsent()) return true;               // diese Person hat (für diese Version) schon zugestimmt
+  _geoConsentRetry = retry || null;
+  openGeoConsent();
+  return false;
+}
+function openGeoConsent(){
+  const firma = (settings.company && settings.company.name) || 'deinem Betrieb';
+  if(geoActorType() === 'employee'){
+    openSheet(`
+      <div class="sheet__head">
+        <span class="avatar" style="width:50px;height:50px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="map-pin" style="width:22px;height:22px"></i></span>
+        <div><div class="sheet__title">Standort beim Stempeln</div><div class="sheet__sub">Kurz bestätigen – einmalig</div></div>
+        <button class="iconbtn sheet__close" onclick="closeGeoConsent()"><i data-lucide="x"></i></button>
+      </div>
+      <div class="sheet__body">
+        <div class="consentbox">
+          <div class="consentbox__row"><i data-lucide="map-pin"></i><span><b>Was passiert:</b> Beim Ein- und Ausstempeln wird <b>einmalig dein Standort</b> erfasst und mit der Baustelle abgeglichen – als Nachweis, dass du vor Ort warst.</span></div>
+          <div class="consentbox__row"><i data-lucide="shield-check"></i><span><b>Was nicht passiert:</b> <b>Keine laufende Ortung.</b> Zwischen den Stempel-Zeitpunkten wirst du nicht verfolgt – nur der Moment des Stempelns wird gespeichert.</span></div>
+          <div class="consentbox__row"><i data-lucide="eye"></i><span><b>Wer es sieht:</b> ${firma} (Büro/Inhaber) sieht den erfassten Standort zu deinen Stempel-Zeiten.</span></div>
+          <div class="consentbox__row"><i data-lucide="undo-2"></i><span><b>Deine Rechte:</b> Du kannst deine Einwilligung jederzeit mit Wirkung für die Zukunft bei ${firma} widerrufen. Rechtsgrundlage: Art. 6 Abs. 1 lit. a, Art. 88 DSGVO i.V.m. § 26 BDSG.</span></div>
+        </div>
+        <p class="consent-foot">Bestätigt als <b>${geoActorName()||'—'}</b> am ${(typeof dDEs==='function'?dDEs(TODAY)+' ':'')}${NOW} Uhr.</p>
+        <div class="sheet-actions" style="gap:8px">
+          <button class="btn ghost" style="flex:1" onclick="declineGeoConsent()">Nicht einverstanden</button>
+          <button class="btn" style="flex:1.4" onclick="acceptGeoConsent()"><i data-lucide="check"></i> Einverstanden – so stempeln</button>
+        </div>
+      </div>`);
+  } else {
+    openSheet(`
+      <div class="sheet__head">
+        <span class="avatar" style="width:50px;height:50px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="shield-check" style="width:22px;height:22px"></i></span>
+        <div><div class="sheet__title">Standortdaten – Hinweis für dich</div><div class="sheet__sub">Als Arbeitgeber kurz bestätigen</div></div>
+        <button class="iconbtn sheet__close" onclick="closeGeoConsent()"><i data-lucide="x"></i></button>
+      </div>
+      <div class="sheet__body">
+        <div class="consentbox">
+          <div class="consentbox__row"><i data-lucide="user-cog"></i><span><b>Du bist verantwortlich:</b> Mit der Standorterfassung verarbeitest du personenbezogene Daten deiner Mitarbeiter (Art. 4 Nr. 7 DSGVO).</span></div>
+          <div class="consentbox__row"><i data-lucide="target"></i><span><b>Nur für den Arbeitszeit-Nachweis:</b> Die Standortdaten dürfen ausschließlich als Nachweis von Arbeitszeit/Anwesenheit dienen – <b>nicht</b> zur darüber hinausgehenden Verhaltens- oder Bewegungskontrolle.</span></div>
+          <div class="consentbox__row"><i data-lucide="users"></i><span><b>Einwilligung der Mitarbeiter:</b> Wer selbst stempelt, bestätigt die Erfassung in der App. Wo Büro oder Kolonnenführer stempeln, hast du die Mitarbeiter vorab informiert und ihre Einwilligung eingeholt.</span></div>
+          <div class="consentbox__row"><i data-lucide="map-pin"></i><span><b>Punktuell:</b> Es wird nur der Zeitpunkt des Stempelns erfasst – keine Dauerortung. Besteht ein Betriebsrat, ist er zu beteiligen.</span></div>
+        </div>
+        <p class="consent-foot">Bestätigt als <b>${geoActorName()||'Inhaber'}</b> am ${(typeof dDEs==='function'?dDEs(TODAY)+' ':'')}${NOW} Uhr.</p>
+        <div class="sheet-actions" style="gap:8px">
+          <button class="btn ghost" style="flex:1" onclick="declineGeoConsent()">Standortnachweis aus</button>
+          <button class="btn" style="flex:1.4" onclick="acceptGeoConsent()"><i data-lucide="check"></i> Verstanden &amp; bestätigen</button>
+        </div>
+      </div>`);
+  }
+}
+function acceptGeoConsent(){
+  recordGeoConsent(geoActorKey(), geoActorType(), true);
+  const retry = _geoConsentRetry; _geoConsentRetry = null;
+  closeSheet();
+  toast('Standort-Einwilligung gespeichert');
+  if(typeof retry === 'function'){ setTimeout(retry, 60); } else { rerenderCurrent(); }
+}
+function declineGeoConsent(){
+  const type = geoActorType();
+  recordGeoConsent(geoActorKey(), type, false);   // auch die Ablehnung wird protokolliert
+  _geoConsentRetry = null;
+  closeSheet();
+  if(type === 'owner'){
+    settings.geo = false; saveSettings();          // ohne Bestätigung des Verantwortlichen kein Standortnachweis
+    toast('Standortnachweis deaktiviert');
+    rerenderCurrent();
+  } else {
+    toast('Ohne Einwilligung kein Standort-Stempeln – bitte Büro ansprechen');
+  }
+}
+function closeGeoConsent(){ _geoConsentRetry = null; closeSheet(); }
+// Inhaber-Sicht auf die Team-Zeiten erst nach einmaliger Bestätigung freigeben.
+function geoOwnerGate(){
+  const firma = (settings.company && settings.company.name) || 'deinem Betrieb';
+  return `<div class="zeit"><div class="geogate">
+    <div class="geogate__ic"><i data-lucide="shield-check"></i></div>
+    <h3>Standortdaten – einmal bestätigen</h3>
+    <p>Bevor dir die Standorte deiner Mitarbeiter angezeigt werden, bestätige kurz als Verantwortlicher von ${firma}, dass du die Daten nur zum Arbeitszeit-Nachweis nutzt. Das schützt dich und deine Mitarbeiter.</p>
+    <button class="btn" onclick="openGeoConsent()"><i data-lucide="shield-check"></i> Hinweis lesen &amp; bestätigen</button>
+  </div></div>`;
 }
 
 /* ===================== ONBOARDING-ASSISTENT ===================== */
@@ -9960,6 +10079,7 @@ function zeitViewSelf(){
 }
 // Admin/Büro-Sicht: Team-Überblick. Stempeln machen im Alltag die Mitarbeiter selbst.
 function zeitViewTeam(){
+  if(settings.geo && !hasGeoConsent('owner')) return geoOwnerGate();   // Inhaber bestätigt einmal, bevor er Standorte sieht
   const running = timeEntries.filter(e => !e.out);
   const done = timeEntries.filter(e => e.out);
   const onSite = running.filter(e => e.geoOk === true).length;
@@ -10104,6 +10224,7 @@ function openLeadClockIn(){
     </div>`);
 }
 async function leadClockDo(siteId){
+  if(!ensureGeoConsent(() => leadClockDo(siteId))) return;   // Kolonnenführer bestätigt Standorterfassung
   const btn = document.querySelector('.sitepicks');   // visuelles Feedback ist optional
   const g = await geoStamp(siteId);                    // ein Stempel für die ganze Kolonne
   const crew = leadCrewMembers().filter(e => !leadRunningFor(e.id));
@@ -10112,6 +10233,7 @@ async function leadClockDo(siteId){
   toast(`${crew.length} Mitarbeiter eingestempelt um ${NOW}`);
 }
 async function leadClockOutAll(){
+  if(!ensureGeoConsent(() => leadClockOutAll())) return;
   const g = await geoStamp(null);
   const crew = leadCrewMembers();
   let n = 0;
@@ -10209,6 +10331,7 @@ function clockConfirm(siteId){
     </div>`);
 }
 async function doClockIn(siteId){
+  if(!ensureGeoConsent(() => doClockIn(siteId))) return;   // erst Standort-Einwilligung, dann stempeln
   const ruest = settings.ruestzeit;     // Rüstzeit ist eine Betriebs-Einstellung, nicht pro Auftrag
   const btn = document.querySelector('.sheet-actions .btn');
   if(btn){ btn.disabled = true; btn.innerHTML = settings.geo ? '<i data-lucide="loader"></i> Standort wird erfasst …' : '<i data-lucide="loader"></i> Stempeln …'; icons(); }
@@ -10220,7 +10343,7 @@ async function doClockIn(siteId){
   toast(`Eingestempelt um ${NOW} · ${site(siteId).customer}`);
 }
 function myPause(){ if(!myEntry) return; myEntry.pauseMin = (myEntry.pauseMin||0) + 30; renderZeit(); toast('30 Min Pause erfasst'); }
-async function myClockOut(){ if(!myEntry) return; myEntry.out = NOW; myEntry.geoOut = await geoStamp(myEntry.siteId); renderZeit(); toast(`Ausgestempelt um ${NOW} · ${hoursStr(entryMin(myEntry))}`); }
+async function myClockOut(){ if(!myEntry) return; if(!ensureGeoConsent(() => myClockOut())) return; myEntry.out = NOW; myEntry.geoOut = await geoStamp(myEntry.siteId); renderZeit(); toast(`Ausgestempelt um ${NOW} · ${hoursStr(entryMin(myEntry))}`); }
 
 // Read-only Standort-Nachweis eines einzelnen Stempel-Zeitpunkts (Ein- ODER Ausstempeln).
 // Zeigt erfasste Koordinaten, Genauigkeit, Uhrzeit der Erfassung + Kartenlink. Wird vom Mitarbeiter NICHT bearbeitet.
@@ -10240,6 +10363,15 @@ function geoPointRow(label, g, dist, geoOk){
     <a href="${mapUrl}" target="_blank" rel="noopener" style="font-size:11.5px;font-weight:600;color:var(--green-2);text-decoration:none"><i data-lucide="external-link" style="width:12px;height:12px;vertical-align:-1px"></i> Auf Karte ansehen</a>
   </dd></div>`;
 }
+// Sichtbarer Einwilligungs-Nachweis für den Arbeitgeber: hat dieser Mitarbeiter der Standorterfassung zugestimmt?
+function geoConsentLine(empId){
+  const r = settings.geoConsent && settings.geoConsent['emp:' + empId];
+  if(r && r.accepted)
+    return `<div class="detail-row"><dt>Einwilligung</dt><dd><span style="color:var(--green-2);font-weight:600"><i data-lucide="shield-check" style="width:14px;height:14px;vertical-align:-2px"></i> Standorterfassung am ${r.at} Uhr bestätigt</span></dd></div>`;
+  if(r && !r.accepted)
+    return `<div class="detail-row"><dt>Einwilligung</dt><dd><span style="color:var(--amber);font-weight:600"><i data-lucide="alert-triangle" style="width:14px;height:14px;vertical-align:-2px"></i> am ${r.at} Uhr abgelehnt</span></dd></div>`;
+  return '';
+}
 /* ---- Owner-Detail eines Stempel-Eintrags ---- */
 function openTimeEntry(id){
   const e = timeEntries.find(x => x.id === id); if(!e) return;
@@ -10257,7 +10389,7 @@ function openTimeEntry(id){
         <div class="detail-row"><dt>Baustelle</dt><dd>${s.customer} · ${s.label}</dd></div>
         <div class="detail-row"><dt>Zeit</dt><dd>${e.in}${e.out?' – '+e.out:' – läuft'} Uhr · <b>${hoursStr(min)}</b>${e.pauseMin?` · ${e.pauseMin} Min Pause`:''}</dd></div>
         ${e.manual ? `<div class="detail-row"><dt>Standort</dt><dd><span style="color:var(--muted);font-weight:600"><i data-lucide="user-cog" style="width:14px;height:14px;vertical-align:-2px"></i> manuell vom Büro erfasst – kein Standortnachweis</span></dd></div>`
-          : settings.geo ? `${geoPointRow('Standort Start', e.geo, e.dist, e.geoOk)}${e.out ? geoPointRow('Standort Ende', e.geoOut, e.geoOut?e.geoOut.dist:null, e.geoOut?e.geoOut.geoOk:null) : ''}` : ''}
+          : settings.geo ? `${geoPointRow('Standort Start', e.geo, e.dist, e.geoOk)}${e.out ? geoPointRow('Standort Ende', e.geoOut, e.geoOut?e.geoOut.dist:null, e.geoOut?e.geoOut.geoOk:null) : ''}${geoConsentLine(e.empId)}` : ''}
         <div class="detail-row"><dt>Adresse</dt><dd>${s.addr}</dd></div>
       </dl>
       ${(settings.geo && !e.manual) ? `<div class="dsgvo" style="margin-top:6px"><i data-lucide="lock"></i> <span>Der Standort wurde <b>einmalig beim Stempeln</b> erfasst und ist <b>unveränderlich</b> – Mitarbeiter können ihn nicht nachträglich bearbeiten.</span></div>` : ''}
