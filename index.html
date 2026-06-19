@@ -2782,6 +2782,38 @@
       <div class="auth__err" style="display:none"></div>
       <button class="btn full" id="newPwBtn" onclick="doSetNewPassword()">Passwort speichern</button>
     </div>
+    <!-- Mitarbeiter-Einladung Schritt 1: Passwort festlegen (kommt aus der Invite-Mail) -->
+    <div id="inviteView" class="hidden">
+      <div class="auth__brand">
+        <span class="brandmark"><i data-lucide="hard-hat"></i></span>
+        <div>
+          <div class="brandname">GreenCareers <small>OS</small></div>
+          <div class="brandsub">Dein Zugang zum Team-Cockpit</div>
+        </div>
+      </div>
+      <h1>Willkommen im Team</h1>
+      <p class="sub">Du wurdest zu <b id="inviteCompany">deinem Betrieb</b> eingeladen. Lege jetzt dein Passwort fest – danach füllst du in unter einer Minute dein Profil aus.</p>
+      <div class="field"><label for="invPw">Passwort</label><div class="pw-wrap"><input id="invPw" type="password" placeholder="Mind. 8 Zeichen" autocomplete="new-password" /><button type="button" class="pw-eye" aria-label="Passwort anzeigen" onclick="togglePw('invPw',this)"><i data-lucide="eye"></i></button></div></div>
+      <div class="field"><label for="invPw2">Passwort wiederholen</label><div class="pw-wrap"><input id="invPw2" type="password" placeholder="Passwort erneut" autocomplete="new-password" onkeydown="if(event.key==='Enter')doAcceptInvite()" /><button type="button" class="pw-eye" aria-label="Passwort anzeigen" onclick="togglePw('invPw2',this)"><i data-lucide="eye"></i></button></div></div>
+      <div class="auth__err" style="display:none"></div>
+      <button class="btn full" id="invBtn" onclick="doAcceptInvite()">Weiter</button>
+    </div>
+    <!-- Mitarbeiter-Einladung Schritt 2: schlanke Selbst-Ausfüllung des Profils -->
+    <div id="inviteprofileView" class="hidden">
+      <h1>Dein Profil</h1>
+      <p class="sub">Nur das Nötigste – damit dein Betrieb deine Stammdaten hat. Du kannst alles später ergänzen.</p>
+      <div class="fieldrow">
+        <div class="field"><label for="ipFirst">Vorname</label><input id="ipFirst" type="text" placeholder="Vorname" autocomplete="given-name" /></div>
+        <div class="field"><label for="ipLast">Nachname</label><input id="ipLast" type="text" placeholder="Nachname" autocomplete="family-name" /></div>
+      </div>
+      <div class="field"><label>Deine Position</label><div id="invPosWrap"></div></div>
+      <div class="field"><label for="ipPhone">Telefon <small style="font-weight:400;color:var(--muted)">(optional)</small></label><input id="ipPhone" type="tel" placeholder="z. B. 0170 1234567" autocomplete="tel" /></div>
+      <div class="field"><label for="ipAddress">Adresse <small style="font-weight:400;color:var(--muted)">(optional)</small></label>
+        <div class="pw-wrap"><input id="ipAddress" type="text" placeholder="Straße, PLZ Ort" autocomplete="street-address" /><button type="button" class="pw-eye" id="invMic" aria-label="Per Sprache eingeben" title="Adresse sprechen" onclick="invVoiceToggle()"><i data-lucide="mic"></i></button></div>
+      </div>
+      <div class="auth__err" style="display:none"></div>
+      <button class="btn full" id="invProfBtn" onclick="submitInviteProfile()">Fertig – los geht's</button>
+    </div>
   </section>
 </div>
 
@@ -3721,7 +3753,7 @@ let draggedJob = null;
 let dragClickBlockUntil = 0;
 
 function showAuth(view){
-  ['login','register','verify','reset','sent','newpw'].forEach(id => { const el=document.getElementById(`${id}View`); if(el) el.classList.toggle('hidden', id !== view); });
+  ['login','register','verify','reset','sent','newpw','invite','inviteprofile'].forEach(id => { const el=document.getElementById(`${id}View`); if(el) el.classList.toggle('hidden', id !== view); });
   authErr('');
   const ok=document.getElementById('loginOk'); if(ok){ ok.style.display='none'; ok.innerHTML=''; }
   icons();
@@ -3878,6 +3910,90 @@ async function doSetNewPassword(){
   icons();
 }
 
+/* ===================== MITARBEITER-EINLADUNG (Self-Onboarding) ===================== */
+let _inviteMeta = null;   // user_metadata aus dem Invite-Link (name, role, customer_id, position …)
+
+// Schritt 1: Passwort der Einladung festlegen -> dann schlanke Profil-Maske zeigen.
+async function doAcceptInvite(){
+  authErr('');
+  const pw=(document.getElementById('invPw')||{}).value||'';
+  const pw2=(document.getElementById('invPw2')||{}).value||'';
+  if(pw.length<8){ authErr('Das Passwort muss mindestens 8 Zeichen haben.'); return; }
+  if(pw!==pw2){ authErr('Die Passwörter stimmen nicht überein.'); return; }
+  if(!sbAuth){ authErr('Auth-Dienst nicht geladen. Seite neu laden.'); return; }
+  authBusy(true,'invBtn');
+  const { error } = await sbAuth.auth.updateUser({ password: pw });
+  authBusy(false,'invBtn');
+  if(error){ authErr(friendlyAuthError(error.message)); return; }
+  showInviteProfile();
+}
+
+// Schritt 2: schlanke Profil-Maske vorbereiten (Position-Dropdown injizieren + Name vorbefüllen).
+function showInviteProfile(){
+  const meta = _inviteMeta || {};
+  // Position-Dropdown (branchenabhängig) in den Platzhalter rendern.
+  const wrap=document.getElementById('invPosWrap');
+  if(wrap) wrap.innerHTML = positionSelectHtml(meta.position || '');
+  // Name aus den Einladungs-Metadaten in Vor-/Nachname splitten.
+  const full=String(meta.name||'').trim();
+  if(full){
+    const parts=full.split(/\s+/);
+    const last=parts.length>1?parts.pop():'';
+    const first=parts.join(' ');
+    const f=document.getElementById('ipFirst'); if(f) f.value=first;
+    const l=document.getElementById('ipLast');  if(l) l.value=last;
+  }
+  showAuth('inviteprofile');
+  icons();
+}
+
+// Optionale Sprach-Eingabe für die Adresse (de-DE, gleiche Mechanik wie im OS).
+let _invVoiceRec=null;
+function invVoiceToggle(){
+  const btn=document.getElementById('invMic'); const inp=document.getElementById('ipAddress');
+  if(!inp) return;
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){ toast('Spracheingabe wird von diesem Browser nicht unterstützt'); return; }
+  if(_invVoiceRec){ try{ _invVoiceRec.stop(); }catch(e){} _invVoiceRec=null; if(btn) btn.classList.remove('on'); return; }
+  const rec=new SR(); rec.lang='de-DE'; rec.interimResults=true; rec.continuous=true;
+  const base=inp.value?inp.value+' ':'';
+  rec.onresult=(ev)=>{ let t=''; for(let i=ev.resultIndex;i<ev.results.length;i++) t+=ev.results[i][0].transcript; inp.value=(base+t).trim(); };
+  rec.onerror=()=>{ if(btn) btn.classList.remove('on'); _invVoiceRec=null; };
+  rec.onend=()=>{ if(btn) btn.classList.remove('on'); _invVoiceRec=null; };
+  _invVoiceRec=rec; if(btn) btn.classList.add('on'); try{ rec.start(); }catch(e){}
+}
+
+// Schritt 2 absenden: nur freigegebene Felder via SECURITY-DEFINER-RPC schreiben -> App betreten.
+async function submitInviteProfile(){
+  authErr('');
+  const first=(document.getElementById('ipFirst')||{}).value?.trim()||'';
+  const last =(document.getElementById('ipLast') ||{}).value?.trim()||'';
+  const name=(first+' '+last).trim();
+  if(!name){ authErr('Bitte Vor- und Nachnamen eingeben.'); return; }
+  const sel=document.getElementById('efRoleSel');
+  const position = sel ? (sel.value==='__custom' ? ((document.getElementById('efRole')||{}).value||'').trim() : sel.value) : '';
+  const phone=(document.getElementById('ipPhone')||{}).value?.trim()||'';
+  const address=(document.getElementById('ipAddress')||{}).value?.trim()||'';
+  if(!sbAuth){ authErr('Auth-Dienst nicht geladen. Seite neu laden.'); return; }
+  authBusy(true,'invProfBtn');
+  // RPC: setzt NUR die eigene Zeile (profile_id = auth.uid()), Status -> 'active'.
+  const { error } = await sbAuth.rpc('complete_my_profile', {
+    p_name: name,
+    p_position: position || null,
+    p_phone: phone || null,
+    p_address: address || null,
+    p_extra: {}
+  });
+  authBusy(false,'invProfBtn');
+  if(error){ authErr(friendlyAuthError(error.message)); return; }
+  _confirmFlow=false;
+  try{
+    const { data:{ session } } = await sbAuth.auth.getSession();
+    if(session){ await afterAuth(session); return; }
+  }catch(e){}
+  showAuth('login');
+}
+
 async function gcLogout(){
   if(sbAuth) await sbAuth.auth.signOut();
   GC_USER=null; GC_PROFILE=null; _enteredApp=false;
@@ -3905,8 +4021,33 @@ async function afterAuth(session){
       }
     }catch(e){}
   }
+  // Eingeloggter Mitarbeiter/Büro: eigene Personalakte-Zeile laden + lokalen
+  // Self-Datensatz synthetisieren, damit die Mitarbeiter-Ansicht (Zeit/Urlaub) funktioniert.
+  if(GC_PROFILE && (GC_PROFILE.role==='mitarbeiter' || GC_PROFILE.role==='buero')){
+    await hydrateSelfEmployee();
+  }
   enterApp();
   loadPortalData();   // echte Stellen + Bewerber des Betriebs aus Supabase ziehen
+}
+
+// Aus der eigenen mitarbeiter-Zeile einen lokalen employees-Eintrag bauen (Self-View).
+async function hydrateSelfEmployee(){
+  try{
+    const { data:me } = await sbAuth.from('mitarbeiter').select('*').eq('profile_id', GC_USER.id).maybeSingle();
+    const nm = (me&&me.name) || (GC_PROFILE&&GC_PROFILE.name) || GC_USER.email;
+    const selfId = 900001;
+    if(!emp(selfId)){
+      employees.push({
+        id:selfId, name:nm, role:(me&&me.position)||'Mitarbeiter',
+        crewId:(me&&me.crew)||null, phone:(me&&me.phone)||'',
+        since:String(new Date(TODAY).getFullYear()), annual:30,
+        email:(me&&me.email)||GC_USER.email,
+        sysRole: GC_PROFILE.role==='buero'?'buero':'mitarbeiter', account:'active'
+      });
+    }
+    viewEmpId = selfId;
+    viewRole  = GC_PROFILE.role==='buero' ? 'buero' : 'mitarbeiter';
+  }catch(e){ viewRole = GC_PROFILE.role==='buero' ? 'buero' : 'mitarbeiter'; }
 }
 
 // App betreten (UI freigeben) – ersetzt das alte Demo-„login"
@@ -3925,6 +4066,10 @@ function enterApp(){
   if(buyFlowPending()){ openCheckout(); return; }
   // Warmer Erst-Empfang für Käufer aus der Bestell-Mail (?welcome=1) – einmalig, führt ins Gate.
   if(welcomePending()){ openWelcome(); return; }
+  // Eingeloggte Mitarbeiter/Büro durchlaufen NICHT das Inhaber-Onboarding
+  // (AVV/Einrichtung/Tour gehört dem Betriebsinhaber). Sie sind direkt drin.
+  const isEmployee = GC_PROFILE && (GC_PROFILE.role==='mitarbeiter' || GC_PROFILE.role==='buero');
+  if(isEmployee){ settings.onboarded = true; return; }
   // Erstnutzung: 1) AVV/DSGVO  2) Einrichtung  3) Tour. Danach direkt ins Cockpit.
   if(!settings.onboarded || !(GC_PROFILE&&GC_PROFILE.customer_id)) openConsentGate();
 }
@@ -3981,6 +4126,29 @@ async function gcAuthBoot(){
     _confirmFlow = true;              // verhindert, dass onAuthStateChange uns ins Cockpit wirft
     _clearAuthHash();
     showAuth('newpw');
+    icons();
+    return;
+  }
+
+  // 2b) MITARBEITER-EINLADUNG: Supabase hat über den Invite-Link eine Session
+  //     aufgebaut (detectSessionInUrl). NICHT ausloggen – wir brauchen sie, um das
+  //     Passwort zu setzen und danach das Profil per RPC zu vervollständigen.
+  if(linkType === 'invite'){
+    _confirmFlow = true;
+    _clearAuthHash();
+    try{
+      const { data:{ session:s } } = await sbAuth.auth.getSession();
+      _inviteMeta = (s && s.user && (s.user.user_metadata || {})) || {};
+      _inviteMeta._email = (s && s.user && s.user.email) || '';
+      // Betriebsname für die Begrüßung (best effort, RLS erlaubt customers-Select i. d. R.)
+      const cid = _inviteMeta.customer_id;
+      if(cid){
+        try{ const { data:c } = await sbAuth.from('customers').select('name,theme').eq('id',cid).maybeSingle();
+          if(c){ const cn=document.getElementById('inviteCompany'); if(cn&&c.name) cn.textContent=c.name;
+            if(c.theme){ settings.theme=c.theme; } } }catch(e){}
+      }
+    }catch(e){ _inviteMeta = {}; }
+    showAuth('invite');
     icons();
     return;
   }
@@ -11417,7 +11585,25 @@ function openEmployeeForm(id){
       ${e ? `<button class="btn danger btn--block" onclick="deleteEmployee(${e.id})"><i data-lucide="trash-2"></i> Mitarbeiter löschen</button>` : ''}
     </div>`);
 }
-function submitEmployee(id){
+/* Ruft die Edge Function 'invite-mitarbeiter' (Service-Role-Versand) auf.
+   Defensiv: ist die Function noch nicht deployed / kein Login -> sauberer Fallback,
+   das Anlegen im OS bleibt davon unberührt. */
+async function sendInviteMail({name,email,position,sysRole}){
+  if(!sbAuth) return {ok:false, reason:'noauth'};
+  let token=null;
+  try{ const { data:{ session } } = await sbAuth.auth.getSession(); token = session && session.access_token; }catch(e){}
+  if(!token) return {ok:false, reason:'nosession'};
+  try{
+    const res = await fetch(SB_URL+'/functions/v1/invite-mitarbeiter', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+token, 'apikey':SB_ANON },
+      body: JSON.stringify({ name, email, position, sys_role:sysRole, redirect_to: window.location.origin + window.location.pathname })
+    });
+    const data = await res.json().catch(()=>({}));
+    return { ok: res.ok && data.ok !== false, status:res.status, data };
+  }catch(e){ return {ok:false, reason:'network', error:String(e)}; }
+}
+async function submitEmployee(id){
   const name = document.getElementById('efName').value.trim();
   if(!name){ toast('Bitte Namen eingeben'); return; }
   const roleSel = document.getElementById('efRoleSel').value;
@@ -11436,15 +11622,27 @@ function submitEmployee(id){
   const newId = empSeq++;
   employees.push({ id:newId, name, role, crewId, phone, since:String(new Date(TODAY).getFullYear()), annual, email, sysRole, account: invite ? 'invited' : 'none' });
   closeSheet(); teamTab('mitarbeiter');
-  toast(invite && email ? `${name} angelegt · Einladung an ${email} gesendet` : `${name} angelegt`);
+  if(invite && email){
+    toast(`${name} angelegt · Einladung wird gesendet …`);
+    const r = await sendInviteMail({name, email, position:role, sysRole});
+    if(r.ok){ toast(`Einladung an ${email} gesendet`); }
+    else if(r.data && r.data.already_exists){ toast(`${email} ist bereits registriert – kann sich direkt einloggen`); }
+    else { toast(`${name} angelegt · E-Mail-Versand noch nicht aktiv`); }
+  } else {
+    toast(`${name} angelegt`);
+  }
 }
-function inviteEmployee(id){
+async function inviteEmployee(id){
   const e = emp(id); if(!e) return;
   if(!e.email){ toast('Bitte erst eine E-Mail hinterlegen'); openEmployeeForm(id); return; }
   e.account = 'invited';
   if(currentView==='team' && activeTeamTab==='mitarbeiter') teamTab('mitarbeiter');
   closeSheet();
-  toast(`Einladung an ${e.email} gesendet`);
+  toast(`Einladung wird an ${e.email} gesendet …`);
+  const r = await sendInviteMail({name:e.name, email:e.email, position:e.role, sysRole:e.sysRole});
+  if(r.ok){ toast(`Einladung an ${e.email} gesendet`); }
+  else if(r.data && r.data.already_exists){ toast(`${e.email} ist bereits registriert – kann sich direkt einloggen`); }
+  else { toast('E-Mail-Versand noch nicht aktiv (Backend deployen)'); }
 }
 function deleteEmployee(id){
   const e = emp(id); if(!e) return;
