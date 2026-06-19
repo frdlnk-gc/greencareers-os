@@ -2023,6 +2023,16 @@
   .sitepick__chips span{ display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:600; color:var(--green-3); }
   .sitepick__chips .lucide{ width:13px; height:13px; }
   .sitepick > .lucide{ width:18px; height:18px; color:var(--muted-2); flex-shrink:0; }
+  .welcome-choices{ display:flex; flex-direction:column; gap:10px; margin-top:14px; }
+  .welcome-choice{ display:flex; align-items:center; gap:12px; width:100%; text-align:left; padding:14px 13px; border:1px solid var(--line); border-radius:13px; background:#fff; cursor:pointer; transition:border-color .12s, background .12s; }
+  .welcome-choice:hover{ border-color:var(--green); background:#FAFEFB; }
+  .welcome-choice.ghost{ background:var(--canvas); }
+  .welcome-choice__ic{ width:42px; height:42px; border-radius:11px; background:var(--mint); display:grid; place-items:center; flex-shrink:0; }
+  .welcome-choice__ic .lucide{ width:20px; height:20px; color:var(--green-2); }
+  .welcome-choice__txt{ min-width:0; flex:1; display:flex; flex-direction:column; gap:2px; }
+  .welcome-choice__txt b{ font-size:14.5px; }
+  .welcome-choice__txt small{ font-size:12px; color:var(--muted); line-height:1.35; }
+  .welcome-choice > .lucide{ width:18px; height:18px; color:var(--muted-2); flex-shrink:0; }
   .addrwrap{ margin-bottom:13px; }
   .addrrow{ display:flex; align-items:center; gap:11px; width:100%; text-align:left; padding:12px 13px; border:1px solid var(--line); border-radius:11px; background:var(--canvas); cursor:pointer; text-decoration:none; color:inherit; }
   .addrrow:hover{ border-color:var(--green); }
@@ -3074,7 +3084,7 @@ const ENTRY_BRANDS = {
   green: { name:'GreenCareers', theme:'galabau' },
   grey:  { name:'GreyCareers',  theme:'tiefbau'  },
 };
-const ENTRY_KEYS = ['flow','pkg','mode','qty','term','ref','code'];
+const ENTRY_KEYS = ['flow','pkg','mode','qty','term','ref','code','welcome'];
 function gcEntry(){ try{ return JSON.parse(localStorage.getItem('gcos_entry')||'{}')||{}; }catch(e){ return {}; } }
 function saveEntry(e){ try{ localStorage.setItem('gcos_entry', JSON.stringify(e||{})); }catch(_){} }
 function entryBrand(){ const e=gcEntry(); return ENTRY_BRANDS[e.brand]||null; }
@@ -3105,6 +3115,67 @@ function initEntryBrand(){
   if(b){ settings.theme = b.theme; }
   try{ applyTheme(settings.theme); }catch(e){}
   try{ applyBranding(); }catch(e){}
+}
+
+/* ===================== WELCOME-FLOW (Option B) =====================
+   Warmer Erst-Empfang NUR für Käufer, die frisch über den Link in der
+   Bestell-Bestätigungs-Mail kommen (?welcome=1). Genau EINMAL pro Account
+   (settings.welcomeSeen), jederzeit per X abbrechbar – nicht naggy.
+   Die eine Entscheidung hier („einrichten" vs. „umschauen") wird gemerkt
+   (settings.welcomeChoice) und ersetzt die spätere zweite Assistent-Abfrage,
+   damit der Nutzer nicht zweimal dasselbe gefragt wird. */
+function welcomePending(){ return gcEntry().welcome === '1' && !settings.welcomeSeen; }
+// Paketname aus dem Eintritts-Kontext (mode + pkg) – nur zur freundlichen Anzeige.
+function welcomePkgLabel(){
+  const e = gcEntry();
+  const pk = (e.mode === 'abo' ? CO_PKG_ABO : CO_PKG_EINMAL)[String(e.pkg || '')];
+  if(!pk) return '';
+  return e.mode === 'abo' ? `${pk.name}-Abo` : `Paket ${pk.name}`;
+}
+function welcomeFirma(){
+  const n = (settings.company && settings.company.name || '').trim();
+  if(n && n !== 'Müller GaLaBau') return n;     // echter Firmenname, nicht der Demo-Platzhalter
+  return '';
+}
+function openWelcome(){
+  applyRole();
+  const firma = welcomeFirma();
+  const pkg = welcomePkgLabel();
+  const hallo = firma ? `Willkommen an Bord, ${escapeHtml(firma)}!` : `Willkommen an Bord!`;
+  const sub = pkg ? `Dein ${escapeHtml(pkg)} ist aktiv` : `Schön, dass du da bist`;
+  openSheet(`
+    <div class="sheet__head">
+      <span class="avatar" style="width:50px;height:50px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="party-popper" style="width:22px;height:22px"></i></span>
+      <div><div class="sheet__title">${hallo}</div><div class="sheet__sub">${sub}</div></div>
+      <button class="iconbtn sheet__close" onclick="closeWelcome('explore')"><i data-lucide="x"></i></button>
+    </div>
+    <div class="sheet__body">
+      <p class="sheet-note"><i data-lucide="rocket"></i> Dein ${escapeHtml(osName())} ist startklar. Magst du es kurz gemeinsam einrichten – oder lieber selbst stöbern?</p>
+      <div class="welcome-choices">
+        <button class="welcome-choice" onclick="closeWelcome('guide')">
+          <span class="welcome-choice__ic"><i data-lucide="wand-2"></i></span>
+          <span class="welcome-choice__txt"><b>Schritt für Schritt einrichten</b><small>Betrieb, Zeiterfassung &amp; Rechte in 1 Minute – geführt.</small></span>
+          <i data-lucide="chevron-right"></i>
+        </button>
+        <button class="welcome-choice ghost" onclick="closeWelcome('explore')">
+          <span class="welcome-choice__ic"><i data-lucide="compass"></i></span>
+          <span class="welcome-choice__txt"><b>Ich schau mich selbst um</b><small>Direkt ins Cockpit – einrichten kannst du jederzeit.</small></span>
+          <i data-lucide="chevron-right"></i>
+        </button>
+      </div>
+    </div>`);
+}
+// Schließt den Welcome-Empfang, merkt die Entscheidung und führt in das (gesetzlich nötige)
+// Consent-/Einrichtungs-Gate über. 'guide' -> Assistent startet automatisch, 'explore' -> direkt ins Cockpit.
+function closeWelcome(mode){
+  settings.welcomeSeen = true;
+  settings.welcomeChoice = (mode === 'guide') ? 'guide' : 'explore';
+  saveSettings();
+  // ?welcome=1 aus URL + Eintritts-Kontext entfernen, damit es bei Reload nicht erneut aufploppt
+  try{ const e = gcEntry(); delete e.welcome; saveEntry(e); }catch(_){}
+  try{ history.replaceState(null, '', window.location.pathname + entryQueryString()); }catch(_){}
+  closeSheet();
+  setTimeout(() => { try{ openConsentGate(); }catch(e){} }, 220);
 }
 
 /* ===================== CHECKOUT / ZAHLUNGSSEITE IM OS =====================
@@ -3839,6 +3910,8 @@ function enterApp(){
   // Kauf-Flow (Option B): nach Registrierung+Login zuerst die Zahlungsseite, dann Consent+Einrichtung.
   if(coStripeReturn()){ openCheckoutSuccess(); return; }   // zurück von Stripe -> Erfolgs-View
   if(buyFlowPending()){ openCheckout(); return; }
+  // Warmer Erst-Empfang für Käufer aus der Bestell-Mail (?welcome=1) – einmalig, führt ins Gate.
+  if(welcomePending()){ openWelcome(); return; }
   // Erstnutzung: 1) AVV/DSGVO  2) Einrichtung  3) Tour. Danach direkt ins Cockpit.
   if(!settings.onboarded || !(GC_PROFILE&&GC_PROFILE.customer_id)) openConsentGate();
 }
@@ -4448,6 +4521,14 @@ function setBrandColor(v){ settings.company.color = v; saveSettings(); applyBran
 function clearBrandColor(){ settings.company.color = ''; saveSettings(); applyBranding(); refreshSettings(); rerenderCurrent(); }
 
 function maybeOnboard(){
+  // Hat der Nutzer die Entscheidung schon im Welcome-Empfang getroffen? Dann nicht erneut fragen.
+  if(settings.welcomeChoice){
+    const choice = settings.welcomeChoice;
+    delete settings.welcomeChoice; saveSettings();   // einmalig verbrauchen
+    applyRole();
+    if(choice === 'guide'){ startOnboarding(); } else { skipOnboarding(); }
+    return;
+  }
   // Beim ersten Login fragen, ob der geführte Assistent gestartet werden soll
   applyRole();
   openSheet(`
