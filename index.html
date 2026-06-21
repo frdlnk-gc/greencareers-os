@@ -8791,28 +8791,56 @@ async function deleteStelle(id){
 
 // ---- Stelle anlegen / bearbeiten (Sheet-Formular) ----
 let stelleDraft = null;
-const BESCHAEFT_OPTS = ['Vollzeit','Teilzeit','Minijob','Ausbildung'];
+const BESCHAEFT_OPTS = ['Vollzeit','Teilzeit','Minijob','Ausbildung','Werkstudent','Praktikum'];
+const VERTRAG_OPTS  = ['Unbefristet','Befristet','Saisonal','Auf Probe'];
+const STELLE_BILDER_MAX = 4;       // max. Job-Galerie-Bilder
+const STELLE_IMG_MAX_KB = 800;     // max. Größe je Bild (Data-URL in der DB)
+// Benefits-Liste (jsonb) ODER Freitext -> eine Zeile je Benefit für die Bearbeitung.
+function benefitsToText(list, fallback){
+  if(Array.isArray(list) && list.length) return list.map(x=>String(x).trim()).filter(Boolean).join('\n');
+  return fallback || '';
+}
 function openStelleForm(id){
   const j = id ? job(id) : null;
+  const r = (j && j._raw) || {};
+  const co = settings.company || {};
   stelleDraft = j
-    ? {id:j.id, titel:j.title, branche:j.branche, ort:j.ort, beschaeftigungsart:j.beschaeftigungsart,
-       gehalt:j.gehalt, beschreibung:j.beschreibung, status:j.status, slug:j.slug,
-       aufgaben:(j._raw&&j._raw.aufgaben)||'', profil:(j._raw&&j._raw.profil)||''}
-    : {id:null, titel:'', branche:(settings.branchen&&settings.branchen[0])||'', ort:(settings.company&&settings.company.ort)||'',
-       beschaeftigungsart:'Vollzeit', gehalt:'', beschreibung:'', status:'pausiert', slug:'', aufgaben:'', profil:''};
+    ? {id:j.id, titel:j.title, branche:j.branche, ort:j.ort,
+       beschaeftigungsart:j.beschaeftigungsart||'Vollzeit', vertragsart:r.vertragsart||'Unbefristet',
+       eintritt:r.eintritt||'', gehalt:j.gehalt, beschreibung:j.beschreibung,
+       aufgaben:r.aufgaben||'', profil:r.profil||'', benefits:benefitsToText(r.benefits_list, r.benefits),
+       ansprechpartner:r.ansprechpartner||'', ansprechpartner_rolle:r.ansprechpartner_rolle||'',
+       ansprechpartner_foto:r.ansprechpartner_foto||'',
+       kontakt_email:r.kontakt_email||'', kontakt_telefon:r.kontakt_telefon||'',
+       bilder:Array.isArray(r.stellen_bilder)?r.stellen_bilder.slice():[],
+       status:j.status, slug:j.slug}
+    : {id:null, titel:'', branche:(settings.branchen&&settings.branchen[0])||'',
+       ort:(co.ort||co.city||''), beschaeftigungsart:'Vollzeit', vertragsart:'Unbefristet',
+       eintritt:'ab sofort', gehalt:'', beschreibung:'', aufgaben:'', profil:'', benefits:'',
+       ansprechpartner:(co.owner||''), ansprechpartner_rolle:'', ansprechpartner_foto:'',
+       kontakt_email:(co.email||''), kontakt_telefon:(co.phone||''),
+       bilder:[], status:'pausiert', slug:''};
   renderStelleForm();
+}
+function stelleSecHead(txt, hint){
+  return `<div style="margin:22px 0 10px"><div style="font-weight:800;font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)">${escapeHtml(txt)}</div>${hint?`<div style="font-size:12px;color:var(--muted);margin-top:2px">${escapeHtml(hint)}</div>`:''}</div>`;
 }
 function renderStelleForm(){
   const d = stelleDraft; if(!d) return;
   const v = s => escapeHtml(s||'');
   const editing = !!d.id;
+  const apFotoPrev = d.ansprechpartner_foto
+    ? `<div class="pthumb" style="width:64px;height:64px;border-radius:50%"><img src="${v(d.ansprechpartner_foto)}" alt="Foto" style="border-radius:50%"><button type="button" onclick="stelleFotoClear()"><i data-lucide="x"></i></button></div>`
+    : `<div class="ap-foto" style="width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--surface-2,#eef2f7);color:var(--muted);font-size:11px;text-align:center">kein&nbsp;Foto</div>`;
   openSheet(`
     <div class="sheet__head">
       <span class="avatar" style="width:44px;height:44px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="briefcase" style="width:20px;height:20px"></i></span>
-      <div><div class="sheet__title">${editing?'Stelle bearbeiten':'Stelle anlegen'}</div><div class="sheet__sub">${editing?'Änderungen wirken sofort – auch auf dem Portal, wenn die Stelle live ist.':'Speichern als Entwurf, danach mit einem Klick veröffentlichen.'}</div></div>
+      <div><div class="sheet__title">${editing?'Stelle bearbeiten':'Stelle anlegen'}</div><div class="sheet__sub">${editing?'Änderungen wirken sofort – auch auf dem Portal, wenn die Stelle live ist.':'Je vollständiger, desto besser die Anzeige im Portal. Speichern als Entwurf, danach mit einem Klick veröffentlichen.'}</div></div>
       <button class="sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body">
+
+      ${stelleSecHead('Eckdaten','Erscheinen als Titel und Tags oben in der Anzeige.')}
       <div class="field"><label>Stellentitel *</label><input value="${v(d.titel)}" placeholder="z. B. Baugeräteführer (m/w/d)" oninput="stelleDraft.titel=this.value"></div>
       <div class="fieldrow">
         <div class="field"><label>Branche</label><input value="${v(d.branche)}" placeholder="z. B. Straßen- &amp; Tiefbau" oninput="stelleDraft.branche=this.value"></div>
@@ -8822,11 +8850,44 @@ function renderStelleForm(){
         <div class="field"><label>Beschäftigungsart</label>
           <select onchange="stelleDraft.beschaeftigungsart=this.value">${BESCHAEFT_OPTS.map(o=>`<option ${d.beschaeftigungsart===o?'selected':''}>${o}</option>`).join('')}</select>
         </div>
+        <div class="field"><label>Vertragsart</label>
+          <select onchange="stelleDraft.vertragsart=this.value">${VERTRAG_OPTS.map(o=>`<option ${d.vertragsart===o?'selected':''}>${o}</option>`).join('')}</select>
+        </div>
+      </div>
+      <div class="fieldrow">
+        <div class="field"><label>Eintritt / Beginn</label><input value="${v(d.eintritt)}" placeholder="z. B. ab sofort" oninput="stelleDraft.eintritt=this.value"></div>
         <div class="field"><label>Gehalt (Freitext)</label><input value="${v(d.gehalt)}" placeholder="z. B. 3.200 – 3.800 € / Monat" oninput="stelleDraft.gehalt=this.value"></div>
       </div>
+
+      ${stelleSecHead('Stellenbeschreibung','„Über die Stelle" + Listen für Aufgaben, Profil und Benefits.')}
       <div class="field"><label>Kurzbeschreibung</label><textarea rows="3" placeholder="Worum geht es in dieser Stelle?" oninput="stelleDraft.beschreibung=this.value">${v(d.beschreibung)}</textarea></div>
-      <div class="field"><label>Deine Aufgaben</label><textarea rows="3" placeholder="Eine Aufgabe pro Zeile" oninput="stelleDraft.aufgaben=this.value">${v(d.aufgaben)}</textarea></div>
-      <div class="field"><label>Dein Profil</label><textarea rows="3" placeholder="Eine Anforderung pro Zeile" oninput="stelleDraft.profil=this.value">${v(d.profil)}</textarea></div>
+      <div class="field"><label>Deine Aufgaben</label><textarea rows="4" placeholder="Eine Aufgabe pro Zeile&#10;z. B. Bedienung von Bagger &amp; Radlader&#10;Aushub und Verfüllarbeiten" oninput="stelleDraft.aufgaben=this.value">${v(d.aufgaben)}</textarea></div>
+      <div class="field"><label>Dein Profil</label><textarea rows="4" placeholder="Eine Anforderung pro Zeile&#10;z. B. Erfahrung im Tiefbau&#10;Führerschein Klasse B" oninput="stelleDraft.profil=this.value">${v(d.profil)}</textarea></div>
+      <div class="field"><label>Das bieten wir (Benefits)</label><textarea rows="4" placeholder="Ein Benefit pro Zeile&#10;z. B. Firmenwagen&#10;30 Tage Urlaub&#10;Weihnachts- &amp; Urlaubsgeld" oninput="stelleDraft.benefits=this.value">${v(d.benefits)}</textarea></div>
+
+      ${stelleSecHead('Ansprechpartner','Wird Bewerbern in der Anzeige als direkter Kontakt angezeigt.')}
+      <div class="fieldrow" style="align-items:flex-end">
+        <div class="field"><label>Name</label><input value="${v(d.ansprechpartner)}" placeholder="z. B. Maria Schmidt" oninput="stelleDraft.ansprechpartner=this.value"></div>
+        <div class="field"><label>Rolle / Funktion</label><input value="${v(d.ansprechpartner_rolle)}" placeholder="z. B. Personalleiterin" oninput="stelleDraft.ansprechpartner_rolle=this.value"></div>
+      </div>
+      <div class="fieldrow">
+        <div class="field"><label>Kontakt-Telefon</label><input value="${v(d.kontakt_telefon)}" placeholder="z. B. 0221 1234567" oninput="stelleDraft.kontakt_telefon=this.value"></div>
+        <div class="field"><label>Kontakt-E-Mail</label><input type="email" value="${v(d.kontakt_email)}" placeholder="z. B. bewerbung@firma.de" oninput="stelleDraft.kontakt_email=this.value"></div>
+      </div>
+      <div class="field"><label>Foto des Ansprechpartners</label>
+        <div style="display:flex;align-items:center;gap:12px">
+          <div id="apFotoPrev">${apFotoPrev}</div>
+          <label class="btn ghost sm"><i data-lucide="upload"></i> Foto wählen<input type="file" accept="image/*" onchange="stelleFotoPick(this)" hidden></label>
+        </div>
+      </div>
+
+      ${stelleSecHead('Stellen-Bilder','Optional: Bilder von Team, Baustelle, Maschinen – erscheinen in der Anzeige als Galerie.')}
+      <div class="field">
+        <div id="stBilderPrev" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px">${renderStelleBilderHtml()}</div>
+        <label class="btn ghost sm"><i data-lucide="image-plus"></i> Bild hinzufügen<input type="file" accept="image/*" multiple onchange="stelleBilderAdd(this)" hidden></label>
+        <div style="font-size:11px;color:var(--muted);margin-top:6px">Max. ${STELLE_BILDER_MAX} Bilder, je ${STELLE_IMG_MAX_KB} KB.</div>
+      </div>
+
       <div class="sheet-actions">
         <button class="btn" style="flex:1" onclick="submitStelle(false)"><i data-lucide="save"></i> ${editing?'Speichern':'Als Entwurf speichern'}</button>
         ${editing && d.status==='aktiv' ? '' : `<button class="btn go" onclick="submitStelle(true)"><i data-lucide="rocket"></i> Speichern &amp; veröffentlichen</button>`}
@@ -8834,16 +8895,71 @@ function renderStelleForm(){
       </div>
     </div>`);
 }
+// ---- Bild-Uploads (Data-URL, konsistent mit Logo-Upload) ----
+function _stelleReadImg(file, cb){
+  if(!file) return;
+  if(file.size > STELLE_IMG_MAX_KB*1024){ toast('Bild ist zu groß (max. '+STELLE_IMG_MAX_KB+' KB)'); return; }
+  const rd = new FileReader();
+  rd.onload = ()=> cb(rd.result);
+  rd.readAsDataURL(file);
+}
+function stelleFotoPick(input){
+  const f = input.files && input.files[0]; if(!f || !stelleDraft) return;
+  _stelleReadImg(f, url=>{ stelleDraft.ansprechpartner_foto = url;
+    const el = document.getElementById('apFotoPrev');
+    if(el){ el.innerHTML = `<div class="pthumb" style="width:64px;height:64px;border-radius:50%"><img src="${escapeHtml(url)}" alt="Foto" style="border-radius:50%"><button type="button" onclick="stelleFotoClear()"><i data-lucide="x"></i></button></div>`; icons(); }
+  });
+  input.value = '';
+}
+function stelleFotoClear(){
+  if(!stelleDraft) return; stelleDraft.ansprechpartner_foto = '';
+  const el = document.getElementById('apFotoPrev');
+  if(el){ el.innerHTML = `<div class="ap-foto" style="width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--surface-2,#eef2f7);color:var(--muted);font-size:11px;text-align:center">kein&nbsp;Foto</div>`; }
+}
+function renderStelleBilderHtml(){
+  const arr = (stelleDraft && stelleDraft.bilder) || [];
+  if(!arr.length) return '<div style="font-size:12px;color:var(--muted)">Noch keine Bilder.</div>';
+  return arr.map((src,i)=>`<div class="pthumb"><img src="${escapeHtml(src)}" alt="Bild ${i+1}"><button type="button" onclick="stelleBildDel(${i})"><i data-lucide="x"></i></button></div>`).join('');
+}
+function renderStelleBilderPrev(){
+  const el = document.getElementById('stBilderPrev');
+  if(el){ el.innerHTML = renderStelleBilderHtml(); icons(); }
+}
+function stelleBilderAdd(input){
+  if(!stelleDraft) return;
+  const files = Array.from(input.files||[]);
+  files.forEach(f=>{
+    if((stelleDraft.bilder||[]).length >= STELLE_BILDER_MAX){ toast('Max. '+STELLE_BILDER_MAX+' Bilder'); return; }
+    _stelleReadImg(f, url=>{ stelleDraft.bilder = stelleDraft.bilder||[]; stelleDraft.bilder.push(url); renderStelleBilderPrev(); });
+  });
+  input.value = '';
+}
+function stelleBildDel(i){
+  if(!stelleDraft || !stelleDraft.bilder) return;
+  stelleDraft.bilder.splice(i,1); renderStelleBilderPrev();
+}
 async function submitStelle(publish){
   const d = stelleDraft; if(!d) return;
   if(!d.titel.trim()){ toast('Bitte einen Stellentitel eingeben'); return; }
   if(!sbAuth || !(GC_PROFILE && GC_PROFILE.customer_id)){ toast('Betrieb nicht verbunden.'); return; }
   const status = publish ? 'wartet_freigabe' : (d.status || 'pausiert');
+  const benefitLines = (d.benefits||'').split(/\r?\n/).map(s=>s.replace(/^[-–•*\s]+/,'').trim()).filter(Boolean);
+  const bilder = (d.bilder||[]).filter(Boolean);
   const row = {
     titel:d.titel.trim(), branche:d.branche.trim()||null, ort:d.ort.trim()||null,
-    beschaeftigungsart:d.beschaeftigungsart||null, gehalt:d.gehalt.trim()||null,
+    beschaeftigungsart:d.beschaeftigungsart||null, vertragsart:d.vertragsart||null,
+    eintritt:(d.eintritt||'').trim()||null, gehalt:d.gehalt.trim()||null,
     beschreibung:d.beschreibung.trim()||null, aufgaben:d.aufgaben.trim()||null,
-    profil:d.profil.trim()||null, status
+    profil:d.profil.trim()||null,
+    benefits:benefitLines.length?benefitLines.join('\n'):null,
+    benefits_list:benefitLines,
+    ansprechpartner:(d.ansprechpartner||'').trim()||null,
+    ansprechpartner_rolle:(d.ansprechpartner_rolle||'').trim()||null,
+    ansprechpartner_foto:d.ansprechpartner_foto||null,
+    kontakt_email:(d.kontakt_email||'').trim()||null,
+    kontakt_telefon:(d.kontakt_telefon||'').trim()||null,
+    stellen_bilder:bilder,
+    status
   };
   if(status === 'wartet_freigabe'){
     row.slug = d.slug || genSlug(d.titel);
