@@ -3112,10 +3112,14 @@ function loadSettings(){
   try{ const r = localStorage.getItem('gcos_settings_v2'); if(r){ const s = JSON.parse(r); s.perms = s.perms || {}; s.perms.buero = Object.assign({}, DEFAULT_SETTINGS.perms.buero, s.perms.buero); s.perms.buchhaltung = Object.assign({}, DEFAULT_SETTINGS.perms.buchhaltung, s.perms.buchhaltung); s.perms.mitarbeiter = Object.assign({}, DEFAULT_SETTINGS.perms.mitarbeiter, s.perms.mitarbeiter); s.company = Object.assign({}, DEFAULT_SETTINGS.company, s.company); const merged = Object.assign(JSON.parse(JSON.stringify(DEFAULT_SETTINGS)), s); if(typeof s.clockMode==='undefined' && typeof s.selfClockIn!=='undefined'){ merged.clockMode = s.selfClockIn ? 'self' : 'admin'; } return resetDemoModules(merged); } }catch(e){}
   return JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
 }
-// Testversion: Modul-Status bei JEDEM Laden auf das Basisprodukt zuruecksetzen.
-// So sieht man immer genau das, was ein Kunde mit nur dem Basisprodukt (Heute + Team)
-// sieht – Planung/Kunden/Finanzen/Markt bleiben ausgegraut, auch wenn vorher „gekauft".
-function resetDemoModules(s){ s.owned = []; s.startModul = true; return s; }
+// Demo-Modus: Modul-Status bei jedem Laden auf das Basisprodukt zuruecksetzen, damit der
+// Sales-Demo-Account immer „nur Basisprodukt" (Heute + Team) zeigt – Planung/Kunden/Finanzen/
+// Markt ausgegraut, auch wenn vorher im Demo-Stripe-Mock „gekauft".
+// PRODUKTION: Sobald echte Kunden Module dauerhaft buchen, MUSS dieser Reset aus sein, sonst
+// verliert ein zahlender Kunde seine gebuchten Module bei jedem Reload. Steuerbar ohne Code-
+// Deploy ueber localStorage『gcos_demo_mode』: '0' = Reset aus (Module bleiben erhalten).
+function demoModeOn(){ try{ return localStorage.getItem('gcos_demo_mode') !== '0'; }catch(e){ return true; } }
+function resetDemoModules(s){ if(!demoModeOn()) return s; s.owned = []; s.startModul = true; return s; }
 function saveSettings(){ try{ localStorage.setItem('gcos_settings_v2', JSON.stringify(settings)); }catch(e){} }
 
 /* ===================== ENTRY-BRAND (GreenCareers vs GreyCareers OS) =====================
@@ -3250,6 +3254,13 @@ const CO_METHODS = [
   { key:'rechnung', icon:'file-text',   label:'Kauf auf Rechnung', sub:'Freigabe nach Zahlungseingang' },
 ];
 let coState = { method:'card', agb:false, firma:'', name:'', tel:'', vat:'' };
+// Verfügbare Zahlarten je Modus. Abo = nur automatisch eingezogene Methoden
+// (Karte/PayPal/Lastschrift) – „Kauf auf Rechnung" gibt es NUR beim Einmalkauf,
+// weil wir sonst jeden Abo-Zyklus aktiv eine Rechnung schreiben + auf Überweisung hoffen müssten.
+function coMethods(c){
+  const isAbo = c && c.mode === 'abo';
+  return isAbo ? CO_METHODS.filter(m => m.key !== 'rechnung') : CO_METHODS;
+}
 
 function coParseCodePct(raw){
   if(!raw) return 0;
@@ -3323,6 +3334,8 @@ function renderCheckout(){
     try{ openConsentGate(); }catch(e){}
     return;
   }
+  // Im Abo gibt es kein „Rechnung" -> auf eine erlaubte Methode zurückfallen.
+  if(!coMethods(c).some(m => m.key === coState.method)){ coState.method = 'card'; }
   const priceLine = c.mode==='abo'
     ? `<b>${coEur(c.grossUnit)}</b><small>pro Monat · ${c.months} Monate${c.qty>1?` · ${c.qty} Stellen`:''}</small>`
     : `<b>${coEur(c.grossUnit)}</b><small>einmalig · ${c.days} Tage${c.qty>1?` · ${c.qty} Stellen`:''}</small>`;
@@ -3357,7 +3370,7 @@ function renderCheckout(){
 
       <div class="co-lbl">Zahlungsart</div>
       <div class="co-methods">
-        ${CO_METHODS.map(m=>`
+        ${coMethods(c).map(m=>`
           <label class="co-m ${coState.method===m.key?'on':''}" onclick="coSetMethod('${m.key}')">
             ${m.logos ? `<span class="pmlogos">${m.logos}</span>` : `<i data-lucide="${m.icon}"></i>`}
             <span><span>${m.label}</span><small>${m.sub}</small></span>
@@ -3782,6 +3795,7 @@ const sbAuth = (window.supabase && window.supabase.createClient)
   : null;
 let GC_USER = null;       // aktuell eingeloggter auth-User
 let GC_PROFILE = null;    // profiles-Zeile (role, customer_id)
+let GC_CUSTOMER = null;   // customers-Zeile (produkt, kauftyp, stellen_kontingent …) – für Stellen-Kontingent
 let _enteredApp = false;
 
 function authErr(msg){ document.querySelectorAll('.auth__err').forEach(e=>{ e.textContent=msg||''; e.style.display=msg?'block':'none'; }); }
@@ -4014,6 +4028,7 @@ async function afterAuth(session){
     try{
       const { data:cust } = await sbAuth.from('customers').select('*').eq('id',GC_PROFILE.customer_id).maybeSingle();
       if(cust){
+        GC_CUSTOMER = cust;   // Kontingent-Quelle (produkt, kauftyp, stellen_kontingent)
         settings.company = Object.assign({}, settings.company, { name:cust.name, ort:cust.ort||settings.company.ort, email:cust.email||GC_USER.email });
         if(cust.branchen&&cust.branchen.length) settings.branchen = cust.branchen.slice();
         if(cust.theme){ settings.theme = cust.theme; }
@@ -4864,6 +4879,7 @@ async function finishOnboarding(){
   applyTheme(settings.theme);
   settings.onboarded = true; saveSettings();
   // Betrieb in Supabase anlegen + Profil verknüpfen (sichere RPC; nur wenn eingeloggt + noch kein Betrieb)
+  let linkFailed = false;
   if(sbAuth && GC_USER && !(GC_PROFILE && GC_PROFILE.customer_id)){
     try{
       const { data, error } = await sbAuth.rpc('create_my_company', {
@@ -4874,14 +4890,17 @@ async function finishOnboarding(){
         p_telefon: settings.company.telefon || null
       });
       if(!error && data){ GC_PROFILE = GC_PROFILE||{}; GC_PROFILE.customer_id = data; }
-      else if(error){ console.warn('create_my_company:', error.message); /* Fallback: lokal gespeichert, Persistenz nach SQL-Migration */ }
-    }catch(e){ console.warn('create_my_company exception:', e); }
+      else { linkFailed = true; console.warn('create_my_company:', error&&error.message); }
+    }catch(e){ linkFailed = true; console.warn('create_my_company exception:', e); }
   }
   // Stammdaten + White-Label-Branding in die App übernehmen
   applyBranding();
   closeSheet();
   applyRole();
-  toast('Einrichtung abgeschlossen');
+  // Ehrliches Feedback: NICHT „abgeschlossen" melden, wenn der Betrieb nicht verbunden werden
+  // konnte (sonst landet der Nutzer ohne Erklärung in „Betrieb nicht verbunden").
+  if(linkFailed) toast('Einrichtung lokal gespeichert – dein Betrieb konnte gerade nicht verbunden werden. Bitte in den Einstellungen erneut speichern.');
+  else toast('Einrichtung abgeschlossen');
   // Der Inhaber landet direkt im Bewerber-Bereich – das ist die Eintrittstür ins Produkt
   // (Recruiting → später Personalakte). Danach die kurze Orientierungs-Tour.
   bewerberFilter = { job:'', status:'' };
@@ -8679,6 +8698,96 @@ async function loadPortalData(){
 function bewCountForJob(jobId){ return applicants.filter(a => a.jobId === jobId).length; }
 function bewNeuForJob(jobId){ return applicants.filter(a => a.jobId === jobId && a.stage === 'neu').length; }
 
+/* ===================== STELLEN-KONTINGENT (Self-Service-Veröffentlichung) =====================
+   Quelle: customers-Zeile (GC_CUSTOMER). Die Felder produkt/kauftyp/stellen_kontingent/
+   kontingent_frei/kontingent_bis setzt der Checkout bzw. der Stripe-/Rechnungs-Abgleich
+   server-seitig. WICHTIG (Demo-Schutz): Solange für einen Betrieb noch KEINE Kontingent-
+   Daten existieren -> fail-open. Es wird NICHT blockiert, sonst hängt – wie zuletzt – wieder
+   alles. Erst wenn echte Kontingent-Daten da sind, greift das Limit.
+
+   Logik (laut Freddy):
+   - Tier-abhängig: Smart-Kontingent -> Smart-Stelle, Premium -> Premium, Exzellenz -> Exzellenz.
+     Der Betrieb hat genau EIN Produkt-Tier; jede Stelle läuft automatisch auf diesem Tier
+     (man kann keine Premium-Stelle aus einem Smart-Kontingent schalten).
+   - Freischaltung zahlart-abhängig: Kreditkarte/PayPal/Lastschrift = automatisch bezahlt ->
+     Kontingent sofort frei. Rechnung (nur Einmalkauf) = erst frei, wenn GC den Zahlungs-
+     eingang manuell bestätigt (kontingent_frei=true).
+   - Laufzeit: Einmalkauf = 3 Monate fix (techn. 2 Mon. + 30 Tage Garantie), egal welches Tier.
+     Abo = 6 oder 12 Monate, verlängert sich automatisch. Abos sind IMMER automatisch bezahlt. */
+// Tier-Labels. DB-Spalte customers.produkt nutzt 'excellence'; der Checkout-Code (CO_PKG_*)
+// nutzt 'exzellenz' – beide Schreibweisen abdecken.
+const PRODUKT_LABEL = { smart:'Smart', premium:'Premium', excellence:'Exzellenz', exzellenz:'Exzellenz' };
+function activeJobCount(){ return jobs.filter(j => j.status === 'aktiv').length; }
+// Liest die ECHTEN customers-Spalten (v6): produkt, kauftyp('einmalzahlung'|'abo'),
+// zahlungsart, laufzeit('6'|'12'), + Kontingent-Felder (v11): stellen_kontingent,
+// kontingent_frei, kontingent_bis.
+function jobContingent(){
+  const c = GC_CUSTOMER || {};
+  const tier = c.produkt || '';
+  const total = Number(c.stellen_kontingent != null ? c.stellen_kontingent : NaN);
+  // kauftyp normalisieren: DB-Wert 'einmalzahlung' (oder 'einmal') -> 'einmal'.
+  const kauftyp = c.kauftyp === 'abo' ? 'abo'
+    : (/einmal/i.test(c.kauftyp||'') ? 'einmal' : '');
+  const zahlart = (c.zahlungsart || c.zahlart || '').toLowerCase();
+  const term = c.laufzeit ? (String(c.laufzeit).indexOf('12')>=0 ? '12m' : '6m') : (c.abo_term||'');
+  const hasData = !!tier || Number.isFinite(total) || !!kauftyp;
+  // Freischaltung: explizites Flag gewinnt; sonst Abo immer automatisch bezahlt -> frei;
+  // Einmalkauf: alles außer Rechnung wird automatisch eingezogen -> frei, Rechnung erst nach
+  // manueller Bestätigung (kontingent_frei). Keine Daten -> nicht blockieren.
+  let frei;
+  if(typeof c.kontingent_frei === 'boolean') frei = c.kontingent_frei;
+  else if(kauftyp === 'abo') frei = true;
+  else if(!hasData) frei = true;
+  else frei = zahlart ? zahlart !== 'rechnung' : true;
+  const used = activeJobCount();
+  const free = Number.isFinite(total) ? Math.max(0, total - used) : Infinity;
+  return { hasData, tier, tierLabel: PRODUKT_LABEL[tier] || (tier ? tier.charAt(0).toUpperCase()+tier.slice(1) : ''),
+           kauftyp, term, total, used, free, frei, bis:c.kontingent_bis||null };
+}
+// Darf der Betrieb JETZT eine weitere Stelle live schalten?
+function canPublishJob(){
+  const k = jobContingent();
+  if(!k.hasData) return { ok:true };                          // keine Kontingent-Daten -> fail-open
+  if(!k.frei)    return { ok:false, reason:'locked',
+    msg:'Dein Kontingent wird freigeschaltet, sobald deine Zahlung bei uns eingegangen ist. Bei Kreditkarte, PayPal oder Lastschrift passiert das automatisch – bei Kauf auf Rechnung, sobald wir deine Überweisung sehen.' };
+  if(k.free<=0)  return { ok:false, reason:'exhausted',
+    msg:`Dein ${k.tierLabel?k.tierLabel+'-':''}Kontingent (${k.total} ${k.total===1?'Stelle':'Stellen'}) ist ausgeschöpft. Nimm eine aktive Stelle offline oder erweitere dein Kontingent, um eine weitere zu veröffentlichen.` };
+  return { ok:true };
+}
+// Self-Service-Veröffentlichung: Kontingent prüfen -> direkt live (status 'aktiv'), kein GC-Gate.
+async function publishStelle(id){
+  const gate = canPublishJob();
+  if(!gate.ok){ toast(gate.msg); return; }
+  await setStelleStatus(id, 'aktiv');
+}
+// Kontingent-Banner über der Stellen-Liste: „X von Y genutzt" + Tier + Laufzeit/Freischalt-Status.
+// Nur wenn echte Kontingent-Daten existieren – sonst nichts (kein verwirrender Platzhalter).
+function kontingentBannerHtml(){
+  const k = jobContingent();
+  if(!k.hasData) return '';
+  const lz = k.kauftyp==='abo'
+    ? (k.term==='12m' ? 'Abo · 12 Monate' : (k.term==='6m' ? 'Abo · 6 Monate' : 'Abo'))
+    : (k.kauftyp==='einmal' ? 'Einmalkauf · 3 Monate' : '');
+  const bisTxt = k.bis ? ` · bis ${dDE(dISO(new Date(k.bis)))}` : '';
+  const total = Number.isFinite(k.total) ? k.total : '∞';
+  const free  = Number.isFinite(k.free) ? k.free : '∞';
+  if(!k.frei){
+    return `<div class="panel" style="display:flex;gap:12px;align-items:center;padding:14px 16px;margin-bottom:14px;border-color:#F0C36D;background:#FFF8EC">
+      <i data-lucide="clock" style="width:20px;height:20px;color:#A66400;flex:0 0 auto"></i>
+      <div style="font-size:13px;line-height:1.45"><b>${k.tierLabel?k.tierLabel+'-':''}Kontingent reserviert</b> – wird freigeschaltet, sobald deine Zahlung bei uns eingeht. Bei Kreditkarte/PayPal/Lastschrift automatisch, bei Rechnung nach Zahlungseingang.</div>
+    </div>`;
+  }
+  const pct = Number.isFinite(k.total) && k.total>0 ? Math.min(100, Math.round(k.used/k.total*100)) : 0;
+  return `<div class="panel" style="display:flex;gap:14px;align-items:center;padding:14px 16px;margin-bottom:14px">
+    <i data-lucide="briefcase" style="width:20px;height:20px;color:var(--green);flex:0 0 auto"></i>
+    <div style="flex:1;min-width:0">
+      <div style="font-size:13px;font-weight:700"><span style="color:var(--green-2)">${k.used} von ${total}</span> Stellen veröffentlicht${Number.isFinite(k.free)?` · ${free} frei`:''}</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:2px">${[k.tierLabel?k.tierLabel+'-Kontingent':'', lz].filter(Boolean).join(' · ')}${bisTxt}</div>
+      ${Number.isFinite(k.total)?`<div style="height:6px;border-radius:4px;background:var(--soft-green);overflow:hidden;margin-top:7px"><span style="display:block;height:100%;width:${pct}%;background:var(--green)"></span></div>`:''}
+    </div>
+  </div>`;
+}
+
 // ---- Stellen-Ansicht (Liste + Status + „X Bewerbungen eingegangen" + Portal-/Kanban-Buttons) ----
 function stellenViewHtml(){
   if(!(GC_PROFILE && GC_PROFILE.customer_id)){
@@ -8694,6 +8803,7 @@ function stellenViewHtml(){
       <div><h2>Stellen</h2><p>Anlegen, veröffentlichen und Bewerber verwalten – alles an einem Ort. Veröffentlichte Stellen erscheinen automatisch auf dem GreyCareers-Portal.</p></div>
       <button class="mini-btn primary" onclick="openStelleForm()"><i data-lucide="plus"></i> Stelle anlegen</button>
     </div>
+    ${kontingentBannerHtml()}
     ${list.length
       ? `<div class="stellen-grid">${list.map(stelleCard).join('')}</div>`
       : `<div class="panel" style="padding:44px;text-align:center;color:var(--muted)">
@@ -8716,18 +8826,18 @@ function stelleCard(j){
   if(st === 'aktiv'){
     actions = `<a class="mini-btn" href="${portalJobUrl(j.slug)}" target="_blank" rel="noopener"><i data-lucide="external-link"></i> Stellenanzeige ansehen</a>
        <button class="mini-btn" onclick="setStelleStatus('${j.id}','pausiert')"><i data-lucide="eye-off"></i> Offline nehmen</button>`;
-  } else if(st === 'wartet_freigabe'){
-    actions = `<button class="mini-btn" onclick="setStelleStatus('${j.id}','pausiert')"><i data-lucide="undo-2"></i> Freigabe zurückziehen</button>`;
-  } else if(st === 'freigegeben'){
-    actions = `<button class="mini-btn go" onclick="setStelleStatus('${j.id}','aktiv')"><i data-lucide="rocket"></i> Jetzt live schalten</button>`;
   } else {
-    actions = `<button class="mini-btn go" onclick="setStelleStatus('${j.id}','wartet_freigabe')"><i data-lucide="send"></i> Veröffentlichen</button>`;
+    // Self-Service: Entwurf, früher „wartet_freigabe"/„freigegeben" -> alles direkt live schaltbar.
+    actions = `<button class="mini-btn go" onclick="publishStelle('${j.id}')"><i data-lucide="rocket"></i> ${st==='pausiert'?'Veröffentlichen':'Jetzt live schalten'}</button>`;
   }
-  const note = st === 'wartet_freigabe'
-    ? `<div class="stelle-card__note"><i data-lucide="clock"></i><span>Deine Stelle wird gerade von ${escapeHtml(brandNet())} geprüft &amp; freigegeben. Sobald sie freigegeben ist, kannst du sie mit einem Klick live schalten.</span></div>`
-    : (st === 'freigegeben'
-      ? `<div class="stelle-card__note" style="color:#1D4ED8;background:#EAF1FE;border-color:#BBD2F7"><i data-lucide="badge-check"></i><span>Freigegeben! Klick auf <b>„Jetzt live schalten"</b>, damit deine Stelle im Karrierenetzwerk erscheint.</span></div>`
-      : '');
+  // Hinweis nur, wenn das Kontingent das Veröffentlichen aktuell blockiert (gesperrt / ausgeschöpft).
+  let note = '';
+  if(st !== 'aktiv' && st !== 'geschlossen'){
+    const gate = canPublishJob();
+    if(!gate.ok){
+      note = `<div class="stelle-card__note"><i data-lucide="${gate.reason==='locked'?'clock':'alert-circle'}"></i><span>${escapeHtml(gate.msg)}</span></div>`;
+    }
+  }
   return `<div class="stelle-card">
     <div class="stelle-card__hd">
       <div class="stelle-card__t">
@@ -8942,7 +9052,17 @@ async function submitStelle(publish){
   const d = stelleDraft; if(!d) return;
   if(!d.titel.trim()){ toast('Bitte einen Stellentitel eingeben'); return; }
   if(!sbAuth || !(GC_PROFILE && GC_PROFILE.customer_id)){ toast('Betrieb nicht verbunden.'); return; }
-  const status = publish ? 'wartet_freigabe' : (d.status || 'pausiert');
+  // Self-Service-Veröffentlichung: „Veröffentlichen" -> Kontingent prüfen -> direkt live.
+  // Ist das Kontingent gesperrt/ausgeschöpft, wird die Eingabe NICHT verworfen, sondern als
+  // Entwurf gespeichert + der Grund als Toast erklärt.
+  let status, gateMsg = '';
+  if(publish){
+    const gate = canPublishJob();
+    if(gate.ok){ status = 'aktiv'; }
+    else { status = (d.status==='aktiv') ? 'aktiv' : 'pausiert'; gateMsg = gate.msg; }
+  } else {
+    status = d.status || 'pausiert';
+  }
   const benefitLines = (d.benefits||'').split(/\r?\n/).map(s=>s.replace(/^[-–•*\s]+/,'').trim()).filter(Boolean);
   const bilder = (d.bilder||[]).filter(Boolean);
   const row = {
@@ -8961,8 +9081,9 @@ async function submitStelle(publish){
     stellen_bilder:bilder,
     status
   };
-  if(status === 'wartet_freigabe'){
+  if(status === 'aktiv'){
     row.slug = d.slug || genSlug(d.titel);
+    row.published_at = new Date().toISOString();
   }
   try{
     if(d.id){
@@ -8976,7 +9097,8 @@ async function submitStelle(publish){
     }
     stelleDraft = null; closeSheet();
     await loadPortalData();
-    toast(publish ? 'Zur Freigabe eingereicht – '+brandNet()+' prüft deine Stelle.' : (d.id?'Stelle gespeichert.':'Entwurf gespeichert.'));
+    if(gateMsg) toast(gateMsg);
+    else toast(publish ? 'Stelle ist jetzt live auf dem Portal.' : (d.id?'Stelle gespeichert.':'Entwurf gespeichert.'));
     if(currentView !== 'stellen') setView('stellen');
   }catch(e){ toast('Speichern fehlgeschlagen: ' + (e.message||e)); }
 }
