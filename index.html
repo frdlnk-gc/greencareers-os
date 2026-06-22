@@ -8999,8 +8999,8 @@ function renderStelleForm(){
       </div>
 
       <div class="sheet-actions">
-        <button class="btn" style="flex:1" onclick="submitStelle(false)"><i data-lucide="save"></i> ${editing?'Speichern':'Als Entwurf speichern'}</button>
-        ${editing && d.status==='aktiv' ? '' : `<button class="btn go" onclick="submitStelle(true)"><i data-lucide="rocket"></i> Speichern &amp; veröffentlichen</button>`}
+        <button class="btn" id="stSaveDraft" style="flex:1" onclick="submitStelle(false)"><i data-lucide="save"></i> ${editing?'Speichern':'Als Entwurf speichern'}</button>
+        ${editing && d.status==='aktiv' ? '' : `<button class="btn go" id="stSavePublish" onclick="submitStelle(true)"><i data-lucide="rocket"></i> Speichern &amp; veröffentlichen</button>`}
         <button class="btn ghost" onclick="closeSheet()">Abbrechen</button>
       </div>
     </div>`);
@@ -9048,10 +9048,22 @@ function stelleBildDel(i){
   if(!stelleDraft || !stelleDraft.bilder) return;
   stelleDraft.bilder.splice(i,1); renderStelleBilderPrev();
 }
+let _stelleSaving = false;   // Re-Entry-Guard gegen Doppel-/Dreifach-Klick (async-Insert)
 async function submitStelle(publish){
+  if(_stelleSaving) return;   // läuft schon ein Speichern -> Klick ignorieren
   const d = stelleDraft; if(!d) return;
   if(!d.titel.trim()){ toast('Bitte einen Stellentitel eingeben'); return; }
   if(!sbAuth || !(GC_PROFILE && GC_PROFILE.customer_id)){ toast('Betrieb nicht verbunden.'); return; }
+  // Beide Buttons sperren + visuelles Feedback, solange der Insert/Update läuft.
+  _stelleSaving = true;
+  const _btnDraft = document.getElementById('stSaveDraft');
+  const _btnPub   = document.getElementById('stSavePublish');
+  const _btnDraftHtml = _btnDraft ? _btnDraft.innerHTML : '';
+  const _btnPubHtml   = _btnPub   ? _btnPub.innerHTML   : '';
+  if(_btnDraft){ _btnDraft.disabled = true; }
+  if(_btnPub){ _btnPub.disabled = true; }
+  const _activeBtn = publish ? _btnPub : _btnDraft;
+  if(_activeBtn){ _activeBtn.innerHTML = '<i data-lucide="loader"></i> Wird gespeichert…'; icons(); }
   // Self-Service-Veröffentlichung: „Veröffentlichen" -> Kontingent prüfen -> direkt live.
   // Ist das Kontingent gesperrt/ausgeschöpft, wird die Eingabe NICHT verworfen, sondern als
   // Entwurf gespeichert + der Grund als Toast erklärt.
@@ -9100,7 +9112,13 @@ async function submitStelle(publish){
     if(gateMsg) toast(gateMsg);
     else toast(publish ? 'Stelle ist jetzt live auf dem Portal.' : (d.id?'Stelle gespeichert.':'Entwurf gespeichert.'));
     if(currentView !== 'stellen') setView('stellen');
-  }catch(e){ toast('Speichern fehlgeschlagen: ' + (e.message||e)); }
+  }catch(e){
+    toast('Speichern fehlgeschlagen: ' + (e.message||e));
+    // Bei Fehler: Buttons wieder freigeben, damit der Nutzer es erneut versuchen kann.
+    if(_btnDraft){ _btnDraft.disabled = false; _btnDraft.innerHTML = _btnDraftHtml; }
+    if(_btnPub){ _btnPub.disabled = false; _btnPub.innerHTML = _btnPubHtml; }
+    icons();
+  }finally{ _stelleSaving = false; }
 }
 // Bewerber-Statuswechsel in Supabase spiegeln (nur echte, aus Supabase geladene Bewerber)
 async function persistBewerberStatus(localId, status){
