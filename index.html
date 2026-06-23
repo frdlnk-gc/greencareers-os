@@ -490,7 +490,13 @@
   a.mini-btn{ text-decoration:none; }
   /* ---- Stellen-Verwaltung ---- */
   .stellen-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:14px; }
-  .stelle-card{ background:#fff; border:1px solid var(--line); border-radius:12px; padding:16px 16px 14px; display:flex; flex-direction:column; gap:12px; box-shadow:0 1px 2px rgba(20,25,29,.04); }
+  .stelle-card{ background:#fff; border:1px solid var(--line); border-radius:12px; padding:0; display:flex; flex-direction:column; gap:0; box-shadow:0 1px 2px rgba(20,25,29,.04); }
+  .stelle-card__in{ padding:28px 16px 14px; display:flex; flex-direction:column; gap:12px; }
+  .stelle-cover{ position:relative; height:92px; border-radius:12px 12px 0 0; background:linear-gradient(135deg,var(--green),var(--green-2)); background-size:cover; background-position:center; }
+  .stelle-cover__logo{ position:absolute; left:14px; bottom:-18px; width:52px; height:52px; border-radius:12px; background:#fff; border:1px solid var(--line); box-shadow:0 2px 7px rgba(20,25,29,.16); display:flex; align-items:center; justify-content:center; overflow:hidden; }
+  .stelle-cover__logo img{ width:100%; height:100%; object-fit:contain; }
+  .stelle-cover__logo span{ font-weight:800; color:var(--green-2); font-size:20px; }
+  .stelle-cover .stelle-status{ position:absolute; right:10px; top:10px; background:rgba(255,255,255,.94); border-color:transparent; box-shadow:0 1px 3px rgba(20,25,29,.14); }
   .stelle-card__hd{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
   .stelle-card__t h3{ font-size:15.5px; font-weight:750; color:var(--ink); line-height:1.25; letter-spacing:-.01em; }
   .stelle-card__meta{ display:flex; flex-wrap:wrap; gap:10px; margin-top:6px; }
@@ -514,6 +520,33 @@
   .icon-btn:hover{ color:var(--ink); border-color:var(--green); }
   .icon-btn .lucide{ width:15px; height:15px; }
   .icon-btn.danger:hover{ color:var(--red); border-color:#E6CFCF; background:var(--red-soft); }
+  .smenu{ position:relative; margin-left:auto; }
+  .smenu>summary{ list-style:none; cursor:pointer; }
+  .smenu>summary::-webkit-details-marker{ display:none; }
+  .smenu>summary .chev{ transition:transform .15s; }
+  .smenu[open]>summary .chev{ transform:rotate(180deg); }
+  .smenu__list{ position:absolute; right:0; top:calc(100% + 6px); z-index:40; min-width:208px; background:#fff; border:1px solid var(--line); border-radius:11px; box-shadow:0 10px 28px rgba(20,25,29,.16); padding:6px; display:flex; flex-direction:column; gap:1px; }
+  .smenu__list button, .smenu__list a{ display:flex; align-items:center; gap:9px; width:100%; text-align:left; padding:9px 10px; border:0; background:transparent; border-radius:8px; font-size:13px; font-weight:600; color:var(--ink); cursor:pointer; text-decoration:none; font-family:inherit; }
+  .smenu__list button:hover, .smenu__list a:hover{ background:var(--soft-green,#EAF7EF); }
+  .smenu__list .lucide{ width:15px; height:15px; color:var(--muted); flex:0 0 auto; }
+  .smenu__list .sm-sep{ height:1px; background:var(--line); margin:5px 4px; }
+  .smenu__list .danger{ color:var(--red); }
+  .smenu__list .danger:hover{ background:var(--red-soft); }
+  .smenu__list .danger .lucide{ color:var(--red); }
+  .stelle-brand{ border:1px solid var(--line); border-radius:12px; padding:14px; background:#FBFDFB; }
+  .stelle-brand__tiles{ display:flex; gap:12px; margin-top:12px; }
+  .stelle-brand__tile{ flex:0 0 auto; }
+  .stelle-brand__tile.wide{ flex:1; min-width:0; }
+  .stelle-brand__lbl{ font-size:11px; font-weight:700; letter-spacing:.03em; text-transform:uppercase; color:var(--muted); margin-bottom:6px; }
+  .sbprev-logo{ width:72px; height:72px; border-radius:12px; border:1px solid var(--line); background:#fff; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+  .sbprev-logo img{ width:100%; height:100%; object-fit:contain; }
+  .sbprev-logo span{ color:var(--muted); font-size:10px; text-align:center; padding:4px; }
+  .sbprev-titel{ width:100%; height:72px; border-radius:12px; border:1px solid var(--line); background:#eef2f7 center/cover no-repeat; display:flex; align-items:center; justify-content:center; }
+  .sbprev-titel span{ color:var(--muted); font-size:11px; }
+  .sbrand-note{ display:flex; align-items:flex-start; gap:8px; font-size:12px; line-height:1.45; border-radius:9px; padding:9px 11px; margin-top:12px; }
+  .sbrand-note.ok{ color:#0E7A43; background:#EAF7EF; border:1px solid #BFE6CD; }
+  .sbrand-note.warn{ color:#A66400; background:#FEF6E7; border:1px solid #F4D9A0; }
+  .sbrand-note .lucide{ width:15px; height:15px; flex:0 0 auto; margin-top:1px; }
   .btn.go{ color:#fff; background:var(--green-2); border-color:var(--green-2); }
   .daymap{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; padding:14px; }
   .daymap__item{
@@ -9570,14 +9603,24 @@ function stelleCard(j){
     j.ort ? `<span><i data-lucide="map-pin"></i>${escapeHtml(j.ort)}</span>` : '',
     j.beschaeftigungsart ? `<span><i data-lucide="clock"></i>${escapeHtml(j.beschaeftigungsart)}</span>` : ''
   ].filter(Boolean).join('');
-  let actions;
-  if(st === 'aktiv'){
-    actions = `<a class="mini-btn" href="${portalJobUrl(j.slug)}" target="_blank" rel="noopener"><i data-lucide="external-link"></i> Stellenanzeige ansehen</a>
-       <button class="mini-btn" onclick="setStelleStatus('${j.id}','pausiert')"><i data-lucide="eye-off"></i> Offline nehmen</button>`;
-  } else {
-    // Self-Service: Entwurf, früher „wartet_freigabe"/„freigegeben" -> alles direkt live schaltbar.
-    actions = `<button class="mini-btn go" onclick="publishStelle('${j.id}')"><i data-lucide="rocket"></i> ${st==='pausiert'?'Veröffentlichen':'Jetzt live schalten'}</button>`;
-  }
+  // Cover: Titelbild + Logo (Unternehmensebene) – damit der Inhaber die Stelle optisch erkennt.
+  const co = settings.company || {}; const pp = settings.portal || {};
+  const titel = pp.titelbild || ''; const logo = co.logo || '';
+  const initials = ((co.name || j.title || '?').trim().charAt(0) || '?').toUpperCase();
+  const coverStyle = titel ? ` style="background-image:linear-gradient(0deg,rgba(0,0,0,.10),rgba(0,0,0,.02)),url('${titel}')"` : '';
+  const logoInner = logo ? `<img src="${escapeHtml(logo)}" alt="Logo">` : `<span>${escapeHtml(initials)}</span>`;
+  // Primär-Aktion: Veröffentlichen-Button nur bei Entwurf/pausiert.
+  const publishBtn = (st === 'aktiv')
+    ? ''
+    : `<button class="mini-btn go" onclick="publishStelle('${j.id}')"><i data-lucide="rocket"></i> ${st==='pausiert'?'Veröffentlichen':'Jetzt live schalten'}</button>`;
+  // Alles Weitere gebündelt in EINEM „Stelle verwalten"-Dropdown.
+  const menuItems = [
+    `<button onclick="this.closest('details').removeAttribute('open');openStelleForm('${j.id}')"><i data-lucide="pencil"></i> Stelle bearbeiten</button>`,
+    st === 'aktiv' ? `<button onclick="this.closest('details').removeAttribute('open');setStelleStatus('${j.id}','pausiert')"><i data-lucide="eye-off"></i> Stelle offline nehmen</button>` : '',
+    st === 'aktiv' ? `<a href="${portalJobUrl(j.slug)}" target="_blank" rel="noopener" onclick="this.closest('details').removeAttribute('open')"><i data-lucide="external-link"></i> Im Portal ansehen</a>` : '',
+    `<div class="sm-sep"></div>`,
+    `<button class="danger" onclick="this.closest('details').removeAttribute('open');deleteStelle('${j.id}')"><i data-lucide="trash-2"></i> Stelle löschen</button>`
+  ].filter(Boolean).join('');
   // Hinweis nur, wenn das Kontingent das Veröffentlichen aktuell blockiert (gesperrt / ausgeschöpft).
   let note = '';
   if(st !== 'aktiv' && st !== 'geschlossen'){
@@ -9587,25 +9630,34 @@ function stelleCard(j){
     }
   }
   return `<div class="stelle-card">
-    <div class="stelle-card__hd">
+    <div class="stelle-cover"${coverStyle}>
+      <div class="stelle-cover__logo">${logoInner}</div>
+      <span class="stelle-status ${sm.cls}"><span class="dot" style="background:${sm.dot}"></span>${sm.label}</span>
+    </div>
+    <div class="stelle-card__in">
       <div class="stelle-card__t">
         <h3>${escapeHtml(j.title)}</h3>
         ${meta ? `<div class="stelle-card__meta">${meta}</div>` : ''}
       </div>
-      <span class="stelle-status ${sm.cls}"><span class="dot" style="background:${sm.dot}"></span>${sm.label}</span>
-    </div>
-    ${note}
-    <div class="stelle-card__bew">
-      <i data-lucide="users"></i><b>${n}</b> ${n===1?'Bewerbung':'Bewerbungen'} eingegangen${neu?`<span class="bew-neu">${neu} neu</span>`:''}
-    </div>
-    <div class="stelle-card__actions">
-      <button class="mini-btn primary" onclick="manageBewerber('${j.id}')"><i data-lucide="kanban-square"></i> Bewerber verwalten</button>
-      ${actions}
-      <button class="icon-btn" title="Bearbeiten" onclick="openStelleForm('${j.id}')"><i data-lucide="pencil"></i></button>
-      <button class="icon-btn danger" title="Löschen" onclick="deleteStelle('${j.id}')"><i data-lucide="trash-2"></i></button>
+      ${note}
+      <div class="stelle-card__bew">
+        <i data-lucide="users"></i><b>${n}</b> ${n===1?'Bewerbung':'Bewerbungen'} eingegangen${neu?`<span class="bew-neu">${neu} neu</span>`:''}
+      </div>
+      <div class="stelle-card__actions">
+        <button class="mini-btn primary" onclick="manageBewerber('${j.id}')"><i data-lucide="kanban-square"></i> Bewerber verwalten</button>
+        ${publishBtn}
+        <details class="smenu">
+          <summary class="mini-btn"><i data-lucide="settings-2"></i> Stelle verwalten <i data-lucide="chevron-down" class="chev"></i></summary>
+          <div class="smenu__list">${menuItems}</div>
+        </details>
+      </div>
     </div>
   </div>`;
 }
+// Offene „Stelle verwalten"-Dropdowns schließen, wenn außerhalb geklickt wird.
+document.addEventListener('click', e=>{
+  document.querySelectorAll('details.smenu[open]').forEach(d=>{ if(!d.contains(e.target)) d.removeAttribute('open'); });
+});
 // „Bewerber verwalten" -> Kanban, vorgefiltert auf genau diese Stelle
 function manageBewerber(jobId){ bewerberFilter.job = jobId; bewerberFilter.status = ''; setView('recruiting'); }
 
@@ -9694,6 +9746,82 @@ function renderBulletPrev(id, text){
 function stelleSecHead(txt, hint){
   return `<div style="margin:22px 0 10px"><div style="font-weight:800;font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)">${escapeHtml(txt)}</div>${hint?`<div style="font-size:12px;color:var(--muted);margin-top:2px">${escapeHtml(hint)}</div>`:''}</div>`;
 }
+/* ---- Unternehmens-Branding direkt im Stellenformular (Logo + Titelbild = Unternehmensebene) ----
+   Logo und Titelbild leben in settings.company.logo / settings.portal.titelbild und gelten für
+   ALLE Stellen. Beim Hochladen wird sofort lokal gespeichert UND ans Portal (customers) gepusht,
+   damit jede Anzeige sie zeigt – ohne separaten „Ans Portal senden"-Schritt. */
+function brandingMissing(){
+  const logo  = !!(settings.company && settings.company.logo);
+  const titel = !!(settings.portal && settings.portal.titelbild);
+  return { logo:!logo, titel:!titel, any:(!logo || !titel) };
+}
+function stelleBrandingInnerHtml(){
+  const co = settings.company || {};
+  const pp = settings.portal || {};
+  const logo  = co.logo || '';
+  const titel = pp.titelbild || '';
+  const miss = brandingMissing();
+  const logoBox = logo
+    ? `<div class="sbprev-logo"><img src="${escapeHtml(logo)}" alt="Logo"></div>`
+    : `<div class="sbprev-logo"><span>kein&nbsp;Logo</span></div>`;
+  const titelBox = titel
+    ? `<div class="sbprev-titel" style="background-image:url('${titel}')"></div>`
+    : `<div class="sbprev-titel"><span>kein Titelbild</span></div>`;
+  const note = miss.any
+    ? `<div class="sbrand-note warn"><i data-lucide="alert-triangle"></i><span>Lade <b>${[miss.logo?'Logo':'',miss.titel?'Titelbild':''].filter(Boolean).join(' &amp; ')}</b> hoch, damit deine Anzeige im Portal vollständig und professionell aussieht. Gilt für alle deine Stellen.</span></div>`
+    : `<div class="sbrand-note ok"><i data-lucide="check-circle-2"></i><span>Logo &amp; Titelbild sind gesetzt – erscheinen automatisch auf jeder deiner Stellen.</span></div>`;
+  return `
+    <div class="stelle-brand__tiles">
+      <div class="stelle-brand__tile">
+        <div class="stelle-brand__lbl">Logo (1:1)</div>
+        ${logoBox}
+        <label class="btn ghost sm" style="margin-top:8px"><i data-lucide="upload"></i> ${logo?'Ändern':'Logo wählen'}<input type="file" accept="image/*" onchange="stelleCoLogoPick(this)" hidden></label>
+      </div>
+      <div class="stelle-brand__tile wide">
+        <div class="stelle-brand__lbl">Titelbild (Banner)</div>
+        ${titelBox}
+        <label class="btn ghost sm" style="margin-top:8px"><i data-lucide="image-plus"></i> ${titel?'Ändern':'Titelbild wählen'}<input type="file" accept="image/*" onchange="stelleCoTitelPick(this)" hidden></label>
+      </div>
+    </div>
+    ${note}`;
+}
+function renderStelleBranding(){
+  const el = document.getElementById('stBrandingBox');
+  if(el){ el.innerHTML = stelleBrandingInnerHtml(); icons(); }
+}
+function stelleCoLogoPick(input){
+  const f = input.files && input.files[0]; if(!f) return; input.value = '';
+  openImageCropper({
+    file:f, aspect:1, round:false, outW:512, mime:'image/png', maxUploadKB:6000,
+    title:'Logo zuschneiden', hint:'Quadratisch (1:1) · PNG mit Transparenz möglich',
+    recoText:'Dein Logo wird <b>quadratisch</b> auf jeder Stellenanzeige (und im Cockpit) angezeigt. Lade am besten ein quadratisches Logo hoch – ist es breiter als hoch, schneide den passenden Bereich zu. Empfohlen: 512×512 px, PNG mit transparentem Hintergrund.',
+    onDone:(url)=>{ settings.company = settings.company||{}; settings.company.logo = url; saveSettings(); applyBranding(); renderStelleBranding(); savePortalProfile(); }
+  });
+}
+function stelleCoTitelPick(input){
+  const f = input.files && input.files[0]; if(!f) return; input.value = '';
+  openImageCropper({
+    file:f, aspect:16/6, round:false, outW:1600, mime:'image/jpeg', maxKB:420, maxUploadKB:12000,
+    title:'Titelbild zuschneiden', hint:'Banner ganz oben auf deiner Firmenseite · Querformat',
+    recoText:'Auf dem <b>Desktop</b> wird das ganze Bild als breiter Banner gezeigt, auf dem <b>Handy</b> nur der <b>mittlere Ausschnitt</b>. Halte Logo, Team oder das Wichtigste deshalb in der <b>Bildmitte</b>. Empfohlen: mind. 1600×600 px.',
+    onDone:(url)=>{ settings.portal = settings.portal||{}; settings.portal.titelbild = url; saveSettings(); renderStelleBranding(); savePortalProfile(); }
+  });
+}
+// Veröffentlichen ohne Logo/Titelbild -> freundlicher Hinweis statt stiller, unvollständiger Anzeige.
+function showBrandingGate(miss){
+  const parts = []; if(miss.logo) parts.push('Logo'); if(miss.titel) parts.push('Titelbild');
+  const what = parts.join(' & ');
+  const both = miss.logo && miss.titel;
+  cpopShow({
+    icon:'image', iconClass:'warn', title:what+' fehlt noch',
+    body:`Ohne <b>${escapeHtml(what)}</b> wirkt deine Anzeige im Portal unvollständig – Bewerber sehen nur den Text ohne Firmen-Optik.<br><br>${both?'Beide gelten':'Das gilt'} für <b>alle</b> deine Stellen, du lädst ${both?'sie':'es'} also nur <b>einmal</b> hoch.`,
+    actions:[
+      { label:'Jetzt hochladen', icon:'upload', onclick:'cpopClose()' },
+      { label:'Trotzdem veröffentlichen', variant:'ghost', onclick:'cpopClose();stelleForcePublish()' }
+    ]
+  });
+}
+function stelleForcePublish(){ if(stelleDraft){ stelleDraft._brandOk = true; submitStelle(true); } }
 function renderStelleForm(){
   const d = stelleDraft; if(!d) return;
   const v = s => escapeHtml(s||'');
@@ -9708,6 +9836,9 @@ function renderStelleForm(){
       <button class="sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body">
+
+      ${stelleSecHead('Unternehmens-Branding','Logo und Titelbild gelten für ALLE deine Stellen – einmal hochladen, fertig.')}
+      <div class="stelle-brand" id="stBrandingBox">${stelleBrandingInnerHtml()}</div>
 
       ${stelleSecHead('Eckdaten','Erscheinen als Titel und Tags oben in der Anzeige.')}
       <div class="field"><label>Stellentitel *</label><input value="${v(d.titel)}" placeholder="z. B. Baugeräteführer (m/w/d)" oninput="stelleDraft.titel=this.value"></div>
@@ -9829,6 +9960,11 @@ async function submitStelle(publish){
   const d = stelleDraft; if(!d) return;
   if(!d.titel.trim()){ toast('Bitte einen Stellentitel eingeben'); return; }
   if(!sbAuth || !(GC_PROFILE && GC_PROFILE.customer_id)){ toast('Betrieb nicht verbunden.'); return; }
+  // Branding-Gate: Veröffentlichen ohne Logo/Titelbild -> erst freundlich nachfragen (einmal).
+  if(publish && !d._brandOk){
+    const miss = brandingMissing();
+    if(miss.any){ showBrandingGate(miss); return; }
+  }
   // Beide Buttons sperren + visuelles Feedback, solange der Insert/Update läuft.
   _stelleSaving = true;
   const _btnDraft = document.getElementById('stSaveDraft');
