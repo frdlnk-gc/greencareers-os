@@ -3429,6 +3429,30 @@ function openCheckoutSuccess(){
   try{ history.replaceState(null,'',window.location.pathname); }catch(_){}   // ?paid=1 aus URL entfernen
   document.getElementById('checkout').classList.remove('hidden');
   coDone(false);
+  pollContingentAfterPaid();   // Webhook schaltet Kontingent server-seitig frei -> kurz pollen + UI auffrischen
+}
+// Frische customers-Zeile aus der DB ziehen (Kontingent-Quelle aktualisieren).
+async function refetchCustomer(){
+  if(!(window.sbAuth && GC_PROFILE && GC_PROFILE.customer_id)) return null;
+  try{
+    const { data:cust } = await sbAuth.from('customers').select('*').eq('id',GC_PROFILE.customer_id).maybeSingle();
+    if(cust){ GC_CUSTOMER = cust; if(cust.logo_url){ settings.company.logo = cust.logo_url; } }
+    return cust || null;
+  }catch(_){ return null; }
+}
+// Nach Karten-/PayPal-/Lastschrift-Zahlung schaltet der Stripe-Webhook das Kontingent server-seitig
+// frei (apply_purchase_contingent). Das kann ein paar Sekunden dauern -> kurz pollen, damit die
+// Stellen-Ansicht das frische Kontingent sofort zeigt. Fail-soft: timeoutet still, blockiert nie.
+async function pollContingentAfterPaid(){
+  for(let i=0;i<8;i++){
+    const c = await refetchCustomer();
+    if(c && (c.produkt || c.stellen_kontingent != null)){
+      try{ if(typeof rerenderCurrent==='function') rerenderCurrent(); }catch(_){}
+      return true;
+    }
+    await new Promise(r=>setTimeout(r, 2500));
+  }
+  return false;
 }
 function coEur(n){ return n.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' €'; }
 
