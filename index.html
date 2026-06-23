@@ -1221,6 +1221,78 @@
   .detail-row dd{ font-weight:600; }
   .sheet-actions{ display:flex; gap:10px; margin-top:18px; }
 
+  /* ----- Bild-Zuschneiden (Cropper) ----- */
+  .cropper{ position:fixed; inset:0; z-index:300; display:grid; place-items:center; padding:18px;
+    background:rgba(12,23,13,.62); backdrop-filter:blur(5px); }
+  .cropper.hidden{ display:none; }
+  .crop-card{ width:min(100%,460px); max-height:92vh; overflow:auto; background:#fff; border-radius:14px;
+    box-shadow:var(--shadow-strong); }
+  .crop-head{ display:flex; align-items:center; gap:11px; padding:14px 17px; border-bottom:1px solid var(--line); }
+  .crop-head h3{ font-size:15px; font-weight:700; letter-spacing:-.01em; }
+  .crop-head p{ font-size:11.5px; color:var(--muted); margin-top:2px; }
+  .crop-head .iconbtn{ margin-left:auto; }
+  .crop-body{ padding:15px 17px 17px; }
+  /* Bühne: zeigt nur den sichtbaren Ausschnitt; Bild wird per transform bewegt/gezoomt */
+  .crop-stage{ position:relative; width:100%; margin:0 auto; overflow:hidden; border-radius:10px;
+    background:
+      linear-gradient(45deg,#e9eef3 25%,transparent 25%,transparent 75%,#e9eef3 75%) 0 0/18px 18px,
+      linear-gradient(45deg,#e9eef3 25%,#f6f8fa 25%,#f6f8fa 75%,#e9eef3 75%) 9px 9px/18px 18px;
+    touch-action:none; cursor:grab; user-select:none; }
+  .crop-stage.dragging{ cursor:grabbing; }
+  .crop-stage img{ position:absolute; top:0; left:0; transform-origin:top left; -webkit-user-drag:none;
+    pointer-events:none; max-width:none; }
+  /* Maske: verdunkelt außerhalb, zeigt Crop-Rahmen + Drittel-Linien */
+  .crop-frame{ position:absolute; inset:0; pointer-events:none;
+    box-shadow:0 0 0 9999px rgba(8,14,9,.30) inset; }
+  .crop-frame.round{ border-radius:50%; }
+  .crop-frame::before, .crop-frame::after{ content:''; position:absolute; background:rgba(255,255,255,.32); }
+  .crop-frame::before{ left:33.33%; right:33.33%; top:0; bottom:0; border-left:1px solid rgba(255,255,255,.32); border-right:1px solid rgba(255,255,255,.32); background:none; }
+  .crop-frame::after{ top:33.33%; bottom:33.33%; left:0; right:0; border-top:1px solid rgba(255,255,255,.32); border-bottom:1px solid rgba(255,255,255,.32); background:none; }
+  .crop-frame.round::before, .crop-frame.round::after{ display:none; }
+  .crop-zoom{ display:flex; align-items:center; gap:10px; margin:14px 2px 4px; }
+  .crop-zoom i{ width:16px; height:16px; color:var(--muted); flex:none; }
+  .crop-zoom input[type=range]{ flex:1; accent-color:var(--green); }
+  .crop-hint{ display:flex; gap:7px; align-items:flex-start; font-size:11.5px; color:var(--muted);
+    background:var(--surface-2,#f4f7fa); border-radius:9px; padding:8px 10px; margin-top:10px; }
+  .crop-hint i{ width:14px; height:14px; flex:none; margin-top:1px; }
+  .crop-warn{ color:#b45309; }
+  /* mobile vs desktop Vorschau-Tabs für Titelbild */
+  .crop-modes{ display:flex; gap:6px; margin:12px 0 0; }
+  .crop-modes button{ flex:1; font-size:11.5px; font-weight:600; padding:6px 8px; border:1px solid var(--line);
+    background:#fff; color:var(--muted); border-radius:8px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:5px; }
+  .crop-modes button.on{ border-color:var(--green); color:var(--green); background:rgba(22,163,74,.06); }
+  .crop-modes button i{ width:13px; height:13px; }
+
+  /* ----- Live-Bullet-Vorschau im Stellenformular ----- */
+  .bullet-prev{ margin-top:8px; }
+  .bullet-prev:empty{ display:none; }
+  .bullet-prev__h{ display:flex; align-items:center; gap:6px; font-size:11px; color:var(--muted); margin-bottom:5px; }
+  .bullet-prev__h i{ width:13px; height:13px; }
+  .bullet-prev ul{ margin:0; padding:0 0 0 2px; list-style:none; display:flex; flex-direction:column; gap:5px;
+    background:var(--surface-2,#f4f7fa); border-radius:9px; padding:10px 12px; }
+  .bullet-prev li{ position:relative; padding-left:18px; font-size:12.5px; line-height:1.4; color:var(--ink); }
+  .bullet-prev li::before{ content:''; position:absolute; left:3px; top:7px; width:6px; height:6px; border-radius:50%; background:var(--green); }
+
+  /* ----- Zentriertes Popup (Kontingent gesperrt etc.) ----- */
+  .cpop{ position:fixed; inset:0; z-index:290; display:grid; place-items:center; padding:18px;
+    background:rgba(12,23,13,.58); backdrop-filter:blur(4px); }
+  .cpop.hidden{ display:none; }
+  .cpop-card{ width:min(100%,420px); background:#fff; border-radius:16px; box-shadow:var(--shadow-strong);
+    overflow:hidden; text-align:center; animation:cpopIn .18s ease; }
+  @keyframes cpopIn{ from{ opacity:0; transform:translateY(10px) scale(.97); } to{ opacity:1; transform:none; } }
+  .cpop-card .cpop-close{ position:absolute; }
+  .cpop-x{ position:absolute; top:13px; right:13px; width:32px; height:32px; display:grid; place-items:center;
+    border:0; background:rgba(8,14,9,.06); border-radius:9px; cursor:pointer; color:var(--muted); }
+  .cpop-x:hover{ background:rgba(8,14,9,.12); }
+  .cpop-ic{ width:58px; height:58px; border-radius:16px; margin:26px auto 0; display:grid; place-items:center; }
+  .cpop-ic i{ width:27px; height:27px; }
+  .cpop-ic.lock{ background:rgba(234,88,12,.12); color:#EA580C; }
+  .cpop-ic.warn{ background:rgba(217,119,6,.12); color:#D97706; }
+  .cpop-body{ padding:16px 24px 8px; }
+  .cpop-body h3{ font-size:17px; font-weight:750; letter-spacing:-.01em; }
+  .cpop-body p{ font-size:13px; color:var(--muted); margin-top:8px; line-height:1.5; }
+  .cpop-actions{ display:flex; flex-direction:column; gap:9px; padding:14px 24px 24px; }
+
   /* ----- Right-Side Drawer (Bewerber-Detail) ----- */
   .overlay.as-drawer{ place-items:stretch end; padding:0; }
   .overlay.as-drawer .sheet{
@@ -2855,6 +2927,8 @@
 <div class="gate hidden" id="gate"><div class="gate__card" id="gateCard"></div></div>
 <div class="gate hidden" id="checkout"><div class="gate__card" id="checkoutCard" style="max-width:560px"></div></div>
 <div class="toast" id="toast"><i data-lucide="check-circle-2"></i><span id="toastText"></span></div>
+<div class="cropper hidden" id="cropOverlay"></div>
+<div class="cpop hidden" id="cpopOverlay"></div>
 
 <div class="fab-scrim" id="fabScrim" onclick="closeFab()"></div>
 <div class="fab-wrap" id="fabWrap">
@@ -4704,13 +4778,185 @@ function applyBranding(){
   applyBrandColor();
   icons();
 }
+/* =======================================================================
+   Bild-Zuschneiden (Cropper) — wiederverwendbar für Logo, Titelbild,
+   Ansprechpartner-Foto und Stellen-Bilder. Canvas-basiert, nicht verpixelt,
+   mit Seitenverhältnis-Sperre, Zoom/Verschieben und klaren Format-Hinweisen.
+
+   openImageCropper({ file | src, aspect, title, hint, recoText, round,
+                      outW, maxKB, mime, modes, onDone })
+     aspect   = Breite/Höhe des Ausschnitts (1 = quadratisch, 16/6 = Banner …)
+     round    = true -> runder Rahmen (Personen-Foto)
+     outW     = Ziel-Breite in px (Höhe = outW/aspect). Hält die Schärfe hoch.
+     maxKB    = Ziel-Maximalgröße der Data-URL; Qualität wird automatisch gesenkt.
+     mime     = 'image/png' (Transparenz, z. B. Logo) oder 'image/jpeg'
+     modes    = z. B. [{key:'desktop',label:'Desktop',ratio:16/6},{key:'mobile',…}]
+                zeigt Umschalter, damit der Nutzer Desktop- vs. Mobile-Bildausschnitt sieht
+     onDone(dataUrl) wird beim Übernehmen aufgerufen.
+   ======================================================================= */
+const _crop = { img:null, scale:1, min:1, max:1, x:0, y:0, vw:0, vh:0, drag:null, opts:null, mode:null };
+function openImageCropper(opts){
+  const img = new Image();
+  const start = (src)=>{
+    img.onload = ()=>{ _crop.img = img; _crop.opts = opts;
+      _crop.mode = (opts.modes && opts.modes[0]) || null;
+      _renderCropper(); };
+    img.onerror = ()=> toast('Bild konnte nicht geladen werden.');
+    img.src = src;
+  };
+  if(opts.file){
+    if(opts.maxUploadKB && opts.file.size > opts.maxUploadKB*1024){
+      toast('Datei ist zu groß (max. '+opts.maxUploadKB+' KB). Bitte ein kleineres Bild wählen.'); return;
+    }
+    if(!/^image\//.test(opts.file.type)){ toast('Bitte eine Bilddatei wählen (JPG, PNG oder WebP).'); return; }
+    const rd = new FileReader(); rd.onload = ()=> start(rd.result); rd.readAsDataURL(opts.file);
+  } else if(opts.src){ start(opts.src); }
+}
+function _cropAspect(){ const o=_crop.opts; return (_crop.mode && _crop.mode.ratio) || o.aspect || 1; }
+function _renderCropper(){
+  const o = _crop.opts; const aspect = _cropAspect();
+  // Bühnen-Breite an Kartenbreite anpassen (max ~392px), Höhe aus Seitenverhältnis.
+  const stageW = Math.min(392, Math.max(220, window.innerWidth - 70));
+  const stageH = Math.round(stageW / aspect);
+  _crop.vw = stageW; _crop.vh = stageH;
+  const n = { w:_crop.img.naturalWidth, h:_crop.img.naturalHeight };
+  _crop.min = Math.max(stageW / n.w, stageH / n.h);   // „cover" – Bild deckt Rahmen immer ab
+  _crop.max = _crop.min * 4;
+  _crop.scale = _crop.min;
+  _crop.x = (stageW - n.w*_crop.scale)/2;
+  _crop.y = (stageH - n.h*_crop.scale)/2;
+  const tooSmall = (n.w < (o.outW||512)*0.6) || (n.h < ((o.outW||512)/aspect)*0.6);
+  const modesHtml = (o.modes && o.modes.length>1) ? `
+    <div class="crop-modes">${o.modes.map(m=>`<button class="${_crop.mode&&_crop.mode.key===m.key?'on':''}" onclick="_cropSetMode('${m.key}')"><i data-lucide="${m.icon||'monitor'}"></i> ${m.label}</button>`).join('')}</div>
+    <p style="font-size:11px;color:var(--muted);margin-top:7px;text-align:center">${_crop.mode&&_crop.mode.note?_crop.mode.note:''}</p>` : '';
+  const ov = document.getElementById('cropOverlay');
+  ov.innerHTML = `
+    <div class="crop-card">
+      <div class="crop-head">
+        <div><h3>${escapeHtml(o.title||'Bild zuschneiden')}</h3>${o.hint?`<p>${escapeHtml(o.hint)}</p>`:''}</div>
+        <button class="iconbtn" onclick="closeImageCropper()"><i data-lucide="x"></i></button>
+      </div>
+      <div class="crop-body">
+        <div class="crop-stage" id="cropStage" style="width:${stageW}px;height:${stageH}px"
+             onpointerdown="_cropDown(event)" onwheel="_cropWheel(event)">
+          <img id="cropImg" src="${_crop.img.src}">
+          <div class="crop-frame ${o.round?'round':''}"></div>
+        </div>
+        ${modesHtml}
+        <div class="crop-zoom">
+          <i data-lucide="image"></i>
+          <input type="range" id="cropZoom" min="0" max="100" value="0" oninput="_cropZoom(this.value)">
+          <i data-lucide="zoom-in"></i>
+        </div>
+        ${o.recoText?`<div class="crop-hint"><i data-lucide="info"></i><span>${o.recoText}</span></div>`:''}
+        ${tooSmall?`<div class="crop-hint crop-warn"><i data-lucide="alert-triangle"></i><span>Dieses Bild ist relativ klein und könnte unscharf wirken. Für ein scharfes Ergebnis ein größeres Bild verwenden.</span></div>`:''}
+        <div class="sheet-actions">
+          <button class="btn ghost" onclick="closeImageCropper()">Abbrechen</button>
+          <button class="btn" style="flex:1" onclick="_cropApply()"><i data-lucide="check"></i> Übernehmen</button>
+        </div>
+      </div>
+    </div>`;
+  ov.classList.remove('hidden');
+  _cropApplyTransform();
+  icons();
+}
+function _cropSetMode(key){
+  if(!_crop.opts.modes) return;
+  _crop.mode = _crop.opts.modes.find(m=>m.key===key) || _crop.mode;
+  _renderCropper();
+}
+function _cropClamp(){
+  const n = { w:_crop.img.naturalWidth*_crop.scale, h:_crop.img.naturalHeight*_crop.scale };
+  _crop.x = Math.min(0, Math.max(_crop.vw - n.w, _crop.x));
+  _crop.y = Math.min(0, Math.max(_crop.vh - n.h, _crop.y));
+}
+function _cropApplyTransform(){
+  _cropClamp();
+  const el = document.getElementById('cropImg');
+  if(el) el.style.transform = `translate(${_crop.x}px,${_crop.y}px) scale(${_crop.scale})`;
+  const z = document.getElementById('cropZoom');
+  if(z){ const t = (_crop.scale - _crop.min)/(_crop.max - _crop.min); z.value = Math.round(t*100); }
+}
+function _cropZoom(v){
+  const t = Math.max(0, Math.min(100, +v))/100;
+  const newScale = _crop.min + t*(_crop.max - _crop.min);
+  // um Bühnen-Mitte zoomen
+  const cx = _crop.vw/2, cy = _crop.vh/2;
+  const r = newScale/_crop.scale;
+  _crop.x = cx - (cx - _crop.x)*r;
+  _crop.y = cy - (cy - _crop.y)*r;
+  _crop.scale = newScale;
+  _cropApplyTransform();
+}
+function _cropWheel(e){
+  e.preventDefault();
+  const z = document.getElementById('cropZoom'); if(!z) return;
+  _cropZoom(+z.value + (e.deltaY < 0 ? 6 : -6));
+}
+function _cropDown(e){
+  e.preventDefault();
+  const st = document.getElementById('cropStage'); if(st) st.classList.add('dragging');
+  _crop.drag = { sx:e.clientX, sy:e.clientY, ox:_crop.x, oy:_crop.y };
+  window.addEventListener('pointermove', _cropMove);
+  window.addEventListener('pointerup', _cropUp);
+}
+function _cropMove(e){
+  if(!_crop.drag) return;
+  _crop.x = _crop.drag.ox + (e.clientX - _crop.drag.sx);
+  _crop.y = _crop.drag.oy + (e.clientY - _crop.drag.sy);
+  _cropApplyTransform();
+}
+function _cropUp(){
+  _crop.drag = null;
+  const st = document.getElementById('cropStage'); if(st) st.classList.remove('dragging');
+  window.removeEventListener('pointermove', _cropMove);
+  window.removeEventListener('pointerup', _cropUp);
+}
+function _cropApply(){
+  const o = _crop.opts; const aspect = _cropAspect();
+  const outW = o.outW || 640;
+  const outH = Math.round(outW / aspect);
+  // sichtbarer Ausschnitt -> Quell-Rechteck im Originalbild
+  const s = _crop.scale;
+  const sx = -_crop.x / s, sy = -_crop.y / s;
+  const sW = _crop.vw / s, sH = _crop.vh / s;
+  const cv = document.createElement('canvas');
+  cv.width = outW; cv.height = outH;
+  const ctx = cv.getContext('2d');
+  ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+  const mime = o.mime || 'image/jpeg';
+  if(mime !== 'image/png'){ ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,outW,outH); } // JPEG: weißer Grund statt schwarz
+  ctx.drawImage(_crop.img, sx, sy, sW, sH, 0, 0, outW, outH);
+  // Qualität so wählen, dass die Ziel-KB eingehalten werden (nur JPEG/WebP)
+  let url;
+  if(mime === 'image/png'){ url = cv.toDataURL('image/png'); }
+  else {
+    let q = 0.92; url = cv.toDataURL(mime, q);
+    const maxBytes = (o.maxKB || 800) * 1024 * 1.37; // Data-URL-Overhead (Base64 ~ +37%)
+    while(url.length > maxBytes && q > 0.4){ q -= 0.1; url = cv.toDataURL(mime, q); }
+  }
+  const done = o.onDone;
+  closeImageCropper();
+  if(typeof done === 'function') done(url);
+}
+function closeImageCropper(){
+  const ov = document.getElementById('cropOverlay');
+  if(ov){ ov.classList.add('hidden'); ov.innerHTML = ''; }
+  _crop.img = null; _crop.opts = null; _crop.drag = null;
+  window.removeEventListener('pointermove', _cropMove);
+  window.removeEventListener('pointerup', _cropUp);
+}
+
 /* ---- Branding-Bearbeitung in den Einstellungen ---- */
 function setLogoUpload(input){
-  const f = input.files && input.files[0]; if(!f) return;
-  if(f.size > 900*1024){ toast('Logo ist zu groß (max. 900 KB)'); return; }
-  const rd = new FileReader();
-  rd.onload = ()=>{ settings.company.logo = rd.result; saveSettings(); applyBranding(); refreshSettings(); toast('Logo gespeichert'); };
-  rd.readAsDataURL(f);
+  const f = input.files && input.files[0]; if(!f){ return; }
+  openImageCropper({
+    file:f, aspect:1, round:false, outW:512, mime:'image/png', maxUploadKB:6000,
+    title:'Logo zuschneiden', hint:'Quadratisch (1:1) · PNG mit Transparenz möglich',
+    recoText:'Dein Logo wird <b>quadratisch</b> angezeigt (Sidebar, Login, Portal). Lade am besten ein quadratisches Logo hoch – ist es breiter als hoch, schneide den passenden Bereich zu. Empfohlen: 512×512 px, PNG mit transparentem Hintergrund.',
+    onDone:(url)=>{ settings.company.logo = url; saveSettings(); applyBranding(); refreshSettings(); toast('Logo gespeichert'); }
+  });
+  input.value = '';
 }
 function clearLogo(){ settings.company.logo = ''; saveSettings(); applyBranding(); refreshSettings(); }
 function setBrandColor(v){ settings.company.color = v; saveSettings(); applyBranding(); rerenderCurrent(); }
@@ -4854,12 +5100,15 @@ function obNamePreview(){
   if(p){ const base = (n && n.value.trim()) || osBrandLabel(OB_DRAFT.theme); p.textContent = base + ' OS'; }
 }
 function obLogoUpload(input){
-  const f = input.files && input.files[0]; if(!f) return;
-  if(f.size > 900*1024){ toast('Logo ist zu groß (max. 900 KB)'); return; }
+  const f = input.files && input.files[0]; if(!f){ return; }
   obCaptureBetrieb();
-  const rd = new FileReader();
-  rd.onload = ()=>{ OB_DRAFT.company.logo = rd.result; renderOnboard(); };
-  rd.readAsDataURL(f);
+  openImageCropper({
+    file:f, aspect:1, round:false, outW:512, mime:'image/png', maxUploadKB:6000,
+    title:'Logo zuschneiden', hint:'Quadratisch (1:1) · PNG mit Transparenz möglich',
+    recoText:'Dein Logo wird <b>quadratisch</b> angezeigt. Lade am besten ein quadratisches Logo hoch – ist es breiter als hoch, schneide den passenden Bereich zu. Empfohlen: 512×512 px.',
+    onDone:(url)=>{ OB_DRAFT.company.logo = url; renderOnboard(); }
+  });
+  input.value = '';
 }
 function obClearLogo(){ obCaptureBetrieb(); OB_DRAFT.company.logo = ''; renderOnboard(); }
 function obSetColor(v){ OB_DRAFT.company.color = v; applyBrandColorValue(v); }
@@ -8757,7 +9006,7 @@ function canPublishJob(){
 // Self-Service-Veröffentlichung: Kontingent prüfen -> direkt live (status 'aktiv'), kein GC-Gate.
 async function publishStelle(id){
   const gate = canPublishJob();
-  if(!gate.ok){ toast(gate.msg); return; }
+  if(!gate.ok){ showKontingentBlock(gate); return; }
   await setStelleStatus(id, 'aktiv');
 }
 // Kontingent-Banner über der Stellen-Liste: „X von Y genutzt" + Tier + Laufzeit/Freischalt-Status.
@@ -8786,6 +9035,85 @@ function kontingentBannerHtml(){
       ${Number.isFinite(k.total)?`<div style="height:6px;border-radius:4px;background:var(--soft-green);overflow:hidden;margin-top:7px"><span style="display:block;height:100%;width:${pct}%;background:var(--green)"></span></div>`:''}
     </div>
   </div>`;
+}
+
+/* ---- Zentriertes Popup (bleibt offen bis geschlossen – nicht wie der 3-Sek-Toast) ---- */
+function cpopShow(opts){
+  const ov = document.getElementById('cpopOverlay');
+  if(!ov) return;
+  const acts = (opts.actions||[]).map(a=>
+    `<button class="btn ${a.variant||''}" onclick="${a.onclick||'cpopClose()'}">${a.icon?`<i data-lucide="${a.icon}"></i> `:''}${escapeHtml(a.label)}</button>`
+  ).join('');
+  ov.innerHTML = `
+    <div class="cpop-card">
+      <button class="cpop-x" onclick="cpopClose()" aria-label="Schließen"><i data-lucide="x"></i></button>
+      <div class="cpop-ic ${opts.iconClass||'lock'}"><i data-lucide="${opts.icon||'lock'}"></i></div>
+      <div class="cpop-body"><h3>${escapeHtml(opts.title||'')}</h3><p>${opts.body||''}</p></div>
+      <div class="cpop-actions">${acts || '<button class="btn" onclick="cpopClose()">Schließen</button>'}</div>
+    </div>`;
+  ov.classList.remove('hidden');
+  icons();
+}
+function cpopClose(){ const ov = document.getElementById('cpopOverlay'); if(ov){ ov.classList.add('hidden'); ov.innerHTML=''; } }
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') cpopClose(); });
+document.getElementById('cpopOverlay').addEventListener('click', e=>{ if(e.target.id==='cpopOverlay') cpopClose(); });
+
+// Gesperrtes/ausgeschöpftes Kontingent als prominentes, schließbares Popup zeigen.
+function showKontingentBlock(gate){
+  if(!gate || gate.ok) return;
+  if(gate.reason === 'locked'){
+    cpopShow({
+      icon:'clock', iconClass:'warn', title:'Kontingent wird gerade freigeschaltet',
+      body:'Deine Stelle ist gespeichert. Sie geht <b>automatisch live</b>, sobald deine Zahlung bei uns eingegangen ist.<br><br>Bei <b>Kreditkarte, PayPal oder Lastschrift</b> passiert das in der Regel sofort – bei <b>Kauf auf Rechnung</b>, sobald wir deine Überweisung sehen.',
+      actions:[
+        { label:'Zahlung & Rechnung ansehen', variant:'', icon:'receipt', onclick:'cpopClose();openZahlungInfo()' },
+        { label:'Verstanden', variant:'ghost' }
+      ]
+    });
+  } else {
+    cpopShow({
+      icon:'briefcase', iconClass:'lock', title:'Kontingent ausgeschöpft',
+      body: gate.msg ? escapeHtml(gate.msg) : 'Dein Kontingent ist ausgeschöpft.',
+      actions:[
+        { label:'Kontingent erweitern', icon:'plus', onclick:'cpopClose();openZahlungInfo()' },
+        { label:'Schließen', variant:'ghost' }
+      ]
+    });
+  }
+}
+// Ehrliche Zahlungs-/Bestell-Übersicht aus den echten customers-Daten (kein erfundenes Konto).
+function openZahlungInfo(){
+  const c = GC_CUSTOMER || {}; const k = jobContingent();
+  const eur = v => (v!=null && v!=='' && !isNaN(+v)) ? (+v).toLocaleString('de-DE',{style:'currency',currency:'EUR'}) : '—';
+  const zMap = { rechnung:'Kauf auf Rechnung', ueberweisung:'Überweisung', lastschrift:'SEPA-Lastschrift', paypal:'PayPal', karte:'Kreditkarte' };
+  const zahlart = (c.zahlungsart||'').toLowerCase();
+  const bezahlt = k.frei;
+  const lz = k.kauftyp==='abo' ? (k.term==='12m'?'Abo · 12 Monate':(k.term==='6m'?'Abo · 6 Monate':'Abo')) : (k.kauftyp==='einmal'?'Einmalkauf · 3 Monate':'—');
+  const rows = [
+    ['Produkt', k.tierLabel || '—'],
+    ['Modell', lz],
+    ['Betrag', eur(c.betrag)],
+    ['Zahlungsart', zMap[zahlart] || '—'],
+    ['Stellen-Kontingent', Number.isFinite(k.total) ? (k.total+' '+(k.total===1?'Stelle':'Stellen')) : 'unbegrenzt'],
+    k.bis ? ['Laufzeit bis', dDE(dISO(new Date(k.bis)))] : null
+  ].filter(Boolean);
+  const statusBadge = bezahlt
+    ? '<span style="display:inline-flex;align-items:center;gap:5px;color:var(--green);font-weight:700"><i data-lucide="check-circle-2" style="width:15px;height:15px"></i> freigeschaltet</span>'
+    : '<span style="display:inline-flex;align-items:center;gap:5px;color:#A66400;font-weight:700"><i data-lucide="clock" style="width:15px;height:15px"></i> Zahlung offen</span>';
+  const note = zahlart==='rechnung'
+    ? 'Du erhältst die <b>Rechnung per E-Mail</b>. Überweise den Betrag mit der dort angegebenen IBAN &amp; Referenz – dein Kontingent wird automatisch freigeschaltet, sobald die Zahlung bei uns eingeht.'
+    : 'Diese Zahlung wird automatisch eingezogen. Sollte etwas hängen, melde dich bei uns.';
+  cpopShow({
+    icon:'receipt', iconClass: bezahlt?'warn':'lock', title:'Zahlung & Bestellung',
+    body:`<div style="text-align:left;margin-top:2px">
+        <div style="text-align:center;margin-bottom:12px">${statusBadge}</div>
+        <div style="border:1px solid var(--line);border-radius:10px;overflow:hidden">
+          ${rows.map((r,i)=>`<div style="display:flex;justify-content:space-between;gap:12px;padding:9px 12px;font-size:12.5px;${i?'border-top:1px solid var(--line)':''}"><span style="color:var(--muted)">${r[0]}</span><span style="font-weight:600;text-align:right">${escapeHtml(String(r[1]))}</span></div>`).join('')}
+        </div>
+        <p style="font-size:11.5px;color:var(--muted);margin-top:11px;line-height:1.5">${note}</p>
+      </div>`,
+    actions:[ { label:'Schließen' } ]
+  });
 }
 
 // ---- Stellen-Ansicht (Liste + Status + „X Bewerbungen eingegangen" + Portal-/Kanban-Buttons) ----
@@ -8932,6 +9260,17 @@ function openStelleForm(id){
        bilder:[], status:'pausiert', slug:''};
   renderStelleForm();
 }
+// Live-Vorschau: zeigt, wie Zeilen als Aufzählungspunkte auf der Anzeige erscheinen.
+function bulletPrevHtml(text){
+  const lines = (text||'').split(/\r?\n/).map(s=>s.replace(/^[-–•*\s]+/,'').trim()).filter(Boolean);
+  if(!lines.length) return '';
+  return `<div class="bullet-prev__h"><i data-lucide="eye"></i> So sieht es auf der Anzeige aus:</div>`
+    + `<ul>${lines.map(l=>`<li>${escapeHtml(l)}</li>`).join('')}</ul>`;
+}
+function renderBulletPrev(id, text){
+  const el = document.getElementById(id);
+  if(el){ el.innerHTML = bulletPrevHtml(text); icons(); }
+}
 function stelleSecHead(txt, hint){
   return `<div style="margin:22px 0 10px"><div style="font-weight:800;font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)">${escapeHtml(txt)}</div>${hint?`<div style="font-size:12px;color:var(--muted);margin-top:2px">${escapeHtml(hint)}</div>`:''}</div>`;
 }
@@ -8971,9 +9310,10 @@ function renderStelleForm(){
 
       ${stelleSecHead('Stellenbeschreibung','„Über die Stelle" + Listen für Aufgaben, Profil und Benefits.')}
       <div class="field"><label>Kurzbeschreibung</label><textarea rows="3" placeholder="Worum geht es in dieser Stelle?" oninput="stelleDraft.beschreibung=this.value">${v(d.beschreibung)}</textarea></div>
-      <div class="field"><label>Deine Aufgaben</label><textarea rows="4" placeholder="Eine Aufgabe pro Zeile&#10;z. B. Bedienung von Bagger &amp; Radlader&#10;Aushub und Verfüllarbeiten" oninput="stelleDraft.aufgaben=this.value">${v(d.aufgaben)}</textarea></div>
-      <div class="field"><label>Dein Profil</label><textarea rows="4" placeholder="Eine Anforderung pro Zeile&#10;z. B. Erfahrung im Tiefbau&#10;Führerschein Klasse B" oninput="stelleDraft.profil=this.value">${v(d.profil)}</textarea></div>
-      <div class="field"><label>Das bieten wir (Benefits)</label><textarea rows="4" placeholder="Ein Benefit pro Zeile&#10;z. B. Firmenwagen&#10;30 Tage Urlaub&#10;Weihnachts- &amp; Urlaubsgeld" oninput="stelleDraft.benefits=this.value">${v(d.benefits)}</textarea></div>
+      <p class="sheet-note" style="margin:2px 0 12px"><i data-lucide="list"></i> <b>Tipp:</b> Bei Aufgaben, Profil und Benefits wird <b>jede Zeile zu einem Aufzählungspunkt</b> auf der Anzeige – einfach pro Zeile einen Punkt schreiben. Unter dem Feld siehst du eine Live-Vorschau.</p>
+      <div class="field"><label>Deine Aufgaben</label><textarea rows="4" placeholder="Eine Aufgabe pro Zeile&#10;z. B. Bedienung von Bagger &amp; Radlader&#10;Aushub und Verfüllarbeiten" oninput="stelleDraft.aufgaben=this.value;renderBulletPrev('bpAufgaben',this.value)">${v(d.aufgaben)}</textarea><div class="bullet-prev" id="bpAufgaben">${bulletPrevHtml(d.aufgaben)}</div></div>
+      <div class="field"><label>Dein Profil</label><textarea rows="4" placeholder="Eine Anforderung pro Zeile&#10;z. B. Erfahrung im Tiefbau&#10;Führerschein Klasse B" oninput="stelleDraft.profil=this.value;renderBulletPrev('bpProfil',this.value)">${v(d.profil)}</textarea><div class="bullet-prev" id="bpProfil">${bulletPrevHtml(d.profil)}</div></div>
+      <div class="field"><label>Das bieten wir (Benefits)</label><textarea rows="4" placeholder="Ein Benefit pro Zeile&#10;z. B. Firmenwagen&#10;30 Tage Urlaub&#10;Weihnachts- &amp; Urlaubsgeld" oninput="stelleDraft.benefits=this.value;renderBulletPrev('bpBenefits',this.value)">${v(d.benefits)}</textarea><div class="bullet-prev" id="bpBenefits">${bulletPrevHtml(d.benefits)}</div></div>
 
       ${stelleSecHead('Ansprechpartner','Wird Bewerbern in der Anzeige als direkter Kontakt angezeigt.')}
       <div class="fieldrow" style="align-items:flex-end">
@@ -9015,9 +9355,14 @@ function _stelleReadImg(file, cb){
 }
 function stelleFotoPick(input){
   const f = input.files && input.files[0]; if(!f || !stelleDraft) return;
-  _stelleReadImg(f, url=>{ stelleDraft.ansprechpartner_foto = url;
-    const el = document.getElementById('apFotoPrev');
-    if(el){ el.innerHTML = `<div class="pthumb" style="width:64px;height:64px;border-radius:50%"><img src="${escapeHtml(url)}" alt="Foto" style="border-radius:50%"><button type="button" onclick="stelleFotoClear()"><i data-lucide="x"></i></button></div>`; icons(); }
+  openImageCropper({
+    file:f, aspect:1, round:true, outW:400, mime:'image/jpeg', maxKB:STELLE_IMG_MAX_KB, maxUploadKB:8000,
+    title:'Foto zuschneiden', hint:'Wird rund angezeigt · quadratisch (1:1)',
+    recoText:'Das Foto der Ansprechperson erscheint <b>rund</b> auf der Stellenanzeige. Schiebe das Gesicht in die Mitte. Empfohlen: Porträt, quadratisch, mind. 400×400 px.',
+    onDone:(url)=>{ stelleDraft.ansprechpartner_foto = url;
+      const el = document.getElementById('apFotoPrev');
+      if(el){ el.innerHTML = `<div class="pthumb" style="width:64px;height:64px;border-radius:50%"><img src="${escapeHtml(url)}" alt="Foto" style="border-radius:50%"><button type="button" onclick="stelleFotoClear()"><i data-lucide="x"></i></button></div>`; icons(); }
+    }
   });
   input.value = '';
 }
@@ -9038,11 +9383,21 @@ function renderStelleBilderPrev(){
 function stelleBilderAdd(input){
   if(!stelleDraft) return;
   const files = Array.from(input.files||[]);
-  files.forEach(f=>{
-    if((stelleDraft.bilder||[]).length >= STELLE_BILDER_MAX){ toast('Max. '+STELLE_BILDER_MAX+' Bilder'); return; }
-    _stelleReadImg(f, url=>{ stelleDraft.bilder = stelleDraft.bilder||[]; stelleDraft.bilder.push(url); renderStelleBilderPrev(); });
-  });
   input.value = '';
+  // Mehrere Bilder: nacheinander durch den Zuschneiden-Dialog schicken.
+  const queue = files.slice();
+  const next = ()=>{
+    if(!queue.length) return;
+    if((stelleDraft.bilder||[]).length >= STELLE_BILDER_MAX){ toast('Max. '+STELLE_BILDER_MAX+' Bilder'); return; }
+    const f = queue.shift();
+    openImageCropper({
+      file:f, aspect:4/3, round:false, outW:1200, mime:'image/jpeg', maxKB:STELLE_IMG_MAX_KB, maxUploadKB:12000,
+      title:'Bild zuschneiden', hint:'Querformat (4:3) – wie eine Galerie',
+      recoText:'Stellen-Bilder werden im <b>Querformat</b> gezeigt (z. B. Team, Baustelle, Fuhrpark). Schneide den schönsten Ausschnitt zu. Empfohlen: Querformat, mind. 1200×900 px.',
+      onDone:(url)=>{ stelleDraft.bilder = stelleDraft.bilder||[]; stelleDraft.bilder.push(url); renderStelleBilderPrev(); setTimeout(next, 120); }
+    });
+  };
+  next();
 }
 function stelleBildDel(i){
   if(!stelleDraft || !stelleDraft.bilder) return;
@@ -9067,11 +9422,11 @@ async function submitStelle(publish){
   // Self-Service-Veröffentlichung: „Veröffentlichen" -> Kontingent prüfen -> direkt live.
   // Ist das Kontingent gesperrt/ausgeschöpft, wird die Eingabe NICHT verworfen, sondern als
   // Entwurf gespeichert + der Grund als Toast erklärt.
-  let status, gateMsg = '';
+  let status, blockedGate = null;
   if(publish){
     const gate = canPublishJob();
     if(gate.ok){ status = 'aktiv'; }
-    else { status = (d.status==='aktiv') ? 'aktiv' : 'pausiert'; gateMsg = gate.msg; }
+    else { status = (d.status==='aktiv') ? 'aktiv' : 'pausiert'; blockedGate = gate; }
   } else {
     status = d.status || 'pausiert';
   }
@@ -9109,9 +9464,9 @@ async function submitStelle(publish){
     }
     stelleDraft = null; closeSheet();
     await loadPortalData();
-    if(gateMsg) toast(gateMsg);
-    else toast(publish ? 'Stelle ist jetzt live auf dem Portal.' : (d.id?'Stelle gespeichert.':'Entwurf gespeichert.'));
     if(currentView !== 'stellen') setView('stellen');
+    if(blockedGate){ toast('Als Entwurf gespeichert.'); showKontingentBlock(blockedGate); }
+    else toast(publish ? 'Stelle ist jetzt live auf dem Portal.' : (d.id?'Stelle gespeichert.':'Entwurf gespeichert.'));
   }catch(e){
     toast('Speichern fehlgeschlagen: ' + (e.message||e));
     // Bei Fehler: Buttons wieder freigeben, damit der Nutzer es erneut versuchen kann.
