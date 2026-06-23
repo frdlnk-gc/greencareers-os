@@ -8323,7 +8323,7 @@ function parseEmployeeUtterance(text){
   const orig=(text||'').trim();
   const s=orig.toLowerCase();
   const curY=new Date(TODAY).getFullYear();
-  const d={name:'',role:'',addr:'',bd:'',start:'',salary:'',phone:'',hours:'',email:'',crewId:'',raw:orig};
+  const d={name:'',role:'',addr:'',bd:'',start:'',salary:'',phone:'',hours:'',email:'',crewId:'',birthplace:'',contract:'',persnr:'',raw:orig};
   const STOP=new Set(['der','die','das','er','sie','wohnt','wohnhaft','lebt','ist','war','geboren','kommt','wird','soll','startet','start','beginnt','fängt','faengt','als','und','am','im','in','aus','zum','zur','ab','hat','bekommt','kriegt','verdient','mit','seit','einen','einer','eine','neuen','neuer','neue','telefon','tel','nummer','handy','anlegen','anleg','erstellen','erstell','hinzufügen','hinzu','erfassen','erfass','einladen','speichern','bitte','mir','uns','noch','dann','sowie','geboren']);
   // --- Name ---
   let seg=null, mm;
@@ -8361,6 +8361,23 @@ function parseEmployeeUtterance(text){
   if((mm=orig.match(/[\w.+-]+@[\w.-]+\.\w{2,}/))) d.email=mm[0];
   // --- Kolonne ---
   for(const c of crews){ if(s.includes(c.label.toLowerCase())){ d.crewId=c.id; break; } }
+  // --- Geburtsort („geboren in Würzburg" / „geboren am 14.08.1994 in Würzburg" / „Geburtsort Würzburg") ---
+  if((mm=orig.match(/(?:geboren(?:\s+am\s+[\d.\s]+?)?\s+in|geburtsort(?:\s+ist)?)\s+([A-ZÄÖÜ][a-zäöüß-]+(?:\s+[A-ZÄÖÜ][a-zäöüß-]+){0,2})/i))){ d.birthplace=mm[1].trim().replace(/[.,;]$/,''); }
+  // --- Vertragsart ---
+  if(/unbefristet/.test(s)) d.contract='Unbefristet';
+  else if(/befristet/.test(s)) d.contract='Befristet';
+  else if(/azubi|auszubildend|ausbildung|lehrling|lehrjahr/.test(s)){
+    let lj=0;
+    if(/(?:1\.|erst\w*)\s*lehrjahr|im\s+erst/.test(s)) lj=1;
+    else if(/(?:2\.|zweit\w*)\s*lehrjahr/.test(s)) lj=2;
+    else if(/(?:3\.|dritt\w*)\s*lehrjahr/.test(s)) lj=3;
+    d.contract = lj ? `Ausbildung (${lj}. Lehrjahr)` : 'Ausbildung (1. Lehrjahr)';
+  }
+  else if(/werkstudent/.test(s)) d.contract='Werkstudent';
+  else if(/minijob|520|midijob/.test(s)) d.contract='Minijob (520 €)';
+  else if(/saison|aushilfe|aushilfskraft/.test(s)) d.contract='Saison-/Aushilfskraft';
+  // --- Personalnummer ---
+  if((mm=s.match(/personal(?:nummer|nr)\.?\s*:?\s*([a-z]?\d{1,8})/))) d.persnr=mm[1].toUpperCase();
   return d;
 }
 // Bestätigungs-Sheet: zeigt alles Erkannte editierbar, Inhaber prüft & speichert
@@ -8385,7 +8402,14 @@ function openEmployeeConfirm(d){
         <div class="field"><label>Geburtsdatum ${tag(!!d.bd)}</label><input id="vcBd" type="date" value="${d.bd||''}"></div>
         <div class="field"><label>Eintritt zum ${tag(!!d.start)}</label><input id="vcStart" type="date" value="${d.start||''}"></div>
       </div>
-      <div class="field"><label>Wohnort / Adresse ${tag(!!d.addr)}</label><input id="vcAddr" value="${(d.addr||'').replace(/"/g,'&quot;')}" placeholder="z. B. Karlstadt"></div>
+      <div class="fieldrow">
+        <div class="field"><label>Wohnort / Adresse ${tag(!!d.addr)}</label><input id="vcAddr" value="${(d.addr||'').replace(/"/g,'&quot;')}" placeholder="z. B. Karlstadt"></div>
+        <div class="field"><label>Geburtsort ${tag(!!d.birthplace)}</label><input id="vcBirthplace" value="${(d.birthplace||'').replace(/"/g,'&quot;')}" placeholder="z. B. Würzburg"></div>
+      </div>
+      <div class="fieldrow">
+        <div class="field"><label>Vertragsart ${tag(!!d.contract)}</label><select id="vcContract"><option value="">– keine Angabe –</option>${AKTE_CONTRACTS.map(c=>`<option value="${c}" ${d.contract===c?'selected':''}>${c}</option>`).join('')}</select></div>
+        <div class="field"><label>Personalnummer ${tag(!!d.persnr)}</label><input id="vcPersnr" value="${(d.persnr||'').replace(/"/g,'&quot;')}" placeholder="z. B. 4711"></div>
+      </div>
       <div class="fieldrow">
         <div class="field"><label>Telefon ${tag(!!d.phone)}</label><input id="vcPhone" value="${(d.phone||'').replace(/"/g,'&quot;')}" placeholder="0170 1234567"></div>
         <div class="field"><label>Wochenstunden</label><input id="vcHours" type="number" value="${d.hours||''}" placeholder="40"></div>
@@ -8411,6 +8435,9 @@ function submitVoiceEmployee(){
   const hr=hrData(emp(newId));
   if(g('vcBd')) hr.bd=g('vcBd');
   if(g('vcAddr')) hr.addr=g('vcAddr');
+  if(g('vcBirthplace')) hr.birthplace=g('vcBirthplace');
+  if(g('vcPersnr')) hr.persnr=g('vcPersnr');
+  const contractSel=document.getElementById('vcContract'); if(contractSel&&contractSel.value) hr.contract=contractSel.value;
   if(g('vcSalary')) hr.salary=g('vcSalary');
   const hours=g('vcHours'); if(hours){ const h=parseInt(hours,10); if(h>0) hr.hours=h; }
   closeSheet();
