@@ -1756,6 +1756,10 @@
   .pp-thumb.pp-add{ display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; cursor:pointer; color:var(--muted); border-style:dashed; }
   .pp-thumb.pp-add small{ font-size:10.5px; }
   .pp-thumb.pp-add .lucide{ width:18px; height:18px; }
+  .pp-pay-badge{ display:inline-flex; align-items:center; gap:5px; font-size:11.5px; font-weight:700; padding:3px 9px; border-radius:999px; }
+  .pp-pay-badge .lucide{ width:14px; height:14px; }
+  .pp-pay-badge.ok{ color:var(--green); background:var(--soft-green); }
+  .pp-pay-badge.wait{ color:#A66400; background:#FFF8EC; }
 
   @media(max-width:1080px){
     .dashboard{ grid-template-columns:1fr; }
@@ -4490,6 +4494,9 @@ function openSettings(){
         <div class="field"><label>LinkedIn</label><input value="${escapeHtml((pp.social&&pp.social.linkedin)||'')}" placeholder="URL" onchange="settings.portal.social.linkedin=this.value;saveSettings()"></div>
       </div>
       <button class="btn go btn--block" id="ppSaveBtn" style="margin-top:6px" onclick="savePortalProfile()"><i data-lucide="globe"></i> Ans Portal senden</button>
+
+      <div class="setsec">Bestellung &amp; Zahlungen</div>
+      ${bestellungSettingsHtml()}
 
       <div class="setsec">Anschrift</div>
       <div class="field"><label>Straße &amp; Nr.</label><input value="${escapeHtml(c.street)}" onchange="settings.company.street=this.value;saveSettings()"></div>
@@ -9188,6 +9195,36 @@ function kontingentBannerHtml(){
       ${Number.isFinite(k.total)?`<div style="height:6px;border-radius:4px;background:var(--soft-green);overflow:hidden;margin-top:7px"><span style="display:block;height:100%;width:${pct}%;background:var(--green)"></span></div>`:''}
     </div>
   </div>`;
+}
+
+// Bestell-/Zahlungs-Übersicht für die Einstellungen: ehrlich aus den customers-Daten.
+function bestellungSettingsHtml(){
+  const k = jobContingent();
+  if(!k.hasData){
+    return `<p class="sheet-note"><i data-lucide="receipt"></i> <span>Aktuell ist keine kostenpflichtige Buchung hinterlegt. Sobald du über das Portal ein Stellen-Paket buchst, erscheinen hier Produkt, Laufzeit, Kontingent und Zahlungsstatus.</span></p>`;
+  }
+  const c = GC_CUSTOMER || {};
+  const eur = v => (v!=null && v!=='' && !isNaN(+v)) ? (+v).toLocaleString('de-DE',{style:'currency',currency:'EUR'}) : '—';
+  const lz = k.kauftyp==='abo' ? (k.term==='12m'?'Abo · 12 Monate':(k.term==='6m'?'Abo · 6 Monate':'Abo')) : (k.kauftyp==='einmal'?'Einmalkauf · 3 Monate':'—');
+  const statusBadge = k.frei
+    ? '<span class="pp-pay-badge ok"><i data-lucide="check-circle-2"></i> freigeschaltet</span>'
+    : '<span class="pp-pay-badge wait"><i data-lucide="clock"></i> Zahlung offen</span>';
+  const rows = [
+    ['Produkt', k.tierLabel || '—'],
+    ['Modell', lz],
+    ['Betrag', eur(c.betrag)],
+    ['Kontingent', Number.isFinite(k.total) ? `${k.used} von ${k.total} genutzt` : 'unbegrenzt'],
+    k.bis ? ['Laufzeit bis', dDE(dISO(new Date(k.bis)))] : null
+  ].filter(Boolean);
+  return `<div class="panel" style="padding:14px 16px;margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px">
+        <b style="font-size:13.5px">Aktuelle Buchung</b>${statusBadge}
+      </div>
+      <div style="border:1px solid var(--line);border-radius:10px;overflow:hidden">
+        ${rows.map((r,i)=>`<div style="display:flex;justify-content:space-between;gap:12px;padding:8px 12px;font-size:12.5px;${i?'border-top:1px solid var(--line)':''}"><span style="color:var(--muted)">${r[0]}</span><span style="font-weight:600;text-align:right">${escapeHtml(String(r[1]))}</span></div>`).join('')}
+      </div>
+    </div>
+    <button class="btn ghost btn--block" onclick="openZahlungInfo()"><i data-lucide="receipt"></i> Bestellung &amp; Rechnung ansehen</button>`;
 }
 
 /* ---- Zentriertes Popup (bleibt offen bis geschlossen – nicht wie der 3-Sek-Toast) ---- */
