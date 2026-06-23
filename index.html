@@ -366,7 +366,10 @@
   .hello h2{ font-family:'Fraunces',serif; font-size:31px; line-height:1.05; font-weight:600; letter-spacing:-.025em; }
   .hello h2 em{ color:var(--green-2); font-style:italic; }
   .hello p{ margin-top:6px; color:var(--muted); font-size:13px; }
-  .statusline{
+  .hello__actions{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
+  .voice-pill{ display:inline-flex; align-items:center; gap:7px; padding:8px 14px; border-radius:999px; border:none; cursor:pointer; font-size:12.5px; font-weight:700; color:#fff; background:linear-gradient(135deg,var(--green),var(--green-2)); box-shadow:0 2px 8px rgba(22,163,74,.28); }
+  .voice-pill .lucide{ width:15px; height:15px; }
+  .voice-pill:hover{ filter:brightness(1.04); }
     display:flex;
     align-items:center;
     gap:8px;
@@ -1760,6 +1763,16 @@
   .pp-pay-badge .lucide{ width:14px; height:14px; }
   .pp-pay-badge.ok{ color:var(--green); background:var(--soft-green); }
   .pp-pay-badge.wait{ color:#A66400; background:#FFF8EC; }
+
+  /* ---- Voice-Abwesenheit: Bestätigungs-Block + Art-Umschalter ---- */
+  .av-confirm{ border:1px solid var(--line); border-radius:13px; padding:13px 14px; background:var(--canvas); margin-top:4px; }
+  .av-confirm__head{ display:flex; align-items:center; gap:7px; flex-wrap:wrap; font-size:12.5px; font-weight:700; color:var(--ink); margin-bottom:11px; }
+  .av-confirm__head .lucide{ width:15px; height:15px; color:var(--green-2); }
+  .av-confirm__head .opt{ font-weight:500; }
+  .av-typeseg{ display:flex; gap:8px; }
+  .av-typeseg button{ flex:1; display:flex; align-items:center; justify-content:center; gap:6px; padding:9px 10px; border:1px solid var(--line); border-radius:10px; background:var(--card); color:var(--muted); font-weight:600; font-size:13px; cursor:pointer; }
+  .av-typeseg button .lucide{ width:15px; height:15px; }
+  .av-typeseg button.on{ border-color:var(--green); color:var(--green-2); background:var(--soft-green); }
 
   @media(max-width:1080px){
     .dashboard{ grid-template-columns:1fr; }
@@ -5492,6 +5505,7 @@ function setView(view){
 const FAB_ACTIONS = {
   heute: [
     {grp:'Schnell anlegen'},
+    {icon:'mic', label:'Abwesenheit einsprechen', fn:'openAbsenceVoice()'},
     {icon:'plane', label:'Abwesenheit eintragen', fn:'fabGo("team","urlaub");openAbsenceForm()'},
     {icon:'map-pin', label:'Einsatz planen', fn:'fabGo("planung");openAuftragForm()'},
     {icon:'file-text', label:'Angebot anlegen', fn:'openInvoiceForm("angebot")'},
@@ -5502,6 +5516,7 @@ const FAB_ACTIONS = {
   ],
   team: [
     {grp:'Abwesenheit'},
+    {icon:'mic', label:'Abwesenheit einsprechen', fn:'openAbsenceVoice()'},
     {icon:'thermometer', label:'Krankheit eintragen', fn:'fabGo("team","urlaub");openAbsenceForm(undefined,undefined,undefined,"krank")'},
     {icon:'plane', label:'Urlaub eintragen', fn:'fabGo("team","urlaub");openAbsenceForm()'},
     {grp:'Schnellfunktionen'},
@@ -6153,7 +6168,10 @@ const VIEWS = {
   heute: () => `
     <div class="hello">
       <div><h2>${greetWord()}, <em>${greetName()}</em></h2><p>${cockpitDateLine()}</p></div>
-      <div class="statusline"><i data-lucide="move"></i> Module per Drag &amp; Drop anordnen</div>
+      <div class="hello__actions">
+        ${viewRole!=='mitarbeiter' ? `<button class="voice-pill" onclick="openAbsenceVoice()"><i data-lucide="mic"></i> Abwesenheit einsprechen</button>` : ''}
+        <div class="statusline"><i data-lucide="move"></i> Module per Drag &amp; Drop anordnen</div>
+      </div>
     </div>
     <div class="dashboard">
       <div class="module-lane" id="mainModules">
@@ -8925,6 +8943,191 @@ function submitAbsence(){
   activeTeamTab = 'urlaub'; akteEmpId = null;
   if(currentView !== 'team'){ setView('team'); } else { renderUrlaub(); refreshUrlaubBadge(); }
   toast(status === 'offen' ? `Antrag gesendet: ${typeMeta(type).label}` : `${emp(empId).name}: ${typeMeta(type).label} eingetragen`);
+}
+
+/* ===== Voice-Agent: Abwesenheit (Urlaub/Krank) einsprechen =====
+   „Petra ist heute krank" · „Max hat nächste Woche Urlaub" · „Jonas vom 5. bis 9. Juni frei".
+   SpeechRecognition (de-DE) → Heuristik-Parser → vorbefüllte, EDITIERBARE Bestätigung
+   („Habe ich das richtig erkannt?") → erst nach Klick wird eingetragen. */
+let absVoiceRec = null, absVoiceText = '';
+const AV_WEEKDAYS = { 'montag':1,'dienstag':2,'mittwoch':3,'donnerstag':4,'freitag':5,'samstag':6,'sonnabend':6,'sonntag':0 };
+const AV_MONTHS = { 'januar':1,'februar':2,'märz':3,'maerz':3,'april':4,'mai':5,'juni':6,'juli':7,'august':8,'september':9,'oktober':10,'november':11,'dezember':12 };
+const AV_NUMW = { 'einen':1,'einem':1,'eine':1,'ein':1,'zwei':2,'zwo':2,'drei':3,'vier':4,'fünf':5,'fuenf':5,'sechs':6,'sieben':7,'acht':8,'neun':9,'zehn':10,'elf':11,'zwölf':12,'zwoelf':12,'dreizehn':13,'vierzehn':14 };
+function avNum(s){ const m=(s||'').match(/\d+/); if(m) return parseInt(m[0],10); for(const w in AV_NUMW){ if(synHit(' '+s+' ', w)) return AV_NUMW[w]; } return null; }
+// Wochentag-Wort -> nächstes Vorkommen ab heute (heute eingeschlossen).
+function avNextWeekday(dow){ const cur = dParse(TODAY).getDay(); return addDays(TODAY, (dow-cur+7)%7); }
+// Einen einzelnen Datums-Ausdruck in einem Textstück erkennen -> ISO oder null.
+function avResolveDay(part){
+  const low = ' '+(part||'').toLowerCase()+' ';
+  if(/übermorgen|uebermorgen/.test(low)) return addDays(TODAY,2);
+  if(/\bmorgen\b/.test(low)) return addDays(TODAY,1);
+  if(/\bheute\b/.test(low)) return TODAY;
+  // explizites Datum: 5.6. / 5.6.2026
+  let m = low.match(/(\d{1,2})\.\s*(\d{1,2})\.\s*(\d{4})?/);
+  if(m){ const d=+m[1], mo=+m[2], y=m[3]?+m[3]:dParse(TODAY).getFullYear(); if(d>=1&&d<=31&&mo>=1&&mo<=12) return `${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`; }
+  // Tag + Monatsname: „5. Juni" / „5 juni"
+  m = low.match(/(\d{1,2})\.?\s+(januar|februar|märz|maerz|april|mai|juni|juli|august|september|oktober|november|dezember)/);
+  if(m){ const d=+m[1], mo=AV_MONTHS[m[2]], y=dParse(TODAY).getFullYear(); return `${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`; }
+  // Wochentag
+  for(const w in AV_WEEKDAYS){ if(synHit(low, w)) return avNextWeekday(AV_WEEKDAYS[w]); }
+  // „am/den 5." (nur Tag, laufender Monat; liegt er in der Vergangenheit -> nächster Monat)
+  m = low.match(/(?:\bam\b|\bden\b|\bab\b)\s+(\d{1,2})\.(?!\d)/);
+  if(m){ const d=+m[1]; const base=dParse(TODAY); let mo=base.getMonth()+1, y=base.getFullYear(); let iso=`${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`; if(iso<TODAY){ mo++; if(mo>12){mo=1;y++;} iso=`${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`; } return iso; }
+  return null;
+}
+// Mitarbeiter im Text finden (Vorname/Nachname, längster Treffer gewinnt).
+function avMatchEmp(low){
+  let best=null, bestLen=0;
+  employees.forEach(e=>{
+    const parts = e.name.toLowerCase().split(/\s+/);
+    const cands = [e.name.toLowerCase(), ...parts.filter(p=>p.length>=3)];
+    cands.forEach(c=>{ if(synHit(low, c) && c.length>bestLen){ best=e; bestLen=c.length; } });
+  });
+  return best;
+}
+function parseAbsenceSpeech(text){
+  const out = { empId:null, type:null, from:null, to:null };
+  if(!text || !text.trim()) return out;
+  const low = ' '+text.toLowerCase().replace(/\s+/g,' ')+' ';
+  // 1) Mitarbeiter
+  const e = avMatchEmp(low); if(e) out.empId = e.id;
+  // 2) Art
+  if(/krank|krankheit|krankgemeldet|krankmeld|krankschreib|krankschr|\bau\b|arbeitsunfähig/.test(low)) out.type='krank';
+  else if(/urlaub|ferien|\bfrei\b|abwesend|freigenommen|freinehmen/.test(low)) out.type='urlaub';
+  // 3) Zeitraum
+  if(/nächste woche|naechste woche|kommende woche/.test(low)){
+    const mon = avNextWeekday(1); const monNext = (mon<=TODAY)? addDays(mon,7) : mon; // sicher in der Zukunft
+    out.from = monNext; out.to = addDays(monNext,4);
+  } else if(/diese woche/.test(low)){
+    out.from = TODAY; out.to = avNextWeekday(5);
+  } else if(/ bis | bis zum |-/.test(low) && / bis /.test(low)){
+    const idx = low.indexOf(' bis ');
+    const lhs = low.slice(0, idx), rhs = low.slice(idx+5);
+    let a = avResolveDay(lhs); let b = avResolveDay(rhs);
+    // „vom 5. bis 9. Juni": linke Seite ist nur ein Tag ohne Monat -> Monat/Jahr von der rechten Seite erben.
+    if(!a && b){
+      const md = lhs.match(/(?:\bvom\b|\bab\b|\bden\b|\bam\b)?\s*(\d{1,2})\.(?!\d)/);
+      if(md){ const d=+md[1]; if(d>=1&&d<=31){ a = `${b.slice(0,8)}${String(d).padStart(2,'0')}`; } }
+    }
+    if(a) out.from = a; if(b) out.to = b;
+    if(out.from && !out.to) out.to = out.from;
+  } else {
+    const d = avResolveDay(low); if(d){ out.from = d; out.to = d; }
+  }
+  // 4) Dauer („für 3 Tage", „eine Woche") relativ zum Start
+  if(out.from && (out.to===out.from || !out.to)){
+    if(/\beine woche\b|\b1 woche\b|für eine woche/.test(low)) out.to = addDays(out.from,6);
+    else { const md = low.match(/(?:für\s+)?(\d+|ein|eine|einen|zwei|drei|vier|fünf|fuenf|sechs|sieben|acht|neun|zehn|elf|zwölf|zwoelf|dreizehn|vierzehn)\s+tage?/); if(md){ const n=avNum(md[1]); if(n&&n>1) out.to = addDays(out.from, n-1); } }
+  }
+  return out;
+}
+// Voice-Sheet öffnen (Einstieg vom Dashboard / FAB).
+function openAbsenceVoice(){
+  if(viewRole === 'mitarbeiter'){ openAbsenceForm(); return; }   // MA: normaler Antrag
+  absVoiceText = '';
+  avRender();
+  icons();
+}
+function avRender(){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const p = parseAbsenceSpeech(absVoiceText);
+  const empOpts = `<option value="">– Mitarbeiter wählen –</option>` + employees.map(e=>`<option value="${e.id}" ${p.empId===e.id?'selected':''}>${escapeHtml(e.name)}</option>`).join('');
+  const ty = p.type || '';
+  const from = p.from || '';
+  const to = p.to || p.from || '';
+  openSheet(`
+    <div class="sheet__head">
+      <span class="avatar" style="width:46px;height:46px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="mic" style="width:22px;height:22px"></i></span>
+      <div><div class="sheet__title">Abwesenheit einsprechen</div><div class="sheet__sub">Sag z. B. „Petra ist heute krank" oder „Max hat nächste Woche Urlaub"</div></div>
+      <button class="sheet__close" onclick="avVoiceStop();closeSheet()"><i data-lucide="x"></i></button>
+    </div>
+    <div class="sheet__body">
+      <button class="kv-mic" id="avMic" onclick="avVoiceToggle()"><span class="kv-mic__pulse"></span><i data-lucide="mic"></i><span class="kv-mic__lbl">Antippen &amp; sprechen</span></button>
+      ${!SR ? `<p class="sheet-note"><i data-lucide="info"></i> <span>Spracheingabe ist in diesem Browser nicht verfügbar – tippe einfach unten, der Agent erkennt es genauso.</span></p>`:''}
+      <div class="field"><label>Gesprochen / getippt <span class="opt">frei änderbar</span></label>
+        <textarea id="avText" rows="2" placeholder="z. B. Jonas vom 5. bis 9. Juni Urlaub" oninput="absVoiceText=this.value;avApplyParse()">${escapeHtml(absVoiceText)}</textarea>
+      </div>
+      <div class="av-confirm">
+        <div class="av-confirm__head"><i data-lucide="sparkles"></i> Habe ich das richtig erkannt? <span class="opt">bitte prüfen &amp; ggf. korrigieren</span></div>
+        <div class="field"><label>Mitarbeiter</label><select id="avEmp">${empOpts}</select></div>
+        <div class="field"><label>Art</label>
+          <div class="av-typeseg">
+            <button type="button" id="avTypeUrlaub" class="${ty==='urlaub'?'on':''}" onclick="avSetType('urlaub')"><i data-lucide="palmtree"></i> Urlaub</button>
+            <button type="button" id="avTypeKrank" class="${ty==='krank'?'on':''}" onclick="avSetType('krank')"><i data-lucide="thermometer"></i> Krank</button>
+          </div>
+          <input type="hidden" id="avType" value="${ty}">
+        </div>
+        <div class="fieldrow">
+          <div class="field"><label>Von</label><input type="date" id="avFrom" value="${from}" onchange="if(document.getElementById('avTo').value<this.value)document.getElementById('avTo').value=this.value"></div>
+          <div class="field"><label>Bis</label><input type="date" id="avTo" value="${to}"></div>
+        </div>
+        <div class="field"><label>Notiz <span class="opt">optional</span></label><input id="avNote" placeholder="z. B. Brückentag, Facharzttermin …"></div>
+      </div>
+      <div class="sheet-actions">
+        <button class="btn go" style="flex:1" onclick="absVoiceCommit()"><i data-lucide="check"></i> Eintragen</button>
+        <button class="btn ghost" onclick="avVoiceStop();closeSheet()">Abbrechen</button>
+      </div>
+      <p class="kv-hint"><i data-lucide="shield-check" style="width:13px;height:13px"></i> Nichts wird automatisch verschickt – du bestätigst jeden Eintrag selbst.</p>
+    </div>`);
+}
+// Felder live aus dem Transkript nachziehen, OHNE den Mic-Button neu zu rendern.
+function avApplyParse(){
+  const p = parseAbsenceSpeech(absVoiceText);
+  const setV=(id,v)=>{ const el=document.getElementById(id); if(el&&v!=null&&v!=='') el.value=v; };
+  if(p.empId!=null) setV('avEmp', String(p.empId));
+  if(p.type) avSetType(p.type);
+  if(p.from) setV('avFrom', p.from);
+  if(p.to||p.from) setV('avTo', p.to||p.from);
+}
+function avSetType(t){
+  const h=document.getElementById('avType'); if(h) h.value=t;
+  const u=document.getElementById('avTypeUrlaub'), k=document.getElementById('avTypeKrank');
+  if(u) u.classList.toggle('on', t==='urlaub');
+  if(k) k.classList.toggle('on', t==='krank');
+}
+function avVoiceToggle(){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const btn = document.getElementById('avMic');
+  if(absVoiceRec){ avVoiceStop(); if(btn) btn.classList.remove('on'); return; }
+  if(!SR){ toast('Spracheingabe hier nicht verfügbar – bitte tippen'); return; }
+  absVoiceRec = new SR(); absVoiceRec.lang='de-DE'; absVoiceRec.interimResults=true; absVoiceRec.continuous=true;
+  if(btn) btn.classList.add('on');
+  const base = absVoiceText ? absVoiceText.trim()+' ' : '';
+  absVoiceRec.onresult = ev => {
+    let txt=''; for(let i=0;i<ev.results.length;i++) txt += ev.results[i][0].transcript;
+    absVoiceText = base + txt;
+    const ta=document.getElementById('avText'); if(ta) ta.value = absVoiceText;
+    avApplyParse();
+  };
+  absVoiceRec.onerror = () => { if(btn) btn.classList.remove('on'); absVoiceRec=null; };
+  absVoiceRec.onend = () => { if(btn) btn.classList.remove('on'); absVoiceRec=null; };
+  try{ absVoiceRec.start(); toast('Sprich jetzt … (zum Pausieren erneut tippen)'); }catch(e){ absVoiceRec=null; if(btn) btn.classList.remove('on'); }
+}
+function avVoiceStop(){ if(absVoiceRec){ try{absVoiceRec.stop();}catch(e){} absVoiceRec=null; } }
+function absVoiceCommit(){
+  avVoiceStop();
+  const empId = Number(document.getElementById('avEmp').value);
+  const type = document.getElementById('avType').value;
+  const from = document.getElementById('avFrom').value;
+  const to = document.getElementById('avTo').value;
+  const note = (document.getElementById('avNote').value||'').trim();
+  if(!empId){ toast('Bitte Mitarbeiter wählen'); return; }
+  if(!type){ toast('Bitte Urlaub oder Krank wählen'); return; }
+  if(!from || !to || to < from){ toast('Bitte gültigen Zeitraum wählen'); return; }
+  if(type === 'urlaub'){
+    const rest = vacInfo(empId).rest;
+    const after = rest - workdays(from, to);
+    if(after < 0){ const who = emp(empId); if(!confirm(`${who?who.name:'Mitarbeiter'} hätte danach ${after} Tage Resturlaub (überzogen um ${Math.abs(after)}). Trotzdem eintragen?`)) return; }
+  }
+  const status = type === 'krank' ? 'genehmigt' : (can('approveAbsence') ? 'genehmigt' : 'offen');
+  absences.push({ id: absSeq++, empId, type, from, to, note, status, au:'' });
+  saveAbsences();
+  closeSheet();
+  urlaubSub = (status === 'offen') ? 'antraege' : 'kalender';
+  activeTeamTab = 'urlaub'; akteEmpId = null;
+  if(currentView !== 'team'){ setView('team'); } else { renderUrlaub(); refreshUrlaubBadge(); }
+  const span = from===to ? dDE(from) : `${dDE(from)} – ${dDE(to)}`;
+  toast(status === 'offen' ? `Antrag gesendet: ${emp(empId).name} · ${typeMeta(type).label} · ${span}` : `${emp(empId).name}: ${typeMeta(type).label} · ${span}`);
 }
 
 // Vorqualifizierungs-Status als Badge (offen / läuft / fertig inkl. Bot-Score)
