@@ -9436,10 +9436,17 @@ function mapBewerberRow(r){
 async function loadPortalData(){
   if(!sbAuth || !(GC_PROFILE && GC_PROFILE.customer_id)) return;
   try{
-    const [st, bw] = await Promise.all([
+    // Bewerber join-bewusst über RPC laden: liefert ALLE diesem Betrieb zugeordneten
+    // Bewerber (auch per Mehrfach-/Bulk-Zuordnung im Admin-Backend), mit Status + Stelle
+    // PRO Zuordnung. Fallback auf die alte 1:1-Tabelle, falls die RPC noch nicht deployed ist.
+    let bwRpc = null;
+    try{ bwRpc = await sbAuth.rpc('my_bewerber'); }catch(e){ bwRpc = { error: e }; }
+    const [st, bwTbl] = await Promise.all([
       sbAuth.from('stellenanzeigen').select('*').order('created_at',{ascending:false}),
-      sbAuth.from('bewerber').select('*').order('created_at',{ascending:false})
+      (bwRpc && !bwRpc.error) ? Promise.resolve(bwRpc)
+                              : sbAuth.from('bewerber').select('*').order('created_at',{ascending:false})
     ]);
+    const bw = (bwRpc && !bwRpc.error) ? bwRpc : bwTbl;
     if(st && !st.error){ jobs.length = 0; (st.data||[]).forEach(r => jobs.push(mapStelleRow(r))); }
     if(bw && !bw.error){ applicants.length = 0; (bw.data||[]).forEach(r => applicants.push(mapBewerberRow(r))); }
     OS_DATA_LOADED = true;
@@ -10139,12 +10146,24 @@ async function submitStelle(publish){
 async function persistBewerberStatus(localId, status){
   const a = findCandidate(localId);
   if(!a || !a._uuid || !sbAuth) return;
-  try{ await sbAuth.from('bewerber').update({status}).eq('id', a._uuid); }catch(e){}
+  // Status PRO Zuordnung dieses Betriebs setzen (RPC). Fallback: altes 1:1-Feld.
+  try{
+    const r = await sbAuth.rpc('set_my_bewerber_status', { p_bewerber_id: a._uuid, p_status: status });
+    if(r && r.error) throw r.error;
+  }catch(e){
+    try{ await sbAuth.from('bewerber').update({status}).eq('id', a._uuid); }catch(_){}
+  }
 }
 async function persistBewerberJob(localId, jobId){
   const a = findCandidate(localId);
   if(!a || !a._uuid || !sbAuth) return;
-  try{ await sbAuth.from('bewerber').update({stellenanzeige_id: jobId || null}).eq('id', a._uuid); }catch(e){}
+  // Stelle PRO Zuordnung dieses Betriebs setzen (RPC). Fallback: altes 1:1-Feld.
+  try{
+    const r = await sbAuth.rpc('set_my_bewerber_job', { p_bewerber_id: a._uuid, p_job_id: jobId || null });
+    if(r && r.error) throw r.error;
+  }catch(e){
+    try{ await sbAuth.from('bewerber').update({stellenanzeige_id: jobId || null}).eq('id', a._uuid); }catch(_){}
+  }
 }
 
 // ---- Status-Popover (öffnet direkt an der angetippten Karte) ----
