@@ -1299,6 +1299,14 @@
   .crop-modes button.on{ border-color:var(--green); color:var(--green); background:rgba(22,163,74,.06); }
   .crop-modes button i{ width:13px; height:13px; }
 
+  /* ----- Info-Tooltip (i) an Formular-Labels ----- */
+  .itip{ position:relative; display:inline-flex; vertical-align:middle; margin-left:5px; cursor:help; outline:none; }
+  .itip > i{ width:14px; height:14px; color:var(--muted); }
+  .itip:hover > i, .itip:focus-visible > i{ color:var(--green-2); }
+  .itip__b{ position:absolute; left:50%; bottom:calc(100% + 8px); transform:translateX(-50%); width:248px; max-width:74vw; background:#1f2937; color:#fff; font-size:11.5px; line-height:1.5; font-weight:500; padding:9px 11px; border-radius:9px; box-shadow:0 8px 24px rgba(0,0,0,.18); opacity:0; visibility:hidden; transition:opacity .14s, visibility .14s; z-index:60; text-align:left; pointer-events:none; white-space:normal; }
+  .itip__b::after{ content:''; position:absolute; left:50%; top:100%; transform:translateX(-50%); border:6px solid transparent; border-top-color:#1f2937; }
+  .itip:hover .itip__b, .itip:focus-within .itip__b{ opacity:1; visibility:visible; }
+
   /* ----- Live-Bullet-Vorschau im Stellenformular ----- */
   .bullet-prev{ margin-top:8px; }
   .bullet-prev:empty{ display:none; }
@@ -1324,6 +1332,7 @@
   .cpop-ic i{ width:27px; height:27px; }
   .cpop-ic.lock{ background:rgba(234,88,12,.12); color:#EA580C; }
   .cpop-ic.warn{ background:rgba(217,119,6,.12); color:#D97706; }
+  .cpop-ic.ok{ background:rgba(22,163,74,.12); color:#16A34A; }
   .cpop-body{ padding:16px 24px 8px; }
   .cpop-body h3{ font-size:17px; font-weight:750; letter-spacing:-.01em; }
   .cpop-body p{ font-size:13px; color:var(--muted); margin-top:8px; line-height:1.5; }
@@ -5380,10 +5389,12 @@ async function finishOnboarding(){
   // konnte (sonst landet der Nutzer ohne Erklärung in „Betrieb nicht verbunden").
   if(linkFailed) toast('Einrichtung lokal gespeichert – dein Betrieb konnte gerade nicht verbunden werden. Bitte in den Einstellungen erneut speichern.');
   else toast('Einrichtung abgeschlossen');
-  // Der Inhaber landet direkt im Bewerber-Bereich – das ist die Eintrittstür ins Produkt
-  // (Recruiting → später Personalakte). Danach die kurze Orientierungs-Tour.
+  // Frische Käufer landen direkt in „Stellen" – dort wartet der Erfolgs-Nudge + „Erste Stelle
+  // anlegen". Alle anderen Inhaber landen im Bewerber-Bereich (Eintrittstür ins Produkt).
   bewerberFilter = { job:'', status:'' };
-  setView('recruiting');
+  const e = gcEntry();
+  if(e.flow==='buy' && e.paid){ setView('stellen'); }
+  else { setView('recruiting'); }
   setTimeout(startTour, 360);
 }
 
@@ -9387,6 +9398,18 @@ const STATUS_META = {
 };
 let OS_DATA_LOADED = false;
 function portalJobUrl(slug){ return PORTAL_BASE + '/?job=' + encodeURIComponent(slug||''); }
+// Erfolgs-Popup nach dem Veröffentlichen: bestätigt „live" + Direkt-Link zum Ansehen im Portal.
+function showPublishedSuccess(slug, titel){
+  const url = portalJobUrl(slug);
+  cpopShow({
+    icon:'rocket', iconClass:'ok', title:'Stelle ist live!',
+    body:`<span style="display:block;max-width:340px;margin:0 auto">Deine Stelle <b>${escapeHtml(titel||'')}</b> ist jetzt live auf dem Portal. Bewerbungen landen automatisch hier in deinem Bewerber-Bereich.<br><br><span style="font-size:11.5px;color:var(--muted)">Etwas ändern? Einfach „Stelle bearbeiten" und erneut veröffentlichen – die Änderung geht sofort live.</span></span>`,
+    actions:[
+      { label:'Jetzt Stelle live ansehen', icon:'external-link', onclick:`window.open('${url}','_blank','noopener');cpopClose()` },
+      { label:'Schließen', variant:'ghost' }
+    ]
+  });
+}
 function osSlugify(s){
   return (s||'stelle').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
     .replace(/ß/g,'ss').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,60) || 'stelle';
@@ -9626,6 +9649,24 @@ function openZahlungInfo(){
   });
 }
 
+// Einmaliger Erfolgs-Nudge nach dem Kauf: „Kontingent aktiv – jetzt erste Stelle anlegen".
+// Erscheint nur direkt nach einer Buchung (gcos_entry: flow=buy, paid) und nur solange noch
+// KEINE Stelle live ist – sobald die erste Stelle veröffentlicht ist, verschwindet er von selbst.
+function firstJobNudgeHtml(){
+  const e = gcEntry();
+  if(!(e.flow==='buy' && e.paid)) return '';
+  const k = jobContingent();
+  if(k.hasData && !k.frei) return '';            // Rechnung: erst nach Freischaltung anpreisen
+  if(activeJobCount() > 0) return '';            // schon eine Stelle live -> Nudge weg
+  return `<div class="panel" style="display:flex;gap:13px;align-items:flex-start;padding:15px 16px;margin-bottom:14px;border-color:rgba(var(--brand-rgb),.30);background:rgba(var(--brand-rgb),.06)">
+      <span style="flex:0 0 auto;width:40px;height:40px;border-radius:11px;background:var(--green);display:grid;place-items:center;color:#fff"><i data-lucide="party-popper" style="width:20px;height:20px"></i></span>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:14px;font-weight:800;color:var(--ink)">Kontingent aktiv – jetzt erste Stelle veröffentlichen</div>
+        <div style="font-size:12.5px;color:var(--muted);margin-top:3px;line-height:1.5">Deine Zahlung ist da und dein Stellen-Kontingent ist freigeschaltet. Leg jetzt deine erste Stelle an – in wenigen Minuten ist sie live auf dem Portal und Bewerbungen landen direkt hier.</div>
+        <button class="mini-btn primary" style="margin-top:11px" onclick="openStelleForm()"><i data-lucide="plus"></i> Erste Stelle anlegen</button>
+      </div>
+    </div>`;
+}
 // ---- Stellen-Ansicht (Liste + Status + „X Bewerbungen eingegangen" + Portal-/Kanban-Buttons) ----
 function stellenViewHtml(){
   if(!(GC_PROFILE && GC_PROFILE.customer_id)){
@@ -9641,6 +9682,7 @@ function stellenViewHtml(){
       <div><h2>Stellen</h2><p>Anlegen, veröffentlichen und Bewerber verwalten – alles an einem Ort. Veröffentlichte Stellen erscheinen automatisch auf dem GreyCareers-Portal.</p></div>
       <button class="mini-btn primary" onclick="openStelleForm()"><i data-lucide="plus"></i> Stelle anlegen</button>
     </div>
+    ${firstJobNudgeHtml()}
     ${kontingentBannerHtml()}
     ${list.length
       ? `<div class="stellen-grid">${list.map(stelleCard).join('')}</div>`
@@ -9803,6 +9845,10 @@ function renderBulletPrev(id, text){
 function stelleSecHead(txt, hint){
   return `<div style="margin:22px 0 10px"><div style="font-weight:800;font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)">${escapeHtml(txt)}</div>${hint?`<div style="font-size:12px;color:var(--muted);margin-top:2px">${escapeHtml(hint)}</div>`:''}</div>`;
 }
+// Kleines (i)-Info-Symbol mit Hover-/Tap-Tooltip – an Formular-Labels („wo trage ich was ein?").
+function infoTip(text){
+  return `<span class="itip" tabindex="0" role="note" aria-label="${escapeHtml(text)}"><i data-lucide="info"></i><span class="itip__b">${escapeHtml(text)}</span></span>`;
+}
 /* ---- Unternehmens-Branding direkt im Stellenformular (Logo + Titelbild = Unternehmensebene) ----
    Logo und Titelbild leben in settings.company.logo / settings.portal.titelbild und gelten für
    ALLE Stellen. Beim Hochladen wird sofort lokal gespeichert UND ans Portal (customers) gepusht,
@@ -9913,15 +9959,15 @@ function renderStelleForm(){
       </div>
       <div class="fieldrow">
         <div class="field"><label>Eintritt / Beginn</label><input value="${v(d.eintritt)}" placeholder="z. B. ab sofort" oninput="stelleDraft.eintritt=this.value"></div>
-        <div class="field"><label>Gehalt (Freitext)</label><input value="${v(d.gehalt)}" placeholder="z. B. 3.200 – 3.800 € / Monat" oninput="stelleDraft.gehalt=this.value" onblur="this.value=formatGehaltDisplay(this.value);stelleDraft.gehalt=this.value"></div>
+        <div class="field"><label>Gehalt (Freitext)${infoTip('Gib das Gehalt einfach ein – z. B. 3.700 oder 3.700 €. Wir formatieren es automatisch einheitlich (3.700 €). Auch Spannen wie 3.200 – 3.800 € / Monat sind möglich.')}</label><input value="${v(d.gehalt)}" placeholder="z. B. 3.200 – 3.800 € / Monat" oninput="stelleDraft.gehalt=this.value" onblur="this.value=formatGehaltDisplay(this.value);stelleDraft.gehalt=this.value"></div>
       </div>
 
       ${stelleSecHead('Stellenbeschreibung','„Über die Stelle" + Listen für Aufgaben, Profil und Benefits.')}
       <div class="field"><label>Kurzbeschreibung</label><textarea rows="3" placeholder="Worum geht es in dieser Stelle?" oninput="stelleDraft.beschreibung=this.value">${v(d.beschreibung)}</textarea></div>
       <p class="sheet-note" style="margin:2px 0 12px"><i data-lucide="list"></i> <b>Tipp:</b> Bei Aufgaben, Profil und Benefits wird <b>jede Zeile zu einem Aufzählungspunkt</b> auf der Anzeige – einfach pro Zeile einen Punkt schreiben. Unter dem Feld siehst du eine Live-Vorschau.</p>
-      <div class="field"><label>Deine Aufgaben</label><textarea rows="4" placeholder="Eine Aufgabe pro Zeile&#10;z. B. Bedienung von Bagger &amp; Radlader&#10;Aushub und Verfüllarbeiten" oninput="stelleDraft.aufgaben=this.value;renderBulletPrev('bpAufgaben',this.value)">${v(d.aufgaben)}</textarea><div class="bullet-prev" id="bpAufgaben">${bulletPrevHtml(d.aufgaben)}</div></div>
-      <div class="field"><label>Dein Profil</label><textarea rows="4" placeholder="Eine Anforderung pro Zeile&#10;z. B. Erfahrung im Tiefbau&#10;Führerschein Klasse B" oninput="stelleDraft.profil=this.value;renderBulletPrev('bpProfil',this.value)">${v(d.profil)}</textarea><div class="bullet-prev" id="bpProfil">${bulletPrevHtml(d.profil)}</div></div>
-      <div class="field"><label>Das bieten wir (Benefits)</label><textarea rows="4" placeholder="Ein Benefit pro Zeile&#10;z. B. Firmenwagen&#10;30 Tage Urlaub&#10;Weihnachts- &amp; Urlaubsgeld" oninput="stelleDraft.benefits=this.value;renderBulletPrev('bpBenefits',this.value)">${v(d.benefits)}</textarea><div class="bullet-prev" id="bpBenefits">${bulletPrevHtml(d.benefits)}</div></div>
+      <div class="field"><label>Deine Aufgaben${infoTip('Was macht der Mitarbeiter im Alltag? Jede Zeile wird zu einem Aufzählungspunkt. Beispiele: Bagger & Radlader bedienen, Aushub & Verfüllarbeiten, Pflasterarbeiten.')}</label><textarea rows="4" placeholder="Eine Aufgabe pro Zeile&#10;z. B. Bedienung von Bagger &amp; Radlader&#10;Aushub und Verfüllarbeiten" oninput="stelleDraft.aufgaben=this.value;renderBulletPrev('bpAufgaben',this.value)">${v(d.aufgaben)}</textarea><div class="bullet-prev" id="bpAufgaben">${bulletPrevHtml(d.aufgaben)}</div></div>
+      <div class="field"><label>Dein Profil${infoTip('Was sollte der Bewerber mitbringen? Jede Zeile ein Punkt. Beispiele: Erfahrung im Tiefbau, Führerschein Klasse B / CE, selbstständige Arbeitsweise, Teamgeist.')}</label><textarea rows="4" placeholder="Eine Anforderung pro Zeile&#10;z. B. Erfahrung im Tiefbau&#10;Führerschein Klasse B" oninput="stelleDraft.profil=this.value;renderBulletPrev('bpProfil',this.value)">${v(d.profil)}</textarea><div class="bullet-prev" id="bpProfil">${bulletPrevHtml(d.profil)}</div></div>
+      <div class="field"><label>Das bieten wir (Benefits)${infoTip('Trag hier die Benefits / den Mehrwert ein, den der Bewerber bekommt. Beispiele: kostenloses Wasser, bezahlter Führerschein, Firmenfahrzeug, Firmenhandy, bezahlte Anfahrt. Jede Zeile ein Punkt.')}</label><textarea rows="4" placeholder="Ein Benefit pro Zeile&#10;z. B. Firmenwagen&#10;30 Tage Urlaub&#10;Weihnachts- &amp; Urlaubsgeld" oninput="stelleDraft.benefits=this.value;renderBulletPrev('bpBenefits',this.value)">${v(d.benefits)}</textarea><div class="bullet-prev" id="bpBenefits">${bulletPrevHtml(d.benefits)}</div></div>
 
       ${stelleSecHead('Ansprechpartner','Wird Bewerbern in der Anzeige als direkter Kontakt angezeigt.')}
       <div class="fieldrow" style="align-items:flex-end">
@@ -10079,7 +10125,8 @@ async function submitStelle(publish){
     await loadPortalData();
     if(currentView !== 'stellen') setView('stellen');
     if(blockedGate){ toast('Als Entwurf gespeichert.'); showKontingentBlock(blockedGate); }
-    else toast(publish ? 'Stelle ist jetzt live auf dem Portal.' : (d.id?'Stelle gespeichert.':'Entwurf gespeichert.'));
+    else if(publish && status==='aktiv'){ showPublishedSuccess(row.slug, row.titel); }
+    else toast(d.id?'Stelle gespeichert.':'Entwurf gespeichert.');
   }catch(e){
     toast('Speichern fehlgeschlagen: ' + (e.message||e));
     // Bei Fehler: Buttons wieder freigeben, damit der Nutzer es erneut versuchen kann.
