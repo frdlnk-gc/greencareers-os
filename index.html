@@ -5094,11 +5094,11 @@ function setLogoUpload(input){
     file:f, aspect:1, round:false, outW:512, mime:'image/png', maxUploadKB:6000,
     title:'Logo zuschneiden', hint:'Quadratisch (1:1) · PNG mit Transparenz möglich',
     recoText:'Dein Logo wird <b>quadratisch</b> angezeigt (Sidebar, Login, Portal). Lade am besten ein quadratisches Logo hoch – ist es breiter als hoch, schneide den passenden Bereich zu. Empfohlen: 512×512 px, PNG mit transparentem Hintergrund.',
-    onDone:(url)=>{ settings.company.logo = url; saveSettings(); applyBranding(); refreshSettings(); toast('Logo gespeichert'); }
+    onDone:(url)=>{ settings.company.logo = url; saveSettings(); applyBranding(); refreshSettings(); savePortalProfile(); }
   });
   input.value = '';
 }
-function clearLogo(){ settings.company.logo = ''; saveSettings(); applyBranding(); refreshSettings(); }
+function clearLogo(){ settings.company.logo = ''; saveSettings(); applyBranding(); refreshSettings(); savePortalProfile(); }
 function setBrandColor(v){ settings.company.color = v; saveSettings(); applyBranding(); rerenderCurrent(); }
 function clearBrandColor(){ settings.company.color = ''; saveSettings(); applyBranding(); refreshSettings(); rerenderCurrent(); }
 
@@ -5110,11 +5110,11 @@ function setTitelbildUpload(input){
     file:f, aspect:16/6, round:false, outW:1600, mime:'image/jpeg', maxKB:420, maxUploadKB:12000,
     title:'Titelbild zuschneiden', hint:'Banner ganz oben auf deiner Firmenseite · Querformat',
     recoText:'Auf dem <b>Desktop</b> wird das ganze Bild als breiter Banner gezeigt, auf dem <b>Handy</b> nur der <b>mittlere Ausschnitt</b>. Halte Logo, Team oder das Wichtigste deshalb in der <b>Bildmitte</b>. Empfohlen: mind. 1600×600 px.',
-    onDone:(url)=>{ settings.portal.titelbild = url; saveSettings(); refreshSettings(); toast('Titelbild übernommen – noch „Ans Portal senden" klicken'); }
+    onDone:(url)=>{ settings.portal.titelbild = url; saveSettings(); refreshSettings(); savePortalProfile(); }
   });
   input.value = '';
 }
-function clearTitelbild(){ settings.portal.titelbild = ''; saveSettings(); refreshSettings(); }
+function clearTitelbild(){ settings.portal.titelbild = ''; saveSettings(); refreshSettings(); savePortalProfile(); }
 function portalBilderAdd(input){
   const files = Array.from(input.files||[]); input.value='';
   if(!files.length) return;
@@ -5127,12 +5127,12 @@ function portalBilderAdd(input){
       file:f, aspect:4/3, round:false, outW:1200, mime:'image/jpeg', maxKB:300, maxUploadKB:12000,
       title:'Unternehmensbild zuschneiden', hint:'Querformat (4:3) · z. B. Team, Maschinen, Projekt',
       recoText:'Wird in der Bildergalerie deiner Firmenseite gezeigt. Querformat (4:3) sieht am besten aus.',
-      onDone:(url)=>{ settings.portal.bilder = (settings.portal.bilder||[]); settings.portal.bilder.push(url); saveSettings(); refreshSettings(); setTimeout(next,140); }
+      onDone:(url)=>{ settings.portal.bilder = (settings.portal.bilder||[]); settings.portal.bilder.push(url); saveSettings(); refreshSettings(); if(queue.length){ setTimeout(next,140); } else { savePortalProfile(); } }
     });
   };
   next();
 }
-function portalBildRemove(i){ settings.portal.bilder.splice(i,1); saveSettings(); refreshSettings(); }
+function portalBildRemove(i){ settings.portal.bilder.splice(i,1); saveSettings(); refreshSettings(); savePortalProfile(); }
 async function savePortalProfile(){
   const pp = settings.portal || {};
   const btn = document.getElementById('ppSaveBtn');
