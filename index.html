@@ -8341,6 +8341,39 @@ function _findDates(s){
   return out;
 }
 function _fmtSalary(raw){ const n=parseInt(String(raw).replace(/[^\d]/g,''),10); if(!n||n<100) return ''; return n.toLocaleString('de-DE')+' € / Monat'; }
+// Kategorie-bewusste Gehalts-Formatierung (Freitext -> einheitliche Währungs-Darstellung).
+// "3700" / "3.700" / "3700 Euro" -> "3.700 €" · "3200-3800 €/Monat" -> "3.200 – 3.800 € / Monat"
+// Text ohne gehalts-typische Zahl (>=3-stellig) bleibt unverändert ("nach Vereinbarung", "13. Gehalt").
+function formatGehaltDisplay(raw){
+  if(raw==null) return '';
+  let s = String(raw).trim();
+  if(!s) return '';
+  // vorhandene Währungs-Marker entfernen -> später einheitlich genau EIN „€"
+  s = s.replace(/€/g,' ').replace(/\b(euro|eur)\b/gi,' ');
+  // Gehalts-Zahlen (3–6-stellig, auch mit Tausenderpunkt/Leerzeichen) einheitlich gruppieren
+  let sawSalaryNum = false;
+  s = s.replace(/\d{1,3}(?:[.\s]\d{3})+|\d{3,6}/g, m=>{
+    const n = parseInt(m.replace(/[^\d]/g,''),10);
+    if(!isFinite(n)) return m;
+    sawSalaryNum = true;
+    return n.toLocaleString('de-DE');
+  });
+  // Bindestrich zwischen zwei Zahlen -> Gedankenstrich mit Spacing
+  s = s.replace(/(\d)\s*[-–—]\s*(\d)/g, '$1 – $2');
+  // „/Monat" / „/ Std" sauber spacen
+  s = s.replace(/\s*\/\s*(monat|jahr|std|stunde|h|woche)\b/gi, ' / $1');
+  s = s.replace(/\s{2,}/g,' ').trim();
+  if(sawSalaryNum && !/€/.test(s)){
+    // genau ein „€" direkt nach der letzten Gehalts-Zahl einfügen
+    const groups = s.match(/\d[\d.\s]*\d|\d/g);
+    if(groups){
+      const last = groups[groups.length-1];
+      const i = s.lastIndexOf(last);
+      s = (s.slice(0, i+last.length) + ' €' + s.slice(i+last.length));
+    }
+  }
+  return s.replace(/\s{2,}/g,' ').replace(/\s+€/g,' €').trim();
+}
 // Erkennt, ob ein Satz das Anlegen eines Mitarbeiters meint (nicht: Frage „wie lege ich…?")
 function isNewEmployeeUtterance(text){
   const s=(text||'').toLowerCase();
@@ -9856,7 +9889,7 @@ function renderStelleForm(){
       </div>
       <div class="fieldrow">
         <div class="field"><label>Eintritt / Beginn</label><input value="${v(d.eintritt)}" placeholder="z. B. ab sofort" oninput="stelleDraft.eintritt=this.value"></div>
-        <div class="field"><label>Gehalt (Freitext)</label><input value="${v(d.gehalt)}" placeholder="z. B. 3.200 – 3.800 € / Monat" oninput="stelleDraft.gehalt=this.value"></div>
+        <div class="field"><label>Gehalt (Freitext)</label><input value="${v(d.gehalt)}" placeholder="z. B. 3.200 – 3.800 € / Monat" oninput="stelleDraft.gehalt=this.value" onblur="this.value=formatGehaltDisplay(this.value);stelleDraft.gehalt=this.value"></div>
       </div>
 
       ${stelleSecHead('Stellenbeschreibung','„Über die Stelle" + Listen für Aufgaben, Profil und Benefits.')}
@@ -9991,7 +10024,7 @@ async function submitStelle(publish){
   const row = {
     titel:d.titel.trim(), branche:d.branche.trim()||null, ort:d.ort.trim()||null,
     beschaeftigungsart:d.beschaeftigungsart||null, vertragsart:d.vertragsart||null,
-    eintritt:(d.eintritt||'').trim()||null, gehalt:d.gehalt.trim()||null,
+    eintritt:(d.eintritt||'').trim()||null, gehalt:formatGehaltDisplay(d.gehalt)||null,
     beschreibung:d.beschreibung.trim()||null, aufgaben:d.aufgaben.trim()||null,
     profil:d.profil.trim()||null,
     benefits:benefitLines.length?benefitLines.join('\n'):null,
