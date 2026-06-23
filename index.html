@@ -1735,6 +1735,28 @@
   .ob-color input[type=color]{ width:46px; height:46px; padding:0; border:1px solid var(--line); border-radius:11px; background:none; cursor:pointer; }
   .ob-color__hint{ font-size:12.5px; color:var(--muted); flex:1; min-width:120px; }
 
+  /* ---- Unternehmensprofil (Portal): Titelbild Desktop/Mobile-Vorschau + Galerie ---- */
+  .sheet-note.sub{ font-size:11.5px; margin-top:7px; margin-bottom:0; }
+  .pp-titel{ display:flex; gap:12px; align-items:flex-start; flex-wrap:wrap; }
+  .pp-titel__prev{ flex:1; min-width:200px; aspect-ratio:16/6; border-radius:12px; border:1px solid var(--line); background:var(--canvas); overflow:hidden; display:grid; place-items:center; }
+  .pp-titel__prev img{ width:100%; height:100%; object-fit:cover; }
+  .pp-titel__mob-wrap{ display:flex; flex-direction:column; align-items:center; gap:4px; }
+  .pp-titel__mob-wrap small{ font-size:10px; color:var(--muted-2); }
+  .pp-titel__mob{ width:64px; aspect-ratio:9/16; border-radius:10px; border:1px solid var(--line); background:var(--canvas); overflow:hidden; display:grid; place-items:center; }
+  .pp-titel__mob img{ width:100%; height:100%; object-fit:cover; }
+  .pp-empty{ display:flex; align-items:center; gap:6px; font-size:12px; color:var(--muted); }
+  .pp-empty .lucide{ width:16px; height:16px; }
+  .pp-empty.sm .lucide{ width:18px; height:18px; }
+  .pp-row{ display:flex; gap:8px; flex-wrap:wrap; margin-top:9px; }
+  .pp-gallery{ display:grid; grid-template-columns:repeat(auto-fill,minmax(96px,1fr)); gap:9px; }
+  .pp-thumb{ position:relative; aspect-ratio:4/3; border-radius:10px; overflow:hidden; border:1px solid var(--line); background:var(--canvas); }
+  .pp-thumb img{ width:100%; height:100%; object-fit:cover; }
+  .pp-thumb__x{ position:absolute; top:4px; right:4px; width:22px; height:22px; border:none; border-radius:50%; background:rgba(15,23,42,.62); color:#fff; display:grid; place-items:center; cursor:pointer; }
+  .pp-thumb__x .lucide{ width:13px; height:13px; }
+  .pp-thumb.pp-add{ display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; cursor:pointer; color:var(--muted); border-style:dashed; }
+  .pp-thumb.pp-add small{ font-size:10.5px; }
+  .pp-thumb.pp-add .lucide{ width:18px; height:18px; }
+
   @media(max-width:1080px){
     .dashboard{ grid-template-columns:1fr; }
   }
@@ -3167,6 +3189,11 @@ const DEFAULT_SETTINGS = {
     zahlungsziel:14, skonto:0, kleinunternehmer:false,
     angebotFuss:'Wir freuen uns auf Ihren Auftrag. Dieses Angebot ist 21 Tage gültig.',
     rechnungFuss:'Vielen Dank für Ihren Auftrag. Bitte überweisen Sie den Betrag innerhalb der Zahlungsfrist.'},
+  // Unternehmensprofil fürs öffentliche Stellen-Portal (Spiegel der customers-Spalten,
+  // wird per RPC update_my_company_profile in die DB geschrieben → public_jobs-View → Portal).
+  portal: { titelbild:'', ueberUns:'', bilder:[], website:'', karriereUrl:'',
+            mitarbeiterAnzahl:'', gruendungsjahr:'',
+            social:{ instagram:'', facebook:'', linkedin:'' } },
   startModul: true,    // Personal-Startmodul: nur Heute + Team aktiv, Rest gesperrt (schnelles Onboarding)
   owned: [],           // freigeschaltete Zusatzmodule (per Buchung): kunden/planung/finanzen/markt
   tplDefault: { whatsapp:null, email:null },  // id der Standard-Vorlage je Kanal (null = erste Vorlage)
@@ -3183,7 +3210,7 @@ const DEFAULT_SETTINGS = {
 };
 let settings = loadSettings();
 function loadSettings(){
-  try{ const r = localStorage.getItem('gcos_settings_v2'); if(r){ const s = JSON.parse(r); s.perms = s.perms || {}; s.perms.buero = Object.assign({}, DEFAULT_SETTINGS.perms.buero, s.perms.buero); s.perms.buchhaltung = Object.assign({}, DEFAULT_SETTINGS.perms.buchhaltung, s.perms.buchhaltung); s.perms.mitarbeiter = Object.assign({}, DEFAULT_SETTINGS.perms.mitarbeiter, s.perms.mitarbeiter); s.company = Object.assign({}, DEFAULT_SETTINGS.company, s.company); const merged = Object.assign(JSON.parse(JSON.stringify(DEFAULT_SETTINGS)), s); if(typeof s.clockMode==='undefined' && typeof s.selfClockIn!=='undefined'){ merged.clockMode = s.selfClockIn ? 'self' : 'admin'; } return resetDemoModules(merged); } }catch(e){}
+  try{ const r = localStorage.getItem('gcos_settings_v2'); if(r){ const s = JSON.parse(r); s.perms = s.perms || {}; s.perms.buero = Object.assign({}, DEFAULT_SETTINGS.perms.buero, s.perms.buero); s.perms.buchhaltung = Object.assign({}, DEFAULT_SETTINGS.perms.buchhaltung, s.perms.buchhaltung); s.perms.mitarbeiter = Object.assign({}, DEFAULT_SETTINGS.perms.mitarbeiter, s.perms.mitarbeiter); s.company = Object.assign({}, DEFAULT_SETTINGS.company, s.company); s.portal = Object.assign({}, JSON.parse(JSON.stringify(DEFAULT_SETTINGS.portal)), s.portal); s.portal.social = Object.assign({}, DEFAULT_SETTINGS.portal.social, s.portal.social); s.portal.bilder = Array.isArray(s.portal.bilder)? s.portal.bilder : []; const merged = Object.assign(JSON.parse(JSON.stringify(DEFAULT_SETTINGS)), s); if(typeof s.clockMode==='undefined' && typeof s.selfClockIn!=='undefined'){ merged.clockMode = s.selfClockIn ? 'self' : 'admin'; } return resetDemoModules(merged); } }catch(e){}
   return JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
 }
 // Demo-Modus: Modul-Status bei jedem Laden auf das Basisprodukt zuruecksetzen, damit der
@@ -4104,8 +4131,20 @@ async function afterAuth(session){
       if(cust){
         GC_CUSTOMER = cust;   // Kontingent-Quelle (produkt, kauftyp, stellen_kontingent)
         settings.company = Object.assign({}, settings.company, { name:cust.name, ort:cust.ort||settings.company.ort, email:cust.email||GC_USER.email });
+        if(cust.logo_url){ settings.company.logo = cust.logo_url; }   // Portal-Logo = Branding-Logo
         if(cust.branchen&&cust.branchen.length) settings.branchen = cust.branchen.slice();
         if(cust.theme){ settings.theme = cust.theme; }
+        // Unternehmensprofil aus der DB in den lokalen Spiegel laden (Portal-Felder).
+        settings.portal = Object.assign({}, settings.portal, {
+          titelbild: cust.titelbild || settings.portal.titelbild || '',
+          ueberUns: cust.ueber_uns || settings.portal.ueberUns || '',
+          bilder: Array.isArray(cust.unternehmensbilder) ? cust.unternehmensbilder : (settings.portal.bilder||[]),
+          website: cust.website || settings.portal.website || '',
+          karriereUrl: cust.karriere_url || settings.portal.karriereUrl || '',
+          mitarbeiterAnzahl: cust.mitarbeiter_anzahl || settings.portal.mitarbeiterAnzahl || '',
+          gruendungsjahr: cust.gruendungsjahr || settings.portal.gruendungsjahr || '',
+          social: Object.assign({ instagram:'', facebook:'', linkedin:'' }, settings.portal.social, cust.social||{})
+        });
         settings.onboarded = true; saveSettings();
       }
     }catch(e){}
@@ -4367,6 +4406,7 @@ function toggleCompany(key){ settings.company[key] = !settings.company[key]; sav
 function openSettings(){
   const s = settings;
   const c = s.company;
+  const pp = s.portal || {};
   openSheet(`
     <div class="sheet__head">
       <span class="avatar" style="width:50px;height:50px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="settings" style="width:22px;height:22px"></i></span>
@@ -4403,6 +4443,53 @@ function openSettings(){
           ${c.color?`<button class="btn ghost sm" onclick="clearBrandColor()"><i data-lucide="rotate-ccw"></i> Branchenfarbe</button>`:''}
         </div>
       </div>
+
+      <div class="setsec">Unternehmensprofil (Stellen-Portal)</div>
+      <p class="sheet-note"><i data-lucide="globe"></i> <span>Diese Angaben erscheinen auf deiner <strong>Firmenseite im Stellen-Portal</strong> – über jeder Anzeige. Je vollständiger, desto mehr Bewerbungen. Änderungen werden mit <b>„Ans Portal senden"</b> live geschaltet.</span></p>
+
+      <div class="field">
+        <label>Titelbild <span class="lbl-hint">Banner ganz oben · Querformat</span></label>
+        <div class="pp-titel">
+          <div class="pp-titel__prev" id="ppTitelDesk">${pp.titelbild?`<img src="${pp.titelbild}" alt="Titelbild">`:`<span class="pp-empty"><i data-lucide="image"></i> Noch kein Titelbild</span>`}</div>
+          <div class="pp-titel__mob-wrap">
+            <div class="pp-titel__mob" id="ppTitelMob">${pp.titelbild?`<img src="${pp.titelbild}" alt="Titelbild mobil">`:`<span class="pp-empty sm"><i data-lucide="smartphone"></i></span>`}</div>
+            <small>So auf dem Handy</small>
+          </div>
+        </div>
+        <div class="pp-row">
+          <label class="btn ghost sm"><i data-lucide="upload"></i> Titelbild ${pp.titelbild?'ersetzen':'hochladen'}<input type="file" accept="image/*" onchange="setTitelbildUpload(this)" hidden></label>
+          ${pp.titelbild?`<button class="btn ghost sm" onclick="clearTitelbild()"><i data-lucide="x"></i> Entfernen</button>`:''}
+        </div>
+        <p class="sheet-note sub"><i data-lucide="info"></i> <span>Querformat empfohlen (z. B. ein Foto von Baustelle, Team oder Fuhrpark). Auf dem Desktop sieht man das ganze Bild, auf dem Handy nur den <b>mittleren Ausschnitt</b> – achte beim Zuschneiden darauf, dass das Wichtige in der Mitte liegt.</span></p>
+      </div>
+
+      <div class="field">
+        <label>Über uns <span class="lbl-hint">Vorstellungstext</span></label>
+        <textarea rows="4" placeholder="Wer seid ihr? Was macht euch als Arbeitgeber aus? 2–4 Sätze reichen." onchange="settings.portal.ueberUns=this.value;saveSettings()">${escapeHtml(pp.ueberUns||'')}</textarea>
+      </div>
+
+      <div class="field">
+        <label>Unternehmensbilder <span class="lbl-hint">bis zu ${PORTAL_BILDER_MAX} · z. B. Team, Maschinen, Projekte</span></label>
+        <div class="pp-gallery" id="ppGallery">
+          ${(pp.bilder||[]).map((b,i)=>`<div class="pp-thumb"><img src="${b}" alt="Bild ${i+1}"><button class="pp-thumb__x" onclick="portalBildRemove(${i})"><i data-lucide="x"></i></button></div>`).join('')}
+          ${(pp.bilder||[]).length < PORTAL_BILDER_MAX ? `<label class="pp-thumb pp-add"><i data-lucide="plus"></i><small>Bild</small><input type="file" accept="image/*" multiple onchange="portalBilderAdd(this)" hidden></label>` : ''}
+        </div>
+      </div>
+
+      <div class="fieldrow">
+        <div class="field"><label>Mitarbeiteranzahl</label><input value="${escapeHtml(pp.mitarbeiterAnzahl||'')}" placeholder="z. B. 12 oder 10–20" onchange="settings.portal.mitarbeiterAnzahl=this.value;saveSettings()"></div>
+        <div class="field" style="max-width:150px"><label>Gegründet</label><input value="${escapeHtml(pp.gruendungsjahr||'')}" placeholder="z. B. 2008" onchange="settings.portal.gruendungsjahr=this.value;saveSettings()"></div>
+      </div>
+      <div class="fieldrow">
+        <div class="field"><label>Website</label><input type="url" value="${escapeHtml(pp.website||'')}" placeholder="https://…" onchange="settings.portal.website=this.value;saveSettings()"></div>
+        <div class="field"><label>Karriere-Seite</label><input type="url" value="${escapeHtml(pp.karriereUrl||'')}" placeholder="https://… (optional)" onchange="settings.portal.karriereUrl=this.value;saveSettings()"></div>
+      </div>
+      <div class="fieldrow">
+        <div class="field"><label>Instagram</label><input value="${escapeHtml((pp.social&&pp.social.instagram)||'')}" placeholder="@handle oder URL" onchange="settings.portal.social.instagram=this.value;saveSettings()"></div>
+        <div class="field"><label>Facebook</label><input value="${escapeHtml((pp.social&&pp.social.facebook)||'')}" placeholder="URL" onchange="settings.portal.social.facebook=this.value;saveSettings()"></div>
+        <div class="field"><label>LinkedIn</label><input value="${escapeHtml((pp.social&&pp.social.linkedin)||'')}" placeholder="URL" onchange="settings.portal.social.linkedin=this.value;saveSettings()"></div>
+      </div>
+      <button class="btn go btn--block" id="ppSaveBtn" style="margin-top:6px" onclick="savePortalProfile()"><i data-lucide="globe"></i> Ans Portal senden</button>
 
       <div class="setsec">Anschrift</div>
       <div class="field"><label>Straße &amp; Nr.</label><input value="${escapeHtml(c.street)}" onchange="settings.company.street=this.value;saveSettings()"></div>
@@ -4961,6 +5048,72 @@ function setLogoUpload(input){
 function clearLogo(){ settings.company.logo = ''; saveSettings(); applyBranding(); refreshSettings(); }
 function setBrandColor(v){ settings.company.color = v; saveSettings(); applyBranding(); rerenderCurrent(); }
 function clearBrandColor(){ settings.company.color = ''; saveSettings(); applyBranding(); refreshSettings(); rerenderCurrent(); }
+
+/* ---- Unternehmensprofil fürs Stellen-Portal ---- */
+const PORTAL_BILDER_MAX = 6;
+function setTitelbildUpload(input){
+  const f = input.files && input.files[0]; if(!f){ return; }
+  openImageCropper({
+    file:f, aspect:16/6, round:false, outW:1600, mime:'image/jpeg', maxKB:420, maxUploadKB:12000,
+    title:'Titelbild zuschneiden', hint:'Banner ganz oben auf deiner Firmenseite · Querformat',
+    recoText:'Auf dem <b>Desktop</b> wird das ganze Bild als breiter Banner gezeigt, auf dem <b>Handy</b> nur der <b>mittlere Ausschnitt</b>. Halte Logo, Team oder das Wichtigste deshalb in der <b>Bildmitte</b>. Empfohlen: mind. 1600×600 px.',
+    onDone:(url)=>{ settings.portal.titelbild = url; saveSettings(); refreshSettings(); toast('Titelbild übernommen – noch „Ans Portal senden" klicken'); }
+  });
+  input.value = '';
+}
+function clearTitelbild(){ settings.portal.titelbild = ''; saveSettings(); refreshSettings(); }
+function portalBilderAdd(input){
+  const files = Array.from(input.files||[]); input.value='';
+  if(!files.length) return;
+  const room = PORTAL_BILDER_MAX - (settings.portal.bilder||[]).length;
+  if(room <= 0){ toast('Maximal '+PORTAL_BILDER_MAX+' Bilder.'); return; }
+  const queue = files.slice(0, room);
+  const next = ()=>{
+    const f = queue.shift(); if(!f) return;
+    openImageCropper({
+      file:f, aspect:4/3, round:false, outW:1200, mime:'image/jpeg', maxKB:300, maxUploadKB:12000,
+      title:'Unternehmensbild zuschneiden', hint:'Querformat (4:3) · z. B. Team, Maschinen, Projekt',
+      recoText:'Wird in der Bildergalerie deiner Firmenseite gezeigt. Querformat (4:3) sieht am besten aus.',
+      onDone:(url)=>{ settings.portal.bilder = (settings.portal.bilder||[]); settings.portal.bilder.push(url); saveSettings(); refreshSettings(); setTimeout(next,140); }
+    });
+  };
+  next();
+}
+function portalBildRemove(i){ settings.portal.bilder.splice(i,1); saveSettings(); refreshSettings(); }
+async function savePortalProfile(){
+  const pp = settings.portal || {};
+  const btn = document.getElementById('ppSaveBtn');
+  // Lokal ist alles schon gespeichert (localStorage). Jetzt an die DB (customers) pushen,
+  // damit die Portal-Firmenseite die Daten zeigt. Fail-soft, wenn nicht eingeloggt / RPC fehlt.
+  if(!(window.sbAuth && GC_USER && GC_PROFILE && GC_PROFILE.customer_id)){
+    toast('Lokal gespeichert. Live ans Portal: nach dem Einloggen mit verknüpftem Betrieb.');
+    return;
+  }
+  if(btn){ btn.disabled = true; btn.innerHTML = '<i data-lucide="loader"></i> Wird gesendet…'; icons(); }
+  try{
+    const social = Object.assign({ instagram:'', facebook:'', linkedin:'' }, pp.social||{});
+    const { error } = await sbAuth.rpc('update_my_company_profile', {
+      p_logo_url:           settings.company.logo || null,
+      p_titelbild:          pp.titelbild || '',
+      p_ueber_uns:          pp.ueberUns || '',
+      p_unternehmensbilder: pp.bilder || [],
+      p_website:            pp.website || '',
+      p_karriere_url:       pp.karriereUrl || '',
+      p_mitarbeiter_anzahl: pp.mitarbeiterAnzahl || '',
+      p_gruendungsjahr:     pp.gruendungsjahr || '',
+      p_social:             social
+    });
+    if(error) throw error;
+    if(GC_CUSTOMER){ GC_CUSTOMER.titelbild=pp.titelbild; GC_CUSTOMER.ueber_uns=pp.ueberUns; GC_CUSTOMER.unternehmensbilder=pp.bilder; GC_CUSTOMER.logo_url=settings.company.logo; }
+    toast('Unternehmensprofil ist jetzt live im Portal.');
+  }catch(e){
+    console.warn('savePortalProfile', e);
+    const miss = (e && (e.code==='PGRST202' || /update_my_company_profile/.test(e.message||'')));
+    toast(miss ? 'Lokal gespeichert. (Portal-Sync wird nach DB-Update aktiv.)' : 'Konnte nicht ans Portal senden – lokal gespeichert.');
+  }finally{
+    if(btn){ btn.disabled=false; btn.innerHTML='<i data-lucide="globe"></i> Ans Portal senden'; icons(); }
+  }
+}
 
 function maybeOnboard(){
   // Hat der Nutzer die Entscheidung schon im Welcome-Empfang getroffen? Dann nicht erneut fragen.
