@@ -9408,12 +9408,23 @@ function mapStelleRow(r){
           status:r.status||'pausiert', beschreibung:r.beschreibung||'',
           beschaeftigungsart:r.beschaeftigungsart||'', gehalt:r.gehalt||'', expMin:0, _raw:r};
 }
+// Eingehender Status kann aus dem Admin-Backend stammen (eigenes Vokabular:
+// gesichtet/qualifiziert/anrufen/vorgestellt/abgesagt) ODER bereits eine OS-Stage
+// sein (wenn der Betrieb die Karte selbst verschoben hat). Auf eine gültige
+// (ggf. eigene) OS-Kanban-Stage normalisieren – sonst landet der Bewerber in
+// KEINER Spalte und ist im Recruiting-Board unsichtbar.
+const ADMIN_STATUS_TO_STAGE = { gesichtet:'neu', qualifiziert:'inbearb', anrufen:'inbearb', vorgestellt:'gesprterm', abgesagt:'abgelehnt' };
+function normStage(s){
+  s = (s || '').toString();
+  if(stages.some(st => st.id === s)) return s;        // bereits eine OS-Stage (auch eigene)
+  return ADMIN_STATUS_TO_STAGE[s] || 'neu';           // Admin-Status -> OS-Stage, sonst Neu
+}
 function mapBewerberRow(r){
   const ex = r.extra || {};
   return {id: appSeq++, _uuid:r.id, name:r.name||'—', phone:r.telefon||'', email:r.email||'',
     jobId: r.stellenanzeige_id || null, source: quelleToSource(r.quelle),
     date: r.created_at ? dDE(dISO(new Date(r.created_at))) : 'neu',
-    stage: r.status || 'neu', letter: ex.nachricht || '', comments: [],
+    stage: normStage(r.status), letter: ex.nachricht || '', comments: [],
     pq: ex.pq || {branche:'',beruf:'',erfahrung:'',gehalt:'',verfuegbar:'',ort:''},
     pqStatus:'offen', botScore:null, role: ex.beruf || '', tags:[], available:'', hot:false};
 }
@@ -10863,6 +10874,7 @@ function setApplicantStatus(id, toCol){
   if(!a || a.stage === toCol) return;
   a.stage = toCol;
   a.hot = toCol === 'inbearb';
+  persistBewerberStatus(id, toCol);   // Statuswechsel aus der Detailansicht in Supabase sichern (sonst nach Reload verloren)
   if(currentView === 'recruiting') renderBewerberKanban();
   if(toCol === 'eingestellt'){ offerHireHandover(a); } else { openApplicant(id); }
   toast(`${a.name.split(' ')[0]} → ${stageById(toCol).label}`);
