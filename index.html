@@ -3721,25 +3721,23 @@ const UPGRADE_ORDER = ['kunden','planung','finanzen','markt'];
 const BUNDLE_PRICE = 79;   // alle 4 Module zusammen pro Monat (statt 96 €)
 function openComingSoon(id){
   const m = COMING_SOON[id]; if(!m){ moduleLocked(); return; }
-  const depTxt = (m.requires && m.requires.length)
-    ? `<div class="pkg__dep" style="margin-top:14px"><i data-lucide="link"></i> <span>Nur zusammen mit <b>${m.requires.map(r=>COMING_SOON[r].title).join(' & ')}</b> nutzbar – ${escapeHtml(m.reason||'')}</span></div>`
-    : '';
   openSheet(`
     <div class="sheet__head">
       <span class="avatar" style="width:48px;height:48px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="${m.icon}" style="width:21px;height:21px"></i></span>
-      <div><div class="sheet__title">${m.title} <span class="soon-pill">Zusatzmodul</span></div><div class="sheet__sub">${m.tag}</div></div>
+      <div><div class="sheet__title">${m.title} <span class="soon-pill" style="background:var(--soft-green);color:var(--green-2)">In Entwicklung</span></div><div class="sheet__sub">${m.tag}</div></div>
       <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body">
-      <p class="cs-lead">${m.text}</p>
-      <ul class="cs-list">${m.points.map(p => `<li><i data-lucide="check"></i> ${p}</li>`).join('')}</ul>
-      <div class="cs-price"><b>${m.price} €</b><span>/ Monat · jederzeit kündbar</span></div>
-      ${depTxt}
-      <div class="cs-actions" style="margin-top:16px">
-        <button class="btn" style="flex:1" onclick="openUpgrade('${id}')"><i data-lucide="unlock"></i> Jetzt freischalten</button>
-        <button class="btn ghost" onclick="openUpgrade()"><i data-lucide="layout-grid"></i> Alle Module</button>
+      <div style="text-align:center;padding:8px 0 4px">
+        <div style="font-size:34px;line-height:1;margin-bottom:10px">🚀</div>
+        <div style="font-size:18px;font-weight:800;color:var(--ink)">Wir sind gerade in der Entwicklungsphase –<br>und das wird richtig geil.</div>
       </div>
-      <p class="sheet-note" style="margin-top:12px"><i data-lucide="shield-check"></i> Sichere Zahlung über Stripe · Hosting in Deutschland, DSGVO-konform.</p>
+      <p class="cs-lead" style="margin-top:14px">${m.text}</p>
+      <ul class="cs-list">${m.points.map(p => `<li><i data-lucide="check"></i> ${p}</li>`).join('')}</ul>
+      <div class="cs-actions" style="margin-top:18px">
+        <button class="btn" style="flex:1" onclick="closeSheet()"><i data-lucide="bell"></i> Verstanden – ich freu mich drauf</button>
+      </div>
+      <p class="sheet-note" style="margin-top:12px"><i data-lucide="sparkles"></i> Kommt zeitnah. Du bist als Erster dabei, sobald es live geht.</p>
     </div>`);
 }
 
@@ -3758,13 +3756,8 @@ function upgradeTotal(ids){
   return ids.reduce((s,id) => s + COMING_SOON[id].price, 0);
 }
 function openUpgrade(preselect){
-  closeSheet();                              // evtl. offenes Coming-Soon-Modal schließen (sonst taucht es nach dem Kauf wieder auf)
-  upgradeSel = {};
-  (settings.owned||[]).forEach(id => {});   // bereits gebuchte werden separat als „aktiv" gezeigt
-  if(preselect && COMING_SOON[preselect] && !ownsModule(preselect)) upgradeSel[preselect] = true;
-  renderUpgrade();
-  document.getElementById('upgrade').classList.remove('hidden');
-  document.body.style.overflow = 'hidden';
+  // Zusatzmodule sind noch nicht kaufbar -> FOMO-„kommt zeitnah" statt Checkout.
+  openComingSoon(preselect && COMING_SOON[preselect] ? preselect : UPGRADE_ORDER[0]);
 }
 function closeUpgrade(){
   document.getElementById('upgrade').classList.add('hidden');
@@ -6539,7 +6532,7 @@ function openModuleMarket(){
   const upgCard = (id) => { const m = COMING_SOON[id]; const owned = ownsModule(id);
     const right = owned
       ? `<span class="modupg__on">Aktiv</span>`
-      : `<span class="modupg__price"><b>${m.price} €</b><small>/ Mon.</small></span>`;
+      : `<span class="modupg__on" style="background:var(--soft-green);color:var(--green-2)">Bald</span>`;
     const click = owned ? `closeSheet();goModule('${id}')` : `openComingSoon('${id}')`;
     return `<button class="modupg${owned?' owned':''}" onclick="${click}">
       <span class="modupg__ic"><i data-lucide="${m.icon}"></i></span>
@@ -6560,7 +6553,7 @@ function openModuleMarket(){
       <div class="setsec">Mehr freischalten <span class="setsec__hint">Zusatzmodule</span></div>
       <p class="sheet-note"><i data-lucide="sparkles"></i> Erweitere ${escapeHtml(osName())} um ganze Bereiche – einzeln oder im Paket, monatlich kündbar.</p>
       <div class="modlist">${UPGRADE_ORDER.map(upgCard).join('')}</div>
-      <button class="btn ghost full" style="margin-top:4px" onclick="openUpgrade()"><i data-lucide="layout-grid"></i> Alle Module &amp; Paketpreis ansehen</button>
+      <p class="sheet-note" style="margin-top:6px"><i data-lucide="sparkles"></i> Diese Bereiche sind gerade in der Entwicklung – sie kommen zeitnah und werden richtig geil. Tippe rein für einen Vorgeschmack.</p>
     </div>`);
 }
 function addFreeModule(id){
@@ -11236,6 +11229,30 @@ function tplSetDefault(channel, id){
 
 /* ----- WhatsApp-Bot: Add-on (19 €/Monat) + Flow-Konfigurator ----- */
 function openWaBot(){
+  // WhatsApp-Bewerber-Bot ist noch nicht buchbar -> FOMO „kommt zeitnah".
+  openSheet(`
+    <div class="sheet__head">
+      <span class="avatar" style="width:50px;height:50px;background:linear-gradient(135deg,#25D366,#1FA855)"><i data-lucide="bot-message-square" style="width:22px;height:22px"></i></span>
+      <div><div class="sheet__title">WhatsApp-Bewerber-Bot <span class="soon-pill" style="background:var(--soft-green);color:var(--green-2)">In Entwicklung</span></div><div class="sheet__sub">Add-on · kommt zeitnah</div></div>
+      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+    </div>
+    <div class="sheet__body">
+      <div style="text-align:center;padding:8px 0 4px">
+        <div style="font-size:34px;line-height:1;margin-bottom:10px">🤖</div>
+        <div style="font-size:18px;font-weight:800;color:var(--ink)">Wir sind gerade in der Entwicklungsphase –<br>und das wird richtig geil.</div>
+      </div>
+      <p class="cs-lead" style="margin-top:14px">Der Bot schreibt neue Bewerber automatisch per WhatsApp an, stellt deine Fragen und sammelt die Antworten – du bekommst nur noch die passenden Kandidaten.</p>
+      <div class="addon-feat"><i data-lucide="check-circle-2"></i> <span>Automatische Erstansprache &amp; Rückfragen (Gehalt, Führerschein, Startdatum …)</span></div>
+      <div class="addon-feat"><i data-lucide="check-circle-2"></i> <span>Fragen-Flow selbst konfigurieren – Reihenfolge, Inhalt, hinzufügen/löschen</span></div>
+      <div class="addon-feat"><i data-lucide="check-circle-2"></i> <span>Antworten landen direkt am Bewerber im Recruiting-Board</span></div>
+      <p class="sheet-note" style="margin-top:6px"><i data-lucide="info"></i> Schon jetzt kannst du Bewerber jederzeit selbst per „WhatsApp schreiben" kontaktieren – mit deinen Vorlagen.</p>
+      <div class="sheet-actions" style="margin-top:12px">
+        <button class="btn" style="flex:1" onclick="closeSheet()"><i data-lucide="bell"></i> Verstanden – ich freu mich drauf</button>
+      </div>
+      <p class="sheet-note" style="margin-top:12px"><i data-lucide="sparkles"></i> Kommt zeitnah. Du bist als Erster dabei, sobald es live geht.</p>
+    </div>`);
+}
+function openWaBotLegacy(){
   if(settings.waBot && settings.waBot.booked){ openWaBotFlow(); return; }
   openWaBotOffer();
 }
