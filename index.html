@@ -3304,6 +3304,10 @@ function captureEntry(){
     const q = new URLSearchParams(window.location.search);
     const brand = (q.get('brand')||'').toLowerCase();
     if(ENTRY_BRANDS[brand]) cur.brand = brand;
+    // Frischer Kauf-Link (flow=buy&pkg=… steht JETZT in der URL) startet einen NEUEN
+    // Kauf -> alten "paid"-Merker aus einem früheren Test verwerfen, sonst öffnet der
+    // Checkout nie wieder (buyFlowPending() bliebe wegen paid=true dauerhaft false).
+    if(q.get('flow')==='buy' && q.get('pkg')){ delete cur.paid; }
     ENTRY_KEYS.forEach(k=>{ const v=q.get(k); if(v) cur[k]=v; });
     saveEntry(cur);
   }catch(e){}
