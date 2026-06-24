@@ -2994,7 +2994,6 @@
       <span class="topbar__spacer"></span>
       <div class="weather-mini" id="weatherMini" onclick="openWeatherForecast()" title="16-Tage-Wetter"><span class="bubble"><i data-lucide="cloud-sun"></i></span><span><b>--°</b> · Hamburg<br />Wetter lädt …</span></div>
       <button class="brainpill" id="brainPill" onclick="openBrain()" title="GaLaBrain"><i data-lucide="sparkles"></i><span>GaLaBrain</span></button>
-      <button class="rolepill" id="rolePill" onclick="openRoleSwitch()" title="Demo-Schalter: Ansicht je Rolle ausprobieren (im echten Produkt nicht vorhanden)"></button>
       <button class="iconbtn bell" onclick="openNotifications()" title="Benachrichtigungen"><i data-lucide="bell"></i><span class="bell__badge" id="bellBadge" style="display:none"></span></button>
     </header>
     <div class="previewbar hidden" id="previewBar"></div>
@@ -3272,14 +3271,8 @@ function loadSettings(){
   try{ const r = localStorage.getItem('gcos_settings_v2'); if(r){ const s = JSON.parse(r); s.perms = s.perms || {}; s.perms.buero = Object.assign({}, DEFAULT_SETTINGS.perms.buero, s.perms.buero); s.perms.buchhaltung = Object.assign({}, DEFAULT_SETTINGS.perms.buchhaltung, s.perms.buchhaltung); s.perms.mitarbeiter = Object.assign({}, DEFAULT_SETTINGS.perms.mitarbeiter, s.perms.mitarbeiter); s.company = Object.assign({}, DEFAULT_SETTINGS.company, s.company); s.portal = Object.assign({}, JSON.parse(JSON.stringify(DEFAULT_SETTINGS.portal)), s.portal); s.portal.social = Object.assign({}, DEFAULT_SETTINGS.portal.social, s.portal.social); s.portal.bilder = Array.isArray(s.portal.bilder)? s.portal.bilder : []; const merged = Object.assign(JSON.parse(JSON.stringify(DEFAULT_SETTINGS)), s); if(typeof s.clockMode==='undefined' && typeof s.selfClockIn!=='undefined'){ merged.clockMode = s.selfClockIn ? 'self' : 'admin'; } return resetDemoModules(merged); } }catch(e){}
   return JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
 }
-// Demo-Modus: Modul-Status bei jedem Laden auf das Basisprodukt zuruecksetzen, damit der
-// Sales-Demo-Account immer „nur Basisprodukt" (Heute + Team) zeigt – Planung/Kunden/Finanzen/
-// Markt ausgegraut, auch wenn vorher im Demo-Stripe-Mock „gekauft".
-// PRODUKTION: Sobald echte Kunden Module dauerhaft buchen, MUSS dieser Reset aus sein, sonst
-// verliert ein zahlender Kunde seine gebuchten Module bei jedem Reload. Steuerbar ohne Code-
-// Deploy ueber localStorage『gcos_demo_mode』: '0' = Reset aus (Module bleiben erhalten).
-function demoModeOn(){ try{ return localStorage.getItem('gcos_demo_mode') !== '0'; }catch(e){ return true; } }
-function resetDemoModules(s){ if(!demoModeOn()) return s; s.owned = []; s.startModul = true; return s; }
+// PRODUKTION: Gebuchte Module bleiben dauerhaft erhalten – kein Reset bei Reload mehr.
+function resetDemoModules(s){ return s; }
 function saveSettings(){ try{ localStorage.setItem('gcos_settings_v2', JSON.stringify(settings)); }catch(e){} }
 
 /* ===================== ENTRY-BRAND (GreenCareers vs GreyCareers OS) =====================
@@ -4211,6 +4204,9 @@ async function afterAuth(session){
     const { data:prof } = await sbAuth.from('profiles').select('*').eq('id',GC_USER.id).maybeSingle();
     GC_PROFILE = prof||null;
   }catch(e){ GC_PROFILE=null; }
+  // Echte Rolle aus dem Profil übernehmen (kein Demo-Default mehr). Unbekannt/leer -> Inhaber.
+  { const R=['admin','buero','buchhaltung','mitarbeiter','kolonnenfuehrer'];
+    viewRole = (GC_PROFILE && R.includes(GC_PROFILE.role)) ? GC_PROFILE.role : 'admin'; }
   // Firmenstammdaten aus Supabase ziehen, falls schon ein Betrieb verknüpft ist
   if(GC_PROFILE && GC_PROFILE.customer_id){
     try{
@@ -4238,7 +4234,7 @@ async function afterAuth(session){
   }
   // Eingeloggter Mitarbeiter/Büro: eigene Personalakte-Zeile laden + lokalen
   // Self-Datensatz synthetisieren, damit die Mitarbeiter-Ansicht (Zeit/Urlaub) funktioniert.
-  if(GC_PROFILE && (GC_PROFILE.role==='mitarbeiter' || GC_PROFILE.role==='buero')){
+  if(GC_PROFILE && (GC_PROFILE.role==='mitarbeiter' || GC_PROFILE.role==='buero' || GC_PROFILE.role==='kolonnenfuehrer')){
     await hydrateSelfEmployee();
   }
   enterApp();
@@ -4257,12 +4253,12 @@ async function hydrateSelfEmployee(){
         crewId:(me&&me.crew)||null, phone:(me&&me.phone)||'',
         since:String(new Date(TODAY).getFullYear()), annual:30,
         email:(me&&me.email)||GC_USER.email,
-        sysRole: GC_PROFILE.role==='buero'?'buero':'mitarbeiter', account:'active'
+        sysRole: GC_PROFILE.role, account:'active'
       });
     }
     viewEmpId = selfId;
-    viewRole  = GC_PROFILE.role==='buero' ? 'buero' : 'mitarbeiter';
-  }catch(e){ viewRole = GC_PROFILE.role==='buero' ? 'buero' : 'mitarbeiter'; }
+    viewRole  = GC_PROFILE.role;
+  }catch(e){ viewRole = GC_PROFILE.role; }
 }
 
 // App betreten (UI freigeben) – ersetzt das alte Demo-„login"
@@ -4427,16 +4423,9 @@ function applyRole(){
   document.getElementById('sideUserName').textContent = name;
   document.getElementById('sideUserRole').textContent = r.label;
   document.getElementById('sideAvatar').textContent = initials(name);
-  // Rollen-Pill in der Topbar – bewusst als reiner Demo-/Vorschau-Schalter markiert (im echten Produkt nicht vorhanden)
-  document.getElementById('rolePill').innerHTML = `<span class="rolepill__tag">Demo</span><i data-lucide="${r.icon}"></i><span>${r.short}</span><i data-lucide="chevrons-up-down" class="rolepill__cv"></i>`;
-  // Preview-Bar (nur wenn nicht Admin)
+  // Preview-Bar bleibt im echten Produkt immer leer/versteckt (Demo-Vorschau entfernt).
   const pv = document.getElementById('previewBar');
-  if(viewRole === 'admin'){
-    pv.classList.add('hidden');
-  }else{
-    pv.classList.remove('hidden');
-    pv.innerHTML = `<i data-lucide="eye"></i><span>Vorschau: So sieht <b>${name}</b> die App (${r.label})</span><button onclick="setRole('admin')"><i data-lucide="x"></i> Vorschau beenden</button>`;
-  }
+  if(pv){ pv.classList.add('hidden'); pv.innerHTML=''; }
   // Nav neu, View ggf. zurücksetzen wenn aktueller View für Rolle gesperrt
   const allowed = navForRole().map(n => n.id);
   const free = allowed.filter(id => !isLocked(id));
@@ -10887,8 +10876,12 @@ function setApplicantStatus(id, toCol){
 }
 // ---- Mehrbenutzer-Kommentare (Verlauf, nur Autor darf bearbeiten/löschen) ----
 function currentUser(){
-  const person = viewRole === 'mitarbeiter' ? selfEmp() : (viewRole === 'buero' ? emp(11) : (viewRole === 'buchhaltung' ? {name:'Bianca Roth'} : {name:'Georg Müller'}));
-  return { name: (person && person.name) || 'Georg Müller', role: ROLES[viewRole] ? ROLES[viewRole].label : '' };
+  // Echter Anzeigename des eingeloggten Nutzers (kein Demo-Platzhalter mehr).
+  const realName = (settings.company && settings.company.owner && settings.company.owner.trim())
+    || (typeof GC_USER!=='undefined' && GC_USER && GC_USER.user_metadata && GC_USER.user_metadata.name)
+    || (typeof GC_USER!=='undefined' && GC_USER && GC_USER.email) || 'Inhaber';
+  const person = (viewRole==='mitarbeiter'||viewRole==='kolonnenfuehrer') ? selfEmp() : {name: realName};
+  return { name: (person && person.name) || realName, role: ROLES[viewRole] ? ROLES[viewRole].label : '' };
 }
 function addApplicantComment(id){
   const a = findCandidate(id); if(!a) return;
