@@ -1144,6 +1144,9 @@
   .job.dragging{ opacity:.42; }
   .job b{ display:block; font-size:12px; }
   .job span{ display:block; margin-top:3px; color:var(--muted); font-size:10.5px; line-height:1.3; }
+  .job--abswarn{ border-color:var(--amber); background:#FFFBEB; }
+  .job__abs{ display:inline-flex !important; align-items:center; gap:3px; margin-top:6px; padding:2px 7px; border-radius:999px; background:#FEF3C7; color:#92400E; font-size:10px; font-weight:600; }
+  .job__abs .lucide{ width:11px; height:11px; }
 
   /* Zeitstrahl (Gantt) */
   .zt-legend{ display:flex; align-items:center; gap:8px; font-size:12px; color:var(--muted); margin-bottom:14px; }
@@ -3232,6 +3235,10 @@ function springerPool(){ return employees.filter(e => !e.crewId && e.sysRole !==
 function assignCrew(empId, crewId){ const e = emp(empId); if(e){ e.crewId = crewId || null; } }
 // Heute abwesend (genehmigt & deckt TODAY ab) → für Besetzungsplanung
 function absentToday(id){ return absences.find(x => x.empId === id && x.status === 'genehmigt' && covers(x, TODAY)) || null; }
+// Welche Kolonnen-Mitglieder sind an einem ABSOLUTEN Datum (iso) genehmigt abwesend? → Plantafel-Mitdenken
+function crewAbsentOn(crewId, iso){
+  return crewMembers(crewId).filter(m => absences.find(a => a.empId === m.id && a.status === 'genehmigt' && covers(a, iso)));
+}
 let viewRole = 'admin';   // welche Rolle ich gerade ansehe (Inhaber kann durchschalten)
 let viewEmpId = 1;        // bei Mitarbeiter-Ansicht: welcher Mitarbeiter (Default Sven Albrecht)
 
@@ -11055,9 +11062,9 @@ const PLAN = {
         ${days.map(day => `<div class="plan-day">${day.label}</div>`).join('')}
         ${crews.map(crew => { const n = crewMembers(crew.id).length; const off = crewMembers(crew.id).filter(m => absentToday(m.id)).length; return `
           <div class="crew"><span class="crew__icon" style="background:${crew.color}22;color:${crew.color}"><i data-lucide="${crew.icon||'users'}"></i></span><div><b>${crew.label}</b><span>${n} ${n===1?'Mann':'Mann'}${off?` · <span style="color:var(--amber)">${off} fehlt</span>`:''}</span></div></div>
-          ${days.map(day => `<div class="plan-cell" data-crew="${crew.id}" data-day="${day.id}">
-            ${((plan[crew.id]&&plan[crew.id][day.id]) || []).map((job,index) => `<div class="job" draggable="true" data-crew="${crew.id}" data-day="${day.id}" data-index="${index}" style="--job-color:${job.c}" onclick="openPlanJob('${crew.id}','${day.id}',${index})"><b>${job.t}</b><span>${job.o}</span></div>`).join('')}
-          </div>`).join('')}
+          ${days.map(day => { const jobsHere = (plan[crew.id]&&plan[crew.id][day.id]) || []; const absHere = jobsHere.length ? crewAbsentOn(crew.id, day.date) : []; return `<div class="plan-cell" data-crew="${crew.id}" data-day="${day.id}">
+            ${jobsHere.map((job,index) => `<div class="job ${absHere.length?'job--abswarn':''}" draggable="true" data-crew="${crew.id}" data-day="${day.id}" data-index="${index}" style="--job-color:${job.c}" onclick="openPlanJob('${crew.id}','${day.id}',${index})"><b>${job.t}</b><span>${job.o}</span>${absHere.length?`<span class="job__abs" title="${absHere.map(m=>m.name).join(', ')} abwesend"><i data-lucide="alert-triangle"></i> ${absHere.length} fehlt</span>`:''}</div>`).join('')}
+          </div>`; }).join('')}
         `; }).join('')}
       </div>
     </div>`,
@@ -11280,7 +11287,14 @@ function submitAuftrag(){
   auftragDraft = null;
   if(currentView!=='planung'){ activePlanTab='tafel'; setView('planung'); }
   else planTab(activePlanTab);
-  toast('Auftrag eingeplant');
+  // Mitdenken: warnen, wenn die Kolonne an diesem Tag personell ausgedünnt ist (Urlaub/Krank)
+  const dayObj = days.find(x => x.id === d.day);
+  const absHere = dayObj ? crewAbsentOn(d.crew, dayObj.date) : [];
+  if(absHere.length){
+    setTimeout(() => toast(`Achtung: ${absHere.map(m=>m.name.split(' ')[0]).join(', ')} ${absHere.length===1?'ist':'sind'} am ${dDEs(dayObj.date)} abwesend – Springer einplanen?`), 700);
+  } else {
+    toast('Auftrag eingeplant');
+  }
 }
 
 let draggedBar = null;
