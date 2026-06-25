@@ -9000,9 +9000,9 @@ function editAbsence(id){
   const a = absences.find(x => x.id === id); if(!a) return;
   openAbsenceForm(a.empId, a.from, a.to, a.type, a.note, id);
 }
-function approveAbsence(id){ const a = absences.find(x => x.id === id); if(!a) return; a.status = 'genehmigt'; saveAbsences(); afterAbsChange(); toast(`${emp(a.empId).name}: genehmigt`); }
-function rejectAbsence(id){ const a = absences.find(x => x.id === id); if(!a) return; a.status = 'abgelehnt'; saveAbsences(); afterAbsChange(); toast(`${emp(a.empId).name}: abgelehnt`); }
-function deleteAbsence(id){ const i = absences.findIndex(x => x.id === id); if(i < 0) return; const e = emp(absences[i].empId); const n = e ? e.name : 'Eintrag'; if(!confirm(`Eintrag von ${n} wirklich löschen?`)) return; absences.splice(i,1); saveAbsences(); afterAbsChange(); toast(`${n}: Eintrag gelöscht`); }
+function approveAbsence(id){ const a = absences.find(x => x.id === id); if(!a) return; a.status = 'genehmigt'; saveAbsences(); persistAbsence(a); afterAbsChange(); toast(`${emp(a.empId).name}: genehmigt`); }
+function rejectAbsence(id){ const a = absences.find(x => x.id === id); if(!a) return; a.status = 'abgelehnt'; saveAbsences(); persistAbsence(a); afterAbsChange(); toast(`${emp(a.empId).name}: abgelehnt`); }
+function deleteAbsence(id){ const i = absences.findIndex(x => x.id === id); if(i < 0) return; const e = emp(absences[i].empId); const n = e ? e.name : 'Eintrag'; if(!confirm(`Eintrag von ${n} wirklich löschen?`)) return; const uuid = absences[i]._uuid; absences.splice(i,1); saveAbsences(); if(uuid) deleteAbsenceDb(uuid); afterAbsChange(); toast(`${n}: Eintrag gelöscht`); }
 function afterAbsChange(){ renderUrlaub(); refreshUrlaubBadge(); }
 function viewAu(id){ const url = auImages[id]; if(!url) return; openSheet(`<div class="sheet__head"><div><div class="sheet__title">AU-Bescheinigung</div><div class="sheet__sub">Foto vom Mitarbeiter hochgeladen</div></div><button class="iconbtn sheet__close" onclick="openAbsence(${id})"><i data-lucide="x"></i></button></div><div class="sheet__body"><img src="${url}" alt="AU" style="width:100%;border-radius:10px;border:1px solid var(--line)"></div>`); }
 
@@ -9061,8 +9061,10 @@ function quickSick(id){
   const already = absences.find(x => x.empId === id && x.type === 'krank' && x.status === 'genehmigt' && covers(x, TODAY));
   if(already){ toast(e.name.split(' ')[0] + ' ist heute bereits krankgemeldet'); return; }
   const newId = absSeq++;
-  absences.push({ id:newId, empId:id, type:'krank', from:TODAY, to:TODAY, note:'Schnellkrankmeldung', status:'genehmigt', au:'' });
+  const aNew = { id:newId, empId:id, type:'krank', from:TODAY, to:TODAY, note:'Schnellkrankmeldung', status:'genehmigt', au:'' };
+  absences.push(aNew);
   saveAbsences();
+  persistAbsence(aNew);
   if(akteEmpId === id) renderAkte();
   refreshUrlaubBadge();
   toast(e.name.split(' ')[0] + ' für heute krankgemeldet');
@@ -9120,7 +9122,7 @@ function submitAbsence(){
   const status = type === 'krank' ? 'genehmigt' : (can('approveAbsence') ? 'genehmigt' : 'offen');
   if(afEditId){
     const a = absences.find(x => x.id === afEditId);
-    if(a){ Object.assign(a, { empId, type, from, to, note }); if(type !== 'krank') a.au = a.au || ''; saveAbsences(); }
+    if(a){ Object.assign(a, { empId, type, from, to, note }); if(type !== 'krank') a.au = a.au || ''; saveAbsences(); persistAbsence(a); }
     afEditId = null; afAuData = null;
     closeSheet();
     activeTeamTab = 'urlaub'; akteEmpId = null;
@@ -9131,9 +9133,11 @@ function submitAbsence(){
   const newId = absSeq++;
   const au = (type === 'krank' && afAuData) ? afAuData.name : '';
   if(type === 'krank' && afAuData) auImages[newId] = afAuData.url;
-  absences.push({ id: newId, empId, type, from, to, note, status, au });
+  const aNew = { id: newId, empId, type, from, to, note, status, au };
+  absences.push(aNew);
   afAuData = null;
   saveAbsences();
+  persistAbsence(aNew);
   closeSheet();
   urlaubSub = (status === 'offen') ? 'antraege' : 'kalender';
   activeTeamTab = 'urlaub'; akteEmpId = null;
@@ -9316,8 +9320,10 @@ function absVoiceCommit(){
     if(after < 0){ const who = emp(empId); if(!confirm(`${who?who.name:'Mitarbeiter'} hätte danach ${after} Tage Resturlaub (überzogen um ${Math.abs(after)}). Trotzdem eintragen?`)) return; }
   }
   const status = type === 'krank' ? 'genehmigt' : (can('approveAbsence') ? 'genehmigt' : 'offen');
-  absences.push({ id: absSeq++, empId, type, from, to, note, status, au:'' });
+  const aNew = { id: absSeq++, empId, type, from, to, note, status, au:'' };
+  absences.push(aNew);
   saveAbsences();
+  persistAbsence(aNew);
   closeSheet();
   urlaubSub = (status === 'offen') ? 'antraege' : 'kalender';
   activeTeamTab = 'urlaub'; akteEmpId = null;
@@ -9529,6 +9535,7 @@ async function loadPortalData(){
     if(st && !st.error){ jobs.length = 0; (st.data||[]).forEach(r => jobs.push(mapStelleRow(r))); }
     if(bw && !bw.error){ applicants.length = 0; (bw.data||[]).forEach(r => applicants.push(mapBewerberRow(r))); }
     await loadTeam();   // echtes Team (mitarbeiter-Tabelle) + Personalakten (extra) des Betriebs laden
+    await loadAbsencesDb();   // Abwesenheiten (abwesenheiten-Tabelle) – NACH loadTeam (braucht employee._uuid fürs Mapping)
     OS_DATA_LOADED = true;
     if(_enteredApp && ['stellen','recruiting','heute'].includes(currentView)) setView(currentView);
     refreshBell();
@@ -9634,6 +9641,69 @@ async function loadTeam(){
     const hr = {}; Object.keys(ex).forEach(k => { if(k.charAt(0) !== '_') hr[k] = ex[k]; });
     if(Object.keys(hr).length) hrStore[e.id] = hr;
   });
+}
+
+// ===================== ABWESENHEITEN · DB-PERSISTENZ (abwesenheiten-Tabelle, Schema v16) =====================
+// Gleiche Defensive wie beim Team: ohne verbundenen Betrieb bleibt der localStorage-Stand
+// (gcos_absences_v3) die Wahrheit. Mit Login werden Urlaub/Krank/Sonder zusätzlich in die
+// abwesenheiten-Tabelle geschrieben (gebunden an mitarbeiter.id über employee._uuid) und beim
+// Laden von dort zurückgelesen. Fehler werden sichtbar getoastet.
+function absRowPayload(a){
+  const e = emp(a.empId);
+  const maId = e && e._uuid ? e._uuid : null;
+  if(!maId) return null;                       // ohne echte mitarbeiter-Zeile NICHT persistieren
+  return {
+    customer_id: GC_PROFILE.customer_id,
+    mitarbeiter_id: maId,
+    art: a.type,
+    von: a.from,
+    bis: a.to || a.from,
+    note: a.note || null,
+    status: a.status || 'offen',
+    au: a.au || null
+  };
+}
+async function persistAbsence(a){
+  if(!osConnected() || !a) return;
+  const payload = absRowPayload(a);
+  if(!payload){ return; }                       // Person (noch) nicht in der DB -> still überspringen
+  try{
+    if(a._uuid){
+      const { error } = await sbAuth.from('abwesenheiten').update(payload).eq('id', a._uuid);
+      if(error){ toast('Abwesenheit speichern fehlgeschlagen: '+error.message); }
+    } else {
+      const { data, error } = await sbAuth.from('abwesenheiten').insert(payload).select('id').single();
+      if(error){ toast('Abwesenheit anlegen fehlgeschlagen: '+error.message); }
+      else if(data && data.id){ a._uuid = data.id; }
+    }
+  }catch(err){ toast('Abwesenheit speichern fehlgeschlagen: '+String(err)); }
+}
+async function deleteAbsenceDb(uuid){
+  if(!osConnected() || !uuid) return;
+  try{
+    const { error } = await sbAuth.from('abwesenheiten').delete().eq('id', uuid);
+    if(error){ toast('Abwesenheit löschen (DB) fehlgeschlagen: '+error.message); }
+  }catch(err){ toast('Abwesenheit löschen (DB) fehlgeschlagen: '+String(err)); }
+}
+// Abwesenheiten aus der DB laden und den localStorage-Stand für den verbundenen Betrieb ersetzen
+// (DB = Wahrheit). Muss NACH loadTeam laufen, damit employee._uuid für das Mapping steht.
+async function loadAbsencesDb(){
+  if(!osConnected()) return;
+  let res = null;
+  try{ res = await sbAuth.rpc('my_abwesenheiten'); }catch(e){ res = { error:e }; }
+  if(!res || res.error){ if(res && res.error) console.warn('my_abwesenheiten:', res.error.message || res.error); return; }
+  const rows = res.data || [];
+  // Mapping mitarbeiter.id -> numerische Session-empId
+  const byUuid = {}; employees.forEach(e => { if(e._uuid) byUuid[e._uuid] = e.id; });
+  absences.length = 0;
+  rows.forEach(r => {
+    const empId = byUuid[r.mitarbeiter_id];
+    if(empId == null) return;                    // unbekannte Person (z. B. gelöscht) überspringen
+    const newId = absSeq++;
+    absences.push({ id:newId, _uuid:r.id, empId, type:r.art, from:r.von, to:r.bis || r.von,
+                    note:r.note || '', status:r.status || 'offen', au:r.au || '' });
+  });
+  saveAbsences();                                // lokalen Cache mit DB-Stand spiegeln
 }
 function bewCountForJob(jobId){ return applicants.filter(a => a.jobId === jobId).length; }
 function bewNeuForJob(jobId){ return applicants.filter(a => a.jobId === jobId && a.stage === 'neu').length; }
