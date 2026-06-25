@@ -9545,6 +9545,7 @@ async function loadPortalData(){
     await loadKunden(); // Endkunden des Betriebs (kunden-Tabelle) – VOR der Plantafel (kunde_id-Mapping)
     await loadTeam();   // echtes Team (mitarbeiter-Tabelle) + Personalakten (extra) des Betriebs laden
     await loadAbsencesDb();   // Abwesenheiten (abwesenheiten-Tabelle) – NACH loadTeam (braucht employee._uuid fürs Mapping)
+    await loadPlantafel();    // Plantafel (plantafel-Tabelle) – NACH loadCrews + loadKunden (crew/kunde-Mapping)
     OS_DATA_LOADED = true;
     if(_enteredApp && ['stellen','recruiting','heute'].includes(currentView)) setView(currentView);
     refreshBell();
@@ -9829,6 +9830,75 @@ async function loadKunden(){
       type: ex.type||'Neukunde', since: ex.since||String(new Date().getFullYear()),
       value: ex.value||'—', status: Array.isArray(ex.status)?ex.status:['Neu','b'],
       history: Array.isArray(ex.history)?ex.history:[{date:dDE(dISO(new Date(r.created_at||Date.now()))), ch:'note', text:'Kunde angelegt'}] });
+  });
+}
+
+// ===================== PLANTAFEL · DB-PERSISTENZ (plantafel-Tabelle, Schema v17) =====================
+// WICHTIG: Persistiert wird per ABSOLUTEM Datum (days[x].date), NICHT per relativem Slot ('neu'/'di'/…),
+// weil die Slots täglich verrutschen und sonst Daten verfälschen würden. Jeder Plan-Job trägt verdeckt
+// _uuid (DB-Zeile) + _date (absolutes Datum). Verschieben (Drag/ztMoveBar) ändert crew_id/datum derselben
+// Zeile (UPDATE über _uuid – Job-Objekt wandert per Referenz und behält _uuid).
+function dayDateFor(dayId){ const d = days.find(x => x.id === dayId); return d ? d.date : null; }
+function planRowPayload(job, crewId, dayId){
+  const crew = crewById(crewId);
+  const crewUuid = crew && crew._uuid ? crew._uuid : null;
+  const datum = dayDateFor(dayId);
+  if(!crewUuid || !datum) return null;             // ohne echte Kolonne/Datum nicht persistierbar
+  return {
+    customer_id: GC_PROFILE.customer_id,
+    crew_id: crewUuid,
+    kunde_id: kundeUuidFor(job.customerId),
+    datum,
+    titel: job.t || '—',
+    info: job.o || null,
+    farbe: job.c || null,
+    sort: 0
+  };
+}
+async function persistPlanJob(job, crewId, dayId){
+  if(!osConnected() || !job) return;
+  const payload = planRowPayload(job, crewId, dayId);
+  if(!payload) return;                             // Kolonne (noch) nicht in der DB -> still überspringen
+  job._date = payload.datum;
+  try{
+    if(job._uuid){
+      const { error } = await sbAuth.from('plantafel').update(payload).eq('id', job._uuid);
+      if(error){ toast('Planung speichern fehlgeschlagen: '+error.message); }
+    } else {
+      const { data, error } = await sbAuth.from('plantafel').insert(payload).select('id').single();
+      if(error){ toast('Planung anlegen fehlgeschlagen: '+error.message); }
+      else if(data && data.id){ job._uuid = data.id; }
+    }
+  }catch(err){ toast('Planung speichern fehlgeschlagen: '+String(err)); }
+}
+async function deletePlanJobDb(uuid){
+  if(!osConnected() || !uuid) return;
+  try{
+    const { error } = await sbAuth.from('plantafel').delete().eq('id', uuid);
+    if(error){ toast('Planung löschen (DB) fehlgeschlagen: '+error.message); }
+  }catch(err){ toast('Planung löschen (DB) fehlgeschlagen: '+String(err)); }
+}
+// Plantafel des sichtbaren Fensters laden (my_plantafel von..bis). Mappt absolutes datum -> sichtbaren
+// Slot und crew_id (UUID = crew.id nach loadCrews) zurück. Muss NACH loadCrews + loadKunden laufen.
+async function loadPlantafel(){
+  if(!osConnected() || !days.length) return;
+  const von = days[0].date, bis = days[days.length-1].date;
+  let res = null;
+  try{ res = await sbAuth.rpc('my_plantafel', { p_von:von, p_bis:bis }); }catch(e){ res = { error:e }; }
+  if(!res || res.error){ if(res && res.error) console.warn('my_plantafel:', res.error.message || res.error); return; }
+  const rows = res.data || [];
+  // Idempotent: alle aus der DB geladenen Jobs (mit _uuid) aus den Buckets werfen
+  Object.keys(plan).forEach(cid => Object.keys(plan[cid] || {}).forEach(did => {
+    plan[cid][did] = (plan[cid][did] || []).filter(j => !j._uuid);
+  }));
+  rows.forEach(r => {
+    const slot = days.find(d => d.date === r.datum);   // absolutes Datum -> sichtbarer Slot
+    if(!slot) return;                                  // außerhalb des Fensters
+    const crewId = r.crew_id;                          // crews haben id = uuid (loadCrews)
+    if(!plan[crewId]){ plan[crewId] = {}; days.forEach(d => plan[crewId][d.id] = []); }
+    if(!plan[crewId][slot.id]) plan[crewId][slot.id] = [];
+    plan[crewId][slot.id].push({ _uuid:r.id, _date:r.datum, t:r.titel||'—', o:r.info||'',
+      c:r.farbe||'#16A34A', customerId: r.kunde_id || '' });
   });
 }
 function bewCountForJob(jobId){ return applicants.filter(a => a.jobId === jobId).length; }
@@ -11015,7 +11085,9 @@ function deletePlanJob(crewId, dayId, index){
   const arr = plan[crewId] && plan[crewId][dayId]; if(!arr || !arr[index]) return;
   const name = arr[index].t;
   if(!confirm(`„${name}" wirklich aus der Planung entfernen?`)) return;
+  const uuid = arr[index]._uuid || null;
   arr.splice(index, 1);
+  if(uuid) deletePlanJobDb(uuid);
   closeSheet();
   if(currentView==='planung') planTab(activePlanTab);
   toast(`„${name}" entfernt`);
@@ -11042,6 +11114,7 @@ function wirePlan(){
       if(!draggedJob) return;
       const job = plan[draggedJob.crew][draggedJob.day].splice(draggedJob.index,1)[0];
       plan[cell.dataset.crew][cell.dataset.day].push(job);
+      persistPlanJob(job, cell.dataset.crew, cell.dataset.day);   // gleiche Zeile, neue crew_id/datum
       draggedJob = null;
       setView('planung');
       toast(`${job.t} verschoben`);
@@ -11085,7 +11158,9 @@ function submitAuftrag(){
   const c = crewById(d.crew);
   if(!plan[d.crew]) plan[d.crew] = {};
   if(!plan[d.crew][d.day]) plan[d.crew][d.day] = [];
-  plan[d.crew][d.day].push({ t:d.t.trim(), o:d.o.trim() || (c?c.label:''), c: c?c.color:'#16A34A', customerId: d.customerId || '' });
+  const job = { t:d.t.trim(), o:d.o.trim() || (c?c.label:''), c: c?c.color:'#16A34A', customerId: d.customerId || '' };
+  plan[d.crew][d.day].push(job);
+  persistPlanJob(job, d.crew, d.day);
   closeSheet();
   auftragDraft = null;
   if(currentView!=='planung'){ activePlanTab='tafel'; setView('planung'); }
@@ -11112,6 +11187,7 @@ function ztMoveBar(fromCrew, startIdx, span, toCrew, toDayIdx){
     if(!plan[toCrew]) plan[toCrew] = {};
     if(!plan[toCrew][tDay.id]) plan[toCrew][tDay.id] = [];
     plan[toCrew][tDay.id].push(job);
+    persistPlanJob(job, toCrew, tDay.id);          // gleiche Zeile, neue crew_id/datum
   });
   return moved[0].job;
 }
