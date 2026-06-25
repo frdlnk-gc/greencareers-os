@@ -8598,7 +8598,8 @@ function submitVoiceEmployee(){
   const phone=g('vcPhone'), email=g('vcEmail');
   const startISO=g('vcStart'); const since=startISO?startISO.slice(0,4):String(new Date(TODAY).getFullYear());
   const newId=empSeq++;
-  employees.push({id:newId,name,role,crewId,phone,since,annual:30,email,sysRole:'mitarbeiter',account: email?'invited':'none', startDate:startISO||''});
+  const eNew={id:newId,name,role,crewId,phone,since,annual:30,email,sysRole:'mitarbeiter',account: email?'invited':'none', startDate:startISO||''};
+  employees.push(eNew);
   const hr=hrData(emp(newId));
   if(g('vcBd')) hr.bd=g('vcBd');
   if(g('vcAddr')) hr.addr=g('vcAddr');
@@ -8607,6 +8608,7 @@ function submitVoiceEmployee(){
   const contractSel=document.getElementById('vcContract'); if(contractSel&&contractSel.value) hr.contract=contractSel.value;
   if(g('vcSalary')) hr.salary=g('vcSalary');
   const hours=g('vcHours'); if(hours){ const h=parseInt(hours,10); if(h>0) hr.hours=h; }
+  persistEmployee(eNew);   // legt die DB-Zeile inkl. der eben gesetzten HR-Felder (extra) an
   closeSheet();
   openEmployee(newId);
   toast(email?`${name} angelegt · Einladung an ${email}`:`${name} angelegt`);
@@ -9526,10 +9528,112 @@ async function loadPortalData(){
     const bw = (bwRpc && !bwRpc.error) ? bwRpc : bwTbl;
     if(st && !st.error){ jobs.length = 0; (st.data||[]).forEach(r => jobs.push(mapStelleRow(r))); }
     if(bw && !bw.error){ applicants.length = 0; (bw.data||[]).forEach(r => applicants.push(mapBewerberRow(r))); }
+    await loadTeam();   // echtes Team (mitarbeiter-Tabelle) + Personalakten (extra) des Betriebs laden
     OS_DATA_LOADED = true;
     if(_enteredApp && ['stellen','recruiting','heute'].includes(currentView)) setView(currentView);
     refreshBell();
   }catch(e){ console.warn('Portal-Daten konnten nicht geladen werden', e); }
+}
+
+// ===================== TEAM/PERSONALAKTE · DB-PERSISTENZ (mitarbeiter-Tabelle, Schema v9) =====================
+// Defensiv: Der In-Memory-Stamm (employees/hrStore) bleibt die Session-Wahrheit – ohne verbundenen
+// Betrieb ändert sich NICHTS am bisherigen Verhalten. Ist ein echter Betrieb eingeloggt, werden
+// Änderungen zusätzlich in die mitarbeiter-Tabelle geschrieben und beim Laden von dort zurückgelesen.
+// Fehler werden SICHTBAR getoastet (kein stilles Scheitern -> keine falsche Persistenz-Sicherheit).
+function osConnected(){ return !!(sbAuth && GC_PROFILE && GC_PROFILE.customer_id); }
+
+// employee + Personalakte -> mitarbeiter-Row. position=Funktion, crew=Kolonne, Rest der HR-Felder in extra.
+function maRowPayload(e){
+  const hr = hrStore[e.id] || {};
+  return {
+    customer_id: GC_PROFILE.customer_id,
+    name: e.name || '—',
+    email: e.email || null,
+    position: e.role || null,
+    crew: e.crewId || null,
+    phone: e.phone || null,
+    sys_role: (e.sysRole === 'buero' ? 'buero' : 'mitarbeiter'),
+    status: (['none','invited','active'].includes(e.account) ? e.account : 'none'),
+    extra: Object.assign({}, hr, { _annual:e.annual, _since:e.since, _startDate:e.startDate||'' })
+  };
+}
+
+// Anlegen ODER aktualisieren. Bei INSERT die zurückgegebene UUID am In-Memory-Objekt vermerken (_uuid),
+// damit Folge-Updates dieselbe Zeile treffen.
+async function persistEmployee(e){
+  if(!osConnected() || !e) return;
+  try{
+    if(e._uuid){
+      const { error } = await sbAuth.from('mitarbeiter').update(maRowPayload(e)).eq('id', e._uuid);
+      if(error){ toast('Speichern fehlgeschlagen: '+error.message); }
+    } else {
+      const { data, error } = await sbAuth.from('mitarbeiter').insert(maRowPayload(e)).select('id').single();
+      if(error){ toast('Anlegen fehlgeschlagen: '+error.message); }
+      else if(data && data.id){ e._uuid = data.id; }
+    }
+  }catch(err){ toast('Speichern fehlgeschlagen: '+String(err)); }
+}
+
+async function deleteEmployeeDb(uuid){
+  if(!osConnected() || !uuid) return;
+  try{
+    const { error } = await sbAuth.from('mitarbeiter').delete().eq('id', uuid);
+    if(error){ toast('Löschen in der DB fehlgeschlagen: '+error.message); }
+  }catch(err){ toast('Löschen in der DB fehlgeschlagen: '+String(err)); }
+}
+
+// Personalakte-Änderungen gebündelt (debounced) als reines UPDATE schreiben – nur für Personen, die
+// bereits eine DB-Zeile haben (e._uuid). So legt eine Akte NIE versehentlich eine neue Zeile an
+// (z. B. für den Inhaber-/Selbst-Datensatz ohne _uuid).
+let _akteSaveTimer = null, _akteSaveId = null;
+function persistAkteSoon(){
+  if(!osConnected()) return;
+  const e = emp(akteEmpId);
+  if(!e || !e._uuid) return;
+  _akteSaveId = e._uuid;
+  clearTimeout(_akteSaveTimer);
+  _akteSaveTimer = setTimeout(()=>{ const t = emp(akteEmpId); if(t && t._uuid === _akteSaveId) persistEmployee(t); }, 600);
+}
+
+// Team des Betriebs aus der DB laden (RLS-scoped per my_team-RPC) und in den In-Memory-Stamm spiegeln.
+// Idempotent: zuvor aus der DB geladene Personen (alle mit _uuid) werden vor dem Neuaufbau entfernt;
+// der per hydrateSelfEmployee angelegte Selbst-Datensatz (id 900001) wird mit seiner echten Zeile
+// abgeglichen statt verdoppelt.
+async function loadTeam(){
+  if(!osConnected()) return;
+  let res = null;
+  try{ res = await sbAuth.rpc('my_team'); }catch(e){ res = { error:e }; }
+  if(!res || res.error){ if(res && res.error) console.warn('my_team:', res.error.message || res.error); return; }
+  const rows = res.data || [];
+  for(let i = employees.length - 1; i >= 0; i--){ if(employees[i]._uuid) employees.splice(i,1); }
+  rows.forEach(r => {
+    const ex = r.extra || {};
+    let e = (r.profile_id && GC_USER && r.profile_id === GC_USER.id) ? emp(900001) : null;
+    if(e){
+      e._uuid = r.id;
+      e.name = r.name || e.name;
+      e.role = r.position || e.role;
+      e.crewId = r.crew || e.crewId;
+      e.phone = r.phone || e.phone;
+      e.email = r.email || e.email;
+      e.account = r.status || e.account;
+      e.sysRole = r.sys_role || e.sysRole;
+      if(ex._annual != null) e.annual = ex._annual;
+      if(ex._since) e.since = ex._since;
+      if(ex._startDate) e.startDate = ex._startDate;
+    } else {
+      const newId = empSeq++;
+      e = { id:newId, _uuid:r.id, name:r.name||'—', role:r.position||'Mitarbeiter',
+            crewId:r.crew||null, phone:r.phone||'', email:r.email||'',
+            since: ex._since || String(new Date(TODAY).getFullYear()),
+            annual: (ex._annual != null ? ex._annual : 30),
+            sysRole: (r.sys_role==='buero'?'buero':'mitarbeiter'),
+            account: r.status||'none', startDate: ex._startDate||'' };
+      employees.push(e);
+    }
+    const hr = {}; Object.keys(ex).forEach(k => { if(k.charAt(0) !== '_') hr[k] = ex[k]; });
+    if(Object.keys(hr).length) hrStore[e.id] = hr;
+  });
 }
 function bewCountForJob(jobId){ return applicants.filter(a => a.jobId === jobId).length; }
 function bewNeuForJob(jobId){ return applicants.filter(a => a.jobId === jobId && a.stage === 'neu').length; }
@@ -12449,6 +12553,8 @@ function renderAkte(){
     </div>`;
   v.scrollTop = 0;
   icons();
+  // Jede Akte-Mutation läuft durch renderAkte -> hier gebündelt (debounced, UPDATE-only) in die DB.
+  persistAkteSoon();
 }
 function akteTabContent(e,hr,priv){
   switch(akteTab){
@@ -13025,12 +13131,15 @@ async function submitEmployee(id){
   const sysRole = document.getElementById('efSys').value;
   if(id){
     const e = emp(id); Object.assign(e, {name, role, crewId, phone, annual, email, sysRole});
+    persistEmployee(e);
     closeSheet(); teamTab('mitarbeiter'); toast('Mitarbeiter aktualisiert');
     return;
   }
   const invite = document.getElementById('efInvite').checked;
   const newId = empSeq++;
-  employees.push({ id:newId, name, role, crewId, phone, since:String(new Date(TODAY).getFullYear()), annual, email, sysRole, account: invite ? 'invited' : 'none' });
+  const eNew = { id:newId, name, role, crewId, phone, since:String(new Date(TODAY).getFullYear()), annual, email, sysRole, account: invite ? 'invited' : 'none' };
+  employees.push(eNew);
+  persistEmployee(eNew);
   closeSheet(); teamTab('mitarbeiter');
   if(invite && email){
     toast(`${name} angelegt · Einladung wird gesendet …`);
@@ -13046,6 +13155,7 @@ async function inviteEmployee(id){
   const e = emp(id); if(!e) return;
   if(!e.email){ toast('Bitte erst eine E-Mail hinterlegen'); openEmployeeForm(id); return; }
   e.account = 'invited';
+  persistEmployee(e);
   if(currentView==='team' && activeTeamTab==='mitarbeiter') teamTab('mitarbeiter');
   closeSheet();
   toast(`Einladung wird an ${e.email} gesendet …`);
@@ -13058,7 +13168,9 @@ function deleteEmployee(id){
   const e = emp(id); if(!e) return;
   if(!confirm(`${e.name} wirklich aus der Personalakte entfernen? Alle Abwesenheiten dieser Person werden ebenfalls gelöscht.`)) return;
   const i = employees.findIndex(x => x.id === id);
+  const uuid = (i >= 0) ? employees[i]._uuid : null;
   if(i >= 0) employees.splice(i,1);
+  if(uuid) deleteEmployeeDb(uuid);
   // verwaiste Abwesenheiten dieses Mitarbeiters aufräumen (sonst tote Einträge im Urlaubsboard)
   const before = absences.length;
   for(let j = absences.length - 1; j >= 0; j--){ if(absences[j].empId === id) absences.splice(j,1); }
