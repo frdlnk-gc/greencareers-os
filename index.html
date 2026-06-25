@@ -3143,11 +3143,8 @@ let protocols = [];            // Tagesprotokolle dieser Session {empId, siteId,
 let protoPhotos = [];          // temp Fotos im offenen Protokoll-Formular
 let protoDamage = null;        // temp Schaden-Foto im offenen Protokoll-Formular
 let voiceRec = null;           // laufende SpeechRecognition
-const plan = {
-  k1:{neu:[],di:[],mi:[],do:[],fr:[]},
-  k2:{neu:[],di:[],mi:[],do:[],fr:[]},
-  k3:{neu:[],di:[],mi:[],do:[],fr:[]},
-};
+// Plantafel-Belegung pro Kolonne. Startet leer; saveCrew legt je neuer Kolonne den Tages-Bucket an.
+const plan = {};
 // Plantafel-Spalten: heute + die nächsten 4 Werktage (Wochenende übersprungen).
 // IDs bleiben fix (neu/di/mi/do/fr), weil die plan-Struktur darauf verweist – nur Datum/Label sind dynamisch.
 const days = (function(){
@@ -3180,12 +3177,9 @@ function cockpitDateLine(){
   return WD_LANG[dt.getDay()]+', '+dt.getDate()+'. '+MO_LANG[dt.getMonth()]+' '+dt.getFullYear()+' · KW '+isoWeek(dt)+' · '+aktiv+' Mitarbeiter im Einsatz';
 }
 // Kolonnen (Trupps) – frei benennbar & farbcodiert. Mitarbeiter hängen per crewId dran.
-const crews = [
-  {id:'k1', label:'Kolonne Grün',  color:'#16A34A', icon:'sprout'},
-  {id:'k2', label:'Kolonne Pflaster', color:'#B7791F', icon:'brick-wall'},
-  {id:'k3', label:'Kolonne LKW',   color:'#2563EB', icon:'truck'},
-];
-let crewSeq = 4;
+// Kein Demo-Trupp: der Betrieb legt seine Kolonnen selbst an (Team → Kolonnen).
+const crews = [];
+let crewSeq = 1;
 // Anfragen-Inbox – im Echtbetrieb laufen hier Anfragen aus WhatsApp, Mail, Telefon & Website ein.
 const inbox = [];
 // Kundenstamm – im Echtbetrieb legt der Betrieb seine Kunden selbst an bzw. sie entstehen aus
@@ -10758,6 +10752,7 @@ function wirePlan(){
 
 let auftragDraft = null;
 function openAuftragForm(){
+  if(!crews.length){ toast('Bitte zuerst eine Kolonne anlegen (Team → Kolonnen)'); return; }
   auftragDraft = { t:'', o:'', crew:crews[0].id, day:days[0].id, customerId:'' };
   renderAuftragForm();
 }
