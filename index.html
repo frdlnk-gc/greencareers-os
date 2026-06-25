@@ -1499,6 +1499,12 @@
   .gesp-del{ margin-left:auto; background:none; border:none; color:var(--muted); cursor:pointer; padding:2px; border-radius:6px; }
   .gesp-del:hover{ color:var(--danger,#dc2626); }
   .gesp-del .lucide{ width:14px; height:14px; }
+  /* ===== Vorstellungsgespräch-Feed (Bewerber) ===== */
+  .iv-list{ display:flex; flex-direction:column; gap:9px; margin-bottom:12px; }
+  .iv-form{ background:var(--soft); border:1px solid var(--line); border-radius:12px; padding:13px; }
+  .iv-rates{ display:flex; flex-wrap:wrap; gap:7px; }
+  .iv-rate{ cursor:pointer; border:1px solid transparent; opacity:.55; transition:opacity .12s, box-shadow .12s; }
+  .iv-rate.on{ opacity:1; box-shadow:0 0 0 2px var(--green); }
   .akte-docadd{ display:flex; align-items:center; justify-content:center; gap:8px; width:100%; padding:11px; border:1.5px dashed var(--line); border-radius:11px; background:var(--soft); color:var(--muted); font-size:12.5px; font-weight:600; cursor:pointer; transition:all .15s; }
   .akte-docadd:hover{ border-color:var(--green); color:var(--green); background:var(--soft-green); }
   .akte-docadd .lucide{ width:16px; height:16px; }
@@ -8555,8 +8561,10 @@ function parseEmployeeUtterance(text){
   return d;
 }
 // Bestätigungs-Sheet: zeigt alles Erkannte editierbar, Inhaber prüft & speichert
+let _hireCarry = null;   // Vorstellungsgespräche, die bei Einstellung in die Akte wandern
 function openEmployeeConfirm(d){
   d = d || {raw:''};
+  _hireCarry = Array.isArray(d.carryGespraeche) && d.carryGespraeche.length ? d.carryGespraeche : null;
   const crewOpts = `<option value="">Springer (keine feste Kolonne)</option>`+crews.map(c=>`<option value="${c.id}" ${d.crewId===c.id?'selected':''}>${escapeHtml(c.label)}</option>`).join('');
   const tag = ok => ok ? '<span class="vc-ok"><i data-lucide="check"></i> erkannt</span>' : '<span class="vc-miss">noch offen</span>';
   openSheet(`
@@ -8615,6 +8623,9 @@ function submitVoiceEmployee(){
   const contractSel=document.getElementById('vcContract'); if(contractSel&&contractSel.value) hr.contract=contractSel.value;
   if(g('vcSalary')) hr.salary=g('vcSalary');
   const hours=g('vcHours'); if(hours){ const h=parseInt(hours,10); if(h>0) hr.hours=h; }
+  // Vorstellungsgespräche aus dem Recruiting in den Gespräche-Verlauf der Akte übernehmen
+  if(_hireCarry && _hireCarry.length){ const gl=gespList(hr); _hireCarry.forEach(x=>gl.push(x)); }
+  _hireCarry = null;
   persistEmployee(eNew);   // legt die DB-Zeile inkl. der eben gesetzten HR-Felder (extra) an
   closeSheet();
   openEmployee(newId);
@@ -9516,10 +9527,13 @@ function normStage(s){
 }
 function mapBewerberRow(r){
   const ex = r.extra || {};
+  const nz = r.notiz || {};   // Betrieb-private Notizen (Vorstellungsgespräche + Kommentare), Schema v18
   return {id: appSeq++, _uuid:r.id, name:r.name||'—', phone:r.telefon||'', email:r.email||'',
     jobId: r.stellenanzeige_id || null, source: quelleToSource(r.quelle),
     date: r.created_at ? dDE(dISO(new Date(r.created_at))) : 'neu',
-    stage: normStage(r.status), letter: ex.nachricht || '', comments: [],
+    stage: normStage(r.status), letter: ex.nachricht || '',
+    comments: Array.isArray(nz.comments) ? nz.comments : [],
+    interviews: Array.isArray(nz.interviews) ? nz.interviews : [],
     pq: ex.pq || {branche:'',beruf:'',erfahrung:'',gehalt:'',verfuegbar:'',ort:''},
     pqStatus:'offen', botScore:null, role: ex.beruf || '', tags:[], available:'', hot:false};
 }
@@ -10717,6 +10731,23 @@ async function persistBewerberJob(localId, jobId){
     try{ await sbAuth.from('bewerber').update({stellenanzeige_id: jobId || null}).eq('id', a._uuid); }catch(_){}
   }
 }
+// Betrieb-PRIVATE Notizen (Vorstellungsgespräche + interne Kommentare) je Zuordnung
+// sichern. Bewusst NICHT in das geteilte bewerber.extra, sondern über die Zuordnungs-
+// RPC set_my_bewerber_notiz (Schema v18) – andere Betriebe sehen diese Notizen nie.
+// Debounced; scheitert leise (Konsole), wenn die RPC noch nicht deployed ist.
+const _notizTimers = {};
+function persistBewerberNotiz(a){
+  if(!a || !osConnected() || !a._uuid || !sbAuth) return;
+  const uuid = a._uuid;
+  const payload = { interviews: a.interviews || [], comments: a.comments || [] };
+  clearTimeout(_notizTimers[uuid]);
+  _notizTimers[uuid] = setTimeout(async ()=>{
+    try{
+      const r = await sbAuth.rpc('set_my_bewerber_notiz', { p_bewerber_id: uuid, p_notiz: payload });
+      if(r && r.error) throw r.error;
+    }catch(e){ console.warn('Bewerber-Notiz noch nicht persistiert (Schema v18 nötig?)', e); }
+  }, 600);
+}
 
 // ---- Status-Popover (öffnet direkt an der angetippten Karte) ----
 let _lastPhone = null;
@@ -11409,7 +11440,9 @@ function offerHireHandover(a){
     email: a.email || '',
     addr: p.ort || '',
     salary: p.gehalt || '',
-    start: ''
+    start: '',
+    // Vorstellungsgespräche 1:1 in die Personalakte (Gespräche-Verlauf) übernehmen
+    carryGespraeche: (a.interviews || []).map(ivToGespraech)
   });
 }
 
@@ -11457,6 +11490,7 @@ function addApplicantComment(id){
   if(!text){ toast('Bitte erst einen Kommentar schreiben'); return; }
   const u = currentUser();
   (a.comments = a.comments || []).push({id:cmtSeq++, author:u.name, role:u.role, text, ts: dDE(TODAY)});
+  persistBewerberNotiz(a);
   renderApplicantComments(id);
 }
 function startEditComment(id, cid){ commentEdit = {id, cid}; renderApplicantComments(id); }
@@ -11466,11 +11500,13 @@ function saveEditComment(id, cid){
   const c = (a.comments||[]).find(x => x.id === cid);
   const ta = document.getElementById('editComment'+cid);
   if(c && ta){ const t = ta.value.trim(); if(!t){ toast('Kommentar darf nicht leer sein'); return; } c.text = t; c.edited = true; }
+  persistBewerberNotiz(a);
   commentEdit = null; renderApplicantComments(id);
 }
 function deleteApplicantComment(id, cid){
   const a = findCandidate(id); if(!a) return;
   a.comments = (a.comments||[]).filter(x => x.id !== cid);
+  persistBewerberNotiz(a);
   commentEdit = null; renderApplicantComments(id);
 }
 let commentEdit = null;
@@ -11500,6 +11536,119 @@ function renderApplicantComments(id){
   const a = findCandidate(id); if(!a) return;
   const box = document.getElementById('commentBox');
   if(box){ box.innerHTML = commentsHtml(a); icons(); }
+}
+// ---- Vorstellungsgespräch-Feed (pro Bewerber) -------------------------------
+// Eigenständiger Verlauf je Bewerber: Wie lief das Gespräch, was hat der Bewerber
+// gesagt, Gesamteindruck, nächster Schritt. Wird bei Einstellung 1:1 in die
+// Personalakte (Gespräche-Verlauf) übernommen, damit nichts verloren geht.
+const IV_FORMATS = ['Telefon','Vor Ort','Video-Call','Probetag-Gespräch'];
+const IV_EINDRUCK = ['Pünktlich','Sympathisch','Fachlich stark','Motiviert','Teamfähig','Zuverlässig','Eigeninitiative','Unsicher','Unpünktlich','Passt nicht ganz'];
+const IV_RATING = [
+  {v:'top',   label:'Top-Kandidat',   cls:'ok'},
+  {v:'gut',   label:'Geeignet',       cls:'ok'},
+  {v:'mittel',label:'Mit Vorbehalt',  cls:'warn'},
+  {v:'nein',  label:'Eher nicht',     cls:'bad'}
+];
+function ivList(a){ if(!Array.isArray(a.interviews)) a.interviews = []; return a.interviews; }
+let ivRatingSel = 'gut';
+function ivRate(btn, v){
+  ivRatingSel = v;
+  document.querySelectorAll('.iv-rate').forEach(b=>b.classList.remove('on'));
+  if(btn) btn.classList.add('on');
+}
+function ivThemeToggle(btn){ btn.classList.toggle('primary'); }
+function ivVoiceToggle(){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const btn = document.getElementById('ivMic');
+  if(voiceRec){ voiceRec.stop(); voiceRec = null; if(btn) btn.classList.remove('on'); return; }
+  if(!SR){ toast('Spracheingabe hier nicht verfügbar – bitte tippen'); return; }
+  voiceRec = new SR(); voiceRec.lang = 'de-DE'; voiceRec.interimResults = true; voiceRec.continuous = true;
+  if(btn) btn.classList.add('on');
+  const ta = document.getElementById('ivSaid'); const base = ta ? ta.value : '';
+  voiceRec.onresult = ev => { let txt=''; for(let i=0;i<ev.results.length;i++) txt += ev.results[i][0].transcript; if(ta) ta.value = (base?base+' ':'') + txt; };
+  voiceRec.onerror = () => { if(btn) btn.classList.remove('on'); voiceRec = null; toast('Spracheingabe abgebrochen'); };
+  voiceRec.onend = () => { if(btn) btn.classList.remove('on'); voiceRec = null; };
+  try{ voiceRec.start(); toast('Sprich jetzt …'); }catch(e){ voiceRec = null; if(btn) btn.classList.remove('on'); }
+}
+function ivRatingMeta(v){ return IV_RATING.find(r=>r.v===v) || IV_RATING[1]; }
+// Ein Vorstellungsgespräch -> Personalakte-Gesprächseintrag (bei Einstellung übernommen)
+function ivToGespraech(iv){
+  const r = ivRatingMeta(iv.rating);
+  const verein = 'Gesamteindruck: ' + r.label + (iv.next ? ' · Nächster Schritt: ' + iv.next : '');
+  return {
+    date: iv.date || TODAY,
+    author: iv.author || '',
+    anlass: 'Vorstellungsgespräch' + (iv.format ? ' (' + iv.format + ')' : ''),
+    themen: Array.isArray(iv.eindruck) ? iv.eindruck.slice() : [],
+    text: iv.said || '',
+    vereinbarungen: verein,
+    naechstes: ''
+  };
+}
+function interviewHtml(a){
+  const list = ivList(a);
+  const ratingChips = IV_RATING.map(r=>`<button type="button" class="iv-rate akte-badge ${r.cls}${r.v===ivRatingSel?' on':''}" onclick="ivRate(this,'${r.v}')">${r.label}</button>`).join('');
+  const fmtOpts = IV_FORMATS.map(f=>`<option value="${f}">${f}</option>`).join('');
+  const chips = IV_EINDRUCK.map(t=>`<button type="button" class="mini-btn gesp-chip" data-t="${t.replace(/"/g,'&quot;')}" onclick="ivThemeToggle(this)">${t}</button>`).join('');
+  const form = `<div class="iv-form">
+      <div class="fieldrow">
+        <div class="field"><label>Format</label><select id="ivFormat">${fmtOpts}</select></div>
+        <div class="field"><label>Datum</label><input id="ivDate" type="date" value="${TODAY}"></div>
+      </div>
+      <div class="field"><label>Eindruck <small style="color:var(--muted);font-weight:500">(antippen, Mehrfachauswahl)</small></label><div class="gesp-chips">${chips}</div></div>
+      <div class="field"><label>Was hat ${escapeHtml((a.name||'der Bewerber').split(' ')[0])} gesagt? <small style="color:var(--muted);font-weight:500">– tippen oder diktieren</small></label>
+        <div class="gesp-ta">
+          <textarea class="akte-add" id="ivSaid" style="margin:0" placeholder="Aussagen, Erwartungen, Verfügbarkeit, offene Fragen …"></textarea>
+          <button type="button" class="iconbtn gesp-mic" id="ivMic" onclick="ivVoiceToggle()" title="Diktieren"><i data-lucide="mic"></i></button>
+        </div>
+      </div>
+      <div class="field"><label>Gesamteindruck</label><div class="iv-rates">${ratingChips}</div></div>
+      <div class="field"><label>Nächster Schritt <small style="color:var(--muted);font-weight:500">(optional)</small></label><input id="ivNext" placeholder="z. B. Probetag anbieten · zweites Gespräch · Absage"></div>
+      <button class="mini-btn primary" onclick="addApplicantInterview(${a.id})"><i data-lucide="check"></i> Gespräch festhalten</button>
+    </div>`;
+  const timeline = list.length
+    ? list.map((g,i)=>{
+        const r = ivRatingMeta(g.rating);
+        const eind = (g.eindruck&&g.eindruck.length) ? `<div class="gesp-tags">${g.eindruck.map(t=>`<span class="akte-chip">${escapeHtml(t)}</span>`).join('')}</div>` : '';
+        const next = g.next ? `<div class="gesp-next"><i data-lucide="arrow-right-circle" style="width:13px;height:13px;vertical-align:-2px"></i> Nächster Schritt: ${escapeHtml(g.next)}</div>` : '';
+        return `<div class="akte-note gesp-entry"><div class="akte-note__meta"><b>${escapeHtml(g.format||'Gespräch')}</b> · ${deDate(g.date)} · ${escapeHtml(g.author||'')} <span class="akte-badge ${r.cls}" style="margin-left:4px">${r.label}</span><button class="gesp-del" onclick="removeApplicantInterview(${a.id},${i})" title="Eintrag löschen"><i data-lucide="trash-2"></i></button></div>${eind}<div class="akte-note__txt">${escapeHtml(g.said||'')}</div>${next}</div>`;
+      }).join('')
+    : '<div class="cmt-empty">Noch kein Vorstellungsgespräch festgehalten. Halte nach jedem Gespräch kurz fest, wie es lief und was der Bewerber gesagt hat.</div>';
+  return `<div class="iv-list">${timeline}</div>${form}`;
+}
+function renderApplicantInterviews(id){
+  const a = findCandidate(id); if(!a) return;
+  const box = document.getElementById('interviewBox');
+  if(box){ box.innerHTML = interviewHtml(a); icons(); }
+}
+function addApplicantInterview(id){
+  const a = findCandidate(id); if(!a) return;
+  const g = sel => { const x=document.getElementById(sel); return x?x.value.trim():''; };
+  const said = g('ivSaid');
+  if(!said){ toast('Bitte kurz festhalten, was besprochen wurde'); const t=document.getElementById('ivSaid'); if(t) t.focus(); return; }
+  if(voiceRec){ voiceRec.stop(); voiceRec = null; }
+  const eindruck = Array.from(document.querySelectorAll('#interviewBox .gesp-chip.primary')).map(b=>b.getAttribute('data-t')).filter(Boolean);
+  ivList(a).unshift({
+    date: g('ivDate') || TODAY,
+    author: currentUser().name,
+    format: (document.getElementById('ivFormat')||{}).value || 'Gespräch',
+    eindruck, said, rating: ivRatingSel,
+    next: g('ivNext')
+  });
+  ivRatingSel = 'gut';
+  persistBewerberNotiz(a);
+  renderApplicantInterviews(id);
+  toast('Vorstellungsgespräch festgehalten');
+}
+function removeApplicantInterview(id, idx){
+  const a = findCandidate(id); if(!a) return;
+  const list = ivList(a);
+  if(idx<0 || idx>=list.length) return;
+  if(!confirm('Diesen Gesprächseintrag wirklich löschen?')) return;
+  list.splice(idx,1);
+  persistBewerberNotiz(a);
+  renderApplicantInterviews(id);
+  toast('Eintrag gelöscht');
 }
 // ---- Status-Verwaltung (Pipeline-Stufen umbenennen/hinzufügen/löschen) ----
 const STAGE_COLORS = ['#16A34A','#2563EB','#7C3AED','#B7791F','#0EA5E9','#C24141','#0E7A43','#DB2777','#0891B2','#65A30D'];
@@ -11647,6 +11796,9 @@ function openApplicant(id){
       </dl>
 
       ${a.letter ? `<div class="dw-section"><div class="dw-section__h"><i data-lucide="pen-line"></i> Das schrieb ${a.name.split(' ')[0]}</div><div class="dw-letter">${escapeHtml(a.letter)}</div></div>` : ''}
+
+      <div class="setsec">Vorstellungsgespräche <span class="setsec__hint">Verlauf · wird bei Einstellung in die Personalakte übernommen</span></div>
+      <div id="interviewBox">${interviewHtml(a)}</div>
 
       <div class="setsec">Interne Kommentare <span class="setsec__hint">nur fürs Team sichtbar</span></div>
       <div id="commentBox">${commentsHtml(a)}</div>
