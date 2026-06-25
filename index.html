@@ -9546,6 +9546,7 @@ async function loadPortalData(){
     await loadTeam();   // echtes Team (mitarbeiter-Tabelle) + Personalakten (extra) des Betriebs laden
     await loadAbsencesDb();   // Abwesenheiten (abwesenheiten-Tabelle) – NACH loadTeam (braucht employee._uuid fürs Mapping)
     await loadPlantafel();    // Plantafel (plantafel-Tabelle) – NACH loadCrews + loadKunden (crew/kunde-Mapping)
+    await loadTimeEntries();  // heutige Stempel-Einträge (zeit_eintraege) – NACH loadTeam (employee._uuid-Mapping)
     OS_DATA_LOADED = true;
     if(_enteredApp && ['stellen','recruiting','heute'].includes(currentView)) setView(currentView);
     refreshBell();
@@ -9882,9 +9883,10 @@ async function deletePlanJobDb(uuid){
 // Slot und crew_id (UUID = crew.id nach loadCrews) zurück. Muss NACH loadCrews + loadKunden laufen.
 async function loadPlantafel(){
   if(!osConnected() || !days.length) return;
-  const von = days[0].date, bis = days[days.length-1].date;
   let res = null;
-  try{ res = await sbAuth.rpc('my_plantafel', { p_von:von, p_bis:bis }); }catch(e){ res = { error:e }; }
+  // my_plantafel liefert alle Tafel-Zeilen des Betriebs; das sichtbare Fenster filtert der
+  // Slot-Abgleich unten (Zeilen außerhalb days[].date werden verworfen).
+  try{ res = await sbAuth.rpc('my_plantafel'); }catch(e){ res = { error:e }; }
   if(!res || res.error){ if(res && res.error) console.warn('my_plantafel:', res.error.message || res.error); return; }
   const rows = res.data || [];
   // Idempotent: alle aus der DB geladenen Jobs (mit _uuid) aus den Buckets werfen
@@ -9899,6 +9901,77 @@ async function loadPlantafel(){
     if(!plan[crewId][slot.id]) plan[crewId][slot.id] = [];
     plan[crewId][slot.id].push({ _uuid:r.id, _date:r.datum, t:r.titel||'—', o:r.info||'',
       c:r.farbe||'#16A34A', customerId: r.kunde_id || '' });
+  });
+}
+
+// ===================== ZEITERFASSUNG · DB-PERSISTENZ (zeit_eintraege-Tabelle, Schema v17) =====================
+// Stempel-Einträge liegen bisher nur in der Session (timeEntries + myEntry). Mit Login werden sie in
+// zeit_eintraege geschrieben (mitarbeiter_id über employee._uuid). Baustellen-Info wird denormalisiert
+// mitgespeichert (es gibt keine Baustellen-Tabelle). myEntry = Selbst-Stempelung (empId 'self' -> selfEmp).
+// Verdeckt _uuid am Eintrag; Ausstempeln/Pause = UPDATE derselben Zeile. Fehler werden getoastet.
+function entryMaUuid(empId){
+  const e = (empId === 'self') ? selfEmp() : emp(empId);
+  return e && e._uuid ? e._uuid : null;
+}
+function zeitRowPayload(e){
+  const maId = entryMaUuid(e.empId);
+  if(!maId) return null;                           // ohne echte mitarbeiter-Zeile nicht persistierbar
+  const s = site(e.siteId) || {};
+  return {
+    customer_id: GC_PROFILE.customer_id,
+    mitarbeiter_id: maId,
+    datum: TODAY,
+    site_id: e.siteId || null,
+    site_customer: s.customer || null,
+    site_label: s.label || null,
+    start_zeit: e.in || null,
+    end_zeit: e.out || null,
+    ruest: !!e.ruest,
+    pause_min: e.pauseMin || 0,
+    geo: e.geo || null,
+    geo_out: e.geoOut || null,
+    manual: !!e.manual,
+    by_lead: !!e.byLead,
+    proto: !!e.proto
+  };
+}
+async function persistTimeEntry(e){
+  if(!osConnected() || !e) return;
+  const payload = zeitRowPayload(e);
+  if(!payload) return;                             // Person (noch) nicht in der DB -> still überspringen
+  try{
+    if(e._uuid){
+      const { error } = await sbAuth.from('zeit_eintraege').update(payload).eq('id', e._uuid);
+      if(error){ toast('Zeit speichern fehlgeschlagen: '+error.message); }
+    } else {
+      const { data, error } = await sbAuth.from('zeit_eintraege').insert(payload).select('id').single();
+      if(error){ toast('Zeit anlegen fehlgeschlagen: '+error.message); }
+      else if(data && data.id){ e._uuid = data.id; }
+    }
+  }catch(err){ toast('Zeit speichern fehlgeschlagen: '+String(err)); }
+}
+// Heutige Stempel-Einträge des Betriebs laden (my_zeit_eintraege heute..heute). Mappt mitarbeiter_id ->
+// numerische empId (bzw. 'self' für den eingeloggten Nutzer). Muss NACH loadTeam laufen (employee._uuid).
+async function loadTimeEntries(){
+  if(!osConnected()) return;
+  let res = null;
+  try{ res = await sbAuth.rpc('my_zeit_eintraege', { p_von:TODAY, p_bis:TODAY }); }catch(e){ res = { error:e }; }
+  if(!res || res.error){ if(res && res.error) console.warn('my_zeit_eintraege:', res.error.message || res.error); return; }
+  const rows = res.data || [];
+  const byUuid = {}; employees.forEach(e => { if(e._uuid) byUuid[e._uuid] = e.id; });
+  const me = selfEmp(); const meUuid = me && me._uuid ? me._uuid : null;
+  // Idempotent: zuvor aus der DB geladene Einträge entfernen
+  for(let i = timeEntries.length - 1; i >= 0; i--){ if(timeEntries[i]._uuid) timeEntries.splice(i,1); }
+  if(myEntry && myEntry._uuid) myEntry = null;
+  rows.forEach(r => {
+    const isSelf = meUuid && r.mitarbeiter_id === meUuid;
+    const empId = isSelf ? 'self' : byUuid[r.mitarbeiter_id];
+    if(empId == null) return;                      // unbekannte Person (z. B. gelöscht) überspringen
+    const entry = { id: timeSeq++, _uuid:r.id, empId,
+      siteId: (site(r.site_id) ? r.site_id : 's0'),   // unbekannte Baustelle -> Bauhof (Anzeige-Fallback)
+      in: r.start_zeit || '', out: r.end_zeit || null, ruest: !!r.ruest, pauseMin: r.pause_min || 0,
+      geo: r.geo || null, geoOut: r.geo_out || null, manual: !!r.manual, byLead: !!r.by_lead, proto: !!r.proto };
+    if(isSelf) myEntry = entry; else timeEntries.push(entry);
   });
 }
 function bewCountForJob(jobId){ return applicants.filter(a => a.jobId === jobId).length; }
@@ -12223,7 +12296,8 @@ function openClockOtherSite(){
 function clockOtherDo(siteId){
   // Manuell vom Büro/Inhaber gestempelt → kein Standortnachweis des Mitarbeiters (er ist nicht am Gerät).
   // Als „manuell" markiert, damit nicht fälschlich „vor Ort bestätigt" erscheint.
-  timeEntries.push({ id: timeSeq++, empId: clockOtherEmp, siteId, in: NOW, out: null, ruest: settings.ruestzeit, pauseMin: 0, geo:null, manual:true, proto: false });
+  const entry = { id: timeSeq++, empId: clockOtherEmp, siteId, in: NOW, out: null, ruest: settings.ruestzeit, pauseMin: 0, geo:null, manual:true, proto: false };
+  timeEntries.push(entry); persistTimeEntry(entry);
   const n = emp(clockOtherEmp).name; clockOtherEmp = null;
   closeSheet(); renderZeit();
   toast(`${n} eingestempelt um ${NOW}`);
@@ -12282,7 +12356,7 @@ async function leadClockDo(siteId){
   const btn = document.querySelector('.sitepicks');   // visuelles Feedback ist optional
   const g = await geoStamp(siteId);                    // ein Stempel für die ganze Kolonne
   const crew = leadCrewMembers().filter(e => !leadRunningFor(e.id));
-  crew.forEach(e => timeEntries.push({ id: timeSeq++, empId: e.id, siteId, in: NOW, out: null, ruest: settings.ruestzeit, pauseMin: 0, geo:g, byLead:true, proto:false }));
+  crew.forEach(e => { const entry = { id: timeSeq++, empId: e.id, siteId, in: NOW, out: null, ruest: settings.ruestzeit, pauseMin: 0, geo:g, byLead:true, proto:false }; timeEntries.push(entry); persistTimeEntry(entry); });
   closeSheet(); renderZeit();
   toast(`${crew.length} Mitarbeiter eingestempelt um ${NOW}`);
 }
@@ -12291,7 +12365,7 @@ async function leadClockOutAll(){
   const g = await geoStamp(null);
   const crew = leadCrewMembers();
   let n = 0;
-  crew.forEach(e => { const r = leadRunningFor(e.id); if(r){ r.out = NOW; r.geoOut = g; n++; } });
+  crew.forEach(e => { const r = leadRunningFor(e.id); if(r){ r.out = NOW; r.geoOut = g; persistTimeEntry(r); n++; } });
   renderZeit();
   toast(`${n} Mitarbeiter ausgestempelt um ${NOW}`);
 }
@@ -12393,11 +12467,12 @@ async function doClockIn(siteId){
   // Der erfasste Punkt ist unveränderlich (Object.freeze) – der Mitarbeiter kann ihn nicht nachträglich bearbeiten.
   const g = await geoStamp(siteId);
   myEntry = { empId:'self', siteId, in:NOW, out:null, ruest, pauseMin:0, geo:g };
+  persistTimeEntry(myEntry);
   closeSheet(); renderZeit();
   toast(`Eingestempelt um ${NOW} · ${site(siteId).customer}`);
 }
-function myPause(){ if(!myEntry) return; myEntry.pauseMin = (myEntry.pauseMin||0) + 30; renderZeit(); toast('30 Min Pause erfasst'); }
-async function myClockOut(){ if(!myEntry) return; if(!ensureGeoConsent(() => myClockOut())) return; myEntry.out = NOW; myEntry.geoOut = await geoStamp(myEntry.siteId); renderZeit(); toast(`Ausgestempelt um ${NOW} · ${hoursStr(entryMin(myEntry))}`); }
+function myPause(){ if(!myEntry) return; myEntry.pauseMin = (myEntry.pauseMin||0) + 30; persistTimeEntry(myEntry); renderZeit(); toast('30 Min Pause erfasst'); }
+async function myClockOut(){ if(!myEntry) return; if(!ensureGeoConsent(() => myClockOut())) return; myEntry.out = NOW; myEntry.geoOut = await geoStamp(myEntry.siteId); persistTimeEntry(myEntry); renderZeit(); toast(`Ausgestempelt um ${NOW} · ${hoursStr(entryMin(myEntry))}`); }
 
 // Reverse-Geocoding: macht aus den GPS-Koordinaten eine lesbare Adresse (Straße/Hausnr · PLZ Ort).
 // Rein informativ für den Arbeitgeber – er sieht WO gestempelt wurde, ohne Koordinaten lesen zu müssen.
