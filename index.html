@@ -9555,9 +9555,10 @@ function bewNeuForJob(jobId){ return applicants.filter(a => a.jobId === jobId &&
 /* ===================== STELLEN-KONTINGENT (Self-Service-Veröffentlichung) =====================
    Quelle: customers-Zeile (GC_CUSTOMER). Die Felder produkt/kauftyp/stellen_kontingent/
    kontingent_frei/kontingent_bis setzt der Checkout bzw. der Stripe-/Rechnungs-Abgleich
-   server-seitig. WICHTIG (Demo-Schutz): Solange für einen Betrieb noch KEINE Kontingent-
-   Daten existieren -> fail-open. Es wird NICHT blockiert, sonst hängt – wie zuletzt – wieder
-   alles. Erst wenn echte Kontingent-Daten da sind, greift das Limit.
+   server-seitig. WICHTIG (FAIL-CLOSED): Ohne Freischaltung (customers.kontingent_frei=true)
+   wird NIE veröffentlicht. Die echte, nicht umgehbare Sperre liegt als DB-Trigger
+   (enforce_stelle_kontingent, Schema v15) auf der Tabelle stellenanzeigen; der Client hier
+   spiegelt sie nur, damit der Nutzer eine verständliche Meldung statt eines DB-Fehlers sieht.
 
    Logik (laut Freddy):
    - Tier-abhängig: Smart-Kontingent -> Smart-Stelle, Premium -> Premium, Exzellenz -> Exzellenz.
