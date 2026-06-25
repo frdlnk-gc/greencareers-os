@@ -882,6 +882,7 @@
   .pqbadge.run .lucide{ animation:spin 1.4s linear infinite; }
   .pqbadge.open{ background:#F0F3EF; color:var(--muted); }
   @keyframes spin{ to{ transform:rotate(360deg); } }
+  .co-spin{ animation:spin 1s linear infinite; transform-origin:center; }
 
   .kanban-empty{ text-align:center; color:var(--muted-2); font-size:11.5px; padding:18px 6px; border:1px dashed var(--line); border-radius:8px; }
 
@@ -3453,14 +3454,28 @@ async function refetchCustomer(){
 // frei (apply_purchase_contingent). Das kann ein paar Sekunden dauern -> kurz pollen, damit die
 // Stellen-Ansicht das frische Kontingent sofort zeigt. Fail-soft: timeoutet still, blockiert nie.
 async function pollContingentAfterPaid(){
-  for(let i=0;i<8;i++){
+  // Aktualisiert die Status-Box auf der Erfolgs-Karte (Fix A: Freischaltung sichtbar bestätigen).
+  const setBox = (icon, color, html) => {
+    const box = document.getElementById('coContingentBox'); if(!box) return;
+    box.innerHTML = `<i data-lucide="${icon}" style="width:19px;height:19px;color:${color};flex:0 0 auto"${icon==='loader'?' class="co-spin"':''}></i><span>${html}</span>`;
+    try{ icons(); }catch(_){}
+  };
+  for(let i=0;i<10;i++){
     const c = await refetchCustomer();
-    if(c && (c.produkt || c.stellen_kontingent != null)){
+    // Freigeschaltet = Webhook hat apply_purchase_contingent ausgeführt (Produkt + frei-Flag gesetzt).
+    if(c && c.kontingent_frei === true && (c.produkt || c.stellen_kontingent != null)){
+      const k = jobContingent();
+      const menge = Number.isFinite(k.total) ? `${k.total} ${k.total===1?'Stelle':'Stellen'}` : 'unbegrenzt Stellen';
+      setBox('check-circle-2', 'var(--green)',
+        `<b>Kontingent freigeschaltet:</b> Du kannst jetzt ${menge} veröffentlichen${k.tierLabel?` (${k.tierLabel})`:''}.`);
       try{ if(typeof rerenderCurrent==='function') rerenderCurrent(); }catch(_){}
       return true;
     }
     await new Promise(r=>setTimeout(r, 2500));
   }
+  // Timeout (Webhook hängt kurz): nicht blockieren, ehrlich erklären.
+  setBox('clock', '#A66400',
+    'Deine Zahlung ist bei uns – die Freischaltung wird in wenigen Augenblicken automatisch aktiv. Lade die Stellen-Ansicht gleich einmal neu, falls sie noch nicht erscheint.');
   return false;
 }
 function coEur(n){ return n.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' €'; }
@@ -3676,7 +3691,11 @@ function coDone(isInvoice){
       <div class="co-done" style="padding:30px 24px 26px">
         <div class="co-check"><i data-lucide="check"></i></div>
         <h3>Das hat geklappt!</h3>
-        <p>Deine Zahlung ist eingegangen und dein Kontingent ist <b>sofort freigeschaltet.</b></p>
+        <p>Deine Zahlung ist eingegangen. Wir schalten dein Kontingent jetzt frei.</p>
+        <div id="coContingentBox" class="co-cont-box" style="margin:14px 0;padding:13px 15px;border:1px solid var(--line);border-radius:12px;display:flex;gap:11px;align-items:center;font-size:13px;line-height:1.45;background:var(--soft-green)">
+          <i data-lucide="loader" style="width:19px;height:19px;color:var(--green);flex:0 0 auto" class="co-spin"></i>
+          <span>Kontingent wird freigeschaltet … einen Moment.</span>
+        </div>
         <p>Richte jetzt <b>${firma}</b> ein – dann kannst du direkt deine erste Stelle veröffentlichen.</p>
         <button class="btn full" style="margin-top:16px" onclick="coFinish()"><i data-lucide="arrow-right"></i> Weiter zur Einrichtung</button>
       </div>`;
@@ -9566,25 +9585,27 @@ function jobContingent(){
   const zahlart = (c.zahlungsart || c.zahlart || '').toLowerCase();
   const term = c.laufzeit ? (String(c.laufzeit).indexOf('12')>=0 ? '12m' : '6m') : (c.abo_term||'');
   const hasData = !!tier || Number.isFinite(total) || !!kauftyp;
-  // Freischaltung: explizites Flag gewinnt; sonst Abo immer automatisch bezahlt -> frei;
-  // Einmalkauf: alles außer Rechnung wird automatisch eingezogen -> frei, Rechnung erst nach
-  // manueller Bestätigung (kontingent_frei). Keine Daten -> nicht blockieren.
-  let frei;
-  if(typeof c.kontingent_frei === 'boolean') frei = c.kontingent_frei;
-  else if(kauftyp === 'abo') frei = true;
-  else if(!hasData) frei = true;
-  else frei = zahlart ? zahlart !== 'rechnung' : true;
+  // Freischaltung – FAIL-CLOSED: Die DB ist die Wahrheit (Trigger enforce_stelle_kontingent,
+  // Default kontingent_frei=false). Der Client spiegelt sie nur. Ein nicht gesetztes Flag wird
+  // NIE als „frei" interpretiert – sonst könnte ein nicht zahlender Betrieb veröffentlichen.
+  const frei = (c.kontingent_frei === true);
+  // Ablauf: nur beim Einmalkauf hart (3 Monate). Abo verlängert sich automatisch -> kein Ablauf.
+  const bis = c.kontingent_bis || null;
+  const expired = !!(bis && kauftyp !== 'abo' && new Date(bis).getTime() < Date.now());
   const used = activeJobCount();
   const free = Number.isFinite(total) ? Math.max(0, total - used) : Infinity;
   return { hasData, tier, tierLabel: PRODUKT_LABEL[tier] || (tier ? tier.charAt(0).toUpperCase()+tier.slice(1) : ''),
-           kauftyp, term, total, used, free, frei, bis:c.kontingent_bis||null };
+           kauftyp, term, total, used, free, frei, expired, bis };
 }
 // Darf der Betrieb JETZT eine weitere Stelle live schalten?
 function canPublishJob(){
   const k = jobContingent();
-  if(!k.hasData) return { ok:true };                          // keine Kontingent-Daten -> fail-open
+  // FAIL-CLOSED: Ohne Freischaltung NIE veröffentlichen. Das spiegelt nur den DB-Trigger
+  // (enforce_stelle_kontingent) – die echte Sperre liegt auf der Datenbank, nicht hier.
   if(!k.frei)    return { ok:false, reason:'locked',
     msg:'Dein Kontingent wird freigeschaltet, sobald deine Zahlung bei uns eingegangen ist. Bei Kreditkarte, PayPal oder Lastschrift passiert das automatisch – bei Kauf auf Rechnung, sobald wir deine Überweisung sehen.' };
+  if(k.expired)  return { ok:false, reason:'expired',
+    msg:`Die Laufzeit deines ${k.tierLabel?k.tierLabel+'-':''}Kontingents ist abgelaufen${k.bis?` (seit ${dDE(dISO(new Date(k.bis)))})`:''}. Bitte verlängere dein Paket, um wieder Stellen zu veröffentlichen.` };
   if(k.free<=0)  return { ok:false, reason:'exhausted',
     msg:`Dein ${k.tierLabel?k.tierLabel+'-':''}Kontingent (${k.total} ${k.total===1?'Stelle':'Stellen'}) ist ausgeschöpft. Nimm eine aktive Stelle offline oder erweitere dein Kontingent, um eine weitere zu veröffentlichen.` };
   return { ok:true };
@@ -9684,6 +9705,15 @@ function showKontingentBlock(gate){
       actions:[
         { label:'Zahlung & Rechnung ansehen', variant:'', icon:'receipt', onclick:'cpopClose();openZahlungInfo()' },
         { label:'Verstanden', variant:'ghost' }
+      ]
+    });
+  } else if(gate.reason === 'expired'){
+    cpopShow({
+      icon:'calendar-x', iconClass:'lock', title:'Laufzeit abgelaufen',
+      body: gate.msg ? escapeHtml(gate.msg) : 'Die Laufzeit deines Kontingents ist abgelaufen.',
+      actions:[
+        { label:'Paket verlängern', icon:'refresh-cw', onclick:'cpopClose();openZahlungInfo()' },
+        { label:'Schließen', variant:'ghost' }
       ]
     });
   } else {
@@ -9846,6 +9876,12 @@ function manageBewerber(jobId){ bewerberFilter.job = jobId; bewerberFilter.statu
 // ---- CRUD gegen Supabase (RLS erlaubt dem Betrieb volle Rechte auf seine eigenen Stellen) ----
 async function setStelleStatus(id, status){
   const j = job(id); if(!j || !sbAuth) return;
+  // Defense-in-Depth: jeder Weg, der eine Stelle live schaltet, muss durch das Kontingent-Gate.
+  // (Die harte Sperre liegt auf der DB; das hier erspart dem Nutzer die rohe DB-Fehlermeldung.)
+  if(status === 'aktiv' && j.status !== 'aktiv'){
+    const gate = canPublishJob();
+    if(!gate.ok){ showKontingentBlock(gate); return; }
+  }
   const patch = { status };
   if(status === 'aktiv'){
     if(!j.slug) patch.slug = genSlug(j.title);
@@ -9867,7 +9903,14 @@ async function _stelleSave(id, patch, okMsg){
     if(error) throw error;
     await loadPortalData();
     if(okMsg) toast(okMsg);
-  }catch(e){ toast('Konnte nicht speichern: ' + (e.message||e)); }
+  }catch(e){
+    const m = String(e.message||e);
+    // Kontingent-Trigger der DB in eine verständliche Meldung übersetzen.
+    if(/KONTINGENT_GESPERRT/.test(m))       { showKontingentBlock(canPublishJob()); return; }
+    if(/KONTINGENT_ABGELAUFEN/.test(m))     { showKontingentBlock({ reason:'expired', msg:'Die Laufzeit deines Kontingents ist abgelaufen. Bitte verlängere dein Paket, um wieder Stellen zu veröffentlichen.' }); return; }
+    if(/KONTINGENT_AUSGESCHOEPFT/.test(m))  { showKontingentBlock({ reason:'exhausted', msg:'Dein Stellen-Kontingent ist ausgeschöpft. Nimm eine aktive Stelle offline oder erweitere dein Kontingent.' }); return; }
+    toast('Konnte nicht speichern: ' + m);
+  }
 }
 async function deleteStelle(id){
   const j = job(id); if(!j) return;
@@ -10211,7 +10254,14 @@ async function submitStelle(publish){
     else if(publish && status==='aktiv'){ showPublishedSuccess(row.slug, row.titel); }
     else toast(d.id?'Stelle gespeichert.':'Entwurf gespeichert.');
   }catch(e){
-    toast('Speichern fehlgeschlagen: ' + (e.message||e));
+    const m = String(e.message||e);
+    // Sollte der Client-Gate je umgangen werden, fängt der DB-Trigger es ab -> sauber erklären.
+    if(/KONTINGENT_/.test(m)){
+      const reason = /ABGELAUFEN/.test(m) ? 'expired' : (/AUSGESCHOEPFT/.test(m) ? 'exhausted' : 'locked');
+      showKontingentBlock({ reason, msg:m.replace(/^KONTINGENT_[A-Z]+:\s*/,'') });
+    } else {
+      toast('Speichern fehlgeschlagen: ' + m);
+    }
     // Bei Fehler: Buttons wieder freigeben, damit der Nutzer es erneut versuchen kann.
     if(_btnDraft){ _btnDraft.disabled = false; _btnDraft.innerHTML = _btnDraftHtml; }
     if(_btnPub){ _btnPub.disabled = false; _btnPub.innerHTML = _btnPubHtml; }
