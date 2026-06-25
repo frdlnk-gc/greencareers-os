@@ -2153,6 +2153,17 @@
   .geo.ok{ color:var(--green-3); background:var(--mint); }
   .geo.warn{ color:#B45309; background:#FEF3E2; }
   .geo.na{ color:var(--muted); background:var(--canvas-2); }
+  /* ===== Mitdenken-Strip (Zeiterfassung) ===== */
+  .md-strip{ background:#FFFBEB; border:1px solid #FDE9B8; border-radius:13px; padding:11px 12px; margin:2px 0 14px; }
+  .md-strip__h{ display:flex; align-items:center; gap:7px; font-size:13px; color:#92400E; margin-bottom:8px; }
+  .md-strip__h .lucide{ width:16px; height:16px; }
+  .md-strip__c{ margin-left:auto; font-size:11px; font-weight:700; color:#B45309; background:#FEF3C7; padding:2px 9px; border-radius:999px; }
+  .md-row{ display:flex; align-items:center; gap:9px; width:100%; text-align:left; background:#fff; border:1px solid #FDE9B8; border-radius:10px; padding:9px 11px; margin-top:7px; cursor:pointer; font-size:12.5px; line-height:1.4; color:var(--text); transition:border-color .12s, background .12s; }
+  .md-row:hover{ border-color:#F5C875; background:#FFFDF6; }
+  .md-row > .lucide{ width:16px; height:16px; color:#B45309; flex-shrink:0; }
+  .md-row span{ flex:1; }
+  .md-row__go{ width:15px; height:15px; color:var(--muted); flex-shrink:0; }
+  .md-more{ font-size:11.5px; color:#92400E; padding:7px 2px 1px; }
   .zsec-h{ display:flex; align-items:baseline; justify-content:space-between; margin:0 2px 9px; }
   .zsec-h b{ font-size:14px; }
   .zsec-h span{ font-size:12px; color:var(--muted); }
@@ -12324,14 +12335,76 @@ function hm2min(s){ if(!s) return 0; const p = s.split(':').map(Number); return 
 function hoursStr(min){ return (Math.max(0,min)/60).toFixed(1).replace('.',',') + ' h'; }
 function entryMin(e){ const end = e.out ? hm2min(e.out) : hm2min(NOW); return Math.max(0, end - hm2min(e.in) - (e.pauseMin||0)); }
 function distStr(km){ return km < 1 ? Math.round(km*1000) + ' m' : km.toFixed(1).replace('.',',') + ' km'; }
+// Luftlinie zwischen zwei Geo-Punkten (Haversine, km). Null wenn ein Wert fehlt.
+function geoDistKm(aLat,aLng,bLat,bLng){
+  if(aLat==null||aLng==null||bLat==null||bLng==null) return null;
+  const R=6371, toR=x=>x*Math.PI/180;
+  const dLat=toR(bLat-aLat), dLng=toR(bLng-aLng);
+  const s=Math.sin(dLat/2)**2 + Math.cos(toR(aLat))*Math.cos(toR(bLat))*Math.sin(dLng/2)**2;
+  return 2*R*Math.asin(Math.min(1,Math.sqrt(s)));
+}
+// Toleranz-Radius um die Baustelle (m). Einstellbar; Default 200 m (Grundstück + GPS-Unschärfe).
+function geoRadiusM(){ const r=settings.geoRadius; return (typeof r==='number'&&r>0)?r:200; }
+// Distanz Stempel-Standort -> Baustelle dieses Eintrags. Null, wenn nicht berechenbar.
+function geoEntryDistKm(e){
+  const s = site(e.siteId);
+  if(!s || s.lat==null || s.lng==null) return null;       // Baustelle ohne Koordinaten -> kein Abgleich
+  if(!e.geo || e.geo.lat==null) return null;
+  return geoDistKm(e.geo.lat, e.geo.lng, s.lat, s.lng);
+}
+// „vor Ort (35 m)" wenn innerhalb des Radius, sonst „1,2 km entfernt". Leer, wenn nicht berechenbar.
+function geoFenceBadge(e){
+  const km = geoEntryDistKm(e);
+  if(km==null) return '';
+  if(km*1000 <= geoRadiusM()) return `<span class="geo ok"><i data-lucide="map-pin-check"></i> vor Ort · ${distStr(km)}</span>`;
+  return `<span class="geo warn"><i data-lucide="map-pin-off"></i> ${distStr(km)} entfernt</span>`;
+}
 function geoBadge(e){
   if(e.manual) return `<span class="geo na"><i data-lucide="user-cog"></i> manuell erfasst</span>`;
   if(!settings.geo) return '';   // Standortnachweis per Einstellung deaktiviert
   if(!e.geo || e.geo.lat == null)
     return `<span class="geo na"><i data-lucide="map-pin-off"></i> kein Standort</span>`;
-  return `<span class="geo ok"><i data-lucide="map-pin"></i> Standort erfasst</span>`;
+  // Mit Baustellen-Koordinaten: präziser Abgleich vor Ort / entfernt. Sonst neutral „erfasst".
+  return geoFenceBadge(e) || `<span class="geo ok"><i data-lucide="map-pin"></i> Standort erfasst</span>`;
 }
 function hasProto(empId, siteId){ return protocols.some(p => p.empId === empId && p.siteId === siteId); }
+
+/* ===== „Mitdenken": fängt die repetitiven Flüchtigkeitsfehler beim Stempeln ab =====
+   Niemand wird bewertet – das System ERINNERT nur an das, was im Alltag gern untergeht:
+   vergessenes Ausstempeln, Stempel weit weg von der Baustelle, fehlendes Tagesprotokoll. */
+function clockLongMin(){ const h = settings.clockLongH; return (typeof h==='number'&&h>0?h:10)*60; }
+function runLongBadge(e){
+  if(e.out || entryMin(e) < clockLongMin()) return '';
+  return `<span class="geo warn"><i data-lucide="alarm-clock"></i> seit ${hoursStr(entryMin(e))} – ausstempeln?</span>`;
+}
+function empName(id){ const x = emp(id); return x ? x.name : '—'; }
+// Liste aller offenen Hinweise über die heutigen Stempel-Einträge.
+function mitdenkItems(){
+  const items = [];
+  timeEntries.forEach(e => {
+    if(!e.out && entryMin(e) >= clockLongMin())
+      items.push({type:'long', id:e.id, text:`${empName(e.empId)} ist seit ${hoursStr(entryMin(e))} eingestempelt – evtl. Ausstempeln vergessen.`});
+    const dkm = geoEntryDistKm(e);
+    if(dkm != null && dkm*1000 > geoRadiusM())
+      items.push({type:'far', id:e.id, text:`${empName(e.empId)} hat ${distStr(dkm)} von „${(site(e.siteId)||{}).label||'Baustelle'}" entfernt gestempelt – richtige Baustelle?`});
+    if(e.out && !(e.proto || hasProto(e.empId, e.siteId)))
+      items.push({type:'proto', id:e.id, text:`${empName(e.empId)} hat Feierabend, aber noch kein Tagesprotokoll abgegeben.`});
+  });
+  return items;
+}
+function mitdenkIcon(t){ return t==='long' ? 'alarm-clock' : t==='far' ? 'map-pin-off' : 'clipboard-list'; }
+function mitdenkStrip(){
+  const items = mitdenkItems();
+  if(!items.length) return '';
+  const rows = items.slice(0,6).map(it =>
+    `<button class="md-row" onclick="openTimeEntry(${it.id})"><i data-lucide="${mitdenkIcon(it.type)}"></i><span>${escapeHtml(it.text)}</span><i data-lucide="chevron-right" class="md-row__go"></i></button>`
+  ).join('');
+  const more = items.length > 6 ? `<div class="md-more">+ ${items.length-6} weitere</div>` : '';
+  return `<div class="md-strip">
+    <div class="md-strip__h"><i data-lucide="lightbulb"></i> <b>Mitdenken</b><span class="md-strip__c">${items.length} Hinweis${items.length===1?'':'e'}</span></div>
+    ${rows}${more}
+  </div>`;
+}
 
 function zeitView(){
   return viewRole === 'mitarbeiter' ? zeitViewSelf() : zeitViewTeam();
@@ -12375,6 +12448,7 @@ function zeitViewTeam(){
       ${kpi('timer', hoursStr(avg).replace(' h',''), 'Ø Stunden', 'heute pro Kopf', false)}
       ${kpi('check-circle-2', String(done.length), 'Feierabend', 'heute fertig', false)}
     </div>
+    ${mitdenkStrip()}
     ${absentStrip()}
     <div class="zsec-h"><b>Live im Einsatz</b><span>${running.length} eingestempelt · tippen für Details</span></div>
     <div class="tlist">
@@ -12511,6 +12585,7 @@ async function leadClockDo(siteId){
   crew.forEach(e => { const entry = { id: timeSeq++, empId: e.id, siteId, in: NOW, out: null, ruest: settings.ruestzeit, pauseMin: 0, geo:g, byLead:true, proto:false }; timeEntries.push(entry); persistTimeEntry(entry); });
   closeSheet(); renderZeit();
   toast(`${crew.length} Mitarbeiter eingestempelt um ${NOW}`);
+  geoFarHint({ siteId, geo:g });   // Mitdenken: ganze Kolonne weit von der Baustelle? -> Hinweis
 }
 async function leadClockOutAll(){
   if(!ensureGeoConsent(() => leadClockOutAll())) return;
@@ -12543,7 +12618,7 @@ function clockCard(){
   return `<div class="clockcard running">
     <div class="clockcard__top"><span class="clockcard__lbl"><i data-lucide="radio"></i> Eingestempelt</span><span class="clockcard__time">${hoursStr(min)}</span></div>
     <div class="clockcard__site"><i data-lucide="hard-hat"></i> <b>${s.customer}</b> · ${s.label}</div>
-    <div class="clockcard__meta">${geoBadge(myEntry)}${myEntry.ruest?`<span class="rz"><i data-lucide="truck"></i> mit Rüstzeit</span>`:''}<span class="clockcard__since">seit ${myEntry.in} Uhr${myEntry.pauseMin?` · ${myEntry.pauseMin} Min Pause`:''}</span></div>
+    <div class="clockcard__meta">${geoBadge(myEntry)}${runLongBadge(myEntry)}${myEntry.ruest?`<span class="rz"><i data-lucide="truck"></i> mit Rüstzeit</span>`:''}<span class="clockcard__since">seit ${myEntry.in} Uhr${myEntry.pauseMin?` · ${myEntry.pauseMin} Min Pause`:''}</span></div>
     <div class="clockcard__row">
       <button class="clockbtn pause" onclick="myPause()"><i data-lucide="coffee"></i> Pause +30</button>
       <button class="clockbtn site" onclick="openSiteSheet('${s.id}')"><i data-lucide="package"></i> Baustelle &amp; Material</button>
@@ -12559,7 +12634,7 @@ function timeRow(e){
     <span class="trow__main">
       <span class="trow__top"><b>${emp_.name}</b>${e.out?`<span class="pill n">fertig</span>`:`<span class="dotlive"></span>`}</span>
       <span class="trow__site"><i data-lucide="hard-hat"></i> ${s.customer} · ${s.label}</span>
-      <span class="trow__meta">${geoBadge(e)}${e.ruest?`<span class="rz sm"><i data-lucide="truck"></i> Rüstzeit</span>`:''}${e.proto||hasProto(e.empId,e.siteId)?`<span class="rz sm done"><i data-lucide="clipboard-check"></i> Protokoll</span>`:''}</span>
+      <span class="trow__meta">${geoBadge(e)}${runLongBadge(e)}${e.ruest?`<span class="rz sm"><i data-lucide="truck"></i> Rüstzeit</span>`:''}${e.proto||hasProto(e.empId,e.siteId)?`<span class="rz sm done"><i data-lucide="clipboard-check"></i> Protokoll</span>`:''}</span>
     </span>
     <span class="trow__right"><b>${hoursStr(min)}</b><small>${e.in}${e.out?'–'+e.out:' · läuft'}</small></span>
   </button>`;
@@ -12622,6 +12697,15 @@ async function doClockIn(siteId){
   persistTimeEntry(myEntry);
   closeSheet(); renderZeit();
   toast(`Eingestempelt um ${NOW} · ${site(siteId).customer}`);
+  geoFarHint(myEntry);   // Mitdenken: weit von der Baustelle gestempelt? -> sanfter Hinweis
+}
+// Sanfter, nicht-blockierender Hinweis, wenn der Stempel-Standort klar außerhalb des
+// Baustellen-Radius liegt – häufigster Flüchtigkeitsfehler: falsche Baustelle gewählt.
+function geoFarHint(e){
+  const dkm = geoEntryDistKm(e);
+  if(dkm == null || dkm*1000 <= geoRadiusM()) return;
+  const lbl = (site(e.siteId)||{}).label || 'Baustelle';
+  setTimeout(() => toast(`Hinweis: ${distStr(dkm)} von „${lbl}" entfernt gestempelt – richtige Baustelle?`), 950);
 }
 function myPause(){ if(!myEntry) return; myEntry.pauseMin = (myEntry.pauseMin||0) + 30; persistTimeEntry(myEntry); renderZeit(); toast('30 Min Pause erfasst'); }
 async function myClockOut(){ if(!myEntry) return; if(!ensureGeoConsent(() => myClockOut())) return; myEntry.out = NOW; myEntry.geoOut = await geoStamp(myEntry.siteId); persistTimeEntry(myEntry); renderZeit(); toast(`Ausgestempelt um ${NOW} · ${hoursStr(entryMin(myEntry))}`); }
