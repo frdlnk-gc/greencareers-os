@@ -7564,7 +7564,7 @@ function kalkToAngebot(){
   invSeq++;
   const items = kalkLines.map(l=>{ const c=kalkLineCalc(l); return {name: c.name + (l.schwierig?' (erschwert)':''), qty:l.menge, unit:c.unit, price: c.ep}; });
   const ang = { id:'a'+invSeq, kind:'angebot', no:`AN-2026-${String(invSeq).padStart(4,'0')}`,
-    customerId: kalkCustomerId || customers[0].id, title: kalkTitle || 'Angebot',
+    customerId: kalkCustomerId || (customers[0] ? customers[0].id : ''), title: kalkTitle || 'Angebot',
     date: dISO(new Date()), due: addDays(dISO(new Date()), 21), vat: calcCfg.mwst, status:'entwurf',
     items };
   invoices.push(ang);
@@ -7927,7 +7927,7 @@ let invDraft = null;
 let custDraft = null;
 function openInvoiceForm(kind, customerId){
   if(currentView!=='finanzen' && !can('finanzen')){ /* erlaubt für admin */ }
-  const cid = (customerId && customers.some(c=>c.id===customerId)) ? customerId : customers[0].id;
+  const cid = (customerId && customers.some(c=>c.id===customerId)) ? customerId : (customers[0] ? customers[0].id : '');
   invDraft = { kind, customerId: cid, title:'', vat:19,
     date: dISO(new Date()), due: addDays(dISO(new Date()), kind==='angebot'?14:14),
     items:[ {name:'', qty:1, unit:'pausch.', price:0} ] };
@@ -9542,6 +9542,7 @@ async function loadPortalData(){
     if(st && !st.error){ jobs.length = 0; (st.data||[]).forEach(r => jobs.push(mapStelleRow(r))); }
     if(bw && !bw.error){ applicants.length = 0; (bw.data||[]).forEach(r => applicants.push(mapBewerberRow(r))); }
     await loadCrews();  // Kolonnen (kolonnen-Tabelle) – VOR loadTeam (crew.id=UUID, an die crewId hängt)
+    await loadKunden(); // Endkunden des Betriebs (kunden-Tabelle) – VOR der Plantafel (kunde_id-Mapping)
     await loadTeam();   // echtes Team (mitarbeiter-Tabelle) + Personalakten (extra) des Betriebs laden
     await loadAbsencesDb();   // Abwesenheiten (abwesenheiten-Tabelle) – NACH loadTeam (braucht employee._uuid fürs Mapping)
     OS_DATA_LOADED = true;
@@ -9768,6 +9769,66 @@ async function loadCrews(){
   rows.forEach(r => {
     crews.push({ id:r.id, _uuid:r.id, label:r.label||'Kolonne', color:r.color||CREW_COLORS[0], icon:'users', sort:r.sort||0 });
     if(!plan[r.id]){ plan[r.id] = {}; days.forEach(d => plan[r.id][d.id] = []); }   // Tages-Buckets für die Plantafel
+  });
+}
+
+// ===================== KUNDEN · DB-PERSISTENZ (kunden-Tabelle, Schema v17) =====================
+// Achtung: public.customers = die BETRIEBE (GC-Mandanten). Die Endkunden eines Betriebs liegen in
+// public.kunden. Wie bei den Kolonnen: Session behält ihre Client-ID ('c'+ts), DB-UUID in _uuid;
+// beim Laden wird die UUID zur customer.id (Plantafel verweist per kunde_id darauf). HR-fremde
+// Anzeigefelder (type/since/value/status/history) wandern in extra (jsonb).
+function kunRowPayload(c){
+  return {
+    customer_id: GC_PROFILE.customer_id,
+    name: c.name || '—',
+    contact: c.contact || null,
+    ctype: c.ctype || null,
+    city: c.city || null,
+    addr: c.addr || null,
+    phone: c.phone || null,
+    email: c.email || null,
+    ust_id: c.ustId || null,
+    tax_no: c.taxNo || null,
+    note: c.note || null,
+    extra: { type:c.type, since:c.since, value:c.value, status:c.status, history:c.history }
+  };
+}
+// Client-customerId -> kunde-UUID für die Plantafel (plantafel.kunde_id). Nur im verbundenen Betrieb.
+function kundeUuidFor(custId){
+  if(!custId) return null;
+  const c = customer(custId);
+  return c && c._uuid ? c._uuid : null;
+}
+async function persistKunde(c){
+  if(!osConnected() || !c) return;
+  try{
+    if(c._uuid){
+      const { error } = await sbAuth.from('kunden').update(kunRowPayload(c)).eq('id', c._uuid);
+      if(error){ toast('Kunde speichern fehlgeschlagen: '+error.message); }
+    } else {
+      const { data, error } = await sbAuth.from('kunden').insert(kunRowPayload(c)).select('id').single();
+      if(error){ toast('Kunde anlegen fehlgeschlagen: '+error.message); }
+      else if(data && data.id){ c._uuid = data.id; }
+    }
+  }catch(err){ toast('Kunde speichern fehlgeschlagen: '+String(err)); }
+}
+// Kunden des Betriebs laden (RLS-scoped per my_kunden). Setzt customer.id = UUID, damit Plantafel-Jobs
+// (customerId) nach einem Reload auf dieselbe UUID verweisen wie plantafel.kunde_id.
+async function loadKunden(){
+  if(!osConnected()) return;
+  let res = null;
+  try{ res = await sbAuth.rpc('my_kunden'); }catch(e){ res = { error:e }; }
+  if(!res || res.error){ if(res && res.error) console.warn('my_kunden:', res.error.message || res.error); return; }
+  const rows = res.data || [];
+  for(let i = customers.length - 1; i >= 0; i--){ if(customers[i]._uuid) customers.splice(i,1); }   // idempotent
+  rows.forEach(r => {
+    const ex = r.extra || {};
+    customers.push({ id:r.id, _uuid:r.id, name:r.name||'—', contact:r.contact||r.name||'—',
+      city:r.city||'—', addr:r.addr||'—', phone:r.phone||'—', email:r.email||'—',
+      ctype:r.ctype||'firma', ustId:r.ust_id||'', taxNo:r.tax_no||'', note:r.note||'',
+      type: ex.type||'Neukunde', since: ex.since||String(new Date().getFullYear()),
+      value: ex.value||'—', status: Array.isArray(ex.status)?ex.status:['Neu','b'],
+      history: Array.isArray(ex.history)?ex.history:[{date:dDE(dISO(new Date(r.created_at||Date.now()))), ch:'note', text:'Kunde angelegt'}] });
   });
 }
 function bewCountForJob(jobId){ return applicants.filter(a => a.jobId === jobId).length; }
@@ -10657,7 +10718,7 @@ function submitCustomer(){
     type:'Neukunde', since:String(new Date().getFullYear()), value:'—', status:['Neu','b'],
     ctype:d.ctype, ustId:d.ustId.trim(), taxNo:d.taxNo.trim(), note:d.note.trim(),
     history:[{date:dDE(dISO(new Date())), ch:'note', text:'Kunde angelegt'}] };
-  customers.push(c); custDraft=null; closeSheet();
+  customers.push(c); persistKunde(c); custDraft=null; closeSheet();
   toast(`Kunde „${c.name}" angelegt`);
   activeCustomerTab='liste';
   if(currentView==='kunden') customerTab('liste'); else setView('kunden');
