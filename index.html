@@ -6455,18 +6455,25 @@ function submitCrew(id){
   const color = crewDraft ? crewDraft.color : CREW_COLORS[0];
   if(id){
     const c = crewById(id); c.label = label; c.color = color;
+    persistCrew(c);
     closeSheet(); teamTab('kolonnen'); toast('Kolonne aktualisiert');
     return;
   }
   const newId = 'k' + (crewSeq++);
-  crews.push({ id:newId, label, color, icon:'users' });
+  const nc = { id:newId, label, color, icon:'users', sort:crews.length };
+  crews.push(nc);
   plan[newId] = {}; days.forEach(d => plan[newId][d.id] = []);
+  persistCrew(nc);
   closeSheet(); teamTab('kolonnen'); toast(`Kolonne „${label}" angelegt`);
 }
 function deleteCrew(id){
-  crewMembers(id).forEach(m => m.crewId = null);   // Mitglieder werden Springer
+  const c = crewById(id); const uuid = c ? c._uuid : null;
+  const members = crewMembers(id);                 // Mitglieder VOR dem Nullen einsammeln
+  members.forEach(m => m.crewId = null);            // werden Springer
   const i = crews.findIndex(c => c.id === id); if(i > -1) crews.splice(i,1);
   delete plan[id];
+  if(uuid) deleteCrewDb(uuid);                      // DB: kaskadiert Plantafel-Zeilen (FK ON DELETE CASCADE)
+  members.forEach(m => persistEmployee(m));         // Springer-Zustand der Mitglieder in der DB nachziehen
   closeSheet(); teamTab('kolonnen'); toast('Kolonne gelöscht – Mitglieder sind jetzt Springer');
 }
 
@@ -9534,6 +9541,7 @@ async function loadPortalData(){
     const bw = (bwRpc && !bwRpc.error) ? bwRpc : bwTbl;
     if(st && !st.error){ jobs.length = 0; (st.data||[]).forEach(r => jobs.push(mapStelleRow(r))); }
     if(bw && !bw.error){ applicants.length = 0; (bw.data||[]).forEach(r => applicants.push(mapBewerberRow(r))); }
+    await loadCrews();  // Kolonnen (kolonnen-Tabelle) – VOR loadTeam (crew.id=UUID, an die crewId hängt)
     await loadTeam();   // echtes Team (mitarbeiter-Tabelle) + Personalakten (extra) des Betriebs laden
     await loadAbsencesDb();   // Abwesenheiten (abwesenheiten-Tabelle) – NACH loadTeam (braucht employee._uuid fürs Mapping)
     OS_DATA_LOADED = true;
@@ -9557,7 +9565,7 @@ function maRowPayload(e){
     name: e.name || '—',
     email: e.email || null,
     position: e.role || null,
-    crew: e.crewId || null,
+    crew: crewUuidFor(e.crewId),        // Client-crewId -> UUID (sonst null/Springer)
     phone: e.phone || null,
     sys_role: (e.sysRole === 'buero' ? 'buero' : 'mitarbeiter'),
     status: (['none','invited','active'].includes(e.account) ? e.account : 'none'),
@@ -9704,6 +9712,63 @@ async function loadAbsencesDb(){
                     note:r.note || '', status:r.status || 'offen', au:r.au || '' });
   });
   saveAbsences();                                // lokalen Cache mit DB-Stand spiegeln
+}
+
+// ===================== KOLONNEN · DB-PERSISTENZ (kolonnen-Tabelle, Schema v17) =====================
+// Kolonnen tragen in der Session eine Client-ID ('k'+crewSeq), an die plan-Buckets UND employee.crewId
+// hängen. Beim DB-Laden wird die echte UUID zur crew.id (plan + crewId verweisen dann auf die UUID).
+// Neu angelegte Kolonnen behalten zunächst ihre Client-ID und merken sich die UUID in _uuid; der
+// mitarbeiter.crew-Schreibweg (maRowPayload) übersetzt crewId -> crew._uuid, damit die DB konsistent bleibt.
+function crewRowPayload(c){
+  return {
+    customer_id: GC_PROFILE.customer_id,
+    label: c.label || 'Kolonne',
+    color: c.color || CREW_COLORS[0],
+    sort: (c.sort != null ? c.sort : 0)
+  };
+}
+// Client-crewId -> UUID für den mitarbeiter.crew-Text. Nur im verbundenen Betrieb relevant.
+function crewUuidFor(crewId){
+  if(!crewId) return null;
+  const c = crewById(crewId);
+  return c && c._uuid ? c._uuid : null;
+}
+async function persistCrew(c){
+  if(!osConnected() || !c) return;
+  try{
+    if(c._uuid){
+      const { error } = await sbAuth.from('kolonnen').update(crewRowPayload(c)).eq('id', c._uuid);
+      if(error){ toast('Kolonne speichern fehlgeschlagen: '+error.message); }
+    } else {
+      const { data, error } = await sbAuth.from('kolonnen').insert(crewRowPayload(c)).select('id').single();
+      if(error){ toast('Kolonne anlegen fehlgeschlagen: '+error.message); }
+      else if(data && data.id){ c._uuid = data.id; }
+    }
+  }catch(err){ toast('Kolonne speichern fehlgeschlagen: '+String(err)); }
+}
+async function deleteCrewDb(uuid){
+  if(!osConnected() || !uuid) return;
+  try{
+    const { error } = await sbAuth.from('kolonnen').delete().eq('id', uuid);
+    if(error){ toast('Kolonne löschen (DB) fehlgeschlagen: '+error.message); }
+  }catch(err){ toast('Kolonne löschen (DB) fehlgeschlagen: '+String(err)); }
+}
+// Kolonnen des Betriebs laden (RLS-scoped per my_kolonnen). Setzt crew.id = UUID, damit plan-Buckets
+// und employee.crewId (aus loadTeam, läuft DANACH) auf dieselbe UUID verweisen. Muss VOR loadTeam laufen.
+async function loadCrews(){
+  if(!osConnected()) return;
+  let res = null;
+  try{ res = await sbAuth.rpc('my_kolonnen'); }catch(e){ res = { error:e }; }
+  if(!res || res.error){ if(res && res.error) console.warn('my_kolonnen:', res.error.message || res.error); return; }
+  const rows = res.data || [];
+  // Idempotent: zuvor aus der DB geladene Kolonnen (mit _uuid) inkl. Plan-Buckets entfernen
+  for(let i = crews.length - 1; i >= 0; i--){
+    if(crews[i]._uuid){ delete plan[crews[i].id]; crews.splice(i,1); }
+  }
+  rows.forEach(r => {
+    crews.push({ id:r.id, _uuid:r.id, label:r.label||'Kolonne', color:r.color||CREW_COLORS[0], icon:'users', sort:r.sort||0 });
+    if(!plan[r.id]){ plan[r.id] = {}; days.forEach(d => plan[r.id][d.id] = []); }   // Tages-Buckets für die Plantafel
+  });
 }
 function bewCountForJob(jobId){ return applicants.filter(a => a.jobId === jobId).length; }
 function bewNeuForJob(jobId){ return applicants.filter(a => a.jobId === jobId && a.stage === 'neu').length; }
