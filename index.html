@@ -2592,11 +2592,14 @@
   .kalk-voicecta__txt{ flex:1; min-width:0; }
   .kalk-voicecta__txt b{ display:block; font-size:14px; }
   .kalk-voicecta__txt small{ display:block; font-size:11.5px; color:var(--muted); line-height:1.4; margin-top:2px; }
-  .kalk-confirm{ display:flex; align-items:center; gap:11px; border:1.5px solid #CDE7D4; background:var(--mint); border-radius:13px; padding:11px 13px; margin-bottom:14px; }
-  .kalk-confirm > .lucide{ width:20px; height:20px; color:var(--green-2); flex-shrink:0; }
+  .kalk-confirm{ display:flex; align-items:flex-start; gap:11px; border:1.5px solid #CDE7D4; background:var(--mint); border-radius:13px; padding:11px 13px; margin-bottom:14px; }
+  .kalk-confirm > .lucide{ width:20px; height:20px; color:var(--green-2); flex-shrink:0; margin-top:2px; }
   .kalk-confirm__txt{ flex:1; min-width:0; }
   .kalk-confirm__txt b{ display:block; font-size:13.5px; }
   .kalk-confirm__txt span{ display:block; font-size:11.5px; color:var(--muted); line-height:1.4; margin-top:1px; }
+  .kalk-confirm__hints{ margin:7px 0 1px; padding-left:16px; display:flex; flex-direction:column; gap:3px; }
+  .kalk-confirm__hints li{ font-size:11.5px; color:var(--ink); line-height:1.35; list-style:disc; }
+  .kalk-confirm .btn.sm, .kalk-confirm .iconbtn{ align-self:center; }
   .kv-mic{ display:flex; flex-direction:column; align-items:center; gap:8px; width:100%; padding:20px; border:0; border-radius:16px; background:var(--canvas); cursor:pointer; margin-bottom:14px; position:relative; }
   .kv-mic .lucide{ width:30px; height:30px; color:var(--green-2); z-index:1; }
   .kv-mic__lbl{ font-size:12.5px; font-weight:700; color:var(--text); }
@@ -6989,15 +6992,17 @@ const FIN = {
         </div>
       </div>
       <button class="kalk-voicecta" onclick="openKalkVoice(false)">
-        <span class="kalk-voicecta__ic"><i data-lucide="mic"></i></span>
-        <span class="kalk-voicecta__txt"><b>Kalkulation einsprechen</b><small>„3 Std Anfahrt, 2 Mann, 1 t Backsteine, Minibagger 20 Std …" – einfach reden, der Rest passiert automatisch.</small></span>
+        <span class="kalk-voicecta__ic"><i data-lucide="sparkles"></i></span>
+        <span class="kalk-voicecta__txt"><b>Projekt beschreiben – KI erstellt das Leistungsverzeichnis</b><small>„40 m² Terrasse mit Naturstein pflastern, Aushub, neuer Unterbau, Abfuhr …" – beschreiben oder einsprechen, die KI zerlegt es in alle Positionen.</small></span>
         <i data-lucide="chevron-right"></i>
       </button>
       ${kalkJustDrafted ? `<div class="kalk-confirm">
         <i data-lucide="sparkles"></i>
-        <div class="kalk-confirm__txt"><b>Entwurf erstellt – ist alles richtig?</b><span>Prüfe die Positionen unten. Fehlt etwas oder hast du dich versprochen? Sprich einfach nach.</span></div>
+        <div class="kalk-confirm__txt"><b>Entwurf erstellt – ist alles richtig?</b><span>Prüfe die Positionen &amp; Mengen unten. Fehlt etwas oder hast du dich versprochen? Beschreib es nach.</span>
+          ${kalkKIHinweise && kalkKIHinweise.length ? `<ul class="kalk-confirm__hints">${kalkKIHinweise.map(h=>`<li>${escapeHtml(h)}</li>`).join('')}</ul>` : ''}
+        </div>
         <button class="btn sm" onclick="openKalkVoice(true)"><i data-lucide="mic"></i> Nachsprechen</button>
-        <button class="iconbtn" onclick="kalkJustDrafted=false;kalkRerender()"><i data-lucide="check"></i></button>
+        <button class="iconbtn" onclick="kalkJustDrafted=false;kalkKIHinweise=[];kalkRerender()"><i data-lucide="check"></i></button>
       </div>` : ''}
       <div class="kalk-grid">
         <div class="panel">
@@ -7392,21 +7397,23 @@ function renderKalkVoice(){
   openSheet(`
     <div class="sheet__head">
       <span class="avatar" style="width:46px;height:46px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="mic" style="width:22px;height:22px"></i></span>
-      <div><div class="sheet__title">Kalkulation einsprechen</div><div class="sheet__sub">${kalkVoiceAppend?'Ergänze deine bestehende Kalkulation':'Reden wie mit einem Kollegen – pausieren &amp; weiterreden geht jederzeit'}</div></div>
+      <div><div class="sheet__title">Projekt beschreiben – KI kalkuliert</div><div class="sheet__sub">${kalkVoiceAppend?'Ergänze deine bestehende Kalkulation':'Beschreib die Baustelle in eigenen Worten oder sprich sie ein – die KI baut das Leistungsverzeichnis'}</div></div>
       <button class="sheet__close" onclick="kalkVoiceStop();closeSheet()"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body">
       <button class="kv-mic" id="kvMic" onclick="kalkVoiceToggle()"><span class="kv-mic__pulse"></span><i data-lucide="mic"></i><span class="kv-mic__lbl">Antippen &amp; sprechen</span></button>
-      ${!SR ? `<p class="sheet-note"><i data-lucide="info"></i> Spracheingabe ist in diesem Browser nicht verfügbar – du kannst aber unten frei tippen, der Agent erkennt die Positionen genauso.</p>`:''}
-      <div class="field"><label>Gesprochen / getippt <span class="opt">frei änderbar</span></label>
-        <textarea id="kvText" rows="3" placeholder="z. B. 3 Stunden Anfahrt, 2 Mitarbeiter, eine Tonne Backsteine, Minibagger Kubota 20 Stunden …" oninput="kalkVoiceText=this.value;kvPreview()">${escapeHtml(kalkVoiceText)}</textarea>
+      ${!SR ? `<p class="sheet-note"><i data-lucide="info"></i> Spracheingabe ist in diesem Browser nicht verfügbar – du kannst aber unten frei tippen, die KI erkennt die Positionen genauso.</p>`:''}
+      <div class="field"><label>Projektbeschreibung <span class="opt">frei änderbar</span></label>
+        <textarea id="kvText" rows="4" placeholder="z. B. „40 m² Terrasse mit Naturstein neu pflastern, alten Belag raus, Aushub ca. 12 m³, neuer Schotter-Unterbau, Mutterboden abfahren, Minibagger 1 Tag" – oder kurz: „3 Std Anfahrt, 2 Mann, 1 t Backsteine, Minibagger 20 Std" …" oninput="kalkVoiceText=this.value;kvPreview()">${escapeHtml(kalkVoiceText)}</textarea>
       </div>
+      <button class="btn primary" id="kvKIBtn" style="width:100%" onclick="kalkVoiceKI()"><i data-lucide="sparkles"></i> ${kalkVoiceAppend?'Mit KI ergänzen':'Leistungsverzeichnis mit KI erstellen'}</button>
+      <p class="kv-hint" style="margin:6px 0 2px"><i data-lucide="brain"></i> Die KI zerlegt ein ganzes Vorhaben in alle nötigen Positionen (Aushub, Unterbau, Pflasterarbeiten, Material, Abfuhr …) und greift dabei auf deinen Katalog zurück.</p>
       <div class="kv-preview">
-        <div class="kv-preview__head"><i data-lucide="list-checks"></i> Erkannte Positionen <span id="kvCount">${draft.length}</span></div>
+        <div class="kv-preview__head"><i data-lucide="list-checks"></i> Schnell-Erkennung (ohne KI) <span id="kvCount">${draft.length}</span></div>
         <div id="kvList">${kvListHtml(draft)}</div>
       </div>
       <div class="sheet-actions">
-        <button class="btn" style="flex:1" onclick="kalkVoiceCommit()"><i data-lucide="wand-2"></i> ${kalkVoiceAppend?'Ergänzen':'Kalkulation erstellen'}</button>
+        <button class="btn" style="flex:1" onclick="kalkVoiceCommit()"><i data-lucide="wand-2"></i> ${kalkVoiceAppend?'Schnell ergänzen':'Schnell aus Katalog'}</button>
         <button class="btn ghost" onclick="kalkVoiceStop();closeSheet()">Abbrechen</button>
       </div>
       <p class="kv-hint"><i data-lucide="shield-check" style="width:13px;height:13px"></i> Es wird nichts automatisch verschickt – erst entsteht ein Entwurf, den du prüfst.</p>
@@ -7466,10 +7473,82 @@ function kalkVoiceCommit(){
   if(!matched.length){ toast(unmatched.length ? 'Keine Position im Katalog erkannt – Artikel anlegen' : 'Noch keine Positionen erkannt'); return; }
   if(!kalkVoiceAppend) kalkLines = [];
   matched.forEach(d=> kalkLines.push({ aid:d.aid, menge:d.menge }));
-  kalkVoiceText=''; kalkJustDrafted=true; closeSheet();
+  kalkVoiceText=''; kalkJustDrafted=true; kalkKIHinweise=[]; closeSheet();
   if(currentView!=='finanzen'){ setView('finanzen'); }
   activeFinTab='kalkulation'; finTab('kalkulation');
   toast(unmatched.length ? `Entwurf mit ${matched.length} Position${matched.length>1?'en':''} – ${unmatched.length} nicht im Katalog` : 'Entwurf erstellt – bitte prüfen');
+}
+
+/* ===== KI-Kalkulator: Freitext-Projektbeschreibung → vollständiges Leistungsverzeichnis =====
+   Schickt die Beschreibung + den Katalog (Vorlagen + eigene Artikel) an die Edge-Function
+   `kalk-ki`. Die KI zerlegt das Projekt in einzelne Positionen (Menge + Einheit) und
+   referenziert wo möglich den eigenen Katalog. Den Endpreis rechnet weiterhin das OS
+   clientseitig (kalkLineCalc/kalkTotals) → eine Kalkulationsquelle.
+   Fällt die KI aus (offline / Fehler), greift automatisch der lokale Heuristik-Parser. */
+let kalkKIBusy = false;
+let kalkKIHinweise = [];
+// Kompakter Katalog für die KI (nur was sie zum Zuordnen braucht).
+function kalkCatalogPayload(){
+  return {
+    templates: POS_TEMPLATES.map(p=>({ id:p.id, name:p.name, grp:p.grp, unit:p.unit, lohn:p.lohn })),
+    articles: articles.map(a=>({ id:a.id, name:a.name, type:a.type, unit:a.unit, syn:(a.syn||[]).slice(0,8) })),
+  };
+}
+// Eine KI-Position → interne kalkLine-Form (tid/aid/free). Validiert die Referenz lokal.
+function kiPositionToLine(p){
+  const menge = (Number(p.menge)>0) ? Number(p.menge) : 1;
+  if(p.ref_type==='template' && p.ref_id && posById(p.ref_id))   return { tid:p.ref_id, menge, schwierig:false };
+  if(p.ref_type==='article'  && p.ref_id && articleById(p.ref_id)) return { aid:p.ref_id, menge };
+  // free (oder ungültige Referenz) → freie Position
+  const unit = (p.unit||'Stk').replace('m2','m²').replace('m3','m³');
+  return { free:true, name:(p.name||'Position'), menge, unit, ep:Number(p.ep_netto)||0, isLabor:!!p.is_labor };
+}
+async function kalkVoiceKI(){
+  const text = (kalkVoiceText||'').trim();
+  if(text.length < 8){ toast('Bitte das Projekt kurz beschreiben (mind. ein Satz)'); return; }
+  if(kalkKIBusy) return;
+  kalkKIBusy = true;
+  const btn = document.getElementById('kvKIBtn');
+  const btnHtml = btn ? btn.innerHTML : '';
+  if(btn){ btn.disabled = true; btn.innerHTML = '<i data-lucide="loader"></i> KI erstellt das Leistungsverzeichnis …'; icons(); }
+  try{
+    const res = await fetch(SB_URL+'/functions/v1/kalk-ki', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'apikey':SB_ANON, 'Authorization':'Bearer '+SB_ANON },
+      body: JSON.stringify({ text, catalog: kalkCatalogPayload(), satz: calcCfg.satz }),
+    });
+    if(!res.ok) throw new Error('http '+res.status);
+    const data = await res.json();
+    const positions = Array.isArray(data.positions) ? data.positions : [];
+    if(!positions.length) throw new Error('leer');
+    kalkVoiceStop();
+    if(!kalkVoiceAppend) kalkLines = [];
+    positions.forEach(p=> kalkLines.push(kiPositionToLine(p)));
+    kalkKIHinweise = Array.isArray(data.hinweise) ? data.hinweise : [];
+    kalkVoiceText=''; kalkJustDrafted=true; closeSheet();
+    if(currentView!=='finanzen'){ setView('finanzen'); }
+    activeFinTab='kalkulation'; finTab('kalkulation');
+    toast(`KI-Leistungsverzeichnis: ${positions.length} Position${positions.length>1?'en':''} erstellt – bitte prüfen`);
+  }catch(e){
+    // Fallback: lokaler Heuristik-Parser, damit der Betrieb nie im Regen steht.
+    const draft = parseKalkSpeech(text);
+    const matched = draft.filter(d=>d.aid);
+    if(matched.length){
+      kalkVoiceStop();
+      if(!kalkVoiceAppend) kalkLines = [];
+      matched.forEach(d=> kalkLines.push({ aid:d.aid, menge:d.menge }));
+      kalkKIHinweise = ['KI nicht erreichbar – Positionen über die lokale Erkennung erstellt. Bitte besonders genau prüfen.'];
+      kalkVoiceText=''; kalkJustDrafted=true; closeSheet();
+      if(currentView!=='finanzen'){ setView('finanzen'); }
+      activeFinTab='kalkulation'; finTab('kalkulation');
+      toast(`KI nicht erreichbar – ${matched.length} Position${matched.length>1?'en':''} lokal erkannt`);
+    }else{
+      if(btn){ btn.disabled = false; btn.innerHTML = btnHtml; icons(); }
+      toast('KI gerade nicht erreichbar – bitte später erneut oder „Aus Katalog" nutzen');
+    }
+  }finally{
+    kalkKIBusy = false;
+  }
 }
 function kalkToAngebot(){
   if(!kalkLines.length){ toast('Erst Positionen kalkulieren'); return; }
