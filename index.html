@@ -2694,6 +2694,7 @@
   .kalk-chip{ display:inline-flex; align-items:center; gap:4px; font-size:10.5px; font-weight:700; border:1px solid var(--line); border-radius:20px; padding:2px 8px; color:var(--muted); background:#fff; cursor:pointer; }
   .kalk-chip .lucide{ width:12px; height:12px; }
   .kalk-chip.on{ background:#FFFBEB; border-color:#FDE68A; color:#B45309; }
+  .kalk-chip.vat7{ background:var(--mint); border-color:#86EFAC; color:var(--green-2); }
   .kalk-menge{ display:inline-flex; align-items:center; gap:5px; }
   .kalk-menge input{ width:64px; text-align:right; border:1px solid var(--line); border-radius:8px; padding:6px 8px; font-size:13px; outline:none; font-variant-numeric:tabular-nums; }
   .kalk-menge input:focus{ border-color:var(--green); box-shadow:0 0 0 3px rgba(22,163,74,.1); }
@@ -6704,7 +6705,14 @@ const invoices = [
            {name:'Grünschnitt-Entsorgung', qty:1, unit:'pausch.', price:90} ]},
 ];
 function invNet(inv){ return inv.items.reduce((s,i)=> s + i.qty*i.price, 0); }
-function invVatAmt(inv){ return invNet(inv) * inv.vat/100; }
+// MwSt je Satz – nutzt pro-Posten-Satz (it.vat) falls vorhanden, sonst den Beleg-Satz (inv.vat).
+// So werden gemischte Sätze (z. B. 7% Pflanzen + 19% Bauleistung) korrekt getrennt ausgewiesen.
+function invVatRows(inv){
+  const b = {};
+  inv.items.forEach(i=>{ const r = (i.vat===7||i.vat===19) ? i.vat : (inv.vat||19); b[r] = (b[r]||0) + i.qty*i.price; });
+  return Object.keys(b).map(Number).sort((a,b2)=>a-b2).map(rate=>({ rate, net:b[rate], amt:b[rate]*rate/100 }));
+}
+function invVatAmt(inv){ return invVatRows(inv).reduce((s,r)=>s+r.amt, 0); }
 function invGross(inv){ return invNet(inv) + invVatAmt(inv); }
 const INV_STATUS = {
   entwurf:    {label:'Entwurf',     cls:'n'},
@@ -6921,20 +6929,45 @@ function kalkLineCalc(line){
            lohnSum: lohn * menge, matSum: mat * menge, gerSum: ger * menge, sonstigeSum:0,
            lineNet: ep * menge };
 }
+// MwSt-Satz einer Kalkulationszeile. GaLaBau: reine PFLANZEN-LIEFERUNG = 7% (ermäßigt),
+// alles andere (Bauleistung, Lohn, Stein, Maschinen) = 19%. Pro Zeile umstellbar (l.mwst),
+// Artikel erben ihren eigenen Satz (a.vat), sonst gilt der Standardsatz aus calcCfg.mwst.
+function lineMwst(l){
+  if(l && (l.mwst===7 || l.mwst===19)) return l.mwst;
+  if(l && l.aid){ const a=articleById(l.aid); if(a && (a.vat===7 || a.vat===19)) return a.vat; }
+  return calcCfg.mwst;
+}
 function kalkTotals(){
   let lohn=0, mat=0, ger=0, hours=0, sonstige=0, freeLohn=0;
-  kalkLines.forEach(l=>{ const c=kalkLineCalc(l); if(!c) return; lohn+=c.lohnSum; mat+=c.matSum; ger+=c.gerSum; hours+=c.hours+(c.freeHours||0); sonstige+=(c.sonstigeSum||0); freeLohn+=(c.freeLohn||0); });
+  const wgF = 1 + calcCfg.wagnisGewinn/100;
+  const buckets = {};                                  // Satz -> Netto VOR Nachlass
+  const addBucket = (rate, net) => { buckets[rate] = (buckets[rate]||0) + net; };
+  kalkLines.forEach(l=>{
+    const c=kalkLineCalc(l); if(!c) return;
+    lohn+=c.lohnSum; mat+=c.matSum; ger+=c.gerSum; hours+=c.hours+(c.freeHours||0); sonstige+=(c.sonstigeSum||0); freeLohn+=(c.freeLohn||0);
+    const rate = lineMwst(l);
+    // Vorlagen tragen W&G; Artikel/freie Positionen sind Festpreis (netto)
+    const lineNet = (c.kind==='tpl') ? (c.lohnSum + c.matSum + c.gerSum) * wgF : (c.sonstigeSum||0);
+    if(lineNet) addBucket(rate, lineNet);
+  });
   const herstell = lohn + mat + ger;                  // inkl. Materialaufschlag
   const wg = herstell * calcCfg.wagnisGewinn/100;
-  const anfahrt = calcCfg.anfahrt || 0;               // An-/Abfahrtspauschale (netto)
+  const anfahrt = calcCfg.anfahrt || 0;               // An-/Abfahrtspauschale (netto) – Dienstleistung 19%
+  if(anfahrt) addBucket(calcCfg.mwst, anfahrt);
   const zwischen = herstell + wg + sonstige + anfahrt; // Netto vor Nachlass
   const nachlassEur = zwischen * (calcCfg.nachlass||0)/100;
   const netto = zwischen - nachlassEur;
-  const mwst = netto * calcCfg.mwst/100;
+  const nf = 1 - (calcCfg.nachlass||0)/100;
+  // MwSt je Satz (Nachlass proportional auf alle Sätze) → korrekte Splittung bei gemischten Sätzen
+  const vatRows = Object.keys(buckets).map(Number).sort((a,b)=>a-b).map(rate=>{
+    const net = buckets[rate]*nf; return { rate, net, amt: net*rate/100 };
+  });
+  const mwst = vatRows.reduce((s,r)=>s+r.amt, 0);
   const brutto = netto + mwst;
+  const mixed = vatRows.length > 1;
   // §35a EStG: Lohnanteil (Arbeitskosten inkl. W&G auf Lohn + freie Arbeitszeit) – Privatkunden absetzbar
-  const lohnAnteil = (lohn * (1 + calcCfg.wagnisGewinn/100) + anfahrt + freeLohn) * (1 - (calcCfg.nachlass||0)/100);
-  return { lohn, mat, ger, hours, sonstige, herstell, wg, anfahrt, nachlassEur, lohnAnteil, netto, mwst, brutto,
+  const lohnAnteil = (lohn * wgF + anfahrt + freeLohn) * nf;
+  return { lohn, mat, ger, hours, sonstige, herstell, wg, anfahrt, nachlassEur, lohnAnteil, netto, mwst, brutto, vatRows, mixed,
            umsatzProStd: hours>0 ? netto/hours : 0 };
 }
 
@@ -7052,6 +7085,7 @@ const FIN = {
                   <strong>${escapeHtml(c.name)}</strong>
                   <div class="kalk-pos__meta">${escapeHtml(c.meta)}
                     ${c.kind==='tpl' ? `<button class="kalk-chip ${l.schwierig?'on':''}" onclick="kalkToggleSchwierig(${ix})" title="Erschwerter Antransport / Hanglage: +30% Lohn"><i data-lucide="mountain"></i> schwierig +30%</button>` : ''}
+                    <button class="kalk-chip ${lineMwst(l)===7?'vat7':''}" onclick="kalkToggleMwst(${ix})" title="MwSt-Satz dieser Position. Reine Pflanzen-Lieferung 7% (ermäßigt), Bauleistung/Lohn/Material 19%. Achtung: Pflanzen als Teil einer Werkleistung (mitgepflanzt) = 19%."><i data-lucide="percent"></i> ${lineMwst(l)}% MwSt.</button>
                   </div>
                 </td>
                 <td class="right"><div class="kalk-menge"><input type="number" value="${l.menge}" min="0" step="any" onchange="kalkSetMenge(${ix}, this.value)"><span>${c.unit}</span></div></td>
@@ -7083,7 +7117,9 @@ const FIN = {
             </div>
             ${t.nachlassEur ? `<div class="kalk-sum__row muted sm"><span>− Nachlass ${calcCfg.nachlass}%</span><span class="num">−${eur(t.nachlassEur)}</span></div>` : ''}
             <div class="kalk-sum__row grand"><span>Netto-Angebotssumme</span><span class="num">${eur(t.netto)}</span></div>
-            <div class="kalk-sum__row muted sm"><span>zzgl. ${calcCfg.mwst}% MwSt.</span><span class="num">${eur(t.mwst)}</span></div>
+            ${t.mixed
+              ? t.vatRows.map(r=>`<div class="kalk-sum__row muted sm"><span>zzgl. ${r.rate}% MwSt. <em>auf ${eur(r.net)} netto</em></span><span class="num">${eur(r.amt)}</span></div>`).join('')
+              : `<div class="kalk-sum__row muted sm"><span>zzgl. ${(t.vatRows[0]?t.vatRows[0].rate:calcCfg.mwst)}% MwSt.</span><span class="num">${eur(t.mwst)}</span></div>`}
             <div class="kalk-sum__row brutto"><span>Brutto</span><span class="num">${eur(t.brutto)}</span></div>
             <div class="kalk-sum__row muted sm" title="§35a EStG: Privatkunden können den Lohnanteil (Arbeitskosten) steuerlich absetzen – Ausweis auf der Rechnung erhöht die Abschlusschance."><span><i data-lucide="badge-percent" style="width:13px;height:13px"></i> davon Lohnanteil (§35a)</span><span class="num">${eur(t.lohnAnteil)}</span></div>
             <div class="kalk-db"><i data-lucide="trending-up"></i> Umsatz je Arbeitsstunde: <b>${eur(t.umsatzProStd)}</b> – über deinem Satz von ${eur(calcCfg.satz)} = du verdienst dran.</div>
@@ -7280,6 +7316,8 @@ function kalkRerender(){ if(currentView==='finanzen' && activeFinTab==='kalkulat
 function kalkSetCfg(key, val){ const n = parseFloat(val); if(!isNaN(n)) calcCfg[key] = n; kalkRerender(); }
 function kalkSetMenge(ix, val){ const n = parseFloat(val); kalkLines[ix].menge = isNaN(n)?0:n; kalkRerender(); }
 function kalkToggleSchwierig(ix){ kalkLines[ix].schwierig = !kalkLines[ix].schwierig; kalkRerender(); }
+// MwSt-Satz der Zeile zwischen 19% (Standard) und 7% (Pflanzen-Lieferung) umschalten
+function kalkToggleMwst(ix){ kalkLines[ix].mwst = (lineMwst(kalkLines[ix])===7) ? 19 : 7; kalkRerender(); }
 function kalkRemove(ix){ kalkLines.splice(ix,1); kalkRerender(); }
 function kalkAddPos(tid){ kalkLines.push({tid, menge:1, schwierig:false}); closeSheet(); kalkRerender(); toast('Position hinzugefügt'); }
 function kalkAddArticle(aid){ kalkLines.push({aid, menge:1}); closeSheet(); kalkRerender(); toast('Position hinzugefügt'); }
@@ -7586,7 +7624,7 @@ function kalkToAngebot(){
   if(!kalkLines.length){ toast('Erst Positionen kalkulieren'); return; }
   const t = kalkTotals();
   invSeq++;
-  const items = kalkLines.map(l=>{ const c=kalkLineCalc(l); return {name: c.name + (l.schwierig?' (erschwert)':''), qty:l.menge, unit:c.unit, price: c.ep}; });
+  const items = kalkLines.map(l=>{ const c=kalkLineCalc(l); return {name: c.name + (l.schwierig?' (erschwert)':''), qty:l.menge, unit:c.unit, price: c.ep, vat: lineMwst(l)}; });
   const ang = { id:'a'+invSeq, kind:'angebot', no:`AN-2026-${String(invSeq).padStart(4,'0')}`,
     customerId: kalkCustomerId || (customers[0] ? customers[0].id : ''), title: kalkTitle || 'Angebot',
     date: dISO(new Date()), due: addDays(dISO(new Date()), 21), vat: calcCfg.mwst, status:'entwurf',
@@ -7666,7 +7704,9 @@ function invDocHtml(inv){
       </table>
       <div class="paper__sum">
         <div class="paper__sum-row"><span>Nettobetrag</span><span>${eur(invNet(inv))}</span></div>
-        <div class="paper__sum-row"><span>zzgl. ${inv.vat}% MwSt.</span><span>${eur(invVatAmt(inv))}</span></div>
+        ${(()=>{ const vr=invVatRows(inv); return vr.length>1
+          ? vr.map(r=>`<div class="paper__sum-row"><span>zzgl. ${r.rate}% MwSt. auf ${eur(r.net)}</span><span>${eur(r.amt)}</span></div>`).join('')
+          : `<div class="paper__sum-row"><span>zzgl. ${vr[0]?vr[0].rate:inv.vat}% MwSt.</span><span>${eur(invVatAmt(inv))}</span></div>`; })()}
         <div class="paper__sum-row grand"><span>${isAng?'Angebotssumme':'Rechnungsbetrag'}</span><span>${eur(invGross(inv))}</span></div>
       </div>
       ${!isAng && lohnSum>0 ? `<p class="paper__note">In der Rechnung sind Lohn-/Arbeitskosten in Höhe von ca. ${eur(lohnSum)} enthalten (haushaltsnahe Dienst-/Handwerkerleistung, steuerlich absetzbar nach §35a EStG).</p>`:''}
@@ -7753,7 +7793,9 @@ function openInvoice(id){
       </table></div>
       <div class="inv-totals">
         <div class="inv-totals__row"><span>Netto</span><span class="num">${eur(invNet(inv))}</span></div>
-        <div class="inv-totals__row"><span>zzgl. ${inv.vat}% MwSt.</span><span class="num">${eur(invVatAmt(inv))}</span></div>
+        ${(()=>{ const vr=invVatRows(inv); return vr.length>1
+          ? vr.map(r=>`<div class="inv-totals__row"><span>zzgl. ${r.rate}% MwSt. auf ${eur(r.net)}</span><span class="num">${eur(r.amt)}</span></div>`).join('')
+          : `<div class="inv-totals__row"><span>zzgl. ${vr[0]?vr[0].rate:inv.vat}% MwSt.</span><span class="num">${eur(invVatAmt(inv))}</span></div>`; })()}
         <div class="inv-totals__row grand"><span>Gesamt</span><span class="num">${eur(invGross(inv))}</span></div>
       </div>
       <p class="sheet-note" style="margin-top:12px"><i data-lucide="sparkles"></i> Unsicher bei MwSt., Pflichtangaben oder Mahnung? <a onclick="brainInvoiceHelp('${inv.id}')" style="color:var(--green);font-weight:700;cursor:pointer">Frag das GaLaBrain</a></p>
