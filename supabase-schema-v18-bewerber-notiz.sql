@@ -23,6 +23,10 @@ alter table public.bewerber           add column if not exists notiz jsonb not n
 
 -- ---------- 2) LESEN: my_bewerber() um notiz erweitern ----------
 -- notiz kommt PRO Zuordnung; bei Legacy-Bewerbungen aus bewerber.notiz.
+-- WICHTIG: my_bewerber() existiert bereits aus v14 mit ANDERER Spaltenliste
+-- (ohne notiz). Postgres erlaubt bei "create or replace" KEINE Aenderung der
+-- Rueckgabe-Spalten (Fehler 42P13). Darum erst droppen, dann neu anlegen.
+drop function if exists public.my_bewerber();
 create or replace function public.my_bewerber()
 returns table(
   id                uuid,
