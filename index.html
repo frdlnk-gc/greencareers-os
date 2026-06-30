@@ -9691,7 +9691,17 @@ function candidateRow(a){
    auf dem öffentlichen Portal (strassen-tiefbau.green-careers.de). Bewerbungen kommen per
    apply_to_job-RPC zurück in dieselbe Supabase und tauchen direkt im Bewerber-Kanban auf.
    Das Portal hat KEINEN eigenen Login – es ist reines Frontend. */
-const PORTAL_BASE = 'https://strassen-tiefbau.green-careers.de';
+// Brand-abhaengiges Stellenportal: GaLaBau-Betriebe (green) veroeffentlichen aufs
+// GreenCareers-Portal, Strassen-/Tiefbau (grey) aufs GreyCareers-Portal. Beide lesen
+// dieselbe Supabase (public_jobs) und schreiben Bewerbungen per apply_to_job zurueck.
+const PORTAL_BASES = {
+  green: 'https://galabau.green-careers.de',
+  grey:  'https://strassen-tiefbau.green-careers.de',
+};
+function portalBase(){
+  const eb = (typeof entryBrand==='function') ? entryBrand() : null;
+  return (eb && eb.theme==='tiefbau') ? PORTAL_BASES.grey : PORTAL_BASES.green;
+}
 const STATUS_META = {
   aktiv:          {label:'Live',         cls:'st-live',   dot:'#16A34A'},
   wartet_freigabe:{label:'Wird geprüft', cls:'st-wait',   dot:'#A66400'},
@@ -9700,7 +9710,7 @@ const STATUS_META = {
   geschlossen:    {label:'Geschlossen',  cls:'st-closed', dot:'#9AA59B'},
 };
 let OS_DATA_LOADED = false;
-function portalJobUrl(slug){ return PORTAL_BASE + '/?job=' + encodeURIComponent(slug||''); }
+function portalJobUrl(slug){ return portalBase() + '/?job=' + encodeURIComponent(slug||''); }
 // Erfolgs-Popup nach dem Veröffentlichen: bestätigt „live" + Direkt-Link zum Ansehen im Portal.
 function showPublishedSuccess(slug, titel){
   const url = portalJobUrl(slug);
