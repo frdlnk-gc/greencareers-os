@@ -2315,6 +2315,37 @@
   .obdone p{ font-size:13.5px; color:var(--muted); line-height:1.5; max-width:340px; margin:0 auto; }
   .btn.danger{ color:var(--red); background:#fff; border:1px solid #E6CFCF; box-shadow:none; }
   .btn.danger:hover{ background:var(--red-soft); }
+  /* Baustelle: Leistungsverzeichnis-Editor + Baustellen-Karten */
+  .lvsec{ border:1px solid var(--line); border-radius:12px; padding:12px 13px; margin-top:14px; background:var(--canvas); }
+  .lvsec__h{ display:flex; align-items:center; gap:7px; font-size:13px; font-weight:700; }
+  .lvsec__h .lucide{ width:16px; height:16px; color:var(--green-2); }
+  .lvsec__sub{ font-size:11.5px; color:var(--muted); margin:4px 0 9px; line-height:1.4; }
+  .lvrow{ display:flex; align-items:center; gap:8px; font-size:13px; padding:7px 9px; background:#fff; border:1px solid var(--line); border-radius:9px; margin-bottom:6px; }
+  .lvrow .lucide{ width:15px; height:15px; color:var(--green); flex:0 0 auto; }
+  .lvrow span{ flex:1; color:var(--ink); }
+  .lvrow__x{ flex:0 0 auto; width:24px; height:24px; display:inline-flex; align-items:center; justify-content:center; border:none; background:transparent; color:var(--muted-2); border-radius:7px; cursor:pointer; }
+  .lvrow__x:hover{ background:#FEE2E2; color:#DC2626; }
+  .lvrow__x .lucide{ width:14px; height:14px; color:inherit; }
+  .lvempty{ font-size:12px; color:var(--muted-2); padding:4px 2px 8px; }
+  .lvadd{ display:flex; gap:7px; }
+  .lvadd input{ flex:1; }
+  .lvadd__btn{ flex:0 0 auto; width:38px; display:inline-flex; align-items:center; justify-content:center; border:1px solid var(--line); background:#fff; border-radius:10px; cursor:pointer; color:var(--green-2); }
+  .lvadd__btn:hover{ background:var(--soft-green); }
+  .lvadd__btn .lucide{ width:17px; height:17px; }
+  .bcards{ display:flex; flex-direction:column; gap:9px; }
+  .bcard{ display:flex; align-items:center; gap:12px; width:100%; text-align:left; padding:12px 13px; border:1px solid var(--line); border-radius:12px; background:#fff; cursor:pointer; }
+  .bcard:hover{ border-color:var(--green); background:#FAFEFB; }
+  .bcard__ico{ flex:0 0 auto; width:38px; height:38px; display:inline-flex; align-items:center; justify-content:center; border-radius:10px; background:var(--soft-green); color:var(--green-2); }
+  .bcard__ico .lucide{ width:18px; height:18px; }
+  .bcard__main{ flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
+  .bcard__main b{ font-size:14px; color:var(--ink); }
+  .bcard__main small{ font-size:12px; color:var(--muted); }
+  .bcard__chips{ display:flex; flex-wrap:wrap; gap:9px; margin-top:4px; font-size:11px; color:var(--muted); }
+  .bcard__chips span{ display:inline-flex; align-items:center; gap:4px; }
+  .bcard__chips .lucide{ width:12px; height:12px; }
+  .bcard__chips .on{ color:var(--green-2); font-weight:700; }
+  .bcard__st{ flex:0 0 auto; display:flex; align-items:center; gap:7px; }
+  .bcard__st .lucide{ width:17px; height:17px; color:var(--muted-2); }
   .taskbox{ border:1px solid var(--line); border-radius:11px; padding:11px 13px; margin-bottom:13px; background:#fff; }
   .taskbox__h{ display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:700; margin-bottom:7px; }
   .taskbox__h .lucide{ width:15px; height:15px; color:var(--green-2); }
@@ -3152,10 +3183,28 @@ Object.defineProperty(window, 'NOW', { configurable:true, get(){ const d=new Dat
 // Baustellen = aktive Kunden-Einsatzorte (mit Adresse, Geo, Aufgaben & Material zum Beladen)
 // Baustellen – im Echtbetrieb legt der Betrieb seine Baustellen selbst an.
 // Der „Bauhof" bleibt als fester Standort-Anker erhalten.
-const sites = [
+// Baustellen (Projekte). s0 = der feste Bauhof-Anker (kein DB-Datensatz). Vom Betrieb angelegte
+// Baustellen tragen id 'b'+n (offline) bzw. die DB-UUID (verbunden) und werden lokal gecacht,
+// damit sie auch ohne Verbindung erhalten bleiben. Jede Baustelle trägt ihr Leistungsverzeichnis
+// (tasks[] = Aufgaben, material[] = Lade-Checkliste), das der Mitarbeiter beim Einstempeln sieht.
+let sites = [
   {id:'s0', customerId:null, customer:'Bauhof / Werkstatt', label:'Bauhof', addr:'', lat:53.5511, lng:9.9937,
-   tasks:[], material:[]},
+   tasks:[], material:[], status:'aktiv'},
 ];
+let siteSeq = 1;
+(function loadSitesLocal(){
+  try{
+    const raw = localStorage.getItem('gcos_sites_v1');
+    if(raw){ const arr = JSON.parse(raw); if(Array.isArray(arr)) arr.forEach(s => {
+      if(s && s.id && s.id !== 's0'){
+        sites.push({ tasks:[], material:[], status:'aktiv', ...s });
+        const n = parseInt(String(s.id).replace(/\D/g,''),10); if(Number.isFinite(n) && n >= siteSeq) siteSeq = n+1;
+      }
+    }); }
+  }catch(e){}
+})();
+// Lokaler Cache spiegelt den aktuellen Stand (ohne den hartkodierten Bauhof s0).
+function saveSites(){ try{ localStorage.setItem('gcos_sites_v1', JSON.stringify(sites.filter(s => s.id !== 's0'))); }catch(e){} }
 // Stempel-Einträge heute · in/out HH:MM · ruest = Rüstzeit (Beladen+Anfahrt) · geo = {lat,lng,acc,at}: wo gestempelt wurde (punktuell)
 let timeEntries = [];
 let timeSeq = 100;
@@ -6316,6 +6365,7 @@ const VIEWS = {
     <div class="tabs" id="customerTabs">
       ${customerTabButton('anfragen','Anfragen-Inbox',inbox.filter(m => m.unread).length,activeCustomerTab)}
       ${customerTabButton('liste','Kundenstamm',customers.length,activeCustomerTab)}
+      ${customerTabButton('baustellen','Baustellen',sites.filter(s => s.id !== 's0').length,activeCustomerTab)}
     </div>
     <div id="customerBody"></div>`,
 
@@ -6363,7 +6413,7 @@ function tabButton(id,label,count,active){
   return `<button class="tab ${active === id ? 'on' : ''}" onclick="teamTab('${id}')">${label}${count !== '' ? `<span class="count">${count}</span>` : ''}</button>`;
 }
 function customerTabButton(id,label,count,active){
-  return `<button class="tab ${active === id ? 'on' : ''}" onclick="customerTab('${id}')">${label}<span class="count">${count}</span></button>`;
+  return `<button class="tab ${active === id ? 'on' : ''}" data-ctab="${id}" onclick="customerTab('${id}')">${label}<span class="count">${count}</span></button>`;
 }
 
 function teamTab(tab){
@@ -9617,6 +9667,7 @@ async function loadPortalData(){
     if(bw && !bw.error){ applicants.length = 0; (bw.data||[]).forEach(r => applicants.push(mapBewerberRow(r))); }
     await loadCrews();  // Kolonnen (kolonnen-Tabelle) – VOR loadTeam (crew.id=UUID, an die crewId hängt)
     await loadKunden(); // Endkunden des Betriebs (kunden-Tabelle) – VOR der Plantafel (kunde_id-Mapping)
+    await loadSites();  // Baustellen (baustellen-Tabelle, v19) – NACH loadKunden (kunde-Name-Mapping), VOR loadTimeEntries (site_id-Auflösung)
     await loadTeam();   // echtes Team (mitarbeiter-Tabelle) + Personalakten (extra) des Betriebs laden
     await loadAbsencesDb();   // Abwesenheiten (abwesenheiten-Tabelle) – NACH loadTeam (braucht employee._uuid fürs Mapping)
     await loadPlantafel();    // Plantafel (plantafel-Tabelle) – NACH loadCrews + loadKunden (crew/kunde-Mapping)
@@ -9906,6 +9957,69 @@ async function loadKunden(){
       value: ex.value||'—', status: Array.isArray(ex.status)?ex.status:['Neu','b'],
       history: Array.isArray(ex.history)?ex.history:[{date:dDE(dISO(new Date(r.created_at||Date.now()))), ch:'note', text:'Kunde angelegt'}] });
   });
+}
+
+// ===================== BAUSTELLEN · DB-PERSISTENZ (baustellen-Tabelle, Schema v19) =====================
+// Wie bei Kolonnen/Kunden: Session behält ihre Client-ID ('b'+n), DB-UUID in _uuid. Beim Anlegen in der
+// DB wird die Client-ID auf die UUID umgehängt UND alle Zeit-Einträge, die schon auf die Baustelle
+// stempelten, mitgezogen – so zeigt site_id konsistent auf dieselbe Baustelle. Das Leistungsverzeichnis
+// (tasks/material) wandert als jsonb `lv`.
+function siteRowPayload(s){
+  return {
+    customer_id: GC_PROFILE.customer_id,
+    kunde_id: kundeUuidFor(s.customerId),
+    label: s.label || 'Baustelle',
+    addr: s.addr || null,
+    lat: (s.lat != null ? s.lat : null),
+    lng: (s.lng != null ? s.lng : null),
+    status: s.status || 'aktiv',
+    lv: { tasks: s.tasks || [], material: s.material || [] },
+    extra: { customer: s.customer || null }
+  };
+}
+async function persistSite(s){
+  if(!osConnected() || !s || s.id === 's0') return;
+  try{
+    if(s._uuid){
+      const { error } = await sbAuth.from('baustellen').update(siteRowPayload(s)).eq('id', s._uuid);
+      if(error){ toast('Baustelle speichern fehlgeschlagen: '+error.message); }
+    } else {
+      const { data, error } = await sbAuth.from('baustellen').insert(siteRowPayload(s)).select('id').single();
+      if(error){ toast('Baustelle anlegen fehlgeschlagen: '+error.message); }
+      else if(data && data.id){
+        const oldId = s.id; s._uuid = data.id; s.id = data.id;     // Client-ID -> UUID umhängen
+        timeEntries.forEach(t => { if(t.siteId === oldId) t.siteId = s.id; });
+        if(myEntry && myEntry.siteId === oldId) myEntry.siteId = s.id;
+        saveSites();
+      }
+    }
+  }catch(err){ toast('Baustelle speichern fehlgeschlagen: '+String(err)); }
+}
+async function deleteSiteDb(uuid){
+  if(!osConnected() || !uuid) return;
+  try{ const { error } = await sbAuth.from('baustellen').delete().eq('id', uuid);
+    if(error){ toast('Baustelle löschen (DB) fehlgeschlagen: '+error.message); } }
+  catch(err){ toast('Baustelle löschen (DB) fehlgeschlagen: '+String(err)); }
+}
+// Baustellen des Betriebs laden (RLS-scoped per my_baustellen). Setzt site.id = UUID, damit Zeit-Einträge
+// (site_id) nach einem Reload auf dieselbe Baustelle verweisen. Muss NACH loadKunden laufen (Kunden-Name).
+async function loadSites(){
+  if(!osConnected()) return;
+  let res = null;
+  try{ res = await sbAuth.rpc('my_baustellen'); }catch(e){ res = { error:e }; }
+  if(!res || res.error){ if(res && res.error) console.warn('my_baustellen:', res.error.message || res.error); return; }
+  const rows = res.data || [];
+  for(let i = sites.length - 1; i >= 0; i--){ if(sites[i]._uuid) sites.splice(i,1); }   // idempotent
+  const kByUuid = {}; customers.forEach(c => { if(c._uuid) kByUuid[c._uuid] = c.id; });
+  rows.forEach(r => {
+    const lv = r.lv || {}; const ex = r.extra || {};
+    const custId = r.kunde_id ? (kByUuid[r.kunde_id] || null) : null;
+    const custName = custId ? ((customer(custId)||{}).name || ex.customer || r.label) : (ex.customer || r.label || 'Baustelle');
+    sites.push({ id:r.id, _uuid:r.id, customerId:custId, customer:custName, label:r.label||'Baustelle',
+      addr:r.addr||'', lat:r.lat, lng:r.lng, status:r.status||'aktiv',
+      tasks:Array.isArray(lv.tasks)?lv.tasks:[], material:Array.isArray(lv.material)?lv.material:[] });
+  });
+  saveSites();   // lokalen Cache mit DB-Stand spiegeln
 }
 
 // ===================== PLANTAFEL · DB-PERSISTENZ (plantafel-Tabelle, Schema v17) =====================
@@ -10860,13 +10974,13 @@ window.addEventListener('resize', () => {
 });
 
 function customerTab(tab){
+  if(!CUSTOMERS[tab]) tab = 'anfragen';
   activeCustomerTab = tab;
   if(currentView !== 'kunden'){
     setView('kunden');
     return;
   }
-  document.querySelectorAll('#customerTabs .tab').forEach(btn => btn.classList.remove('on'));
-  document.querySelectorAll('#customerTabs .tab')[tab === 'anfragen' ? 0 : 1].classList.add('on');
+  document.querySelectorAll('#customerTabs .tab').forEach(btn => btn.classList.toggle('on', btn.dataset.ctab === tab));
   document.getElementById('customerBody').innerHTML = CUSTOMERS[tab]();
   icons();
 }
@@ -10882,6 +10996,25 @@ const CUSTOMERS = {
       return `<tr class="clickable" onclick="openCustomer('${c.id}')"><td><span class="person-cell"><span class="avatar">${initials(c.name)}</span>${c.name}</span></td><td>${c.city}</td><td><span class="pill ${c.type === 'Neukunde' ? 'b' : 'n'}">${c.type}</span></td><td>${baustelle}</td><td>${c.value}</td><td><span class="pill ${c.status[1]}">${c.status[0]}</span></td></tr>`;
     }).join('')}
   </tbody></table></div></div>`,
+  baustellen: () => {
+    const list = sites.filter(s => s.id !== 's0');
+    const cards = list.map(s => {
+      const crew = crewOnSite(s.id);
+      const cust = s.customerId ? (customer(s.customerId)||{}).name : null;
+      return `<button class="bcard" onclick="openSiteForm('${s.id}')">
+        <span class="bcard__ico"><i data-lucide="hard-hat"></i></span>
+        <span class="bcard__main">
+          <b>${escapeHtml(s.label||'Baustelle')}</b>
+          <small>${cust?escapeHtml(cust)+' · ':''}${s.addr?escapeHtml(s.addr):'<span style="color:var(--muted-2)">keine Adresse</span>'}</small>
+          <span class="bcard__chips"><span><i data-lucide="list-checks"></i> ${s.tasks.length} Aufg.</span><span><i data-lucide="package"></i> ${s.material.length} Mat.</span>${crew.length?`<span class="on"><span class="dotlive"></span> ${crew.length} vor Ort</span>`:''}</span>
+        </span>
+        <span class="bcard__st"><span class="pill ${s.status==='fertig'?'n':'g'}">${s.status==='fertig'?'Fertig':'Aktiv'}</span><i data-lucide="chevron-right"></i></span>
+      </button>`;
+    }).join('');
+    return `<div class="panel"><div class="panel__head"><h3>Baustellen</h3><button class="mini-btn primary" onclick="openSiteForm(null)"><i data-lucide="plus"></i> Baustelle anlegen</button></div>
+      ${list.length ? `<div class="bcards">${cards}</div>` : `<div class="empty"><i data-lucide="hard-hat"></i><div>Noch keine Baustelle angelegt. Lege deine erste Baustelle an – mit Adresse, Aufgaben &amp; Material. Deine Mitarbeiter sehen sie dann beim Einstempeln in der App.</div></div>`}
+    </div>`;
+  },
 };
 /* ---- Kunden-Querverbindungen (Team ↔ Kunden) ---- */
 function customer(id){ return customers.find(c => c.id === id); }
@@ -12840,6 +12973,92 @@ function openTimeEntry(id){
       </div>
     </div>`);
 }
+/* ---- Baustelle anlegen / bearbeiten + Leistungsverzeichnis (Aufgaben/Material) ---- */
+// Temp-Stand des offenen Formulars (wie protoPhotos): Aufgaben/Material werden live in die Listen
+// gerendert und erst beim Speichern in die Baustelle übernommen.
+let siteFormId = null, siteFormTasks = [], siteFormMat = [];
+function openSiteForm(siteId, custId){
+  const s = siteId ? site(siteId) : null;
+  siteFormId = siteId || null;
+  siteFormTasks = s ? [...(s.tasks||[])] : [];
+  siteFormMat   = s ? [...(s.material||[])] : [];
+  const sel = s ? (s.customerId||'') : (custId||'');
+  const custOpts = customers.map(c => `<option value="${c.id}" ${sel===c.id?'selected':''}>${escapeHtml(c.name)}</option>`).join('');
+  openSheet(`
+    <div class="sheet__head">
+      <span class="avatar" style="width:50px;height:50px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="hard-hat" style="width:22px;height:22px"></i></span>
+      <div><div class="sheet__title">${s?'Baustelle bearbeiten':'Baustelle anlegen'}</div><div class="sheet__sub">Bezeichnung, Adresse &amp; Leistungsverzeichnis</div></div>
+      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+    </div>
+    <div class="sheet__body">
+      <div class="field"><label>Bezeichnung der Baustelle</label><input id="sfLabel" type="text" placeholder="z. B. Hausgarten Müller – Neuanlage" value="${s?escapeHtml(s.label||''):''}"></div>
+      <div class="field"><label>Kunde <span class="opt">optional</span></label><select id="sfCust"><option value="">— kein Kunde verknüpft —</option>${custOpts}</select></div>
+      <div class="field"><label>Adresse</label><input id="sfAddr" type="text" placeholder="Straße Nr · PLZ Ort" value="${s?escapeHtml(s.addr||''):''}"></div>
+      <div class="field"><label>Status</label><select id="sfStatus"><option value="aktiv" ${(!s||s.status!=='fertig')?'selected':''}>Aktiv</option><option value="fertig" ${s&&s.status==='fertig'?'selected':''}>Fertig</option></select></div>
+      <div class="lvsec">
+        <div class="lvsec__h"><i data-lucide="list-checks"></i> Aufgaben</div>
+        <p class="lvsec__sub">Das Leistungsverzeichnis: Was ist hier zu tun? Der Mitarbeiter sieht die Liste beim Einstempeln in der App.</p>
+        <div id="sfTasks"></div>
+        <div class="lvadd"><input id="sfTaskInput" type="text" placeholder="Aufgabe hinzufügen …" onkeydown="if(event.key==='Enter'){event.preventDefault();siteFormAdd('task')}"><button type="button" class="lvadd__btn" onclick="siteFormAdd('task')"><i data-lucide="plus"></i></button></div>
+      </div>
+      <div class="lvsec">
+        <div class="lvsec__h"><i data-lucide="package"></i> Material</div>
+        <p class="lvsec__sub">Was muss mit? Wird beim Einstempeln als Lade-Checkliste angezeigt – spart die Baumarkt-Doppelfahrt.</p>
+        <div id="sfMat"></div>
+        <div class="lvadd"><input id="sfMatInput" type="text" placeholder="Material hinzufügen …" onkeydown="if(event.key==='Enter'){event.preventDefault();siteFormAdd('mat')}"><button type="button" class="lvadd__btn" onclick="siteFormAdd('mat')"><i data-lucide="plus"></i></button></div>
+      </div>
+      <div class="sheet-actions">
+        ${s?`<button class="btn ghost" style="color:var(--red,#DC2626)" onclick="siteFormDelete()"><i data-lucide="trash-2"></i> Löschen</button>`:''}
+        <button class="btn" style="flex:1" onclick="saveSiteForm()"><i data-lucide="check"></i> ${s?'Speichern':'Baustelle anlegen'}</button>
+      </div>
+    </div>`);
+  siteFormRenderLV();
+}
+function siteFormRenderLV(){
+  const row = (txt,kind,i) => `<div class="lvrow"><i data-lucide="${kind==='task'?'check-circle-2':'package'}"></i><span>${escapeHtml(txt)}</span><button type="button" class="lvrow__x" onclick="siteFormRm('${kind}',${i})"><i data-lucide="x"></i></button></div>`;
+  const tH = document.getElementById('sfTasks'); const mH = document.getElementById('sfMat');
+  if(tH) tH.innerHTML = siteFormTasks.length ? siteFormTasks.map((t,i)=>row(t,'task',i)).join('') : `<div class="lvempty">Noch keine Aufgaben.</div>`;
+  if(mH) mH.innerHTML = siteFormMat.length ? siteFormMat.map((m,i)=>row(m,'mat',i)).join('') : `<div class="lvempty">Noch kein Material.</div>`;
+  icons();
+}
+function siteFormAdd(kind){
+  const el = document.getElementById(kind==='task'?'sfTaskInput':'sfMatInput'); if(!el) return;
+  const v = (el.value||'').trim(); if(!v) return;
+  if(kind==='task') siteFormTasks.push(v); else siteFormMat.push(v);
+  el.value=''; el.focus(); siteFormRenderLV();
+}
+function siteFormRm(kind,i){ if(kind==='task') siteFormTasks.splice(i,1); else siteFormMat.splice(i,1); siteFormRenderLV(); }
+function saveSiteForm(){
+  const label = (document.getElementById('sfLabel').value||'').trim();
+  if(!label){ toast('Bitte eine Bezeichnung für die Baustelle eingeben'); return; }
+  const custId = document.getElementById('sfCust').value || null;
+  const addr   = (document.getElementById('sfAddr').value||'').trim();
+  const status = document.getElementById('sfStatus').value || 'aktiv';
+  const custName = custId ? ((customer(custId)||{}).name || label) : label;
+  let s = siteFormId ? site(siteFormId) : null;
+  if(s){
+    s.label=label; s.customerId=custId; s.customer=custName; s.addr=addr; s.status=status;
+    s.tasks=[...siteFormTasks]; s.material=[...siteFormMat];
+  } else {
+    s = { id:'b'+(siteSeq++), customerId:custId, customer:custName, label, addr, lat:null, lng:null,
+          status, tasks:[...siteFormTasks], material:[...siteFormMat] };
+    sites.push(s);
+  }
+  saveSites(); persistSite(s);
+  closeSheet();
+  if(currentView==='kunden' && activeCustomerTab==='baustellen') customerTab('baustellen');
+  toast(siteFormId?'Baustelle gespeichert':'Baustelle angelegt');
+}
+function siteFormDelete(){
+  const s = siteFormId ? site(siteFormId) : null; if(!s) return;
+  if(timeEntries.some(t => t.siteId === s.id)){ toast('Auf diese Baustelle wurde bereits gestempelt – sie kann nicht gelöscht werden.'); return; }
+  const i = sites.findIndex(x => x.id === s.id); if(i>=0) sites.splice(i,1);
+  if(s._uuid) deleteSiteDb(s._uuid);
+  saveSites(); closeSheet();
+  if(currentView==='kunden' && activeCustomerTab==='baustellen') customerTab('baustellen');
+  toast('Baustelle gelöscht');
+}
+
 /* ---- Kundenkartei (Adresse, Aufgaben, Material) – Querverbindung zu Kunden ---- */
 function openSiteSheet(siteId){
   const s = site(siteId);
@@ -12875,7 +13094,7 @@ function openCustomer(custId){
     return `<div class="cust-site">
       <div class="cust-site__top"><b><i data-lucide="hard-hat"></i> ${s.label}</b><span>${s.addr}</span></div>
       <div class="cust-crew">${crewHtml}</div>
-      <button class="btn ghost sm" onclick="openSiteSheet('${s.id}')"><i data-lucide="package"></i> Baustelle &amp; Material · ${s.tasks.length} Aufg. · ${s.material.length} Mat.</button>
+      <button class="btn ghost sm" onclick="openSiteForm('${s.id}')"><i data-lucide="settings-2"></i> Baustelle &amp; Leistungsverzeichnis · ${s.tasks.length} Aufg. · ${s.material.length} Mat.</button>
     </div>`;
   }).join('') : `<div class="cust-empty">Aktuell keine aktive Baustelle.</div>`;
   openSheet(`
@@ -12892,7 +13111,7 @@ function openCustomer(custId){
         <div class="detail-row"><dt>E-Mail</dt><dd>${c.email}</dd></div>
         <div class="detail-row"><dt>Auftragswert</dt><dd><b>${c.value}</b></dd></div>
       </dl>
-      <div class="zsec-h" style="margin-top:18px"><b>Aktive Baustellen</b><span>${sts.length} · Team vor Ort heute</span></div>
+      <div class="zsec-h" style="margin-top:18px"><b>Baustellen</b><button class="mini-btn" onclick="openSiteForm(null,'${c.id}')"><i data-lucide="plus"></i> Baustelle anlegen</button></div>
       ${sitesHtml}
       ${reqs.length ? `<div class="zsec-h" style="margin-top:18px"><b>Offene Anfragen</b><span>${reqs.length} im Posteingang</span></div><div class="inbox">${reqs.map(messageCard).join('')}</div>` : ''}
       <div class="zsec-h" style="margin-top:18px"><b>Verlauf</b><span>letzte Aktivitäten</span></div>
