@@ -2841,6 +2841,11 @@
   .vc-ok{ font-size:10.5px; font-weight:700; color:var(--green-2); background:#E2F3E8; border-radius:999px; padding:2px 8px; margin-left:6px; vertical-align:1px; display:inline-flex; align-items:center; gap:3px; }
   .vc-ok i{ width:11px; height:11px; }
   .vc-miss{ font-size:10.5px; font-weight:700; color:#B45309; background:#FEF3C7; border-radius:999px; padding:2px 8px; margin-left:6px; vertical-align:1px; }
+  .vc-respeak{ display:flex; gap:10px; align-items:center; justify-content:space-between; flex-wrap:wrap; background:var(--mint); border:1px solid #D7EBDD; border-radius:12px; padding:10px 12px; margin-bottom:6px; }
+  .vc-respeak__txt{ display:flex; gap:8px; align-items:flex-start; font-size:13px; line-height:1.5; color:var(--green-3); font-style:italic; flex:1 1 200px; min-width:0; }
+  .vc-respeak__txt i{ width:15px; height:15px; flex:0 0 auto; margin-top:2px; opacity:.6; }
+  .vc-respeak__btn{ flex:0 0 auto; padding:8px 14px; font-size:13px; }
+  .vc-respeak__btn.on{ background:#FEE2E2; color:#B91C1C; border-color:#FCA5A5; }
   .brain-chip{ font-size:12px; font-weight:600; color:var(--green-3); background:var(--mint); border:1px solid #D7EBDD; border-radius:999px; padding:9px 13px; text-align:left; transition:all .15s; }
   .brain-chip:hover{ border-color:var(--green); color:var(--green-2); background:#E2F3E8; transform:translateY(-1px); }
   .brain-msgs{ display:flex; flex-direction:column; gap:11px; min-height:120px; max-height:46vh; overflow:auto; padding:4px 2px; margin-bottom:12px; }
@@ -8726,7 +8731,7 @@ function openEmployeeConfirm(d){
   _hireCarry = Array.isArray(d.carryGespraeche) && d.carryGespraeche.length ? d.carryGespraeche : null;
   _hireCarryNote = (d.carryNote || '').trim() || null;
   const crewOpts = `<option value="">Springer (keine feste Kolonne)</option>`+crews.map(c=>`<option value="${c.id}" ${d.crewId===c.id?'selected':''}>${escapeHtml(c.label)}</option>`).join('');
-  const tag = ok => ok ? '<span class="vc-ok"><i data-lucide="check"></i> erkannt</span>' : '<span class="vc-miss">noch offen</span>';
+  const tag = (forId, ok) => ok ? `<span class="vc-ok" id="vctag_${forId}"><i data-lucide="check"></i> erkannt</span>` : `<span class="vc-miss" id="vctag_${forId}">noch offen</span>`;
   openSheet(`
     <div class="sheet__head">
       <span class="avatar" style="width:50px;height:50px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="user-plus" style="width:22px;height:22px"></i></span>
@@ -8734,29 +8739,33 @@ function openEmployeeConfirm(d){
       <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body">
-      ${d.raw?`<div class="vc-heard"><i data-lucide="quote"></i> „${escapeHtml(d.raw)}"</div>`:''}
-      <div class="field"><label>Name ${tag(!!d.name)}</label><input id="vcName" value="${(d.name||'').replace(/"/g,'&quot;')}" placeholder="Vor- und Nachname"></div>
+      <div class="vc-respeak">
+        <div class="vc-respeak__txt"><i data-lucide="mic"></i> <span id="vcHeard">${d.raw?`„${escapeHtml(d.raw)}"`:'Noch nichts erfasst – sprich einfach drauf los.'}</span></div>
+        <button type="button" class="btn ghost vc-respeak__btn" id="vcReBtn" onclick="reSpeakEmployee(this)"><i data-lucide="mic"></i> Nochmal einsprechen</button>
+      </div>
+      <p class="sheet-note" style="margin:2px 0 12px"><i data-lucide="info" style="width:12px;height:12px;vertical-align:-2px"></i> Du kannst <b>so oft sprechen wie du willst</b> – jede Aufnahme ergänzt die noch offenen Felder. Oder tippe direkt.</p>
+      <div class="field"><label>Name ${tag('vcName', !!d.name)}</label><input id="vcName" value="${(d.name||'').replace(/"/g,'&quot;')}" placeholder="Vor- und Nachname"></div>
       <div class="fieldrow">
-        <div class="field"><label>Funktion ${tag(!!d.role)}</label><input id="vcRole" value="${(d.role||'').replace(/"/g,'&quot;')}" placeholder="z. B. Landschaftsgärtner"></div>
+        <div class="field"><label>Funktion ${tag('vcRole', !!d.role)}</label><input id="vcRole" value="${(d.role||'').replace(/"/g,'&quot;')}" placeholder="z. B. Landschaftsgärtner"></div>
         <div class="field"><label>Kolonne</label><select id="vcCrew">${crewOpts}</select></div>
       </div>
       <div class="fieldrow">
-        <div class="field"><label>Geburtsdatum ${tag(!!d.bd)}</label><input id="vcBd" type="date" value="${d.bd||''}"></div>
-        <div class="field"><label>Eintritt zum ${tag(!!d.start)}</label><input id="vcStart" type="date" value="${d.start||''}"></div>
+        <div class="field"><label>Geburtsdatum ${tag('vcBd', !!d.bd)}</label><input id="vcBd" type="date" value="${d.bd||''}"></div>
+        <div class="field"><label>Eintritt zum ${tag('vcStart', !!d.start)}</label><input id="vcStart" type="date" value="${d.start||''}"></div>
       </div>
       <div class="fieldrow">
-        <div class="field"><label>Wohnort / Adresse ${tag(!!d.addr)}</label><input id="vcAddr" value="${(d.addr||'').replace(/"/g,'&quot;')}" placeholder="z. B. Karlstadt"></div>
-        <div class="field"><label>Geburtsort ${tag(!!d.birthplace)}</label><input id="vcBirthplace" value="${(d.birthplace||'').replace(/"/g,'&quot;')}" placeholder="z. B. Würzburg"></div>
+        <div class="field"><label>Wohnort / Adresse ${tag('vcAddr', !!d.addr)}</label><input id="vcAddr" value="${(d.addr||'').replace(/"/g,'&quot;')}" placeholder="z. B. Karlstadt"></div>
+        <div class="field"><label>Geburtsort ${tag('vcBirthplace', !!d.birthplace)}</label><input id="vcBirthplace" value="${(d.birthplace||'').replace(/"/g,'&quot;')}" placeholder="z. B. Würzburg"></div>
       </div>
       <div class="fieldrow">
-        <div class="field"><label>Vertragsart ${tag(!!d.contract)}</label><select id="vcContract"><option value="">– keine Angabe –</option>${AKTE_CONTRACTS.map(c=>`<option value="${c}" ${d.contract===c?'selected':''}>${c}</option>`).join('')}</select></div>
-        <div class="field"><label>Personalnummer ${tag(!!d.persnr)}</label><input id="vcPersnr" value="${(d.persnr||'').replace(/"/g,'&quot;')}" placeholder="z. B. 4711"></div>
+        <div class="field"><label>Vertragsart ${tag('vcContract', !!d.contract)}</label><select id="vcContract"><option value="">– keine Angabe –</option>${AKTE_CONTRACTS.map(c=>`<option value="${c}" ${d.contract===c?'selected':''}>${c}</option>`).join('')}</select></div>
+        <div class="field"><label>Personalnummer ${tag('vcPersnr', !!d.persnr)}</label><input id="vcPersnr" value="${(d.persnr||'').replace(/"/g,'&quot;')}" placeholder="z. B. 4711"></div>
       </div>
       <div class="fieldrow">
-        <div class="field"><label>Telefon ${tag(!!d.phone)}</label><input id="vcPhone" value="${(d.phone||'').replace(/"/g,'&quot;')}" placeholder="0170 1234567"></div>
+        <div class="field"><label>Telefon ${tag('vcPhone', !!d.phone)}</label><input id="vcPhone" value="${(d.phone||'').replace(/"/g,'&quot;')}" placeholder="0170 1234567"></div>
         <div class="field"><label>Wochenstunden</label><input id="vcHours" type="number" value="${d.hours||''}" placeholder="40"></div>
       </div>
-      <div class="field"><label>Monatsvergütung ${tag(!!d.salary)} <small style="color:var(--muted);font-weight:500">· nur Personalverwaltung</small></label><input id="vcSalary" value="${(d.salary||'').replace(/"/g,'&quot;')}" placeholder="z. B. 3.000 € / Monat"></div>
+      <div class="field"><label>Monatsvergütung ${tag('vcSalary', !!d.salary)} <small style="color:var(--muted);font-weight:500">· nur Personalverwaltung</small></label><input id="vcSalary" value="${(d.salary||'').replace(/"/g,'&quot;')}" placeholder="z. B. 3.000 € / Monat"></div>
       <div class="field"><label>E-Mail <small style="color:var(--muted);font-weight:500">(für Login &amp; Einladung)</small></label><input id="vcEmail" type="email" value="${(d.email||'').replace(/"/g,'&quot;')}" placeholder="name@firma.de"></div>
       <div class="sheet-actions">
         <button class="btn" style="flex:1" onclick="submitVoiceEmployee()"><i data-lucide="check"></i> Stimmt – Mitarbeiter anlegen</button>
@@ -8764,6 +8773,48 @@ function openEmployeeConfirm(d){
       </div>
       <p class="sheet-note"><i data-lucide="info" style="width:12px;height:12px;vertical-align:-2px"></i> Du kannst alles korrigieren. Vertrag, Führerschein &amp; Dokumente ergänzt du danach in der Personalakte.</p>
     </div>`);
+}
+// Wiederholbares Einsprechen im Bestätigungs-Sheet – jede Aufnahme ergänzt die noch offenen Felder
+let _reRec=null,_reHeard='';
+function reSpeakEmployee(btn){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(_reRec){ try{_reRec.stop();}catch(e){} return; }  // läuft schon → onend stoppt sauber
+  if(!SR){ toast('Spracheingabe in diesem Browser nicht verfügbar – bitte tippen'); return; }
+  _reHeard='';
+  _reRec=new SR(); _reRec.lang='de-DE'; _reRec.interimResults=true; _reRec.continuous=true;
+  if(btn){ btn.classList.add('on'); btn.innerHTML='<i data-lucide="square"></i> Stopp'; if(window.lucide) lucide.createIcons(); }
+  const heardEl=document.getElementById('vcHeard'); if(heardEl) heardEl.textContent='Sprich jetzt …';
+  _reRec.onresult=(e)=>{ let fin='',intr=''; for(let i=0;i<e.results.length;i++){ const r=e.results[i]; if(r.isFinal) fin+=r[0].transcript; else intr+=r[0].transcript; } _reHeard=(fin||intr).trim(); if(heardEl&&_reHeard) heardEl.textContent='„'+_reHeard+'"'; };
+  _reRec.onerror=(e)=>{ if(e&&e.error!=='aborted'&&e.error!=='no-speech') toast('Spracheingabe abgebrochen'); };
+  _reRec.onend=()=>{ _reRec=null; const b=document.getElementById('vcReBtn'); if(b){ b.classList.remove('on'); b.innerHTML='<i data-lucide="mic"></i> Nochmal einsprechen'; if(window.lucide) lucide.createIcons(); } const t=(_reHeard||'').trim(); _reHeard=''; if(t) mergeEmployeeSpeech(t); else toast('Nichts verstanden – nochmal versuchen'); };
+  try{_reRec.start();}catch(e){ _reRec=null; }
+}
+// Erkanntes nicht-leeres Feld in das Live-Formular schreiben, ohne bereits Ausgefülltes zu überschreiben
+function mergeEmployeeSpeech(text){
+  const p=parseEmployeeUtterance(text);
+  const setVal=(id,val)=>{ if(!val) return false; const el=document.getElementById(id); if(!el) return false; if((el.value||'').trim()) return false; el.value=val; flipTag(id); return true; };
+  const setSel=(id,val)=>{ if(!val) return false; const el=document.getElementById(id); if(!el) return false; if(el.value) return false; el.value=val; if(el.value!==val) return false; flipTag(id); return true; };
+  let n=0;
+  if(setVal('vcName',p.name)) n++;
+  if(setVal('vcRole',p.role)) n++;
+  if(setVal('vcAddr',p.addr)) n++;
+  if(setVal('vcBirthplace',p.birthplace)) n++;
+  if(setVal('vcBd',p.bd)) n++;
+  if(setVal('vcStart',p.start)) n++;
+  if(setVal('vcPersnr',p.persnr)) n++;
+  if(setSel('vcContract',p.contract)) n++;
+  if(setVal('vcPhone',p.phone)) n++;
+  if(setVal('vcSalary',p.salary)) n++;
+  if(setVal('vcEmail',p.email)) n++;
+  if(p.hours){ const el=document.getElementById('vcHours'); if(el&&!(el.value||'').trim()){ el.value=p.hours; n++; } }
+  if(p.crewId){ const el=document.getElementById('vcCrew'); if(el&&!el.value){ el.value=p.crewId; } }
+  toast(n? `${n} Feld${n>1?'er':''} ergänzt` : 'Nichts Neues erkannt – nochmal versuchen oder tippen');
+}
+function flipTag(forId){
+  const t=document.getElementById('vctag_'+forId);
+  if(!t) return;
+  t.className='vc-ok'; t.innerHTML='<i data-lucide="check"></i> erkannt';
+  if(window.lucide) lucide.createIcons();
 }
 function submitVoiceEmployee(){
   const g=id=>{ const el=document.getElementById(id); return el?el.value.trim():''; };
