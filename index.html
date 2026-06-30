@@ -1240,6 +1240,14 @@
     border-radius:10px;
     box-shadow:var(--shadow-strong);
   }
+  .sheet.wide{ width:min(100%,880px); }
+  /* Einstellungen: Tab-Leiste oben (kein Endlos-Scroll) */
+  .settabs{ display:flex; gap:6px; flex-wrap:wrap; padding:10px 18px 0; position:sticky; top:96px; background:#fff; z-index:1; border-bottom:1px solid var(--line); }
+  .settab{ display:inline-flex; align-items:center; gap:7px; padding:9px 13px 11px; border:0; border-bottom:2px solid transparent; background:none; cursor:pointer; font-size:13px; font-weight:600; color:var(--muted); border-radius:8px 8px 0 0; transition:color .12s, border-color .12s, background .12s; }
+  .settab:hover{ color:var(--ink); background:var(--canvas); }
+  .settab.on{ color:var(--green-2); border-bottom-color:var(--green); }
+  .settab .lucide{ width:15px; height:15px; }
+  @media(max-width:760px){ .settabs{ top:88px; overflow-x:auto; flex-wrap:nowrap; } .settab{ flex-shrink:0; } }
   .sheet__head{
     display:flex;
     align-items:center;
@@ -4554,17 +4562,43 @@ function permRow(role, cap, label, sub){
   return swRow(label, sub, on, `togglePerm('${role}','${cap}')`);
 }
 function toggleCompany(key){ settings.company[key] = !settings.company[key]; saveSettings(); refreshSettings(); }
+const SETTINGS_TABS = [
+  { id:'betrieb',    label:'Betrieb',       icon:'building-2' },
+  { id:'portal',     label:'Portal',        icon:'globe' },
+  { id:'abrechnung', label:'Abrechnung',    icon:'receipt' },
+  { id:'team',       label:'Team & Zeit',   icon:'users' },
+  { id:'konto',      label:'Konto & Recht', icon:'shield-check' },
+];
+let activeSettingsTab = 'betrieb';
 function openSettings(){
-  const s = settings;
-  const c = s.company;
-  const pp = s.portal || {};
+  if(!SETTINGS_TABS.find(t => t.id === activeSettingsTab)) activeSettingsTab = 'betrieb';
   openSheet(`
     <div class="sheet__head">
       <span class="avatar" style="width:50px;height:50px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="settings" style="width:22px;height:22px"></i></span>
       <div><div class="sheet__title">Einstellungen</div><div class="sheet__sub">Betrieb, Zeiterfassung &amp; Rechte</div></div>
       <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
     </div>
-    <div class="sheet__body" id="settingsBody">
+    <div class="settabs" id="settingsTabs">
+      ${SETTINGS_TABS.map(t => `<button class="settab ${t.id===activeSettingsTab?'on':''}" data-stab="${t.id}" onclick="settingsTab('${t.id}')"><i data-lucide="${t.icon}"></i> ${t.label}</button>`).join('')}
+    </div>
+    <div class="sheet__body" id="settingsBody">${settingsTabBody(activeSettingsTab)}</div>`, { wide:true });
+}
+function settingsTab(id){
+  activeSettingsTab = id;
+  document.querySelectorAll('#settingsTabs .settab').forEach(b => b.classList.toggle('on', b.dataset.stab === id));
+  const body = document.getElementById('settingsBody');
+  if(body){ body.innerHTML = settingsTabBody(id); body.scrollTop = 0; icons(); }
+}
+function settingsTabBody(id){
+  const s = settings, c = s.company, pp = s.portal || {};
+  if(id === 'portal')     return setTabPortal(s, pp);
+  if(id === 'abrechnung') return setTabAbrechnung(s, c);
+  if(id === 'team')       return setTabTeam(s, c);
+  if(id === 'konto')      return setTabKonto(s, c);
+  return setTabBetrieb(s, c);
+}
+function setTabBetrieb(s, c){
+  return `
       <div class="setsec">Stammdaten</div>
       <p class="sheet-note"><i data-lucide="building-2"></i> Diese Angaben erscheinen automatisch auf Angeboten, Rechnungen und im Co-Branding.</p>
       <div class="fieldrow">
@@ -4593,8 +4627,10 @@ function openSettings(){
           <span class="ob-color__hint">Passt Buttons &amp; Akzente an deine Farbe an.</span>
           ${c.color?`<button class="btn ghost sm" onclick="clearBrandColor()"><i data-lucide="rotate-ccw"></i> Branchenfarbe</button>`:''}
         </div>
-      </div>
-
+      </div>`;
+}
+function setTabPortal(s, pp){
+  return `
       <div class="setsec">Unternehmensprofil (Stellen-Portal)</div>
       <p class="sheet-note"><i data-lucide="globe"></i> <span>Diese Angaben erscheinen auf deiner <strong>Firmenseite im Stellen-Portal</strong> – über jeder Anzeige. Je vollständiger, desto mehr Bewerbungen. Änderungen werden mit <b>„Ans Portal senden"</b> live geschaltet.</span></p>
 
@@ -4640,8 +4676,10 @@ function openSettings(){
         <div class="field"><label>Facebook</label><input value="${escapeHtml((pp.social&&pp.social.facebook)||'')}" placeholder="URL" onchange="settings.portal.social.facebook=this.value;saveSettings()"></div>
         <div class="field"><label>LinkedIn</label><input value="${escapeHtml((pp.social&&pp.social.linkedin)||'')}" placeholder="URL" onchange="settings.portal.social.linkedin=this.value;saveSettings()"></div>
       </div>
-      <button class="btn go btn--block" id="ppSaveBtn" style="margin-top:6px" onclick="savePortalProfile()"><i data-lucide="globe"></i> Ans Portal senden</button>
-
+      <button class="btn go btn--block" id="ppSaveBtn" style="margin-top:6px" onclick="savePortalProfile()"><i data-lucide="globe"></i> Ans Portal senden</button>`;
+}
+function setTabAbrechnung(s, c){
+  return `
       <div class="setsec">Bestellung &amp; Zahlungen</div>
       ${bestellungSettingsHtml()}
 
@@ -4672,8 +4710,10 @@ function openSettings(){
         <div class="field" style="max-width:140px"><label>Skonto (%)</label><input type="number" min="0" step="0.5" value="${c.skonto}" onchange="settings.company.skonto=+this.value||0;saveSettings()"></div>
       </div>
       <div class="field"><label>Fußtext Angebot</label><textarea rows="2" onchange="settings.company.angebotFuss=this.value;saveSettings()">${escapeHtml(c.angebotFuss)}</textarea></div>
-      <div class="field"><label>Fußtext Rechnung</label><textarea rows="2" onchange="settings.company.rechnungFuss=this.value;saveSettings()">${escapeHtml(c.rechnungFuss)}</textarea></div>
-
+      <div class="field"><label>Fußtext Rechnung</label><textarea rows="2" onchange="settings.company.rechnungFuss=this.value;saveSettings()">${escapeHtml(c.rechnungFuss)}</textarea></div>`;
+}
+function setTabTeam(s, c){
+  return `
       <div class="setsec">Module &amp; Umfang</div>
       <p class="sheet-note"><i data-lucide="package"></i> Im <b>Startmodul „Personal"</b> sind nur „Heute" &amp; „Team" (Bewerber, Mitarbeiter, Urlaub, Zeit) aktiv – ideal zum schnellen Loslegen. Planung, Kunden, Finanzen &amp; Markt schaltest du später frei.</p>
       ${swRow('Startmodul „Personal"','An = Fokus auf Bewerber &amp; Team, alle anderen Bereiche gesperrt. Aus = voller Funktionsumfang.', s.startModul, "toggleSetting('startModul')")}
@@ -4700,8 +4740,10 @@ function openSettings(){
 
       <div class="setsec">Rechte „Mitarbeiter"</div>
       ${permRow('mitarbeiter','requestAbsence','Urlaub beantragen','Eigene Abwesenheits-Anträge stellen.')}
-      ${permRow('mitarbeiter','clockSelf','Selbst stempeln','Eigene Zeiten per Handy erfassen.')}
-
+      ${permRow('mitarbeiter','clockSelf','Selbst stempeln','Eigene Zeiten per Handy erfassen.')}`;
+}
+function setTabKonto(s, c){
+  return `
       <div class="setsec">Deine Daten</div>
       <div class="data-vault">
         <div class="data-vault__head"><i data-lucide="database-backup"></i> <b>Alles automatisch gesichert</b><span class="data-vault__badge"><i data-lucide="check"></i> Letztes Backup heute, 06:00</span></div>
@@ -4747,8 +4789,7 @@ function openSettings(){
 
       <div class="setsec">Konto</div>
       ${GC_USER ? `<p class="sheet-note"><i data-lucide="user-check"></i> Angemeldet als <strong>${escapeHtml(GC_USER.email)}</strong>.</p>` : ''}
-      <button class="btn ghost btn--block danger" style="margin-top:8px" onclick="gcLogout()"><i data-lucide="log-out"></i> Abmelden</button>
-    </div>`);
+      <button class="btn ghost btn--block danger" style="margin-top:8px" onclick="gcLogout()"><i data-lucide="log-out"></i> Abmelden</button>`;
 }
 function toggleSetting(key){ settings[key] = !settings[key]; saveSettings(); refreshSettings(); rerenderCurrent(); }
 function togglePerm(role, cap){ settings.perms[role] = settings.perms[role] || {}; settings.perms[role][cap] = !settings.perms[role][cap]; saveSettings(); refreshSettings(); }
@@ -14072,6 +14113,7 @@ function openSheet(html, opts){
   document.getElementById('sheet').innerHTML = html;
   const modal = document.getElementById('modal');
   modal.classList.toggle('as-drawer', !!(opts && opts.drawer));
+  document.getElementById('sheet').classList.toggle('wide', !!(opts && opts.wide));
   modal.classList.remove('hidden');
   icons();
 }
