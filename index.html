@@ -10447,7 +10447,7 @@ function firstJobNudgeHtml(){
 // ---- Stellen-Ansicht (Liste + Status + „X Bewerbungen eingegangen" + Portal-/Kanban-Buttons) ----
 function stellenViewHtml(){
   if(!(GC_PROFILE && GC_PROFILE.customer_id)){
-    return `<div class="pagehead"><div><h2>Stellen</h2><p>Lege Stellen an und veröffentliche sie mit einem Klick aufs GreyCareers-Portal.</p></div></div>
+    return `<div class="pagehead"><div><h2>Stellen</h2><p>Lege Stellen an und veröffentliche sie mit einem Klick aufs ${escapeHtml(brandNet())}-Portal.</p></div></div>
       <div class="panel" style="padding:36px;text-align:center;color:var(--muted)">
         <i data-lucide="briefcase" style="width:32px;height:32px;opacity:.5"></i>
         <h3 style="margin:12px 0 4px;color:var(--ink)">Betrieb noch nicht verbunden</h3>
@@ -10456,7 +10456,7 @@ function stellenViewHtml(){
   }
   const list = jobs.slice();
   return `<div class="pagehead">
-      <div><h2>Stellen</h2><p>Anlegen, veröffentlichen und Bewerber verwalten – alles an einem Ort. Veröffentlichte Stellen erscheinen automatisch auf dem GreyCareers-Portal.</p></div>
+      <div><h2>Stellen</h2><p>Anlegen, veröffentlichen und Bewerber verwalten – alles an einem Ort. Veröffentlichte Stellen erscheinen automatisch auf dem ${escapeHtml(brandNet())}-Portal.</p></div>
       <button class="mini-btn primary" onclick="openStelleForm()"><i data-lucide="plus"></i> Stelle anlegen</button>
     </div>
     ${firstJobNudgeHtml()}
@@ -10466,7 +10466,7 @@ function stellenViewHtml(){
       : `<div class="panel" style="padding:44px;text-align:center;color:var(--muted)">
            <i data-lucide="briefcase" style="width:34px;height:34px;opacity:.5"></i>
            <h3 style="margin:12px 0 4px;color:var(--ink)">Noch keine Stelle angelegt</h3>
-           <p>Leg deine erste Stelle an – sobald du sie veröffentlichst, erscheint sie automatisch auf dem GreyCareers-Portal und Bewerbungen landen direkt hier im Kanban.</p>
+           <p>Leg deine erste Stelle an – sobald du sie veröffentlichst, erscheint sie automatisch auf dem ${escapeHtml(brandNet())}-Portal und Bewerbungen landen direkt hier im Kanban.</p>
            <button class="mini-btn primary" style="margin-top:14px" onclick="openStelleForm()"><i data-lucide="plus"></i> Erste Stelle anlegen</button>
          </div>`}`;
 }
