@@ -3081,7 +3081,7 @@
 
 <script>
 const NAV = [
-  {id:'heute', label:'Heute', icon:'layout-dashboard', badge:''},
+  {id:'heute', label:'Dashboard', icon:'layout-dashboard', badge:''},
   {id:'stellen', label:'Stellen', icon:'briefcase', badge:''},
   {id:'recruiting', label:'Bewerber', icon:'user-search', badge:''},
   {id:'team', label:'Team', icon:'users', badge:''},
@@ -3293,6 +3293,10 @@ let viewRole = 'admin';   // welche Rolle ich gerade ansehe (Inhaber kann durchs
 let viewEmpId = 1;        // bei Mitarbeiter-Ansicht: welcher Mitarbeiter (Default Sven Albrecht)
 
 const CONSENT_VERSION = 'v1.2';   // Versionierung: bei Änderung muss neu bestätigt werden
+// Feature-Flag: WhatsApp-Bewerber-Bot (automatische Vorqualifizierung, 19-€-Add-on).
+// In der Testversion AUS – dem Kunden wird nichts gezeigt, was noch nicht funktioniert.
+// Sobald die Meta-Business-API-Anbindung live ist, hier auf true setzen.
+const WABOT_ENABLED = false;
 const DEFAULT_SETTINGS = {
   onboarded: false,
   branchen: [],        // gewählte Branchen (Mehrfachauswahl); erste = Primärbranche → Farbschema
@@ -4718,11 +4722,11 @@ function openSettings(){
         <button class="btn ghost sm" style="flex:1" onclick="openTemplates('whatsapp')"><i data-lucide="message-circle"></i> WhatsApp-Vorlagen (${TEMPLATES.whatsapp.length})</button>
         <button class="btn ghost sm" style="flex:1" onclick="openTemplates('email')"><i data-lucide="mail"></i> E-Mail-Vorlagen (${TEMPLATES.email.length})</button>
       </div>
-      <button class="addon-row" onclick="openWaBot()">
+      ${!WABOT_ENABLED ? '' : `<button class="addon-row" onclick="openWaBot()">
         <span class="addon-row__ic"><i data-lucide="bot-message-square"></i></span>
         <span class="addon-row__txt"><b>WhatsApp-Bewerber-Bot</b><small>${(s.waBot&&s.waBot.booked)?'Aktiv · Fragen-Flow bearbeiten':'Add-on · 19 €/Monat · automatische Vorqualifizierung'}</small></span>
         <span class="addon-row__badge ${(s.waBot&&s.waBot.booked)?'on':''}">${(s.waBot&&s.waBot.booked)?'<i data-lucide="check"></i> aktiv':'19 €/Mon.'}</span>
-      </button>
+      </button>`}
 
       <div class="setsec">Verträge &amp; Datenschutz</div>
       ${s.consent ? `<div class="consent-audit" style="margin-bottom:12px"><i data-lucide="shield-check"></i>
@@ -5266,6 +5270,9 @@ async function savePortalProfile(){
 }
 
 function maybeOnboard(){
+  // Schon eingerichtet? Dann den Assistenten NIE wieder zeigen – kein Nag bei jedem Login.
+  // (Der Welcome-/Assistent-Dialog ist eine Einmal-Sache; danach geht der Nutzer direkt ins Cockpit.)
+  if(settings.onboarded){ applyRole(); return; }
   // Hat der Nutzer die Entscheidung schon im Welcome-Empfang getroffen? Dann nicht erneut fragen.
   if(settings.welcomeChoice){
     const choice = settings.welcomeChoice;
@@ -6325,7 +6332,7 @@ const VIEWS = {
     </div>
     <div class="bewerber-bar">
       <div class="bewerber-bar__l">
-        <span class="hint inline"><i data-lucide="sparkles"></i> Vom BewerberBot vorqualifizierte Bewerber landen direkt in „In Bearbeitung".</span>
+        ${WABOT_ENABLED ? '<span class="hint inline"><i data-lucide="sparkles"></i> Vom BewerberBot vorqualifizierte Bewerber landen direkt in „In Bearbeitung".</span>' : '<span class="hint inline"><i data-lucide="users"></i> Ziehe Bewerber per Drag &amp; Drop durch deine Status-Spalten.</span>'}
       </div>
       <div class="bewerber-bar__r">
         <select class="bfilter" onchange="setBewerberFilter('job', this.value)" title="Nach Stelle filtern">
@@ -8546,7 +8553,7 @@ function voiceCommand(raw){
     if(has('kunde','kunden')){ toast('Kunden'); setView('kunden'); return; }
     if(has('finanzen','rechnungen','umsatz','buchhalt')){ toast('Finanzen'); setView('finanzen'); return; }
     if(has('markt','netzwerk','marktplatz')){ toast('Markt'); setView('markt'); return; }
-    if(has('heute','start','dashboard','übersicht','startseite')){ toast('Heute'); setView('heute'); return; }
+    if(has('heute','start','dashboard','übersicht','startseite')){ toast('Dashboard'); setView('heute'); return; }
   }
   // 4) Sonst: als Frage ans GaLaBrain
   openBrain(raw);
@@ -9462,6 +9469,7 @@ function absVoiceCommit(){
 
 // Vorqualifizierungs-Status als Badge (offen / läuft / fertig inkl. Bot-Score)
 function pqBadge(a){
+  if(!WABOT_ENABLED) return '';   // Bot aus -> keine bot-bezogenen Status-Badges in der Testversion
   if(a.pqStatus === 'fertig') return `<span class="pqbadge done"><i data-lucide="check-circle-2"></i> Vorqualifiziert${a.botScore!=null?` · ${a.botScore}`:''}</span>`;
   if(a.pqStatus === 'laufend') return `<span class="pqbadge run"><i data-lucide="loader"></i> Vorqual. läuft</span>`;
   return `<span class="pqbadge open"><i data-lucide="message-circle"></i> nicht vorqualifiziert</span>`;
@@ -9502,7 +9510,10 @@ function bewerberListHtml(){
   const strip = `<div class="fstrip">${chip('','Alle',total,!f.status)}${stages.map(s => chip(s.id, s.label, applicants.filter(a => a.stage===s.id && inJob(a)).length, f.status===s.id)).join('')}</div>`;
   const list = applicants.filter(a => (!f.status || a.stage===f.status) && inJob(a));
   const rows = list.length ? list.map(candidateRow).join('') : `<div class="kanban-empty" style="padding:28px 12px">Keine Bewerber in dieser Ansicht.</div>`;
-  return `<div class="bewerber-list" id="kanban"><div class="bewerber-list__hint hint inline" style="margin-bottom:10px"><i data-lucide="sparkles"></i> Vom BewerberBot vorqualifizierte Bewerber landen direkt in „In Bearbeitung".</div>${strip}<div class="candrows">${rows}</div></div>`;
+  const listHint = WABOT_ENABLED
+    ? '<i data-lucide="sparkles"></i> Vom BewerberBot vorqualifizierte Bewerber landen direkt in „In Bearbeitung".'
+    : '<i data-lucide="users"></i> Tippe auf einen Bewerber für Details – Kontakt per Anruf, WhatsApp oder E-Mail direkt aus der Karte.';
+  return `<div class="bewerber-list" id="kanban"><div class="bewerber-list__hint hint inline" style="margin-bottom:10px">${listHint}</div>${strip}<div class="candrows">${rows}</div></div>`;
 }
 function renderBewerberKanban(){
   const wrap = document.getElementById('kanbanWrap');
@@ -11959,10 +11970,10 @@ function openApplicant(id){
         <button class="ca-btn ca-btn--mail" onclick="openCompose(${id},'email')"><i data-lucide="mail"></i> E-Mail</button>
       </div>
 
-      ${botDone
+      ${!WABOT_ENABLED ? '' : (botDone
         ? `<button class="btn ghost" style="width:100%" onclick="viewBotChat(${id})"><i data-lucide="message-square-text"></i> WhatsApp-Bot-Verlauf ansehen</button>`
         : `<button class="btn" style="width:100%" onclick="startBotPrequal(${id})"><i data-lucide="bot"></i> WhatsApp-Bot jetzt starten</button>
-           <p class="compose-hint" style="text-align:center">Startet die Vorqualifizierung manuell – der Bot fragt fehlende Infos ab.</p>`}
+           <p class="compose-hint" style="text-align:center">Startet die Vorqualifizierung manuell – der Bot fragt fehlende Infos ab.</p>`)}
 
       <div class="dw-section">
         <div class="dw-section__h"><i data-lucide="paperclip"></i> Lebenslauf</div>
@@ -11984,7 +11995,7 @@ function openApplicant(id){
         </div>
       </div>
 
-      <div class="setsec">Vorqualifizierung <span class="setsec__hint">${j?`Abgleich mit „${j.title}"`:'vom WhatsApp-Bot erfasst'}</span></div>
+      <div class="setsec">Vorqualifizierung <span class="setsec__hint">${j?`Abgleich mit „${j.title}"`:(WABOT_ENABLED?'vom WhatsApp-Bot erfasst':'aus der Bewerbung')}</span></div>
       <dl>
         ${pqRow('Branche', p.branche, brancheOk)}
         ${pqRow('Beruf / Position', p.beruf)}
@@ -11992,7 +12003,7 @@ function openApplicant(id){
         ${pqRow('Gehaltswunsch', p.gehalt)}
         ${pqRow('Verfügbarkeit', p.verfuegbar)}
         ${pqRow('Wunschort', p.ort)}
-        ${a.botScore!=null?`<div class="detail-row"><dt>BewerberBot-Score</dt><dd><b>${a.botScore}</b> / 100</dd></div>`:''}
+        ${(WABOT_ENABLED && a.botScore!=null)?`<div class="detail-row"><dt>BewerberBot-Score</dt><dd><b>${a.botScore}</b> / 100</dd></div>`:''}
       </dl>
 
       ${a.letter ? `<div class="dw-section"><div class="dw-section__h"><i data-lucide="pen-line"></i> Das schrieb ${a.name.split(' ')[0]}</div><div class="dw-letter">${escapeHtml(a.letter)}</div></div>` : ''}
@@ -12308,7 +12319,7 @@ function renderApplicantUpload(){
   openSheet(`
     <div class="sheet__head">
       <span class="avatar" style="width:44px;height:44px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="upload" style="width:20px;height:20px"></i></span>
-      <div><div class="sheet__title">Bewerber hochladen</div><div class="sheet__sub">aus Indeed, Meta &amp; Co. – der BewerberBot qualifiziert danach vor</div></div>
+      <div><div class="sheet__title">Bewerber hochladen</div><div class="sheet__sub">${WABOT_ENABLED?'aus Indeed, Meta &amp; Co. – der BewerberBot qualifiziert danach vor':'aus Indeed, Meta &amp; Co. – Kontaktdaten erfassen &amp; zuweisen'}</div></div>
       <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body">
@@ -12317,18 +12328,18 @@ function renderApplicantUpload(){
         <div class="field"><label>Quelle</label><select onchange="uploadDraft.source=this.value">${Object.keys(SOURCES).map(s=>`<option value="${s}" ${d.source===s?'selected':''}>${SOURCES[s].label}</option>`).join('')}</select></div>
       </div>
       <div class="fieldrow">
-        <div class="field"><label>Telefon * <span class="lbl-hint">für BewerberBot</span></label><input value="${v(d.phone)}" placeholder="0176 …" oninput="uploadDraft.phone=this.value"></div>
+        <div class="field"><label>Telefon *${WABOT_ENABLED?' <span class="lbl-hint">für BewerberBot</span>':''}</label><input value="${v(d.phone)}" placeholder="0176 …" oninput="uploadDraft.phone=this.value"></div>
         <div class="field"><label>E-Mail</label><input type="email" value="${v(d.email)}" placeholder="name@mail.de" oninput="uploadDraft.email=this.value"></div>
       </div>
-      <div class="field"><label>Stelle zuweisen</label><select onchange="uploadDraft.jobId=this.value"><option value="">— später / BewerberBot ermittelt —</option>${jobs.map(j=>`<option value="${j.id}" ${d.jobId===j.id?'selected':''}>${j.title}</option>`).join('')}</select></div>
-      <div class="setsec">Schon bekannt? <span class="setsec__hint">optional – der BewerberBot fragt nur, was fehlt</span></div>
+      <div class="field"><label>Stelle zuweisen</label><select onchange="uploadDraft.jobId=this.value"><option value="">${WABOT_ENABLED?'— später / BewerberBot ermittelt —':'— später zuweisen —'}</option>${jobs.map(j=>`<option value="${j.id}" ${d.jobId===j.id?'selected':''}>${j.title}</option>`).join('')}</select></div>
+      <div class="setsec">Schon bekannt? <span class="setsec__hint">${WABOT_ENABLED?'optional – der BewerberBot fragt nur, was fehlt':'optional – ergänze, was du schon weißt'}</span></div>
       <div class="fieldrow">
         <div class="field"><label>Branche</label><input value="${v(d.branche)}" placeholder="z. B. Garten- &amp; Landschaftsbau" oninput="uploadDraft.branche=this.value"></div>
         <div class="field"><label>Beruf</label><input value="${v(d.beruf)}" placeholder="z. B. Pflasterer" oninput="uploadDraft.beruf=this.value"></div>
       </div>
       <div class="field"><label>Wunschort / PLZ</label><input value="${v(d.ort)}" placeholder="z. B. Ahrensburg" oninput="uploadDraft.ort=this.value"></div>
       <div class="sheet-actions">
-        <button class="btn" style="flex:1" onclick="submitApplicantUpload()"><i data-lucide="message-circle"></i> Hochladen &amp; vorqualifizieren</button>
+        <button class="btn" style="flex:1" onclick="submitApplicantUpload()"><i data-lucide="${WABOT_ENABLED?'message-circle':'user-plus'}"></i> ${WABOT_ENABLED?'Hochladen &amp; vorqualifizieren':'Bewerber hinzufügen'}</button>
         <button class="btn ghost" onclick="closeSheet()">Abbrechen</button>
       </div>
     </div>`);
@@ -12337,7 +12348,7 @@ function renderApplicantUpload(){
 function submitApplicantUpload(){
   const d = uploadDraft; if(!d) return;
   if(!d.name.trim()){ toast('Bitte Namen eingeben'); return; }
-  if(!d.phone.trim()){ toast('Telefon nötig für den BewerberBot'); return; }
+  if(!d.phone.trim()){ toast(WABOT_ENABLED?'Telefon nötig für den BewerberBot':'Bitte Telefonnummer eingeben'); return; }
   const a = {
     id: ++appSeq, name:d.name.trim(), phone:d.phone.trim(), email:d.email.trim(),
     jobId: d.jobId || null, source: d.source, date:'Gerade hochgeladen', stage:'neu',
@@ -12349,7 +12360,7 @@ function submitApplicantUpload(){
   applicants.push(a);
   uploadDraft = null;
   if(currentView==='recruiting') renderBewerberKanban(); else setView('recruiting');
-  toast(`${a.name.split(' ')[0]} hochgeladen – Bot im Profil manuell starten`);
+  toast(WABOT_ENABLED ? `${a.name.split(' ')[0]} hochgeladen – Bot im Profil manuell starten` : `${a.name.split(' ')[0]} hinzugefügt`);
 }
 
 /* ===================== BEWERBER-VORQUALIFIZIERUNG (interaktiver Erfassungs-Chat) ===================== */
