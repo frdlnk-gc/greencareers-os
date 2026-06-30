@@ -8720,9 +8720,11 @@ function parseEmployeeUtterance(text){
 }
 // Bestätigungs-Sheet: zeigt alles Erkannte editierbar, Inhaber prüft & speichert
 let _hireCarry = null;   // Vorstellungsgespräche, die bei Einstellung in die Akte wandern
+let _hireCarryNote = null; // restliche Bewerbungs-Infos (Quelle, Erfahrung, Verfügbarkeit, Kommentare) als Akten-Notiz
 function openEmployeeConfirm(d){
   d = d || {raw:''};
   _hireCarry = Array.isArray(d.carryGespraeche) && d.carryGespraeche.length ? d.carryGespraeche : null;
+  _hireCarryNote = (d.carryNote || '').trim() || null;
   const crewOpts = `<option value="">Springer (keine feste Kolonne)</option>`+crews.map(c=>`<option value="${c.id}" ${d.crewId===c.id?'selected':''}>${escapeHtml(c.label)}</option>`).join('');
   const tag = ok => ok ? '<span class="vc-ok"><i data-lucide="check"></i> erkannt</span>' : '<span class="vc-miss">noch offen</span>';
   openSheet(`
@@ -8784,6 +8786,9 @@ function submitVoiceEmployee(){
   // Vorstellungsgespräche aus dem Recruiting in den Gespräche-Verlauf der Akte übernehmen
   if(_hireCarry && _hireCarry.length){ const gl=gespList(hr); _hireCarry.forEach(x=>gl.push(x)); }
   _hireCarry = null;
+  // Restliche Bewerbungsdaten (Quelle, Erfahrung, Verfügbarkeit, Kommentare) als Akten-Notiz sichern – nichts geht verloren
+  if(_hireCarryNote){ (hr.notes = hr.notes || []).unshift({date:TODAY, author:(settings.company&&settings.company.owner)||'System', text:_hireCarryNote}); }
+  _hireCarryNote = null;
   persistEmployee(eNew);   // legt die DB-Zeile inkl. der eben gesetzten HR-Felder (extra) an
   closeSheet();
   openEmployee(newId);
@@ -9579,14 +9584,7 @@ function handoverNextHired(){
   if(!pend.length){ toast('Alle eingestellten Bewerber sind bereits in der Personalakte.'); return; }
   const a = pend[0];
   a.hired = true;
-  const p = a.pq || {};
-  const j = (typeof job === 'function') ? job(a.jobId) : null;
-  openEmployeeConfirm({
-    raw: `Übernahme aus Recruiting: ${a.name}`,
-    name: a.name || '', role: p.beruf || (j && j.title) || '',
-    phone: a.phone || '', email: a.email || '', addr: p.ort || '',
-    salary: p.gehalt || '', start: ''
-  });
+  openEmployeeConfirm(hireHandoverPayload(a));
 }
 function goPersonalakte(){ bewerberFilter.status=''; setView('team'); teamTab('mitarbeiter'); }
 // Banner unter dem Bewerber-Board: führt den Inhaber ins Personalakte-Produkt – für eingestellte Bewerber UND bestehendes Team.
@@ -11682,9 +11680,27 @@ function offerHireHandover(a){
   const first = (a.name||'').split(' ')[0] || 'Bewerber';
   if(!confirm(`${first} wurde eingestellt – jetzt in die Personalakte übernehmen? Alle bekannten Daten werden vorausgefüllt.`)) return;
   a.hired = true;
+  openEmployeeConfirm(hireHandoverPayload(a));
+}
+// Baut aus einem eingestellten Bewerber das vorausgefüllte Personalakten-Formular:
+// strukturierte Felder (Name, Funktion, Telefon, E-Mail, Ort, Gehalt, Eintritt),
+// die Vorstellungsgespräche (-> Gespräche-Verlauf) UND alle übrigen Bewerbungs-Infos
+// (Quelle, Branche, Erfahrung, Verfügbarkeit, Recruiting-Kommentare) als Akten-Notiz.
+function hireHandoverPayload(a){
   const p = a.pq || {};
   const j = (typeof job === 'function') ? job(a.jobId) : null;
-  openEmployeeConfirm({
+  const av = (p.verfuegbar || a.available || '').trim();
+  const startISO = /^\d{4}-\d{2}-\d{2}$/.test(av) ? av : '';
+  const src = srcMeta(a.source);
+  const lines = [];
+  if(j && j.title) lines.push('Beworben auf: ' + j.title);
+  if(src && src.label) lines.push('Quelle: ' + src.label);
+  if(p.branche) lines.push('Branche: ' + p.branche);
+  if(p.erfahrung) lines.push('Erfahrung: ' + p.erfahrung);
+  if(av && !startISO) lines.push('Verfügbar: ' + av);
+  (a.comments || []).forEach(c => { if(c && c.text) lines.push('Notiz' + (c.author ? ' (' + c.author + ')' : '') + ': ' + c.text); });
+  const carryNote = lines.length ? ('Übernahme aus Recruiting\n' + lines.join('\n')) : '';
+  return {
     raw: `Übernahme aus Recruiting: ${a.name}`,
     name: a.name || '',
     role: p.beruf || (j && j.title) || '',
@@ -11692,10 +11708,10 @@ function offerHireHandover(a){
     email: a.email || '',
     addr: p.ort || '',
     salary: p.gehalt || '',
-    start: '',
-    // Vorstellungsgespräche 1:1 in die Personalakte (Gespräche-Verlauf) übernehmen
-    carryGespraeche: (a.interviews || []).map(ivToGespraech)
-  });
+    start: startISO,
+    carryGespraeche: (a.interviews || []).map(ivToGespraech),
+    carryNote
+  };
 }
 
 function moveJob(fromCrew, fromDay, index, toCrew, toDay){
