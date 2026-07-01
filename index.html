@@ -83,6 +83,7 @@
   body{ font-family:'Inter',system-ui,sans-serif; color:var(--ink); background:var(--sidebar); -webkit-font-smoothing:antialiased; }
   button,input{ font:inherit; }
   button{ border:0; background:none; color:inherit; cursor:pointer; }
+  button:focus-visible, a:focus-visible, [tabindex]:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible{ outline:2px solid var(--green); outline-offset:2px; border-radius:6px; }
   input{ color:var(--ink); }
   .lucide{ width:1em; height:1em; stroke-width:2; }
   .hidden{ display:none !important; }
@@ -790,8 +791,9 @@
   .kanban-col.over{ outline:2px dashed var(--green); outline-offset:-4px; }
   .kanban-head{ display:flex; align-items:center; gap:7px; padding:3px 3px 10px; font-size:12.5px; font-weight:700; }
   .kanban-dot{ width:8px; height:8px; border-radius:999px; flex-shrink:0; }
-  .kanban-head .count{ margin-left:auto; background:#fff; color:var(--muted); border:1px solid var(--line); }
+  .kanban-head .count{ margin-left:auto; background:#fff; color:var(--ink-2); font-weight:700; border:1px solid var(--line); }
   .candidate{
+    position:relative;
     display:block;
     width:100%;
     text-align:left;
@@ -805,6 +807,11 @@
   }
   .candidate:hover{ border-color:#CDE7D4; }
   .candidate.dragging{ opacity:.42; }
+  /* Zieh-Griff: signalisiert, dass die Karte zwischen Spalten gezogen werden kann */
+  .candidate > .grip{ position:absolute; top:8px; right:8px; display:grid; place-items:center; width:20px; height:20px; color:var(--muted-2); opacity:0; transition:opacity .12s; pointer-events:none; }
+  .candidate > .grip .lucide{ width:15px; height:15px; }
+  .candidate:hover > .grip{ opacity:.75; }
+  @media(hover:none){ .candidate > .grip{ opacity:.55; } }
   .candidate__top{ display:flex; align-items:center; gap:9px; }
   .candidate__name{ font-size:13px; font-weight:700; min-width:0; }
   .candidate__role{ color:var(--muted); font-size:11.5px; margin:7px 0; }
@@ -821,6 +828,9 @@
     font-weight:600;
   }
   .tag.green{ background:var(--mint); color:var(--green-2); }
+  /* Hot-Indikator: EIN dediziertes Badge statt alle Tags einzufaerben (Signalfarbe bleibt eindeutig) */
+  .tag.hot{ background:var(--amber-soft); color:var(--amber); font-weight:700; }
+  .tag.hot .lucide{ width:12px; height:12px; margin-right:3px; }
   .candidate__meta{ display:flex; align-items:center; gap:6px; color:var(--muted); border-top:1px solid var(--line); margin-top:10px; padding-top:9px; font-size:11px; }
   .candidate__meta .lucide{ width:13px; height:13px; }
 
@@ -884,7 +894,11 @@
   @keyframes spin{ to{ transform:rotate(360deg); } }
   .co-spin{ animation:spin 1s linear infinite; transform-origin:center; }
 
-  .kanban-empty{ text-align:center; color:var(--muted-2); font-size:11.5px; padding:18px 6px; border:1px dashed var(--line); border-radius:8px; }
+  .kanban-empty{ display:flex; flex-direction:column; align-items:center; gap:7px; text-align:center; color:var(--muted-2); font-size:11.5px; line-height:1.4; padding:20px 8px; border:1px dashed var(--line); border-radius:8px; }
+  .kanban-empty .lucide{ width:20px; height:20px; color:var(--line-2); }
+  .kanban-empty em{ font-style:normal; color:var(--muted); opacity:.75; }
+  .kanban-col.over .kanban-empty{ border-color:var(--green); color:var(--green-2); }
+  .kanban-col.over .kanban-empty .lucide{ color:var(--green); }
 
   /* Bewerber-Toolbar */
   .bewerber-bar{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:14px; }
@@ -1007,10 +1021,10 @@
       font-weight:700;
       flex-shrink:0;
     }
-    /* Name als Karten-Kopf ueber die volle Breite, ohne Label */
-    table.team-table td[data-label="Name"]{ grid-column:1 / -1; justify-content:flex-start; padding-bottom:6px; margin-bottom:2px; border-bottom:1px dashed var(--line); }
-    table.team-table td[data-label="Name"]::before{ display:none; }
-    table.team-table td[data-label="Name"] .person-cell{ min-width:0; font-weight:700; }
+    /* Name/Person als Karten-Kopf ueber die volle Breite, ohne Label (gilt fuer jede Tabelle mit .person-cell) */
+    table.team-table td:has(.person-cell){ grid-column:1 / -1; justify-content:flex-start; padding-bottom:6px; margin-bottom:2px; border-bottom:1px dashed var(--line); }
+    table.team-table td:has(.person-cell)::before{ display:none; }
+    table.team-table td .person-cell{ min-width:0; font-weight:700; }
     /* Chevron rechts oben in die Karte legen */
     table.team-table td.team-table__chev{ position:absolute; top:12px; right:12px; padding:0; grid-column:auto; }
     table.team-table td.team-table__chev::before{ display:none; }
@@ -1424,6 +1438,11 @@
   .ca-btn--call{ color:#0E7A43; }
   .ca-btn--wa{ color:#1FA855; }
   .ca-btn--mail{ color:#2563EB; }
+  @media(max-width:400px){
+    .contact-actions{ gap:6px; }
+    .ca-btn{ padding:11px 4px; font-size:11.5px; gap:5px; }
+    .ca-btn .lucide{ width:18px; height:18px; }
+  }
 
   /* CV-Karte */
   .cv-card{ display:flex; align-items:center; gap:12px; padding:12px 14px; border:1px solid var(--line); border-radius:12px; background:#fff; cursor:pointer; transition:all .15s; }
@@ -1558,8 +1577,9 @@
   .iv-list{ display:flex; flex-direction:column; gap:9px; margin-bottom:12px; }
   .iv-form{ background:var(--soft); border:1px solid var(--line); border-radius:12px; padding:13px; }
   .iv-rates{ display:flex; flex-wrap:wrap; gap:7px; }
-  .iv-rate{ cursor:pointer; border:1px solid transparent; opacity:.55; transition:opacity .12s, box-shadow .12s; }
-  .iv-rate.on{ opacity:1; box-shadow:0 0 0 2px var(--green); }
+  .iv-rate{ cursor:pointer; border:1px solid transparent; filter:saturate(.65); transition:filter .12s, box-shadow .12s; }
+  .iv-rate:hover{ filter:saturate(.85); }
+  .iv-rate.on{ filter:none; box-shadow:0 0 0 2px var(--green); }
   .akte-docadd{ display:flex; align-items:center; justify-content:center; gap:8px; width:100%; padding:11px; border:1.5px dashed var(--line); border-radius:11px; background:var(--soft); color:var(--muted); font-size:12.5px; font-weight:600; cursor:pointer; transition:all .15s; }
   .akte-docadd:hover{ border-color:var(--green); color:var(--green); background:var(--soft-green); }
   .akte-docadd .lucide{ width:16px; height:16px; }
@@ -1624,8 +1644,10 @@
   @media(max-width:860px){
     .akte-page{ grid-template-columns:1fr; }
     .akte-side{ position:static; }
-    .akte-tabs{ flex-direction:row; overflow-x:auto; }
-    .akte-tab__c{ display:none; }
+    .akte-tabs{ flex-direction:row; overflow-x:auto; gap:4px; scrollbar-width:none; -webkit-mask-image:linear-gradient(90deg,#000 0,#000 calc(100% - 22px),transparent 100%); mask-image:linear-gradient(90deg,#000 0,#000 calc(100% - 22px),transparent 100%); }
+    .akte-tabs::-webkit-scrollbar{ display:none; }
+    .akte-tab{ width:auto; flex-shrink:0; }
+    .akte-tab__c{ margin-left:6px; }
     .akte-grid{ grid-template-columns:1fr; }
     .fieldgrid{ grid-template-columns:1fr; }
   }
@@ -1990,7 +2012,8 @@
     .usub .btn{ width:100%; }
     .fieldrow{ grid-template-columns:1fr; }
     .req{ flex-direction:column; align-items:stretch; gap:10px; }
-    .req__side{ justify-content:flex-end; }
+    .req__side{ justify-content:stretch; }
+    .req__side .mini-btn{ flex:1; min-height:44px; }
     .pcal-stats{ grid-template-columns:1fr 1fr; }
     .pcal-head .btn{ margin-left:0; width:100%; }
     .pcal-head{ gap:11px; }
@@ -2104,7 +2127,7 @@
   .cal-hint .lucide{ width:15px; height:15px; color:var(--green-2); flex-shrink:0; }
   .cal-fill.lead{ z-index:2; }
   .cal-fill__lbl{ position:absolute; left:7px; top:50%; transform:translateY(-50%); font-size:10.5px; font-weight:600; letter-spacing:.005em; color:#fff; white-space:nowrap; pointer-events:none; z-index:3; text-shadow:0 1px 1.5px rgba(20,40,20,.28); }
-  .cal-fill.offen .cal-fill__lbl{ color:currentColor; text-shadow:none; }
+  .cal-fill.offen .cal-fill__lbl{ color:color-mix(in srgb, currentColor 72%, #101410); font-weight:700; text-shadow:none; }
 
   /* ----- Zeitraum-Auswahl per Ziehen/Antippen ----- */
   .cal-c.daycell:not(.daycell--busy){ cursor:cell; }
@@ -3474,7 +3497,7 @@ function openWelcome(){
     <div class="sheet__head">
       <span class="avatar" style="width:50px;height:50px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="party-popper" style="width:22px;height:22px"></i></span>
       <div><div class="sheet__title">${hallo}</div><div class="sheet__sub">${sub}</div></div>
-      <button class="iconbtn sheet__close" onclick="closeWelcome('explore')"><i data-lucide="x"></i></button>
+      <button class="iconbtn sheet__close" onclick="closeWelcome('explore')" aria-label="Schließen"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body">
       <p class="sheet-note"><i data-lucide="rocket"></i> Dein ${escapeHtml(osName())} ist startklar. Magst du es kurz gemeinsam einrichten – oder lieber selbst stöbern?</p>
@@ -3864,7 +3887,7 @@ function openComingSoon(id){
     <div class="sheet__head">
       <span class="avatar" style="width:48px;height:48px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="${m.icon}" style="width:21px;height:21px"></i></span>
       <div><div class="sheet__title">${m.title} <span class="soon-pill" style="background:var(--soft-green);color:var(--green-2)">In Entwicklung</span></div><div class="sheet__sub">${m.tag}</div></div>
-      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+      <button class="iconbtn sheet__close" onclick="closeSheet()" aria-label="Schließen"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body">
       <div style="text-align:center;padding:8px 0 4px">
@@ -3931,7 +3954,7 @@ function renderUpgrade(){
   const inner = `
     <div class="up-top">
       <div class="up-brand"><i data-lucide="sprout" style="width:18px;height:18px;color:var(--green)"></i> ${escapeHtml(osBase())} <b>OS</b></div>
-      <button class="iconbtn up-close" onclick="closeUpgrade()"><i data-lucide="x"></i></button>
+      <button class="iconbtn up-close" onclick="closeUpgrade()" aria-label="Schließen"><i data-lucide="x"></i></button>
     </div>
     <div class="up-hero">
       <h1>Mehr aus <em>${escapeHtml((settings.company&&settings.company.name)||osBase())}</em> holen</h1>
@@ -3982,7 +4005,7 @@ function goStripe(){
     <div class="up-top">
       <button class="iconbtn" onclick="renderUpgrade()"><i data-lucide="arrow-left"></i></button>
       <div class="up-brand" style="margin:0 auto"><i data-lucide="lock" style="width:15px;height:15px;color:var(--muted)"></i> Sichere Zahlung</div>
-      <button class="iconbtn up-close" onclick="closeUpgrade()"><i data-lucide="x"></i></button>
+      <button class="iconbtn up-close" onclick="closeUpgrade()" aria-label="Schließen"><i data-lucide="x"></i></button>
     </div>
     <div style="padding:18px 0 60px">
       <div class="stripe">
@@ -4048,7 +4071,11 @@ function unlockModule(id){
   toast(`„${(COMING_SOON[id]||{}).title||'Bereich'}" freigeschaltet – alle Bereiche sind jetzt aktiv.`);
 }
 function isStaffView(){ return viewRole === 'admin' || viewRole === 'buero'; }   // Gesamtsicht (Team/Kunden)
-function selfEmp(){ return emp(viewEmpId) || emp(1); }
+function selfEmp(){
+  // Neutraler Platzhalter, falls das Team noch nicht geladen ist (frischer Betrieb) -
+  // verhindert Crashes in Selbst-Sichten (Zeit/Urlaub), die me.id / me.annual lesen.
+  return emp(viewEmpId) || emp(1) || { id:'self', name:'Ich', annual:0, crewId:null, role:'' };
+}
 
 // Google-Maps-Route + Adresse kopieren
 function mapsHref(addr){ return 'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(addr); }
@@ -4586,7 +4613,7 @@ function openRoleSwitch(){
     <div class="sheet__head">
       <span class="avatar" style="width:50px;height:50px;font-size:17px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="eye" style="width:22px;height:22px"></i></span>
       <div><div class="sheet__title">Demo-Ansicht wechseln</div><div class="sheet__sub">Nur in dieser Vorschau – im echten Produkt nicht sichtbar</div></div>
-      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+      <button class="iconbtn sheet__close" onclick="closeSheet()" aria-label="Schließen"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body">
       <p class="sheet-note"><i data-lucide="info"></i> <b>Reiner Demo-Schalter:</b> Hier kannst du ausprobieren, wie Inhaber, Personalverwaltung, Buchhaltung &amp; Mitarbeiter die App jeweils sehen. Im fertigen Produkt ist dieser Platz in der Topbar frei – jeder meldet sich einfach mit seiner eigenen Rolle an.</p>
@@ -4625,7 +4652,7 @@ function openSettings(){
     <div class="sheet__head">
       <span class="avatar" style="width:50px;height:50px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="settings" style="width:22px;height:22px"></i></span>
       <div><div class="sheet__title">Einstellungen</div><div class="sheet__sub">Betrieb, Zeiterfassung &amp; Rechte</div></div>
-      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+      <button class="iconbtn sheet__close" onclick="closeSheet()" aria-label="Schließen"><i data-lucide="x"></i></button>
     </div>
     <div class="settabs" id="settingsTabs">
       ${SETTINGS_TABS.map(t => `<button class="settab ${t.id===activeSettingsTab?'on':''}" data-stab="${t.id}" onclick="settingsTab('${t.id}')"><i data-lucide="${t.icon}"></i> ${t.label}</button>`).join('')}
@@ -4922,7 +4949,7 @@ function openGeoConsent(){
       <div class="sheet__head">
         <span class="avatar" style="width:50px;height:50px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="map-pin" style="width:22px;height:22px"></i></span>
         <div><div class="sheet__title">Standort beim Stempeln</div><div class="sheet__sub">Kurz bestätigen – einmalig</div></div>
-        <button class="iconbtn sheet__close" onclick="closeGeoConsent()"><i data-lucide="x"></i></button>
+        <button class="iconbtn sheet__close" onclick="closeGeoConsent()" aria-label="Schließen"><i data-lucide="x"></i></button>
       </div>
       <div class="sheet__body">
         <div class="consentbox">
@@ -4942,7 +4969,7 @@ function openGeoConsent(){
       <div class="sheet__head">
         <span class="avatar" style="width:50px;height:50px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="shield-check" style="width:22px;height:22px"></i></span>
         <div><div class="sheet__title">Standortdaten – Hinweis für dich</div><div class="sheet__sub">Als Arbeitgeber kurz bestätigen</div></div>
-        <button class="iconbtn sheet__close" onclick="closeGeoConsent()"><i data-lucide="x"></i></button>
+        <button class="iconbtn sheet__close" onclick="closeGeoConsent()" aria-label="Schließen"><i data-lucide="x"></i></button>
       </div>
       <div class="sheet__body">
         <div class="consentbox">
@@ -5165,7 +5192,7 @@ function _renderCropper(){
     <div class="crop-card">
       <div class="crop-head">
         <div><h3>${escapeHtml(o.title||'Bild zuschneiden')}</h3>${o.hint?`<p>${escapeHtml(o.hint)}</p>`:''}</div>
-        <button class="iconbtn" onclick="closeImageCropper()"><i data-lucide="x"></i></button>
+        <button class="iconbtn" onclick="closeImageCropper()" aria-label="Schließen"><i data-lucide="x"></i></button>
       </div>
       <div class="crop-body">
         <div class="crop-stage" id="cropStage" style="width:${stageW}px;height:${stageH}px"
@@ -5466,7 +5493,7 @@ function renderOnboard(){
     <div class="sheet__head">
       <span class="avatar" style="width:42px;height:42px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="wand-2" style="width:19px;height:19px"></i></span>
       <div><div class="sheet__title">Einrichtung</div><div class="obprog">${dots}</div></div>
-      <button class="iconbtn sheet__close" onclick="skipOnboarding()"><i data-lucide="x"></i></button>
+      <button class="iconbtn sheet__close" onclick="skipOnboarding()" aria-label="Schließen"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body">
       ${body}
@@ -5870,7 +5897,7 @@ function openQuickPicker(){
     <div class="sheet__head">
       <span class="avatar" style="width:46px;height:46px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="zap" style="width:20px;height:20px"></i></span>
       <div><div class="sheet__title">Schnellzugriff anpassen</div><div class="sheet__sub">Auf „Heute" per Drag &amp; Drop sortierbar</div></div>
-      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+      <button class="iconbtn sheet__close" onclick="closeSheet()" aria-label="Schließen"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body">
       <div class="qpick-list">${rows}</div>
@@ -5889,7 +5916,7 @@ function openQuickSickPicker(){
     <div class="sheet__head">
       <span class="avatar" style="width:46px;height:46px;background:linear-gradient(135deg,#C24141,#9B2C2C)"><i data-lucide="thermometer" style="width:20px;height:20px"></i></span>
       <div><div class="sheet__title">Schnellkrankmeldung</div><div class="sheet__sub">Ein Tipp – Mitarbeiter ist heute krank</div></div>
-      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+      <button class="iconbtn sheet__close" onclick="closeSheet()" aria-label="Schließen"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body"><div class="qsick-list">${rows}</div></div>`);
 }
@@ -6003,7 +6030,7 @@ function openNotifications(){
     <div class="sheet__head">
       <span class="avatar" style="width:46px;height:46px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="bell" style="width:20px;height:20px"></i></span>
       <div><div class="sheet__title">Benachrichtigungen</div><div class="sheet__sub">${items.length?items.length+' Punkt'+(items.length===1?'':'e')+', die deine Aufmerksamkeit brauchen':'Nichts Offenes'}</div></div>
-      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+      <button class="iconbtn sheet__close" onclick="closeSheet()" aria-label="Schließen"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body">${body}
       <p class="sheet-note" style="margin-top:14px"><i data-lucide="lightbulb" style="width:12px;height:12px;vertical-align:-2px"></i> Vorlaufzeiten &amp; Typen stellst du im „Denk mit"-Feed auf der Startseite ein.</p>
@@ -6021,7 +6048,7 @@ function openDenkMitSettings(){
     <div class="sheet__head">
       <span class="avatar" style="width:46px;height:46px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="lightbulb" style="width:20px;height:20px"></i></span>
       <div><div class="sheet__title">„Denk mit" einstellen</div><div class="sheet__sub">Welche Erinnerungen – und wie früh?</div></div>
-      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+      <button class="iconbtn sheet__close" onclick="closeSheet()" aria-label="Schließen"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body">
       <div class="dw-setlist">${rows}</div>
@@ -6043,7 +6070,7 @@ function openReminderForm(rid){
     <div class="sheet__head">
       <span class="avatar" style="width:46px;height:46px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="bell" style="width:20px;height:20px"></i></span>
       <div><div class="sheet__title">${r?'Erinnerung bearbeiten':'Eigene Erinnerung'}</div><div class="sheet__sub">Auch privat & wiederkehrend möglich</div></div>
-      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+      <button class="iconbtn sheet__close" onclick="closeSheet()" aria-label="Schließen"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body">
       <div class="field field--wide"><label>Worum geht's? <span style="color:var(--danger)">*</span></label><input id="rmTitle" value="${String(title).replace(/"/g,'&quot;')}" placeholder="z. B. Tochter Zahnarzt"></div>
@@ -6088,7 +6115,7 @@ function openEventForm(opts){
     <div class="sheet__head">
       <span class="avatar" style="width:46px;height:46px;background:linear-gradient(135deg,#2563EB,#1E40AF)"><i data-lucide="calendar-clock" style="width:20px;height:20px"></i></span>
       <div><div class="sheet__title">${ev?'Termin bearbeiten':'Termin anlegen'}</div><div class="sheet__sub">${candId?'Bewerbungsgespräch':'Im Kalender eintragen'}</div></div>
-      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+      <button class="iconbtn sheet__close" onclick="closeSheet()" aria-label="Schließen"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body">
       <div class="field field--wide"><label>Titel <span style="color:var(--danger)">*</span></label><input id="evTitle" value="${esc(title)}" placeholder="z. B. Bewerbungsgespräch · Murat Y."></div>
@@ -6296,7 +6323,7 @@ function openWeatherDay(iso){
     <div class="sheet__head">
       <span class="avatar" style="width:46px;height:46px;background:linear-gradient(135deg,#3B82F6,#2563EB)"><i data-lucide="${d.icon}" style="width:22px;height:22px"></i></span>
       <div><div class="sheet__title">${isToday?'Heute':wxDowLong(iso)} · ${deDate(iso)}</div><div class="sheet__sub">${weatherLoc()} · ${d.label}</div></div>
-      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+      <button class="iconbtn sheet__close" onclick="closeSheet()" aria-label="Schließen"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body">
       <div class="wx-detail-top">
@@ -6330,7 +6357,7 @@ function openWeatherForecast(){
     <div class="sheet__head">
       <span class="avatar" style="width:46px;height:46px;background:linear-gradient(135deg,#3B82F6,#2563EB)"><i data-lucide="calendar-days" style="width:22px;height:22px"></i></span>
       <div><div class="sheet__title">16-Tage-Wetter</div><div class="sheet__sub">${weatherLoc()} · Tag antippen für Stunden-Details</div></div>
-      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+      <button class="iconbtn sheet__close" onclick="closeSheet()" aria-label="Schließen"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body">
       <div class="wx-list">${rows}</div>
@@ -6608,7 +6635,7 @@ function openCrewForm(id){
     <div class="sheet__head">
       <span class="avatar" style="width:46px;height:46px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="${c?'pencil':'plus'}" style="width:20px;height:20px"></i></span>
       <div><div class="sheet__title">${c?'Kolonne bearbeiten':'Kolonne anlegen'}</div><div class="sheet__sub">${c?c.label:'Name & Farbe frei wählbar'}</div></div>
-      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+      <button class="iconbtn sheet__close" onclick="closeSheet()" aria-label="Schließen"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body">
       <div class="field"><label>Name der Kolonne</label><input id="crName" value="${c?c.label.replace(/"/g,'&quot;'):''}" placeholder="z. B. Kolonne Grün, LKW-Trupp, Team Nord"></div>
@@ -6727,7 +6754,7 @@ function openModuleMarket(){
     <div class="sheet__head">
       <span class="avatar" style="width:46px;height:46px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="layout-grid" style="width:20px;height:20px"></i></span>
       <div><div class="sheet__title">Module hinzufügen</div><div class="sheet__sub">Stell dir dein Cockpit zusammen – oder schalte ganze Bereiche frei</div></div>
-      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+      <button class="iconbtn sheet__close" onclick="closeSheet()" aria-label="Schließen"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body">
       <div class="setsec">Dein Cockpit <span class="setsec__hint">kostenlos</span></div>
@@ -6757,6 +6784,10 @@ function removeModule(id){
 function eur(n){ return (Number(n)||0).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' €'; }
 function addDays(iso, n){ const d = dParse(iso); d.setDate(d.getDate()+n); return dISO(d); }
 function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+// Escapt einen Wert fuer einen einfach-gequoteten JS-String INNERHALB eines HTML-Attributs
+// (onclick="fn('...')"). Erst JS-escapen (Backslash/Quote), dann HTML-escapen. So bricht auch
+// ein Name wie O'Brien den Inline-Handler nicht mehr.
+function jsAttr(s){ return escapeHtml(String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'")); }
 function shade(hex, amt){ // amt negativ = dunkler
   const h = hex.replace('#',''); const num = parseInt(h.length===3 ? h.split('').map(x=>x+x).join('') : h, 16);
   let r=(num>>16)+amt, g=((num>>8)&0xff)+amt, b=(num&0xff)+amt;
@@ -8780,7 +8811,7 @@ function openEmployeeConfirm(d){
     <div class="sheet__head">
       <span class="avatar" style="width:50px;height:50px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="user-plus" style="width:22px;height:22px"></i></span>
       <div><div class="sheet__title">Passt das so?</div><div class="sheet__sub">Aus deiner Eingabe erkannt – prüfen &amp; speichern</div></div>
-      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+      <button class="iconbtn sheet__close" onclick="closeSheet()" aria-label="Schließen"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body">
       <div class="vc-respeak">
@@ -8997,14 +9028,16 @@ function weekRange(iso){ const dt = dParse(iso); const day = (dt.getDay()+6)%7; 
 function isoWeek(dt){ const d = new Date(Date.UTC(dt.getFullYear(),dt.getMonth(),dt.getDate())); const day = (d.getUTCDay()+6)%7; d.setUTCDate(d.getUTCDate()-day+3); const ft = new Date(Date.UTC(d.getUTCFullYear(),0,4)); const fd = (ft.getUTCDay()+6)%7; ft.setUTCDate(ft.getUTCDate()-fd+3); return 1+Math.round((d-ft)/(7*864e5)); }
 
 function vacInfo(id){
+  const yr = String(TODAY).slice(0,4);   // Anspruch e.annual gilt pro Kalenderjahr
   let taken = 0, planned = 0;
   absences.forEach(a => {
     if(a.empId !== id || a.type !== 'urlaub' || a.status !== 'genehmigt') return;
+    if(String(a.from).slice(0,4) !== yr) return;   // Vorjahres-/Folgejahres-Urlaub nicht gegen dieses Jahr rechnen
     const wd = workdays(a.from, a.to);
     if(a.from <= TODAY) taken += wd; else planned += wd;
   });
   const e = emp(id);
-  return { taken, planned, rest: Math.max(0, (e ? e.annual : 0) - taken - planned) };
+  return { taken, planned, rest: Math.max(0, (e ? (e.annual||0) : 0) - taken - planned) };
 }
 function empStatus(id){
   const a = absences.find(x => x.empId === id && x.status === 'genehmigt' && covers(x, TODAY));
@@ -9020,8 +9053,8 @@ function statusMeta(s){ return { offen:['Offen','a'], genehmigt:['Genehmigt','g'
 function conflictWarn(a){
   const list = absences.filter(x => x.id !== a.id && x.status !== 'abgelehnt' && x.empId !== a.empId && rangesOverlap(x.from, effTo(x), a.from, effTo(a)));
   if(!list.length) return '';
-  const cid = emp(a.empId).crewId;
-  const same = cid ? list.filter(x => emp(x.empId).crewId === cid) : [];
+  const self = emp(a.empId); const cid = self && self.crewId;
+  const same = cid ? list.filter(x => { const o = emp(x.empId); return o && o.crewId === cid; }) : [];
   if(same.length) return `${same.length+1} aus ${crewLabelOf(cid)} gleichzeitig abwesend`;
   if(list.length >= 2) return `${list.length+1} Mitarbeiter im selben Zeitraum abwesend`;
   return '';
@@ -9112,7 +9145,7 @@ function calendarHTML(){
   return `
   <div class="panel pad">
     <div class="cal-top">
-      <div class="cal-nav"><button class="iconbtn" onclick="calNav(-1)"><i data-lucide="chevron-left"></i></button><b>${MONTHS[calM]} ${calY}</b><button class="iconbtn" onclick="calNav(1)"><i data-lucide="chevron-right"></i></button><button class="mini-btn" onclick="calToday()">Heute</button></div>
+      <div class="cal-nav"><button class="iconbtn" onclick="calNav(-1)" aria-label="Vorheriger Monat"><i data-lucide="chevron-left"></i></button><b>${MONTHS[calM]} ${calY}</b><button class="iconbtn" onclick="calNav(1)" aria-label="Nächster Monat"><i data-lucide="chevron-right"></i></button><button class="mini-btn" onclick="calToday()">Heute</button></div>
       <div class="cal-legend"><span><i class="dot urlaub"></i>Urlaub</span><span><i class="dot krank"></i>Krank</span><span><i class="dot sonder"></i>Sonder</span><span><i class="dot offen"></i>beantragt</span></div>
     </div>
     <div class="cal-hint"><i data-lucide="pointer"></i> <b>Namen</b> tippen = Einzelkalender · <b>Balken</b> tippen = Details · über <b>freie Tage ziehen</b> (oder Start + Ende tippen) = Abwesenheit eintragen</div>
@@ -9210,7 +9243,7 @@ function personCalHTML(id){
     </div>
     <div class="panel pad">
       <div class="cal-top">
-        <div class="cal-nav"><button class="iconbtn" onclick="calNav(-1)"><i data-lucide="chevron-left"></i></button><b>${MONTHS[calM]} ${calY}</b><button class="iconbtn" onclick="calNav(1)"><i data-lucide="chevron-right"></i></button><button class="mini-btn" onclick="calToday()">Heute</button></div>
+        <div class="cal-nav"><button class="iconbtn" onclick="calNav(-1)" aria-label="Vorheriger Monat"><i data-lucide="chevron-left"></i></button><b>${MONTHS[calM]} ${calY}</b><button class="iconbtn" onclick="calNav(1)" aria-label="Nächster Monat"><i data-lucide="chevron-right"></i></button><button class="mini-btn" onclick="calToday()">Heute</button></div>
         <div class="cal-legend"><span><i class="dot urlaub"></i>Urlaub</span><span><i class="dot krank"></i>Krank</span><span><i class="dot sonder"></i>Sonder</span><span><i class="dot offen"></i>beantragt</span></div>
       </div>
       <div class="pcal-grid">${wdHead}${cells}</div>
@@ -9226,53 +9259,53 @@ function antraegeHTML(){
   return `<div class="reqlist">${sorted.map(reqRow).join('')}</div>`;
 }
 function reqRow(a){
-  const e = emp(a.empId); const tm = typeMeta(a.type); const sm = statusMeta(a.status);
+  const e = emp(a.empId) || {name:'Unbekannt', role:'', crewId:null}; const tm = typeMeta(a.type); const sm = statusMeta(a.status);
   const dur = a.type === 'krank' ? (a.to ? `${workdays(a.from,a.to)} AT` : 'laufend') : `${workdays(a.from,a.to)} AT`;
   const warn = a.status !== 'abgelehnt' ? conflictWarn(a) : '';
   return `<div class="req">
     <button class="req__main" onclick="openAbsence(${a.id})">
       <span class="avatar">${initials(e.name)}</span>
       <span class="req__txt">
-        <span class="req__top"><b>${e.name}</b><span class="pill ${tm.pill}">${tm.label}</span></span>
-        <span class="req__sub">${dDEs(a.from)}–${a.to?dDEs(a.to):'offen'} · ${dur}${a.note?` · ${a.note}`:''}${a.au?` · <span class="aupin"><i data-lucide="paperclip"></i> AU</span>`:''}</span>
+        <span class="req__top"><b>${escapeHtml(e.name)}</b><span class="pill ${tm.pill}">${tm.label}</span></span>
+        <span class="req__sub">${dDEs(a.from)}–${a.to?dDEs(a.to):'offen'} · ${dur}${a.note?` · ${escapeHtml(a.note)}`:''}${a.au?` · <span class="aupin"><i data-lucide="paperclip"></i> AU</span>`:''}</span>
         ${warn?`<span class="req__warn"><i data-lucide="alert-triangle"></i> ${warn}</span>`:''}
       </span>
     </button>
     <div class="req__side">
       ${a.status === 'offen' && can('approveAbsence')
         ? `<button class="mini-btn primary" onclick="approveAbsence(${a.id})"><i data-lucide="check"></i> Genehmigen</button><button class="mini-btn danger" onclick="rejectAbsence(${a.id})">Ablehnen</button>`
-        : `<span class="pill ${sm[1]}">${sm[0]}</span><button class="iconbtn sm" onclick="openAbsence(${a.id})"><i data-lucide="chevron-right"></i></button>`}
+        : `<span class="pill ${sm[1]}">${sm[0]}</span><button class="iconbtn sm" onclick="openAbsence(${a.id})" aria-label="Details öffnen"><i data-lucide="chevron-right"></i></button>`}
     </div>
   </div>`;
 }
 
 function resturlaubHTML(){
-  return `<div class="panel table-wrap"><table><thead><tr><th>Mitarbeiter</th><th>Anspruch</th><th>Genommen</th><th>Geplant</th><th>Rest</th><th style="min-width:150px">Auslastung</th></tr></thead><tbody>
-    ${employees.map(e => { const v = vacInfo(e.id); const used = v.taken + v.planned; const pct = Math.min(100, Math.round(used / e.annual * 100)); return `<tr class="clickable" onclick="openPersonCal(${e.id})" title="Einzelkalender öffnen">
-      <td><span class="person-cell"><span class="avatar">${initials(e.name)}</span>${e.name}</span></td>
-      <td>${e.annual}</td><td>${v.taken}</td><td>${v.planned}</td><td><b>${v.rest}</b></td>
-      <td><div class="vbar"><span class="${pct>=85?'hot':''}" style="width:${pct}%"></span></div></td>
+  return `<div class="panel table-wrap"><table class="team-table"><thead><tr><th>Mitarbeiter</th><th>Anspruch</th><th>Genommen</th><th>Geplant</th><th>Rest</th><th style="min-width:150px">Auslastung</th></tr></thead><tbody>
+    ${employees.map(e => { const v = vacInfo(e.id); const used = v.taken + v.planned; const pct = e.annual > 0 ? Math.min(100, Math.round(used / e.annual * 100)) : 0; return `<tr class="clickable" onclick="openPersonCal(${e.id})" title="Einzelkalender öffnen">
+      <td data-label="Mitarbeiter"><span class="person-cell"><span class="avatar">${initials(e.name)}</span>${escapeHtml(e.name)}</span></td>
+      <td data-label="Anspruch">${e.annual||0}</td><td data-label="Genommen">${v.taken}</td><td data-label="Geplant">${v.planned}</td><td data-label="Rest"><b>${v.rest}</b></td>
+      <td data-label="Auslastung"><div class="vbar"><span class="${pct>=85?'hot':''}" style="width:${pct}%"></span></div></td>
     </tr>`; }).join('')}
   </tbody></table></div>`;
 }
 
 function openAbsence(id){
   const a = absences.find(x => x.id === id); if(!a) return;
-  const e = emp(a.empId); const tm = typeMeta(a.type); const sm = statusMeta(a.status);
+  const e = emp(a.empId) || {name:'Unbekannt', role:'', crewId:null}; const tm = typeMeta(a.type); const sm = statusMeta(a.status);
   const dur = a.type === 'krank' ? (a.to ? `${workdays(a.from,a.to)} Arbeitstage` : 'laufend (AU)') : `${workdays(a.from,a.to)} Arbeitstage`;
   const warn = a.status !== 'abgelehnt' ? conflictWarn(a) : '';
   openSheet(`
     <div class="sheet__head">
       <span class="avatar" style="width:50px;height:50px;font-size:17px">${initials(e.name)}</span>
-      <div><div class="sheet__title">${e.name}</div><div class="sheet__sub">${e.role} · ${crewOf(e)}</div></div>
-      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+      <div><div class="sheet__title">${escapeHtml(e.name)}</div><div class="sheet__sub">${escapeHtml(e.role||'')} · ${escapeHtml(crewOf(e))}</div></div>
+      <button class="iconbtn sheet__close" onclick="closeSheet()" aria-label="Schließen"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body">
       <div class="tagrow" style="margin-bottom:12px"><span class="pill ${tm.pill}">${tm.label}</span><span class="pill ${sm[1]}">${sm[0]}</span></div>
       <dl>
         <div class="detail-row"><dt>Zeitraum</dt><dd>${dDE(a.from)} – ${a.to?dDE(a.to):'offen'}</dd></div>
         <div class="detail-row"><dt>Dauer</dt><dd>${dur}</dd></div>
-        ${a.note?`<div class="detail-row"><dt>Notiz</dt><dd>${a.note}</dd></div>`:''}
+        ${a.note?`<div class="detail-row"><dt>Notiz</dt><dd>${escapeHtml(a.note)}</dd></div>`:''}
         ${a.au?`<div class="detail-row"><dt>AU-Bescheinigung</dt><dd>${auImages[a.id]?`<img class="authumb" src="${auImages[a.id]}" alt="AU" onclick="viewAu(${a.id})" title="Größer ansehen">`:`<span class="aupin"><i data-lucide="paperclip"></i> ${a.au}</span>`}</dd></div>`:''}
         ${a.type==='urlaub'?`<div class="detail-row"><dt>Resturlaub</dt><dd>${vacInfo(a.empId).rest} Tage übrig</dd></div>`:''}
         ${warn?`<div class="detail-row"><dt>Hinweis</dt><dd style="color:var(--amber);font-weight:600"><i data-lucide="alert-triangle" style="width:14px;height:14px;vertical-align:-2px"></i> ${warn}</dd></div>`:''}
@@ -9303,11 +9336,11 @@ function editAbsence(id){
   const a = absences.find(x => x.id === id); if(!a) return;
   openAbsenceForm(a.empId, a.from, a.to, a.type, a.note, id);
 }
-function approveAbsence(id){ const a = absences.find(x => x.id === id); if(!a) return; a.status = 'genehmigt'; saveAbsences(); persistAbsence(a); afterAbsChange(); toast(`${emp(a.empId).name}: genehmigt`); }
-function rejectAbsence(id){ const a = absences.find(x => x.id === id); if(!a) return; a.status = 'abgelehnt'; saveAbsences(); persistAbsence(a); afterAbsChange(); toast(`${emp(a.empId).name}: abgelehnt`); }
+function approveAbsence(id){ const a = absences.find(x => x.id === id); if(!a) return; a.status = 'genehmigt'; saveAbsences(); persistAbsence(a); afterAbsChange(); toast(`${(emp(a.empId)||{name:'Eintrag'}).name}: genehmigt`); }
+function rejectAbsence(id){ const a = absences.find(x => x.id === id); if(!a) return; a.status = 'abgelehnt'; saveAbsences(); persistAbsence(a); afterAbsChange(); toast(`${(emp(a.empId)||{name:'Eintrag'}).name}: abgelehnt`); }
 function deleteAbsence(id){ const i = absences.findIndex(x => x.id === id); if(i < 0) return; const e = emp(absences[i].empId); const n = e ? e.name : 'Eintrag'; if(!confirm(`Eintrag von ${n} wirklich löschen?`)) return; const uuid = absences[i]._uuid; absences.splice(i,1); saveAbsences(); if(uuid) deleteAbsenceDb(uuid); afterAbsChange(); toast(`${n}: Eintrag gelöscht`); }
 function afterAbsChange(){ renderUrlaub(); refreshUrlaubBadge(); }
-function viewAu(id){ const url = auImages[id]; if(!url) return; openSheet(`<div class="sheet__head"><div><div class="sheet__title">AU-Bescheinigung</div><div class="sheet__sub">Foto vom Mitarbeiter hochgeladen</div></div><button class="iconbtn sheet__close" onclick="openAbsence(${id})"><i data-lucide="x"></i></button></div><div class="sheet__body"><img src="${url}" alt="AU" style="width:100%;border-radius:10px;border:1px solid var(--line)"></div>`); }
+function viewAu(id){ const url = auImages[id]; if(!url) return; openSheet(`<div class="sheet__head"><div><div class="sheet__title">AU-Bescheinigung</div><div class="sheet__sub">Foto vom Mitarbeiter hochgeladen</div></div><button class="iconbtn sheet__close" onclick="openAbsence(${id})" aria-label="Zurück"><i data-lucide="x"></i></button></div><div class="sheet__body"><img src="${url}" alt="AU" style="width:100%;border-radius:10px;border:1px solid var(--line)"></div>`); }
 
 function openAbsenceForm(preEmp, preFrom, preTo, preType, preNote, editId){
   afAuData = null;
@@ -9325,7 +9358,7 @@ function openAbsenceForm(preEmp, preFrom, preTo, preType, preNote, editId){
     <div class="sheet__head">
       <span class="avatar" style="width:50px;height:50px;font-size:17px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="plane" style="width:22px;height:22px"></i></span>
       <div><div class="sheet__title">${title}</div><div class="sheet__sub">Urlaub, Krankheit oder Sonderurlaub</div></div>
-      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+      <button class="iconbtn sheet__close" onclick="closeSheet()" aria-label="Schließen"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body">
       <div class="field"><label>Mitarbeiter</label><select id="afEmp" onchange="absencePreview()" ${lockEmp?'disabled':''}>${opts}</select></div>
@@ -9379,7 +9412,7 @@ function afAuPick(input){
   r.onload = ev => {
     afAuData = { name: f.name, url: ev.target.result };
     const p = document.getElementById('afAuPrev');
-    if(p){ p.innerHTML = `<div class="aufile"><img src="${ev.target.result}" alt="AU-Vorschau"><span class="aufile__t"><b>${f.name}</b><small>angehängt</small></span><button type="button" class="iconbtn sm" onclick="afAuClear()" title="Entfernen"><i data-lucide="x"></i></button></div>`; icons(); }
+    if(p){ p.innerHTML = `<div class="aufile"><img src="${ev.target.result}" alt="AU-Vorschau"><span class="aufile__t"><b>${f.name}</b><small>angehängt</small></span><button type="button" class="iconbtn sm" onclick="afAuClear()" title="Entfernen" aria-label="Anhang entfernen"><i data-lucide="x"></i></button></div>`; icons(); }
   };
   r.readAsDataURL(f);
 }
@@ -9390,6 +9423,7 @@ function absencePreview(){
   const type = document.getElementById('afTypeVal').value;
   const from = document.getElementById('afFrom').value;
   const to = document.getElementById('afTo').value;
+  if(!empId){ host.className = 'afprev warn'; host.innerHTML = `<div class="afprev__warn"><i data-lucide="alert-triangle"></i> Bitte zuerst einen Mitarbeiter wählen.</div>`; icons(); return; }
   if(!from || !to || to < from){ host.className = 'afprev warn'; host.innerHTML = `<div class="afprev__warn"><i data-lucide="alert-triangle"></i> Bitte gültigen Zeitraum wählen (Bis darf nicht vor Von liegen).</div>`; icons(); return; }
   const wd = workdays(from, to);
   const warn = conflictWarn({id:-1, empId, type, from, to, status:'offen'});
@@ -9408,6 +9442,7 @@ function submitAbsence(){
   const from = document.getElementById('afFrom').value;
   const to = document.getElementById('afTo').value;
   const note = document.getElementById('afNote').value.trim();
+  if(!empId){ toast('Bitte zuerst einen Mitarbeiter wählen'); return; }
   if(!from || !to || to < from){ toast('Bitte gültigen Zeitraum wählen'); return; }
   // Resturlaub-Schutz: Urlaubsanträge, die das Kontingent überziehen, brauchen eine bewusste Bestätigung.
   // In der Bearbeitung zählt der eigene Eintrag noch mit, daher abziehen, um Doppelzählung zu vermeiden.
@@ -9671,7 +9706,7 @@ function bewerberKanbanHtml(){
     const list = applicants.filter(a => a.stage === col.id && (!f.job || a.jobId === f.job));
     return `<section class="kanban-col" data-col="${col.id}">
       <div class="kanban-head"><span class="kanban-dot" style="background:${col.color}"></span>${col.label}<span class="count">${list.length}</span></div>
-      ${list.map(candidateCard).join('') || `<div class="kanban-empty">Keine Bewerber</div>`}
+      ${list.map(candidateCard).join('') || `<div class="kanban-empty"><i data-lucide="inbox"></i><span>Noch niemand hier<br><em>Karte hierher ziehen</em></span></div>`}
     </section>`;
   }).join('')}</div>`;
 }
@@ -9740,10 +9775,11 @@ function candidateCard(a){
   const j = job(a.jobId);
   const role = a.role || (a.pq && a.pq.beruf) || '—';
   return `<div class="candidate" data-id="${a.id}" data-col="${a.stage}" role="button" tabindex="0" onclick="openApplicant(${a.id})">
-    <span class="candidate__top"><span class="avatar">${initials(a.name)}</span><span class="candidate__name">${a.name}</span><span class="src ${src.cls}" title="Quelle: ${src.label}"><i data-lucide="${src.icon}"></i></span></span>
-    <span class="candidate__role">${role}</span>
-    <span class="candidate__job ${j?'':'unassigned'}"><i data-lucide="briefcase"></i>${j ? j.title : 'Stelle zuweisen'}</span>
-    <span class="tagrow">${(a.tags||[]).map(tag => `<span class="tag ${a.hot ? 'green' : ''}">${tag}</span>`).join('')}</span>
+    <span class="grip" aria-hidden="true"><i data-lucide="grip-vertical"></i></span>
+    <span class="candidate__top"><span class="avatar">${initials(a.name)}</span><span class="candidate__name">${escapeHtml(a.name)}</span><span class="src ${src.cls}" title="Quelle: ${escapeHtml(src.label)}"><i data-lucide="${src.icon}"></i></span></span>
+    <span class="candidate__role">${escapeHtml(role)}</span>
+    <span class="candidate__job ${j?'':'unassigned'}"><i data-lucide="briefcase"></i>${j ? escapeHtml(j.title) : 'Stelle zuweisen'}</span>
+    <span class="tagrow">${a.hot ? `<span class="tag hot"><i data-lucide="flame"></i> heiss</span>` : ''}${(a.tags||[]).map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join('')}</span>
     <span class="candidate__foot">${pqBadge(a)}${stageChip(a)}</span>
   </div>`;
 }
@@ -9754,8 +9790,8 @@ function candidateRow(a){
   return `<div class="cand-row" role="button" tabindex="0" onclick="openApplicant(${a.id})">
     <span class="avatar">${initials(a.name)}</span>
     <span class="cand-row__main">
-      <span class="cand-row__top"><b>${a.name}</b><span class="src ${src.cls}"><i data-lucide="${src.icon}"></i></span></span>
-      <span class="cand-row__role">${role}${j ? ` · ${j.title}` : ''}</span>
+      <span class="cand-row__top"><b>${escapeHtml(a.name)}</b><span class="src ${src.cls}"><i data-lucide="${src.icon}"></i></span></span>
+      <span class="cand-row__role">${escapeHtml(role)}${j ? ` · ${escapeHtml(j.title)}` : ''}</span>
       <span class="cand-row__foot">${pqBadge(a)}</span>
     </span>
     ${stageChip(a)}
@@ -12050,7 +12086,7 @@ function openStageManager(){
     <div class="sheet__head">
       <span class="avatar" style="width:46px;height:46px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="sliders-horizontal" style="width:20px;height:20px"></i></span>
       <div><div class="sheet__title">Bewerber-Status anpassen</div><div class="sheet__sub">Benenne, ergänze oder entferne deine Pipeline-Stufen</div></div>
-      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+      <button class="iconbtn sheet__close" onclick="closeSheet()" aria-label="Schließen"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body" id="stageMgrBody">${stageManagerBody()}</div>`);
 }
@@ -12108,8 +12144,8 @@ function openApplicant(id){
   openSheet(`
     <div class="sheet__head">
       <span class="avatar" style="width:50px;height:50px;font-size:17px">${initials(a.name)}</span>
-      <div><div class="sheet__title">${a.name}</div><div class="sheet__sub"><span class="src ${src.cls}" style="margin-right:6px"><i data-lucide="${src.icon}"></i></span>${src.label} · ${a.date||''}</div></div>
-      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+      <div><div class="sheet__title">${escapeHtml(a.name)}</div><div class="sheet__sub"><span class="src ${src.cls}" style="margin-right:6px"><i data-lucide="${src.icon}"></i></span>${escapeHtml(src.label)} · ${escapeHtml(a.date||'')}</div></div>
+      <button class="iconbtn sheet__close" onclick="closeSheet()" aria-label="Schließen"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body">
       <div class="pq-statusbar">${pqBadge(a)}<span class="pq-progress">${filled}/6 Felder</span></div>
@@ -12117,17 +12153,17 @@ function openApplicant(id){
       <div class="copy-row">
         <span class="copy-row__ic"><i data-lucide="user"></i></span>
         <div class="copy-row__main"><div class="copy-row__label">Name</div><div class="copy-row__val">${escapeHtml(a.name)}</div></div>
-        <button class="copy-btn" title="Name kopieren" onclick="copyVal('${escapeHtml(a.name)}','Name',event)"><i data-lucide="copy"></i></button>
+        <button class="copy-btn" title="Name kopieren" aria-label="Name kopieren" onclick="copyVal('${jsAttr(a.name)}','Name',event)"><i data-lucide="copy"></i></button>
       </div>
       <div class="copy-row">
         <span class="copy-row__ic"><i data-lucide="phone"></i></span>
-        <div class="copy-row__main"><div class="copy-row__label">Telefon</div><div class="copy-row__val">${a.phone||'—'}</div></div>
-        ${a.phone?`<button class="copy-btn" title="Nummer kopieren" onclick="copyVal('${a.phone}','Nummer',event)"><i data-lucide="copy"></i></button>`:''}
+        <div class="copy-row__main"><div class="copy-row__label">Telefon</div><div class="copy-row__val">${escapeHtml(a.phone||'—')}</div></div>
+        ${a.phone?`<button class="copy-btn" title="Nummer kopieren" aria-label="Nummer kopieren" onclick="copyVal('${jsAttr(a.phone)}','Nummer',event)"><i data-lucide="copy"></i></button>`:''}
       </div>
       <div class="copy-row">
         <span class="copy-row__ic"><i data-lucide="mail"></i></span>
-        <div class="copy-row__main"><div class="copy-row__label">E-Mail</div><div class="copy-row__val">${a.email||'—'}</div></div>
-        ${a.email?`<button class="copy-btn" title="E-Mail kopieren" onclick="copyVal('${a.email}','E-Mail',event)"><i data-lucide="copy"></i></button>`:''}
+        <div class="copy-row__main"><div class="copy-row__label">E-Mail</div><div class="copy-row__val">${escapeHtml(a.email||'—')}</div></div>
+        ${a.email?`<button class="copy-btn" title="E-Mail kopieren" aria-label="E-Mail kopieren" onclick="copyVal('${jsAttr(a.email)}','E-Mail',event)"><i data-lucide="copy"></i></button>`:''}
       </div>
 
       <div class="contact-actions">
@@ -12172,7 +12208,7 @@ function openApplicant(id){
         ${(WABOT_ENABLED && a.botScore!=null)?`<div class="detail-row"><dt>BewerberBot-Score</dt><dd><b>${a.botScore}</b> / 100</dd></div>`:''}
       </dl>
 
-      ${a.letter ? `<div class="dw-section"><div class="dw-section__h"><i data-lucide="pen-line"></i> Das schrieb ${a.name.split(' ')[0]}</div><div class="dw-letter">${escapeHtml(a.letter)}</div></div>` : ''}
+      ${a.letter ? `<div class="dw-section"><div class="dw-section__h"><i data-lucide="pen-line"></i> Das schrieb ${escapeHtml(a.name.split(' ')[0])}</div><div class="dw-letter">${escapeHtml(a.letter)}</div></div>` : ''}
 
       <div class="setsec">Vorstellungsgespräche <span class="setsec__hint">Verlauf · wird bei Einstellung in die Personalakte übernommen</span></div>
       <div id="interviewBox">${interviewHtml(a)}</div>
@@ -12197,7 +12233,7 @@ function openCompose(id, channel){
   openSheet(`
     <div class="sheet__head">
       <span class="avatar" style="width:46px;height:46px;background:${isWa?'linear-gradient(135deg,#25D366,#1FA855)':'linear-gradient(135deg,#3B82F6,#2563EB)'}"><i data-lucide="${isWa?'message-circle':'mail'}" style="width:20px;height:20px"></i></span>
-      <div><div class="sheet__title">${isWa?'WhatsApp':'E-Mail'} an ${a.name.split(' ')[0]}</div><div class="sheet__sub">Vorlage wählen oder frei schreiben (Du-Form)</div></div>
+      <div><div class="sheet__title">${isWa?'WhatsApp':'E-Mail'} an ${escapeHtml(a.name.split(' ')[0])}</div><div class="sheet__sub">Vorlage wählen oder frei schreiben (Du-Form)</div></div>
       <button class="iconbtn sheet__close" onclick="openApplicant(${id})"><i data-lucide="arrow-left"></i></button>
     </div>
     <div class="sheet__body">
@@ -12257,7 +12293,7 @@ function openTemplates(channel){
     <div class="sheet__head">
       <span class="avatar" style="width:46px;height:46px;background:${isWa?'linear-gradient(135deg,#25D366,#1FA855)':'linear-gradient(135deg,#3B82F6,#2563EB)'}"><i data-lucide="${isWa?'message-circle':'mail'}" style="width:20px;height:20px"></i></span>
       <div><div class="sheet__title">${isWa?'WhatsApp':'E-Mail'}-Vorlagen</div><div class="sheet__sub">Erstellen, benennen &amp; Standard festlegen</div></div>
-      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+      <button class="iconbtn sheet__close" onclick="closeSheet()" aria-label="Schließen"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body">
       <div class="tpl-switch">
@@ -12337,7 +12373,7 @@ function openWaBot(){
     <div class="sheet__head">
       <span class="avatar" style="width:50px;height:50px;background:linear-gradient(135deg,#25D366,#1FA855)"><i data-lucide="bot-message-square" style="width:22px;height:22px"></i></span>
       <div><div class="sheet__title">WhatsApp-Bewerber-Bot <span class="soon-pill" style="background:var(--soft-green);color:var(--green-2)">In Entwicklung</span></div><div class="sheet__sub">Add-on · kommt zeitnah</div></div>
-      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+      <button class="iconbtn sheet__close" onclick="closeSheet()" aria-label="Schließen"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body">
       <div style="text-align:center;padding:8px 0 4px">
@@ -12364,7 +12400,7 @@ function openWaBotOffer(){
     <div class="sheet__head">
       <span class="avatar" style="width:50px;height:50px;background:linear-gradient(135deg,#25D366,#1FA855)"><i data-lucide="bot-message-square" style="width:22px;height:22px"></i></span>
       <div><div class="sheet__title">WhatsApp-Bewerber-Bot</div><div class="sheet__sub">Add-on · 19 €/Monat</div></div>
-      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+      <button class="iconbtn sheet__close" onclick="closeSheet()" aria-label="Schließen"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body">
       <div class="addon-hero">
@@ -12399,7 +12435,7 @@ function openWaBotFlow(){
     <div class="sheet__head">
       <span class="avatar" style="width:46px;height:46px;background:linear-gradient(135deg,#25D366,#1FA855)"><i data-lucide="bot-message-square" style="width:20px;height:20px"></i></span>
       <div><div class="sheet__title">WhatsApp-Bot · Fragen-Flow</div><div class="sheet__sub"><span class="addon-on"><i data-lucide="check"></i> Aktiv · 19 €/Monat</span></div></div>
-      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+      <button class="iconbtn sheet__close" onclick="closeSheet()" aria-label="Schließen"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body">
       <p class="sheet-note"><i data-lucide="info"></i> Der Bot meldet sich beim Bewerber und stellt diese Fragen nacheinander. Du kannst sie umformulieren, sortieren, ergänzen oder löschen.</p>
@@ -12409,8 +12445,8 @@ function openWaBotFlow(){
             <span class="bfrow__n">${i+1}</span>
             <input class="bfrow__in" value="${escapeHtml(q.q)}" onchange="bfSet('${q.id}',this.value)" placeholder="Frage an den Bewerber …">
             <span class="bfrow__acts">
-              <button class="iconbtn xs" ${i===0?'disabled':''} onclick="bfMove('${q.id}',-1)"><i data-lucide="chevron-up"></i></button>
-              <button class="iconbtn xs" ${i===flow.length-1?'disabled':''} onclick="bfMove('${q.id}',1)"><i data-lucide="chevron-down"></i></button>
+              <button class="iconbtn xs" ${i===0?'disabled':''} onclick="bfMove('${q.id}',-1)" aria-label="Nach oben verschieben"><i data-lucide="chevron-up"></i></button>
+              <button class="iconbtn xs" ${i===flow.length-1?'disabled':''} onclick="bfMove('${q.id}',1)" aria-label="Nach unten verschieben"><i data-lucide="chevron-down"></i></button>
               <button class="iconbtn xs danger" onclick="bfDel('${q.id}')"><i data-lucide="trash-2"></i></button>
             </span>
           </div>`).join('')}
@@ -12486,7 +12522,7 @@ function renderApplicantUpload(){
     <div class="sheet__head">
       <span class="avatar" style="width:44px;height:44px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="upload" style="width:20px;height:20px"></i></span>
       <div><div class="sheet__title">Bewerber hochladen</div><div class="sheet__sub">${WABOT_ENABLED?'aus Indeed, Meta &amp; Co. – der BewerberBot qualifiziert danach vor':'aus Indeed, Meta &amp; Co. – Kontaktdaten erfassen &amp; zuweisen'}</div></div>
-      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+      <button class="iconbtn sheet__close" onclick="closeSheet()" aria-label="Schließen"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body">
       <div class="fieldrow">
@@ -12660,7 +12696,7 @@ function renderBotSheet(){
     <div class="sheet__head wa-head">
       <span class="avatar" style="width:44px;height:44px;background:#25D366"><i data-lucide="message-circle" style="width:20px;height:20px;color:#fff"></i></span>
       <div><div class="sheet__title">Bewerber-Vorqualifizierung</div><div class="sheet__sub">${a.name} · ${a.phone||''}</div></div>
-      <button class="iconbtn sheet__close" onclick="botX()"><i data-lucide="x"></i></button>
+      <button class="iconbtn sheet__close" onclick="botX()" aria-label="Schließen"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body wa-body">
       <div class="wa-note"><i data-lucide="info"></i> <span>${botSession.done
@@ -12796,7 +12832,7 @@ function zeitViewSelf(){
   <div class="zeit">
     <div class="zsec-h"><b>Meine Zeiterfassung</b><span>${dDEs(TODAY)} · auf Kunde stechen</span></div>
     ${selfClockArea()}
-    ${mine.length ? `<div class="zsec-h" style="margin-top:16px"><b>Meine Zeiten heute</b><span>${mine.length} Eintrag(e)</span></div><div class="tlist">${mine.map(timeRow).join('')}</div>` : ''}
+    ${mine.length ? `<div class="zsec-h" style="margin-top:16px"><b>Meine Zeiten heute</b><span>${mine.length} Eintrag(e)</span></div><div class="tlist">${mine.map(timeRow).join('')}</div>` : `<div class="zsec-h" style="margin-top:16px"><b>Meine Zeiten heute</b><span>${dDEs(TODAY)}</span></div><div class="empty"><i data-lucide="clock"></i><div>Heute noch nicht gestempelt. Tippe oben auf <b>Einstempeln</b>, um deine Arbeitszeit zu starten.</div></div>`}
     ${settings.geo?`<div class="dsgvo"><i data-lucide="shield-check"></i> <span><b>Datenschutz:</b> Dein Standort wird <b>nur beim Ein- &amp; Ausstempeln</b> einmalig erfasst – damit nachvollziehbar ist, wo gestempelt wurde. Keine laufende Ortung während der Arbeit.</span></div>`:''}
   </div>`;
 }
@@ -12865,7 +12901,7 @@ function openClockOther(){
     <div class="sheet__head">
       <span class="avatar" style="width:50px;height:50px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="user-plus" style="width:22px;height:22px"></i></span>
       <div><div class="sheet__title">Mitarbeiter einstempeln</div><div class="sheet__sub">Wen möchtest du einstempeln?</div></div>
-      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+      <button class="iconbtn sheet__close" onclick="closeSheet()" aria-label="Schließen"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body">${list}</div>`);
 }
@@ -12939,7 +12975,7 @@ function openLeadClockIn(){
     <div class="sheet__head">
       <span class="avatar" style="width:50px;height:50px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="users" style="width:22px;height:22px"></i></span>
       <div><div class="sheet__title">Kolonne einstempeln</div><div class="sheet__sub">Auf welche Baustelle steht der Trupp?</div></div>
-      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+      <button class="iconbtn sheet__close" onclick="closeSheet()" aria-label="Schließen"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body">
       ${settings.geo?`<div class="geonote"><i data-lucide="map-pin"></i> <span>Der <b>Standort</b> der Kolonne wird beim Stempeln einmalig erfasst – damit nachvollziehbar ist, wo gestempelt wurde.</span></div>`:''}
@@ -12974,7 +13010,7 @@ function clockCard(){
       <button class="clockbtn go" onclick="openClockIn()"><i data-lucide="play"></i> Einstempeln</button>
     </div>`;
   }
-  const s = site(myEntry.siteId); const min = entryMin(myEntry);
+  const s = site(myEntry.siteId) || {id:myEntry.siteId, customer:'—', label:'—'}; const min = entryMin(myEntry);
   if(myEntry.out){
     return `<div class="clockcard done">
       <div class="clockcard__top"><span class="clockcard__lbl"><i data-lucide="check-circle-2"></i> Feierabend</span><span class="clockcard__time">${hoursStr(min)}</span></div>
@@ -12997,7 +13033,9 @@ function clockCard(){
   </div>`;
 }
 function timeRow(e){
-  const emp_ = emp(e.empId); const s = site(e.siteId); const min = entryMin(e);
+  const emp_ = emp(e.empId) || (e.empId === 'self' ? (selfEmp() || {name: (currentUser().name || 'Ich')}) : {name:'—'});
+  const s = site(e.siteId) || {id:e.siteId, customer:'—', label:''};
+  const min = entryMin(e);
   const st = e.out ? `<span class="pill n">fertig</span>` : (e.pauseMin && !e.out ? '' : '');
   return `<button class="trow" onclick="openTimeEntry(${e.id})">
     <span class="avatar">${initials(emp_.name)}</span>
@@ -13024,7 +13062,7 @@ function openClockIn(){
     <div class="sheet__head">
       <span class="avatar" style="width:50px;height:50px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="fingerprint" style="width:22px;height:22px"></i></span>
       <div><div class="sheet__title">Einstempeln</div><div class="sheet__sub">Auf welche Baustelle / welchen Kunden?</div></div>
-      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+      <button class="iconbtn sheet__close" onclick="closeSheet()" aria-label="Schließen"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body">
       <div class="sitepicks">${cards}</div>
@@ -13142,7 +13180,7 @@ function openTimeEntry(id){
     <div class="sheet__head">
       <span class="avatar" style="width:50px;height:50px;font-size:17px">${initials(emp_.name)}</span>
       <div><div class="sheet__title">${emp_.name}</div><div class="sheet__sub">${emp_.role} · ${crewOf(emp_)}</div></div>
-      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+      <button class="iconbtn sheet__close" onclick="closeSheet()" aria-label="Schließen"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body">
       <div class="tagrow" style="margin-bottom:12px">${e.out?`<span class="pill n">Feierabend</span>`:`<span class="pill g">läuft</span>`}${e.ruest?`<span class="pill b">mit Rüstzeit</span>`:''}</div>
@@ -13176,7 +13214,7 @@ function openSiteForm(siteId, custId){
     <div class="sheet__head">
       <span class="avatar" style="width:50px;height:50px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="hard-hat" style="width:22px;height:22px"></i></span>
       <div><div class="sheet__title">${s?'Baustelle bearbeiten':'Baustelle anlegen'}</div><div class="sheet__sub">Bezeichnung, Adresse &amp; Leistungsverzeichnis</div></div>
-      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+      <button class="iconbtn sheet__close" onclick="closeSheet()" aria-label="Schließen"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body">
       <div class="field"><label>Bezeichnung der Baustelle</label><input id="sfLabel" type="text" placeholder="z. B. Hausgarten Müller – Neuanlage" value="${s?escapeHtml(s.label||''):''}"></div>
@@ -13254,7 +13292,7 @@ function openSiteSheet(siteId){
     <div class="sheet__head">
       <span class="avatar" style="width:50px;height:50px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="folder-open" style="width:22px;height:22px"></i></span>
       <div><div class="sheet__title">${s.customer}</div><div class="sheet__sub">${s.label} · Kundenkartei</div></div>
-      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+      <button class="iconbtn sheet__close" onclick="closeSheet()" aria-label="Schließen"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body">
       ${addrRow(s.addr)}
@@ -13289,7 +13327,7 @@ function openCustomer(custId){
     <div class="sheet__head">
       <span class="avatar" style="width:50px;height:50px;font-size:17px">${initials(c.name)}</span>
       <div><div class="sheet__title">${c.name}</div><div class="sheet__sub">${c.contact} · ${c.city}</div></div>
-      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+      <button class="iconbtn sheet__close" onclick="closeSheet()" aria-label="Schließen"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body">
       <div class="tagrow" style="margin-bottom:12px"><span class="pill ${c.type === 'Neukunde' ? 'b' : 'n'}">${c.type}</span><span class="pill ${c.status[1]}">${c.status[0]}</span><span class="pill n">Kunde seit ${c.since}</span></div>
@@ -13319,7 +13357,7 @@ function openProtocol(siteId, empId){
     <div class="sheet__head">
       <span class="avatar" style="width:50px;height:50px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="clipboard-list" style="width:22px;height:22px"></i></span>
       <div><div class="sheet__title">Tagesprotokoll</div><div class="sheet__sub">${s.customer} · ${s.label}</div></div>
-      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+      <button class="iconbtn sheet__close" onclick="closeSheet()" aria-label="Schließen"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body">
       <div class="field"><label>Was wurde heute gemacht?</label>
@@ -13873,7 +13911,7 @@ function addGespraech(id){
   const list = gespList(hr);
   list.unshift({
     date: g('gespDate') || TODAY,
-    author: (settings.company&&settings.company.owner) || 'Georg Müller',
+    author: currentUser().name,
     anlass, themen, text,
     vereinbarungen: g('gespVereinbart'),
     naechstes
@@ -13926,7 +13964,7 @@ function editAkteSection(section){
     <div class="sheet__head">
       <span class="avatar" style="width:46px;height:46px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="${cfg.icon}" style="width:20px;height:20px"></i></span>
       <div><div class="sheet__title">${cfg.title} bearbeiten</div><div class="sheet__sub">${escapeHtml(e.name)}</div></div>
-      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+      <button class="iconbtn sheet__close" onclick="closeSheet()" aria-label="Schließen"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body">
       <div class="fieldgrid">${inputs}</div>
@@ -13963,7 +14001,7 @@ function editFuehrerschein(){
     <div class="sheet__head">
       <span class="avatar" style="width:46px;height:46px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="car" style="width:20px;height:20px"></i></span>
       <div><div class="sheet__title">Führerschein bearbeiten</div><div class="sheet__sub">${escapeHtml(e.name)}</div></div>
-      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+      <button class="iconbtn sheet__close" onclick="closeSheet()" aria-label="Schließen"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body">
       <div class="field field--wide"><label>Führerscheinklassen <small style="color:var(--muted);font-weight:500">(Mehrfachauswahl)</small></label>
@@ -13993,7 +14031,7 @@ function addAkteCert(){
     <div class="sheet__head">
       <span class="avatar" style="width:46px;height:46px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="award" style="width:20px;height:20px"></i></span>
       <div><div class="sheet__title">Qualifikation hinzufügen</div><div class="sheet__sub">${escapeHtml(e.name)}</div></div>
-      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+      <button class="iconbtn sheet__close" onclick="closeSheet()" aria-label="Schließen"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body">
       <div class="field field--wide"><label>Schnellauswahl <small style="color:var(--muted);font-weight:500">(GaLaBau-typisch)</small></label>
@@ -14138,7 +14176,7 @@ function openEmployeeForm(id){
     <div class="sheet__head">
       <span class="avatar" style="width:50px;height:50px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="${e?'user-cog':'user-plus'}" style="width:22px;height:22px"></i></span>
       <div><div class="sheet__title">${e?'Mitarbeiter bearbeiten':'Mitarbeiter anlegen'}</div><div class="sheet__sub">${e?e.name:'Stammdaten & Zugang'}</div></div>
-      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+      <button class="iconbtn sheet__close" onclick="closeSheet()" aria-label="Schließen"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body">
       ${!e ? `<div class="vform-hint">
@@ -14258,7 +14296,7 @@ function openMessage(id){
     <div class="sheet__head">
       <span class="channel ${msg.ch}" style="width:48px;height:48px"><i data-lucide="${channel[1]}"></i></span>
       <div><div class="sheet__title">${msg.from}</div><div class="sheet__sub">${channel[0]} · ${msg.time}</div></div>
-      <button class="iconbtn sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+      <button class="iconbtn sheet__close" onclick="closeSheet()" aria-label="Schließen"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body">
       <div style="font-size:14px;font-weight:700;margin-bottom:10px">${msg.sub}</div>
