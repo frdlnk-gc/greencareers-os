@@ -972,6 +972,50 @@
   .pill.v{ background:var(--violet-soft); color:var(--violet); }
   .pill.n{ background:#F0F3EF; color:#5A685D; }
 
+  /* Personalakte-Tabelle: auf schmalen Screens als gestapelte Karten statt Horizontal-Scroll */
+  @media(max-width:560px){
+    .table-wrap:has(.team-table){ overflow:visible; }
+    table.team-table{ min-width:0; display:block; }
+    table.team-table thead{ display:none; }
+    table.team-table tbody{ display:block; }
+    table.team-table tr{
+      display:grid;
+      grid-template-columns:auto 1fr;
+      gap:6px 12px;
+      align-items:center;
+      padding:12px 14px;
+      border-bottom:1px solid var(--line);
+      position:relative;
+    }
+    table.team-table tr:last-child{ border-bottom:0; }
+    table.team-table td{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      padding:0;
+      border:0;
+      grid-column:1 / -1;
+      font-size:13px;
+    }
+    table.team-table td::before{
+      content:attr(data-label);
+      color:var(--muted);
+      font-size:10.5px;
+      letter-spacing:.045em;
+      text-transform:uppercase;
+      font-weight:700;
+      flex-shrink:0;
+    }
+    /* Name als Karten-Kopf ueber die volle Breite, ohne Label */
+    table.team-table td[data-label="Name"]{ grid-column:1 / -1; justify-content:flex-start; padding-bottom:6px; margin-bottom:2px; border-bottom:1px dashed var(--line); }
+    table.team-table td[data-label="Name"]::before{ display:none; }
+    table.team-table td[data-label="Name"] .person-cell{ min-width:0; font-weight:700; }
+    /* Chevron rechts oben in die Karte legen */
+    table.team-table td.team-table__chev{ position:absolute; top:12px; right:12px; padding:0; grid-column:auto; }
+    table.team-table td.team-table__chev::before{ display:none; }
+  }
+
   /* Planning */
   .plan-wrap{ overflow:auto; }
   .plan-grid{
@@ -2068,7 +2112,7 @@
   .daycell:not(.daycell--busy):hover{ box-shadow:inset 0 0 0 1.5px var(--green); }
   .cal-c.daycell.sel{ background:var(--mint); box-shadow:inset 0 0 0 1.5px var(--green); }
   .pcal-day.daycell.sel{ background:var(--mint); box-shadow:inset 0 0 0 2px var(--green); }
-  .daycell{ user-select:none; -webkit-user-select:none; }
+  .daycell{ user-select:none; -webkit-user-select:none; touch-action:pan-x pan-y; }
 
   /* ----- Einzelkalender (Monats-Grid) ----- */
   .pcal-head{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:14px; }
@@ -6487,8 +6531,8 @@ function teamTab(tab){
 const TEAM = {
   mitarbeiter: () => `
     <div class="listbar"><span class="listbar__c">${employees.length} Mitarbeiter · <span style="color:var(--muted);font-weight:500">Klick auf eine Zeile öffnet die Personalakte</span></span>${can('editEmployees') ? `<button class="mini-btn primary" onclick="openEmployeeForm()"><i data-lucide="user-plus"></i> Mitarbeiter anlegen</button>` : ''}</div>
-    <div class="panel table-wrap"><table><thead><tr><th>Name</th><th>Funktion</th><th>Kolonne</th><th>Telefon</th><th>Status</th><th>Zugang</th><th>Resturlaub</th><th></th></tr></thead><tbody>
-    ${employees.map(e => { const s = empStatus(e.id); const v = vacInfo(e.id); const am = accountMeta(e.account); return `<tr class="clickable" onclick="openEmployee(${e.id})"><td><span class="person-cell"><span class="avatar">${initials(e.name)}</span>${e.name}</span></td><td>${e.role}</td><td><span class="crewtag"><span class="crewtag__dot" style="background:${e.crewId?crewColor(e.crewId):'#9AA8A0'}"></span>${crewOf(e)}</span></td><td>${e.phone}</td><td><span class="pill ${s[1]}">${s[0]}</span></td><td><span class="pill ${am[1]}"><i data-lucide="${am[2]}" style="width:11px;height:11px;vertical-align:-1px"></i> ${am[0]}</span></td><td><b>${v.rest}</b> <span style="color:var(--muted)">/ ${e.annual}</span></td><td style="text-align:right"><i data-lucide="chevron-right" style="width:16px;height:16px;color:var(--muted-2);vertical-align:-3px"></i></td></tr>`; }).join('')}
+    <div class="panel table-wrap"><table class="team-table"><thead><tr><th>Name</th><th>Funktion</th><th>Kolonne</th><th>Telefon</th><th>Status</th><th>Zugang</th><th>Resturlaub</th><th></th></tr></thead><tbody>
+    ${employees.map(e => { const s = empStatus(e.id); const v = vacInfo(e.id); const am = accountMeta(e.account); return `<tr class="clickable" onclick="openEmployee(${e.id})"><td data-label="Name"><span class="person-cell"><span class="avatar">${initials(e.name)}</span>${e.name}</span></td><td data-label="Funktion">${e.role}</td><td data-label="Kolonne"><span class="crewtag"><span class="crewtag__dot" style="background:${e.crewId?crewColor(e.crewId):'#9AA8A0'}"></span>${crewOf(e)}</span></td><td data-label="Telefon">${e.phone}</td><td data-label="Status"><span class="pill ${s[1]}">${s[0]}</span></td><td data-label="Zugang"><span class="pill ${am[1]}"><i data-lucide="${am[2]}" style="width:11px;height:11px;vertical-align:-1px"></i> ${am[0]}</span></td><td data-label="Resturlaub"><b>${v.rest}</b> <span style="color:var(--muted)">/ ${e.annual}</span></td><td class="team-table__chev" style="text-align:right"><i data-lucide="chevron-right" style="width:16px;height:16px;color:var(--muted-2);vertical-align:-3px"></i></td></tr>`; }).join('')}
   </tbody></table></div>`,
   kolonnen: () => kolonnenView(),
   urlaub: () => urlaubView(),
@@ -8925,7 +8969,26 @@ function dISO(dt){ return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(
 function dDE(s){ if(!s) return 'offen'; const p = s.split('-'); return p[2]+'.'+p[1]+'.'+p[0]; }
 function dDEs(s){ if(!s) return 'offen'; const p = s.split('-'); return p[2]+'.'+p[1]+'.'; }
 function isWeekend(dt){ const g = dt.getDay(); return g === 0 || g === 6; }
-function workdays(from,to){ if(!from || !to) return 0; let n = 0; const end = dParse(to); for(let dt = dParse(from); dt <= end; dt.setDate(dt.getDate()+1)){ if(!isWeekend(dt)) n++; } return n; }
+// Bundesweite gesetzliche Feiertage. Länderspezifische (Fronleichnam, Reformationstag, Allerheiligen …)
+// bleiben außen vor, solange kein Bundesland hinterlegt ist. Bewegliche Tage sind ostersonntagsbasiert.
+function easterSunday(y){
+  const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),
+        g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,
+        l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),
+        mo=Math.floor((h+l-7*m+114)/31),da=((h+l-7*m+114)%31)+1;
+  return new Date(y, mo-1, da);
+}
+const _holCache = {};
+function holidaySet(y){
+  if(_holCache[y]) return _holCache[y];
+  const md = dt => String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');
+  const s = new Set(['01-01','05-01','10-03','12-25','12-26']);   // feste Feiertage (MM-DD)
+  const es = easterSunday(y);
+  [-2,1,39,50].forEach(off => { const dt = new Date(es); dt.setDate(es.getDate()+off); s.add(md(dt)); }); // Karfreitag, Ostermontag, Christi Himmelfahrt, Pfingstmontag
+  _holCache[y] = s; return s;
+}
+function isHoliday(dt){ return holidaySet(dt.getFullYear()).has(String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0')); }
+function workdays(from,to){ if(!from || !to) return 0; let n = 0; const end = dParse(to); for(let dt = dParse(from); dt <= end; dt.setDate(dt.getDate()+1)){ if(!isWeekend(dt) && !isHoliday(dt)) n++; } return n; }
 function emp(id){ return employees.find(e => e.id === id); }
 function effTo(a){ return a.to || TODAY; }
 function covers(a,iso){ return a.from <= iso && iso <= effTo(a); }
@@ -9075,20 +9138,28 @@ function calFinish(emp, a, b){
   calClearSel(); pendStart = null;
   openAbsenceForm(Number(emp), lo, hi);
 }
+let dragStartX = 0, dragStartY = 0, dragMoved = false;   // Bewegungs-Schwelle für Touch: Scroll vs. Auswahl trennen
 function initCalDrag(){
   if(calDragInit) return; calDragInit = true;
   document.addEventListener('pointerdown', e => {
     const cell = e.target.closest && e.target.closest('.daycell');
     if(!cell || cell.classList.contains('daycell--busy')) return;
     dragEmp = cell.dataset.emp; dragFrom = cell.dataset.iso; dragTo = dragFrom; dragging = true;
+    dragStartX = e.clientX; dragStartY = e.clientY; dragMoved = false;
     calHighlight(dragEmp, dragFrom, dragTo);
   });
   document.addEventListener('pointermove', e => {
     if(!dragging) return;
+    const dx = e.clientX - dragStartX, dy = e.clientY - dragStartY;
+    // Vertikale Geste = die Person will scrollen, nicht auswählen → Drag abbrechen, Browser scrollt.
+    if(!dragMoved && Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 8){ dragging = false; calClearSel(); return; }
+    if(Math.abs(dx) > 6 || Math.abs(dy) > 6) dragMoved = true;
     const el = document.elementFromPoint(e.clientX, e.clientY);
     const dc = el && el.closest && el.closest('.daycell');
     if(dc && dc.dataset.emp === dragEmp){ dragTo = dc.dataset.iso; calHighlight(dragEmp, dragFrom, dragTo); }
   });
+  const cancel = () => { if(!dragging) return; dragging = false; calClearSel(); };
+  document.addEventListener('pointercancel', cancel);   // Browser hat die Geste zum Scrollen übernommen
   document.addEventListener('pointerup', () => {
     if(!dragging) return; dragging = false;
     if(dragFrom !== dragTo){ calFinish(dragEmp, dragFrom, dragTo); return; }   // gezogen
@@ -9324,7 +9395,7 @@ function absencePreview(){
   const warn = conflictWarn({id:-1, empId, type, from, to, status:'offen'});
   const lbl = type === 'urlaub' ? 'Urlaubstag(e)' : type === 'krank' ? 'Krankheitstag(e)' : 'Sondertag(e)';
   let extra = '';
-  if(type === 'urlaub'){ const after = vacInfo(empId).rest - wd; extra = ` · Resturlaub danach: <b>${after}</b> Tage${after < 0 ? ' — überzogen!' : ''}`; }
+  if(type === 'urlaub'){ const after = vacInfo(empId).rest - wd; extra = after < 0 ? ` · <b>Kontingent überzogen um ${Math.abs(after)} Tag(e)</b> (Resturlaub 0)` : ` · Resturlaub danach: <b>${after}</b> Tage`; }
   host.className = 'afprev' + (warn ? ' warn' : '');
   const directOk = type==='krank' || can('approveAbsence');
   const hint = type==='krank' ? 'Krankmeldung wird sofort eingetragen.' : (directOk ? 'Wird direkt genehmigt eingetragen.' : 'Wird als Antrag „offen" gesendet — die Personalverwaltung gibt frei.');
@@ -9346,8 +9417,13 @@ function submitAbsence(){
     const after = rest - workdays(from, to);
     if(after < 0){
       const who = emp(empId);
-      if(!confirm(`${who ? who.name : 'Mitarbeiter'} hätte danach ${after} Tage Resturlaub (überzogen um ${Math.abs(after)}). Trotzdem eintragen?`)) return;
+      if(!confirm(`${who ? who.name : 'Mitarbeiter'} überzieht das Urlaubskontingent um ${Math.abs(after)} Tag(e) (Resturlaub 0). Trotzdem eintragen?`)) return;
     }
+  }
+  // Überschneidungs-Schutz: gleichzeitige Abwesenheiten in derselben Kolonne bewusst bestätigen (Krankmeldung lässt sich nicht ablehnen).
+  if(type !== 'krank'){
+    const warn = conflictWarn({ id: afEditId || -1, empId, type, from, to, status:'offen' });
+    if(warn && !confirm(`${warn}. Trotzdem eintragen?`)) return;
   }
   // Status-Logik: Krank = sofort gültig. Sonst entscheidet die Rolle:
   // Genehmiger (Admin/Büro mit Recht) = direkt genehmigt, Mitarbeiter = offener Antrag.
@@ -9549,8 +9625,9 @@ function absVoiceCommit(){
   if(type === 'urlaub'){
     const rest = vacInfo(empId).rest;
     const after = rest - workdays(from, to);
-    if(after < 0){ const who = emp(empId); if(!confirm(`${who?who.name:'Mitarbeiter'} hätte danach ${after} Tage Resturlaub (überzogen um ${Math.abs(after)}). Trotzdem eintragen?`)) return; }
+    if(after < 0){ const who = emp(empId); if(!confirm(`${who?who.name:'Mitarbeiter'} überzieht das Urlaubskontingent um ${Math.abs(after)} Tag(e) (Resturlaub 0). Trotzdem eintragen?`)) return; }
   }
+  if(type !== 'krank'){ const warn = conflictWarn({ id:-1, empId, type, from, to, status:'offen' }); if(warn && !confirm(`${warn}. Trotzdem eintragen?`)) return; }
   const status = type === 'krank' ? 'genehmigt' : (can('approveAbsence') ? 'genehmigt' : 'offen');
   const aNew = { id: absSeq++, empId, type, from, to, note, status, au:'' };
   absences.push(aNew);
@@ -9662,7 +9739,7 @@ function candidateCard(a){
   const src = srcMeta(a.source);
   const j = job(a.jobId);
   const role = a.role || (a.pq && a.pq.beruf) || '—';
-  return `<div class="candidate" draggable="true" data-id="${a.id}" data-col="${a.stage}" role="button" tabindex="0" onclick="openApplicant(${a.id})">
+  return `<div class="candidate" data-id="${a.id}" data-col="${a.stage}" role="button" tabindex="0" onclick="openApplicant(${a.id})">
     <span class="candidate__top"><span class="avatar">${initials(a.name)}</span><span class="candidate__name">${a.name}</span><span class="src ${src.cls}" title="Quelle: ${src.label}"><i data-lucide="${src.icon}"></i></span></span>
     <span class="candidate__role">${role}</span>
     <span class="candidate__job ${j?'':'unassigned'}"><i data-lucide="briefcase"></i>${j ? j.title : 'Stelle zuweisen'}</span>
@@ -10270,7 +10347,10 @@ async function loadTimeEntries(){
       siteId: (site(r.site_id) ? r.site_id : 's0'),   // unbekannte Baustelle -> Bauhof (Anzeige-Fallback)
       in: r.start_zeit || '', out: r.end_zeit || null, ruest: !!r.ruest, pauseMin: r.pause_min || 0,
       geo: r.geo || null, geoOut: r.geo_out || null, manual: !!r.manual, byLead: !!r.by_lead, proto: !!r.proto };
-    if(isSelf) myEntry = entry; else timeEntries.push(entry);
+    // Alle Einträge (auch die eigenen) in timeEntries führen, damit „Meine Zeiten heute"
+    // die vollständige Tages-Historie zeigt. myEntry referenziert nur den laufenden Eintrag.
+    timeEntries.push(entry);
+    if(isSelf && !entry.out) myEntry = entry;
   });
 }
 function bewCountForJob(jobId){ return applicants.filter(a => a.jobId === jobId).length; }
@@ -11292,41 +11372,9 @@ function wireQuickShortcuts(){
 }
 
 function wireKanban(){
-  document.querySelectorAll('.candidate').forEach(card => {
-    card.addEventListener('dragstart', e => {
-      draggedCandidate = card;
-      card.classList.add('dragging');
-      e.dataTransfer.effectAllowed = 'move';
-    });
-    card.addEventListener('dragend', () => {
-      card.classList.remove('dragging');
-      document.querySelectorAll('.kanban-col.over').forEach(el => el.classList.remove('over'));
-      draggedCandidate = null;
-    });
-  });
-  document.querySelectorAll('.kanban-col').forEach(col => {
-    col.addEventListener('dragover', e => {
-      e.preventDefault();
-      col.classList.add('over');
-    });
-    col.addEventListener('dragleave', () => col.classList.remove('over'));
-    col.addEventListener('drop', e => {
-      e.preventDefault();
-      col.classList.remove('over');
-      if(!draggedCandidate) return;
-      const from = draggedCandidate.dataset.col;
-      const to = col.dataset.col;
-      if(from === to) return;
-      const id = Number(draggedCandidate.dataset.id);
-      const candidate = findCandidate(id);
-      if(!candidate) return;
-      candidate.stage = to;
-      candidate.hot = to === 'inbearb';
-      persistBewerberStatus(id, to);
-      renderBewerberKanban();
-      toast(`${candidate.name} → ${stageById(to).label}`);
-    });
-  });
+  // Nur EIN Drag-System: Pointer-Drag (Desktop + Mobile identisch). Das frühere native
+  // HTML5-Drag lief parallel und konnte einen zweiten DB-Write + doppelten Toast ausloesen
+  // und uebersprang zudem offerHireHandover. moveCandidate() deckt alles ab.
   wireCandidatePointerDrag();
 }
 
@@ -12651,7 +12699,7 @@ function closeBot(){
 function site(id){ return sites.find(s => s.id === id); }
 function hm2min(s){ if(!s) return 0; const p = s.split(':').map(Number); return p[0]*60 + p[1]; }
 function hoursStr(min){ return (Math.max(0,min)/60).toFixed(1).replace('.',',') + ' h'; }
-function entryMin(e){ const end = e.out ? hm2min(e.out) : hm2min(NOW); return Math.max(0, end - hm2min(e.in) - (e.pauseMin||0)); }
+function entryMin(e){ const end = e.out ? hm2min(e.out) : hm2min(NOW); let span = end - hm2min(e.in); if(span < 0) span += 1440; /* Über-Nacht-Schicht (out < in) */ return Math.max(0, span - (e.pauseMin||0)); }
 function distStr(km){ return km < 1 ? Math.round(km*1000) + ' m' : km.toFixed(1).replace('.',',') + ' km'; }
 // Luftlinie zwischen zwei Geo-Punkten (Haversine, km). Null wenn ein Wert fehlt.
 function geoDistKm(aLat,aLng,bLat,bLng){
@@ -12725,7 +12773,9 @@ function mitdenkStrip(){
 }
 
 function zeitView(){
-  return viewRole === 'mitarbeiter' ? zeitViewSelf() : zeitViewTeam();
+  // Kolonnenführer bekommen die Selbst-/Kolonnen-Sicht (leadClockCard), NICHT das
+  // betriebsweite Zeit-Dashboard mit allen Standorten – das bleibt Admin/Büro vorbehalten.
+  return (viewRole === 'mitarbeiter' || viewRole === 'kolonnenfuehrer') ? zeitViewSelf() : zeitViewTeam();
 }
 // Mitarbeiter-Sicht: Stempeluhr je nach Modus (selbst / Kolonnenführer / Büro) + eigene Zeiten von heute
 function selfClockArea(){
@@ -12739,7 +12789,9 @@ function selfClockArea(){
 }
 function zeitViewSelf(){
   const me = selfEmp();
-  const mine = timeEntries.filter(e => e.empId === me.id);
+  // Eigene Stempel-Einträge: als 'self' (eingeloggter Nutzer) oder – falls der Lead sich
+  // selbst mit der Kolonne stempelt – unter der eigenen numerischen empId.
+  const mine = timeEntries.filter(e => e.empId === 'self' || e.empId === me.id);
   return `
   <div class="zeit">
     <div class="zsec-h"><b>Meine Zeiterfassung</b><span>${dDEs(TODAY)} · auf Kunde stechen</span></div>
@@ -13011,7 +13063,8 @@ async function doClockIn(siteId){
   // Echter Standort-Nachweis: einmalige Erfassung beim Stempeln (geoStamp = navigator.geolocation, punktuell).
   // Der erfasste Punkt ist unveränderlich (Object.freeze) – der Mitarbeiter kann ihn nicht nachträglich bearbeiten.
   const g = await geoStamp(siteId);
-  myEntry = { empId:'self', siteId, in:NOW, out:null, ruest, pauseMin:0, geo:g };
+  myEntry = { id: timeSeq++, empId:'self', siteId, in:NOW, out:null, ruest, pauseMin:0, geo:g };
+  timeEntries.push(myEntry);   // sofort in der Tagesliste sichtbar (gleiche Objekt-Referenz wie myEntry)
   persistTimeEntry(myEntry);
   closeSheet(); renderZeit();
   toast(`Eingestempelt um ${NOW} · ${site(siteId).customer}`);
@@ -13025,7 +13078,13 @@ function geoFarHint(e){
   const lbl = (site(e.siteId)||{}).label || 'Baustelle';
   setTimeout(() => toast(`Hinweis: ${distStr(dkm)} von „${lbl}" entfernt gestempelt – richtige Baustelle?`), 950);
 }
-function myPause(){ if(!myEntry) return; myEntry.pauseMin = (myEntry.pauseMin||0) + 30; persistTimeEntry(myEntry); renderZeit(); toast('30 Min Pause erfasst'); }
+function myPause(){
+  if(!myEntry) return;
+  // Pause darf nie länger sein als die bisher gestempelte Bruttozeit (sonst negative Arbeitszeit).
+  let gross = hm2min(myEntry.out ? myEntry.out : NOW) - hm2min(myEntry.in); if(gross < 0) gross += 1440;
+  if((myEntry.pauseMin||0) + 30 > gross){ toast('Pause kann nicht länger als die bisher erfasste Arbeitszeit sein.'); return; }
+  myEntry.pauseMin = (myEntry.pauseMin||0) + 30; persistTimeEntry(myEntry); renderZeit(); toast('30 Min Pause erfasst');
+}
 async function myClockOut(){ if(!myEntry) return; if(!ensureGeoConsent(() => myClockOut())) return; myEntry.out = NOW; myEntry.geoOut = await geoStamp(myEntry.siteId); persistTimeEntry(myEntry); renderZeit(); toast(`Ausgestempelt um ${NOW} · ${hoursStr(entryMin(myEntry))}`); }
 
 // Reverse-Geocoding: macht aus den GPS-Koordinaten eine lesbare Adresse (Straße/Hausnr · PLZ Ort).
@@ -13362,6 +13421,12 @@ function hrFallback(e){
 let hrStore = {};   // Laufzeit-Kopie (Notizen/Dokumente sind in der Demo bearbeitbar)
 function hrData(e){
   if(!hrStore[e.id]){ hrStore[e.id] = JSON.parse(JSON.stringify(HR_SEED[e.id] || hrFallback(e))); }
+  else {
+    // Aus der DB (mitarbeiter.extra) geladene Akten können eine Teilstruktur sein – fehlende
+    // Felder aus der Vollstruktur ergänzen, damit docs/notes/gespraeche etc. nie undefined sind.
+    const base = hrFallback(e); const hr = hrStore[e.id];
+    for(const k in base){ if(hr[k] === undefined) hr[k] = base[k]; }
+  }
   return hrStore[e.id];
 }
 function deDate(iso){ if(!iso) return '—'; const d=new Date(iso); if(isNaN(d)) return iso; return d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}); }
@@ -13548,7 +13613,7 @@ function renderAkte(){
           </div>
         </div>
         <nav class="akte-tabs">
-          ${AKTE_TABS.map(t => `<button class="akte-tab ${akteTab===t.id?'on':''}" onclick="akteSetTab('${t.id}')"><i data-lucide="${t.icon}"></i> ${t.label}${akteTabCount(t.id,e,hr)}</button>`).join('')}
+          ${AKTE_TABS.filter(t => priv || (t.id!=='gespraeche' && t.id!=='notizen')).map(t => `<button class="akte-tab ${akteTab===t.id?'on':''}" onclick="akteSetTab('${t.id}')"><i data-lucide="${t.icon}"></i> ${t.label}${akteTabCount(t.id,e,hr)}</button>`).join('')}
         </nav>
       </aside>
       <div class="akte-main" id="akteMain">${akteTabContent(e,hr,priv)}</div>
@@ -13565,8 +13630,8 @@ function akteTabContent(e,hr,priv){
     case 'qualifikation': return akteFuehrerscheinCard(e,hr) + akteCertCard(e,hr,priv) + aktePsaCard(e,hr);
     case 'dokumente':     return akteDocCard(e,hr,priv);
     case 'abwesenheit':   return akteAbsenceCard(e,hr);
-    case 'gespraeche':    return akteGespraecheCard(e,hr,priv);
-    case 'notizen':       return akteNotesCard(e,hr,priv);
+    case 'gespraeche':    return priv ? akteGespraecheCard(e,hr,priv) : akteGatedNote();
+    case 'notizen':       return priv ? akteNotesCard(e,hr,priv) : akteGatedNote();
     default:              return akteOverview(e,hr,priv);
   }
 }
@@ -13802,14 +13867,18 @@ function addGespraech(id){
   if(!text){ toast('Bitte kurz festhalten, worum es ging'); const t=document.getElementById('gespText'); if(t) t.focus(); return; }
   if(voiceRec){ voiceRec.stop(); voiceRec = null; }
   const themen = Array.from(document.querySelectorAll('.gesp-chip.primary')).map(b=>b.getAttribute('data-t')).filter(Boolean);
+  const naechstes = g('gespNext');
+  if(naechstes && naechstes < TODAY && !confirm('Der Termin für das nächste Gespräch liegt in der Vergangenheit. Trotzdem so speichern?')) return;
   const hr = hrData(e);
-  gespList(hr).unshift({
+  const list = gespList(hr);
+  list.unshift({
     date: g('gespDate') || TODAY,
     author: (settings.company&&settings.company.owner) || 'Georg Müller',
     anlass, themen, text,
     vereinbarungen: g('gespVereinbart'),
-    naechstes: g('gespNext')
+    naechstes
   });
+  list.sort((a,b) => (b.date||'').localeCompare(a.date||''));   // backdatierte Einträge bleiben chronologisch (neueste zuerst)
   if(akteEmpId===id) renderAkte();
   toast('Gespräch dokumentiert');
 }
