@@ -6679,7 +6679,7 @@ const VIEWS = {
 function appTeamLink(){ try{ return location.origin + '/'; }catch(_){ return 'https://os.green-careers.de/'; } }
 function appCopyLink(){
   const url = appTeamLink();
-  const done = ()=> toast('Link kopiert – schick ihn deinem Team per WhatsApp oder E-Mail.');
+  const done = ()=> toast('App-Adresse kopiert. Achtung: zum Einloggen braucht der Mitarbeiter seinen persönlichen Einladungs-Link (Team → Personalakte).');
   if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(url).then(done).catch(()=>toast(url)); }
   else { try{ const t=document.createElement('textarea'); t.value=url; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove(); done(); }catch(_){ toast(url); } }
 }
@@ -6707,7 +6707,7 @@ function mitarbeiterAppView(){
       <p>Die App ist die mobile Version deines Betriebssystems. Jeder Mitarbeiter meldet sich mit seinem eigenen Zugang an und sieht nur seinen Bereich – Stunden, Baustelle, Urlaub. Kein Stundenzettel, kein Zettelchaos.</p>
       <div class="apphero__acts">
         ${invBtn}
-        <button class="mini-btn" style="margin-top:10px" onclick="appCopyLink()"><i data-lucide="link"></i> App-Link kopieren</button>
+        <button class="mini-btn" style="margin-top:10px" onclick="appCopyLink()"><i data-lucide="smartphone"></i> App-Adresse kopieren</button>
       </div>
       <div class="apphero__stat">${withAccess} von ${total} Mitarbeitern haben schon einen Zugang.</div>
     </div>
@@ -6726,11 +6726,10 @@ function mitarbeiterAppView(){
   <div class="panel appsteps">
     <div class="panel__head"><i data-lucide="list-checks"></i> In 3 Schritten hat dein Team die App</div>
     <div class="appsteps__list">
-      ${appStep('1','Mitarbeiter anlegen &amp; einladen',
-        'Leg deinen Mitarbeiter unter <b>Team → Personalakte</b> an und gib seine E-Mail ein. Er bekommt automatisch eine Einladung.', invBtn)}
-      ${appStep('2','Mitarbeiter öffnet den Link auf dem Handy',
-        'In der Einladungs-Mail tippt er auf den Link, legt einmalig ein Passwort fest – fertig, er ist drin. Den Link kannst du ihm auch selbst per WhatsApp schicken.',
-        `<button class="mini-btn" style="margin-top:10px" onclick="appCopyLink()"><i data-lucide="link"></i> App-Link kopieren</button>`)}
+      ${appStep('1','Mitarbeiter anlegen &amp; persönlichen Link erstellen',
+        'Leg deinen Mitarbeiter unter <b>Team → Personalakte</b> an und gib seine E-Mail ein. Beim Anlegen bekommst du direkt seinen <b>persönlichen Einladungs-Link</b> – oder später jederzeit über den Button „Einladungs-Link" in seiner Akte.', invBtn)}
+      ${appStep('2','Persönlichen Link per WhatsApp schicken',
+        'Schick ihm seinen <b>persönlichen</b> Link (nicht die App-Adresse!) per WhatsApp. Er tippt drauf, legt einmalig ein Passwort fest – fertig, er ist drin und fest deinem Betrieb zugeordnet. Der WhatsApp-Text wird dir fertig vorformuliert.')}
       ${appStep('3','„Zum Startbildschirm hinzufügen"',
         'Damit die App wie eine echte App startet: im <b>Browser-Menü</b> auf „Zum Startbildschirm hinzufügen" (iPhone: Teilen-Symbol → Zum Home-Bildschirm · Android: ⋮ → App installieren). Danach liegt das Icon auf dem Handy.')}
     </div>
@@ -13981,7 +13980,8 @@ function renderAkte(){
         ? `<span class="mini-btn is-sick"><i data-lucide="thermometer"></i> Heute krankgemeldet</span>`
         : `<button class="mini-btn sick" onclick="quickSick(${e.id})"><i data-lucide="thermometer"></i> Heute krankmelden</button>`) : ''}
       <button class="mini-btn" onclick="closeAkte();teamTab('urlaub');openAbsenceForm(${e.id})"><i data-lucide="plane"></i> Abwesenheit erfassen</button>
-      ${priv ? `<button class="mini-btn primary" onclick="openEmployeeForm(${e.id})"><i data-lucide="user-cog"></i> Zugang & Rolle</button>` : ''}
+      ${priv && e.email && e.account!=='active' ? `<button class="mini-btn primary" onclick="copyInviteLink(${e.id})"><i data-lucide="link"></i> Einladungs-Link</button>` : ''}
+      ${priv ? `<button class="mini-btn" onclick="openEmployeeForm(${e.id})"><i data-lucide="user-cog"></i> Zugang & Rolle</button>` : ''}
     </div>
     <div class="akte-page">
       <aside class="akte-side">
@@ -14551,7 +14551,8 @@ function openEmployeeForm(id){
       <div class="field"><label>Rolle &amp; Rechte</label><select id="efSys">${roleOpts}</select>
         <div class="fieldhint"><i data-lucide="info"></i> „Personalverwaltung" betreut Personal, Kolonnen &amp; Kunden – was genau, legst du in den Einstellungen fest.</div>
       </div>
-      ${!e ? `<label class="rztoggle"><input type="checkbox" id="efInvite" checked><span class="rztoggle__txt"><b><i data-lucide="send"></i> Einladung sofort senden</b><small>Der Mitarbeiter bekommt eine E-Mail und legt beim ersten Login sein Passwort fest.</small></span></label>` : ''}
+      ${!e ? `<label class="rztoggle"><input type="checkbox" id="efInvite" checked><span class="rztoggle__txt"><b><i data-lucide="link"></i> Zugang anlegen & Einladungs-Link erstellen</b><small>Du bekommst direkt einen persönlichen Link – den schickst du dem Mitarbeiter per WhatsApp. Er tippt drauf, legt einmal ein Passwort fest und ist drin.</small></span></label>` : ''}
+      ${e && e.email && e.account!=='active' ? `<button class="btn btn--block" style="background:var(--green);color:#fff;margin-top:2px" onclick="copyInviteLink(${e.id})"><i data-lucide="link"></i> Einladungs-Link erstellen (WhatsApp)</button>` : ''}
       <div class="sheet-actions">
         <button class="btn" style="flex:1" onclick="submitEmployee(${id||0})"><i data-lucide="check"></i> ${e?'Speichern':'Anlegen'}</button>
         <button class="btn ghost" onclick="closeSheet()">Abbrechen</button>
@@ -14577,6 +14578,72 @@ async function sendInviteMail({name,email,position,sysRole}){
     return { ok: res.ok && data.ok !== false, status:res.status, data };
   }catch(e){ return {ok:false, reason:'network', error:String(e)}; }
 }
+/* Erzeugt den PERSONALISIERTEN Einladungs-Link (mode:'link') zum Selbst-Teilen
+   (WhatsApp/Mail). Der Link bindet den Mitarbeiter fest an diesen Betrieb. */
+async function requestInviteLink({name,email,position,sysRole}){
+  if(!sbAuth) return {ok:false, reason:'noauth'};
+  let token=null;
+  try{ const { data:{ session } } = await sbAuth.auth.getSession(); token = session && session.access_token; }catch(e){}
+  if(!token) return {ok:false, reason:'nosession'};
+  try{
+    const res = await fetch(SB_URL+'/functions/v1/invite-mitarbeiter', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+token, 'apikey':SB_ANON },
+      body: JSON.stringify({ name, email, position, sys_role:sysRole, mode:'link', redirect_to: window.location.origin + window.location.pathname })
+    });
+    const data = await res.json().catch(()=>({}));
+    return { ok: res.ok && data.ok !== false, status:res.status, data, link: data.link || null, already_exists: !!data.already_exists };
+  }catch(e){ return {ok:false, reason:'network', error:String(e)}; }
+}
+// Text in die Zwischenablage (mit Fallback für ältere Browser).
+function gcCopyText(txt){
+  return new Promise((resolve)=>{
+    if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(txt).then(()=>resolve(true)).catch(()=>resolve(false)); }
+    else { try{ const t=document.createElement('textarea'); t.value=txt; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove(); resolve(true); }catch(_){ resolve(false); } }
+  });
+}
+// WhatsApp-Deeplink mit vorformulierter Nachricht + persönlichem Link.
+function waShareUrl(e, link){
+  const first = (e.name||'').split(' ')[0] || 'Hallo';
+  const firma = (settings.company && settings.company.name) ? settings.company.name : 'unserem Betrieb';
+  const txt = `Hallo ${first}, hier ist dein Zugang zur Mitarbeiter-App von ${firma}. Tipp auf den Link, leg einmal dein Passwort fest – danach kannst du Zeiten stempeln und Urlaub/Krankmeldung direkt vom Handy einreichen:\n${link}`;
+  return 'https://wa.me/?text=' + encodeURIComponent(txt);
+}
+// Pro Mitarbeiter: Einladungs-Link erzeugen, kopieren und Teilen-Sheet öffnen.
+async function copyInviteLink(id){
+  const e = emp(id); if(!e) return;
+  if(!e.email){ toast('Bitte erst eine E-Mail hinterlegen'); openEmployeeForm(id); return; }
+  toast('Einladungs-Link wird erstellt …');
+  const r = await requestInviteLink({name:e.name, email:e.email, position:e.role, sysRole:e.sysRole});
+  if(r.link){
+    if(e.account !== 'active'){ e.account = 'invited'; persistEmployee(e); if(currentView==='team' && activeTeamTab==='mitarbeiter') teamTab('mitarbeiter'); }
+    await gcCopyText(r.link);
+    openInviteLinkSheet(e, r.link, r.already_exists);
+  } else if(r.already_exists){
+    toast(`${e.email} ist bereits registriert – kann sich direkt einloggen`);
+  } else {
+    toast('Link-Erstellung noch nicht aktiv – bitte E-Mail-Einladung nutzen');
+  }
+}
+function openInviteLinkSheet(e, link, already){
+  const wa = waShareUrl(e, link);
+  const first = escapeHtml((e.name||'').split(' ')[0] || 'dein Mitarbeiter');
+  openSheet(`
+    <div class="sheet__head">
+      <span class="avatar" style="width:46px;height:46px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="link" style="width:20px;height:20px"></i></span>
+      <div><div class="sheet__title">Einladungs-Link für ${first}</div><div class="sheet__sub">${already?'Bereits registriert – Login-Link':'Kopiert – jetzt per WhatsApp schicken'}</div></div>
+      <button class="iconbtn sheet__close" onclick="closeSheet()" aria-label="Schließen"><i data-lucide="x"></i></button>
+    </div>
+    <div class="sheet__body">
+      <p class="sheet-note" style="margin-top:0"><i data-lucide="info"></i> So kommt ${first} in die App: Link per WhatsApp schicken → er tippt drauf → legt einmal ein Passwort fest → fertig. Er sieht danach nur seinen Bereich (Zeiten &amp; Urlaub).</p>
+      <div class="field"><label>Persönlicher Einladungs-Link</label><input id="invLinkFld" readonly value="${link.replace(/"/g,'&quot;')}" onclick="this.select()"></div>
+      <div class="sheet-actions">
+        <a class="btn" style="flex:1.4;text-decoration:none" href="${wa}" target="_blank" rel="noopener"><i data-lucide="message-circle"></i> Per WhatsApp senden</a>
+        <button class="btn ghost" onclick="gcCopyText(document.getElementById('invLinkFld').value).then(()=>toast('Link kopiert'))"><i data-lucide="copy"></i> Kopieren</button>
+      </div>
+      <p class="sheet-note"><i data-lucide="shield-check"></i> Der Link ist persönlich und bindet ${first} fest an deinen Betrieb – bitte nicht weiterleiten.</p>
+    </div>`);
+}
 async function submitEmployee(id){
   const name = document.getElementById('efName').value.trim();
   if(!name){ toast('Bitte Namen eingeben'); return; }
@@ -14600,27 +14667,20 @@ async function submitEmployee(id){
   persistEmployee(eNew);
   closeSheet(); teamTab('mitarbeiter');
   if(invite && email){
-    toast(`${name} angelegt · Einladung wird gesendet …`);
-    const r = await sendInviteMail({name, email, position:role, sysRole});
-    if(r.ok){ toast(`Einladung an ${email} gesendet`); }
-    else if(r.data && r.data.already_exists){ toast(`${email} ist bereits registriert – kann sich direkt einloggen`); }
-    else { toast(`${name} angelegt · E-Mail-Versand noch nicht aktiv`); }
+    toast(`${name} angelegt · Einladungs-Link wird erstellt …`);
+    const r = await requestInviteLink({name, email, position:role, sysRole});
+    if(r.link){ await gcCopyText(r.link); openInviteLinkSheet(eNew, r.link, r.already_exists); }
+    else if(r.already_exists){ toast(`${email} ist bereits registriert – kann sich direkt einloggen`); }
+    else { toast(`${name} angelegt · Link-Erstellung noch nicht aktiv – nutze „Einladungs-Link" in der Akte`); }
+  } else if(email){
+    toast(`${name} angelegt · Einladungs-Link später über die Akte`);
   } else {
     toast(`${name} angelegt`);
   }
 }
 async function inviteEmployee(id){
-  const e = emp(id); if(!e) return;
-  if(!e.email){ toast('Bitte erst eine E-Mail hinterlegen'); openEmployeeForm(id); return; }
-  e.account = 'invited';
-  persistEmployee(e);
-  if(currentView==='team' && activeTeamTab==='mitarbeiter') teamTab('mitarbeiter');
-  closeSheet();
-  toast(`Einladung wird an ${e.email} gesendet …`);
-  const r = await sendInviteMail({name:e.name, email:e.email, position:e.role, sysRole:e.sysRole});
-  if(r.ok){ toast(`Einladung an ${e.email} gesendet`); }
-  else if(r.data && r.data.already_exists){ toast(`${e.email} ist bereits registriert – kann sich direkt einloggen`); }
-  else { toast('E-Mail-Versand noch nicht aktiv (Backend deployen)'); }
+  // Vereinheitlicht auf den persönlichen Einladungs-Link (WhatsApp-Flow).
+  return copyInviteLink(id);
 }
 function deleteEmployee(id){
   const e = emp(id); if(!e) return;
