@@ -1370,7 +1370,7 @@
     pointer-events:none; max-width:none; }
   /* Maske: verdunkelt außerhalb, zeigt Crop-Rahmen + Drittel-Linien */
   .crop-frame{ position:absolute; inset:0; pointer-events:none;
-    box-shadow:0 0 0 9999px rgba(8,14,9,.30) inset; }
+    box-shadow:0 0 0 9999px rgba(8,14,9,.30) inset, 0 0 0 2px rgba(255,255,255,.92) inset; }
   .crop-frame.round{ border-radius:50%; }
   .crop-frame::before, .crop-frame::after{ content:''; position:absolute; background:rgba(255,255,255,.32); }
   .crop-frame::before{ left:33.33%; right:33.33%; top:0; bottom:0; border-left:1px solid rgba(255,255,255,.32); border-right:1px solid rgba(255,255,255,.32); background:none; }
@@ -1379,6 +1379,12 @@
   .crop-zoom{ display:flex; align-items:center; gap:10px; margin:14px 2px 4px; }
   .crop-zoom i{ width:16px; height:16px; color:var(--muted); flex:none; }
   .crop-zoom input[type=range]{ flex:1; accent-color:var(--green); }
+  .crop-fitbtns{ display:flex; gap:8px; margin:11px 2px 0; }
+  .crop-fitbtns button{ flex:1; font-size:12px; font-weight:600; padding:8px 8px; border:1px solid var(--line);
+    background:#fff; color:var(--ink,#0f172a); border-radius:9px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; }
+  .crop-fitbtns button:hover{ border-color:#C7D3CB; }
+  .crop-fitbtns button.on{ border-color:var(--green); color:var(--green); background:rgba(22,163,74,.06); }
+  .crop-fitbtns button i{ width:14px; height:14px; }
   .crop-hint{ display:flex; gap:7px; align-items:flex-start; font-size:11.5px; color:var(--muted);
     background:var(--surface-2,#f4f7fa); border-radius:9px; padding:8px 10px; margin-top:10px; }
   .crop-hint i{ width:14px; height:14px; flex:none; margin-top:1px; }
@@ -1405,8 +1411,74 @@
   .bullet-prev__h i{ width:13px; height:13px; }
   .bullet-prev ul{ margin:0; padding:0 0 0 2px; list-style:none; display:flex; flex-direction:column; gap:5px;
     background:var(--surface-2,#f4f7fa); border-radius:9px; padding:10px 12px; }
-  .bullet-prev li{ position:relative; padding-left:18px; font-size:12.5px; line-height:1.4; color:var(--ink); }
-  .bullet-prev li::before{ content:''; position:absolute; left:3px; top:7px; width:6px; height:6px; border-radius:50%; background:var(--green); }
+  .bullet-prev li{ position:relative; padding-left:20px; font-size:12.5px; line-height:1.45; color:var(--ink); }
+  .bullet-prev li::before{ content:''; position:absolute; left:4px; top:2px; width:5px; height:9px;
+    border:solid var(--green); border-width:0 2px 2px 0; transform:rotate(42deg); }
+  /* Fehler-Zustand für Formularfelder (z. B. Gehalt mit ungültiger Eingabe) */
+  .field--err input, .field--err select, .field--err textarea{ border-color:#e11d48 !important; background:#fff5f6 !important; }
+  .field--err input:focus, .field--err select:focus, .field--err textarea:focus{ box-shadow:0 0 0 3px rgba(225,29,72,.15) !important; }
+  .field__err{ display:flex; align-items:center; gap:5px; color:#e11d48; font-size:11.5px; font-weight:600; margin-top:6px; }
+  .field__err i{ width:13px; height:13px; }
+
+  /* ===== Mitarbeiter-App-Onboarding ===== */
+  .apphero{ display:grid; grid-template-columns:1fr 300px; gap:28px; align-items:center;
+    background:linear-gradient(135deg, rgba(22,163,74,.10), rgba(22,163,74,.02));
+    border:1px solid var(--line); border-radius:18px; padding:26px 26px; margin-bottom:16px; }
+  .apphero__eyebrow{ display:inline-flex; align-items:center; gap:6px; font-size:11.5px; font-weight:700;
+    text-transform:uppercase; letter-spacing:.05em; color:var(--green); background:rgba(22,163,74,.10);
+    border:1px solid rgba(22,163,74,.22); border-radius:999px; padding:5px 11px; }
+  .apphero__eyebrow i{ width:14px; height:14px; }
+  .apphero__txt h3{ margin:12px 0 8px; font-size:22px; line-height:1.25; color:var(--ink); }
+  .apphero__txt p{ margin:0; font-size:13.5px; line-height:1.55; color:var(--muted); max-width:52ch; }
+  .apphero__acts{ display:flex; flex-wrap:wrap; gap:10px; }
+  .apphero__stat{ margin-top:14px; font-size:12.5px; font-weight:600; color:var(--ink); display:flex; align-items:center; gap:7px; }
+  .apphero__stat::before{ content:''; width:8px; height:8px; border-radius:50%; background:var(--green); }
+  .apphero__phone{ display:flex; justify-content:center; }
+  .appphone{ width:230px; background:#0f1f14; border-radius:26px; padding:16px 15px 20px; color:#fff;
+    box-shadow:0 18px 40px -14px rgba(8,20,10,.5); border:5px solid #0b170e; }
+  .appphone__top{ display:flex; align-items:center; justify-content:space-between; font-size:11px; opacity:.7; margin-bottom:14px; }
+  .appphone__top i{ width:14px; height:14px; }
+  .appphone__hi{ font-size:15px; font-weight:700; margin-bottom:12px; }
+  .appphone__map{ display:flex; align-items:center; gap:6px; font-size:11px; color:#7ee2a3; margin-bottom:12px; }
+  .appphone__map i{ width:13px; height:13px; }
+  .appphone__site{ background:rgba(255,255,255,.07); border-radius:12px; padding:10px 12px; margin-bottom:14px; }
+  .appphone__site b{ display:block; font-size:13px; }
+  .appphone__site small{ font-size:11px; opacity:.65; }
+  .appphone__clock{ text-align:center; font-size:26px; font-weight:800; letter-spacing:.04em; margin-bottom:14px; }
+  .appphone__clock span{ font-size:12px; font-weight:600; opacity:.6; margin-left:3px; }
+  .appphone__btn{ display:flex; align-items:center; justify-content:center; gap:8px; background:var(--green);
+    border-radius:12px; padding:12px; font-size:13px; font-weight:700; }
+  .appphone__btn i{ width:16px; height:16px; }
+  .appsteps__list{ display:flex; flex-direction:column; gap:16px; }
+  .appstep{ display:flex; gap:14px; align-items:flex-start; }
+  .appstep__n{ flex:0 0 30px; width:30px; height:30px; border-radius:50%; background:var(--green); color:#fff;
+    display:flex; align-items:center; justify-content:center; font-weight:800; font-size:14px; }
+  .appstep__b b{ display:block; font-size:14px; color:var(--ink); margin-bottom:3px; }
+  .appstep__b p{ margin:0; font-size:12.5px; line-height:1.5; color:var(--muted); }
+  .appdo__grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+  .appdo{ display:flex; gap:12px; align-items:flex-start; background:var(--canvas); border:1px solid var(--line);
+    border-radius:12px; padding:14px; }
+  .appdo__ic{ flex:0 0 38px; width:38px; height:38px; border-radius:10px; background:rgba(22,163,74,.10);
+    display:flex; align-items:center; justify-content:center; color:var(--green); }
+  .appdo__ic i{ width:19px; height:19px; }
+  .appdo b{ display:block; font-size:13px; color:var(--ink); margin-bottom:3px; }
+  .appdo p{ margin:0; font-size:12px; line-height:1.45; color:var(--muted); }
+  @media (max-width:820px){
+    .apphero{ grid-template-columns:1fr; }
+    .apphero__phone{ order:-1; }
+    .appdo__grid{ grid-template-columns:1fr; }
+  }
+  .app-bridge{ display:flex; align-items:center; gap:12px; width:100%; text-align:left; cursor:pointer;
+    background:linear-gradient(135deg, rgba(22,163,74,.10), rgba(22,163,74,.02));
+    border:1px solid rgba(22,163,74,.22); border-radius:12px; padding:12px 14px; margin:0 0 12px; }
+  .app-bridge:hover{ border-color:var(--green); }
+  .app-bridge__ic{ flex:0 0 38px; width:38px; height:38px; border-radius:10px; background:var(--green); color:#fff;
+    display:flex; align-items:center; justify-content:center; }
+  .app-bridge__ic i{ width:19px; height:19px; }
+  .app-bridge__txt{ flex:1; }
+  .app-bridge__txt b{ display:block; font-size:13.5px; color:var(--ink); }
+  .app-bridge__txt small{ font-size:12px; color:var(--muted); }
+  .app-bridge__go{ width:18px; height:18px; color:var(--green); }
 
   /* ----- Zentriertes Popup (Kontingent gesperrt etc.) ----- */
   .cpop{ position:fixed; inset:0; z-index:290; display:grid; place-items:center; padding:18px;
@@ -3184,6 +3256,7 @@ const NAV = [
   {id:'stellen', label:'Stellen', icon:'briefcase', badge:''},
   {id:'recruiting', label:'Bewerber', icon:'user-search', badge:''},
   {id:'team', label:'Team', icon:'users', badge:''},
+  {id:'app', label:'Mitarbeiter-App', icon:'smartphone', badge:''},
   {id:'planung', label:'Planung', icon:'calendar-range', badge:''},
   {id:'kunden', label:'Kunden', icon:'handshake', badge:''},
   {id:'finanzen', label:'Finanzen', icon:'receipt-euro', badge:''},
@@ -3884,7 +3957,7 @@ function can(cap){
   return !!(p && p[cap]);
 }
 // Personal-Startmodul: solange aktiv, sind alle Bereiche außer „Heute" und „Team" gesperrt.
-const STARTMODUL_FREI = ['heute', 'stellen', 'recruiting', 'team'];
+const STARTMODUL_FREI = ['heute', 'stellen', 'recruiting', 'team', 'app'];
 function isLocked(id){
   if(STARTMODUL_FREI.includes(id)) return false;   // Heute/Bewerber/Team immer frei
   if(!settings.startModul) return false;            // „voller Funktionsumfang"-Schalter aus → alles frei
@@ -5208,9 +5281,12 @@ function _renderCropper(){
   const stageH = Math.round(stageW / aspect);
   _crop.vw = stageW; _crop.vh = stageH;
   const n = { w:_crop.img.naturalWidth, h:_crop.img.naturalHeight };
-  _crop.min = Math.max(stageW / n.w, stageH / n.h);   // „cover" – Bild deckt Rahmen immer ab
-  _crop.max = _crop.min * 4;
-  _crop.scale = _crop.min;
+  _crop.fit   = Math.min(stageW / n.w, stageH / n.h);  // „contain" – GANZES Bild sichtbar (mit Rand)
+  _crop.cover = Math.max(stageW / n.w, stageH / n.h);  // „cover"   – Bild füllt den Rahmen komplett
+  _crop.min = Math.min(_crop.fit, _crop.cover);        // so weit rauszoomen, dass alles zu sehen ist
+  _crop.max = _crop.cover * 4;
+  // Startansicht: ganzes Bild zeigen, damit der Nutzer sofort sieht, was er hochlädt.
+  _crop.scale = _crop.fit;
   _crop.x = (stageW - n.w*_crop.scale)/2;
   _crop.y = (stageH - n.h*_crop.scale)/2;
   const tooSmall = (n.w < (o.outW||512)*0.6) || (n.h < ((o.outW||512)/aspect)*0.6);
@@ -5231,6 +5307,11 @@ function _renderCropper(){
           <div class="crop-frame ${o.round?'round':''}"></div>
         </div>
         ${modesHtml}
+        <div class="crop-fitbtns">
+          <button id="cropFitBtn" onclick="_cropFit()"><i data-lucide="scan"></i> Ganzes Bild zeigen</button>
+          <button id="cropFillBtn" onclick="_cropFill()"><i data-lucide="maximize"></i> Rahmen füllen</button>
+        </div>
+        <div class="crop-hint"><i data-lucide="move"></i><span>Der <b>helle Rahmen</b> zeigt genau, was später erscheint. Ziehe das Bild zum Verschieben, zoome mit dem Regler – oder wähle oben „ganzes Bild" bzw. „Rahmen füllen".</span></div>
         <div class="crop-zoom">
           <i data-lucide="image"></i>
           <input type="range" id="cropZoom" min="0" max="100" value="0" oninput="_cropZoom(this.value)">
@@ -5254,9 +5335,11 @@ function _cropSetMode(key){
   _renderCropper();
 }
 function _cropClamp(){
-  const n = { w:_crop.img.naturalWidth*_crop.scale, h:_crop.img.naturalHeight*_crop.scale };
-  _crop.x = Math.min(0, Math.max(_crop.vw - n.w, _crop.x));
-  _crop.y = Math.min(0, Math.max(_crop.vh - n.h, _crop.y));
+  const nw = _crop.img.naturalWidth*_crop.scale, nh = _crop.img.naturalHeight*_crop.scale;
+  // Ist das Bild in einer Achse kleiner als der Rahmen (rausgezoomt) -> mittig zentrieren,
+  // sonst normal begrenzen, damit keine ungewollten Ränder im Ausschnitt entstehen.
+  _crop.x = (nw <= _crop.vw) ? (_crop.vw - nw)/2 : Math.min(0, Math.max(_crop.vw - nw, _crop.x));
+  _crop.y = (nh <= _crop.vh) ? (_crop.vh - nh)/2 : Math.min(0, Math.max(_crop.vh - nh, _crop.y));
 }
 function _cropApplyTransform(){
   _cropClamp();
@@ -5264,6 +5347,22 @@ function _cropApplyTransform(){
   if(el) el.style.transform = `translate(${_crop.x}px,${_crop.y}px) scale(${_crop.scale})`;
   const z = document.getElementById('cropZoom');
   if(z){ const t = (_crop.scale - _crop.min)/(_crop.max - _crop.min); z.value = Math.round(t*100); }
+  // Aktiven Fit-/Fill-Button markieren.
+  const eps = 0.001;
+  const fitB = document.getElementById('cropFitBtn'), fillB = document.getElementById('cropFillBtn');
+  if(fitB)  fitB.classList.toggle('on',  Math.abs(_crop.scale - _crop.fit)   < eps);
+  if(fillB) fillB.classList.toggle('on', Math.abs(_crop.scale - _crop.cover) < eps);
+}
+function _cropFit(){  _cropZoomTo(_crop.fit);   }
+function _cropFill(){ _cropZoomTo(_crop.cover);  }
+function _cropZoomTo(newScale){
+  newScale = Math.max(_crop.min, Math.min(_crop.max, newScale));
+  const cx = _crop.vw/2, cy = _crop.vh/2;
+  const r = newScale/_crop.scale;
+  _crop.x = cx - (cx - _crop.x)*r;
+  _crop.y = cy - (cy - _crop.y)*r;
+  _crop.scale = newScale;
+  _cropApplyTransform();
 }
 function _cropZoom(v){
   const t = Math.max(0, Math.min(100, +v))/100;
@@ -6504,6 +6603,8 @@ const VIEWS = {
     </div>
     <div id="teamBody"></div>`,
 
+  app: () => mitarbeiterAppView(),
+
   planung: () => `
     <div class="pagehead">
       <div><h2>Planung</h2><p>Wer ist wann wo? Plantafel zum Verschieben, Zeitstrahl für den Überblick – Urlaub & Krank fließen automatisch ein.</p></div>
@@ -6546,6 +6647,83 @@ const VIEWS = {
     </div>
     <div id="marktBody"></div>`,
 };
+
+/* ===================== MITARBEITER-APP (Onboarding: „So bekommt dein Team die App") ===================== */
+// Ehrlich gehalten: Die „App" ist heute die mobile Web-App (os.green-careers.de), die der
+// Mitarbeiter per Einladung öffnet und aufs Handy „installiert" (Zum Startbildschirm / PWA).
+// Eigene App-Store-/Play-Apps kommen später – hier wird nichts vorgegaukelt, was es nicht gibt.
+function appTeamLink(){ try{ return location.origin + '/'; }catch(_){ return 'https://os.green-careers.de/'; } }
+function appCopyLink(){
+  const url = appTeamLink();
+  const done = ()=> toast('Link kopiert – schick ihn deinem Team per WhatsApp oder E-Mail.');
+  if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(url).then(done).catch(()=>toast(url)); }
+  else { try{ const t=document.createElement('textarea'); t.value=url; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove(); done(); }catch(_){ toast(url); } }
+}
+function appStep(n, title, body, action){
+  return `<div class="appstep">
+    <div class="appstep__n">${n}</div>
+    <div class="appstep__b"><b>${title}</b><p>${body}</p>${action||''}</div>
+  </div>`;
+}
+function appDoCard(icon, title, body){
+  return `<div class="appdo"><span class="appdo__ic"><i data-lucide="${icon}"></i></span><div><b>${title}</b><p>${body}</p></div></div>`;
+}
+function mitarbeiterAppView(){
+  const withAccess = employees.filter(e => e.account === 'active' || e.account === 'invited').length;
+  const total = employees.length;
+  const canEdit = can('editEmployees');
+  const invBtn = canEdit ? `<button class="mini-btn primary" style="margin-top:10px" onclick="openEmployeeForm()"><i data-lucide="user-plus"></i> Mitarbeiter anlegen &amp; einladen</button>` : '';
+  return `
+  <div class="pagehead"><div><h2>Mitarbeiter-App</h2><p>Deine Kolonne stempelt, meldet Urlaub &amp; Krankheit direkt vom Handy – so gibst du ihnen den Zugang.</p></div></div>
+
+  <div class="apphero">
+    <div class="apphero__txt">
+      <span class="apphero__eyebrow"><i data-lucide="smartphone"></i> Für unterwegs</span>
+      <h3>Ein- &amp; ausstempeln, Urlaub und Krankmeldung – vom Smartphone der Kolonne.</h3>
+      <p>Die App ist die mobile Version deines Betriebssystems. Jeder Mitarbeiter meldet sich mit seinem eigenen Zugang an und sieht nur seinen Bereich – Stunden, Baustelle, Urlaub. Kein Stundenzettel, kein Zettelchaos.</p>
+      <div class="apphero__acts">
+        ${invBtn}
+        <button class="mini-btn" style="margin-top:10px" onclick="appCopyLink()"><i data-lucide="link"></i> App-Link kopieren</button>
+      </div>
+      <div class="apphero__stat">${withAccess} von ${total} Mitarbeitern haben schon einen Zugang.</div>
+    </div>
+    <div class="apphero__phone">
+      <div class="appphone">
+        <div class="appphone__top"><span>07:12</span><i data-lucide="signal"></i></div>
+        <div class="appphone__hi">Hallo, Tobias 👋</div>
+        <div class="appphone__map"><i data-lucide="map-pin"></i> Innerhalb der Baustelle · GPS</div>
+        <div class="appphone__site"><b>BV Stadtpark Nord</b><small>Pflasterarbeiten</small></div>
+        <div class="appphone__clock">07 : 12 <span>Uhr</span></div>
+        <div class="appphone__btn"><i data-lucide="fingerprint"></i> Einstempeln</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel appsteps">
+    <div class="panel__head"><i data-lucide="list-checks"></i> In 3 Schritten hat dein Team die App</div>
+    <div class="appsteps__list">
+      ${appStep('1','Mitarbeiter anlegen &amp; einladen',
+        'Leg deinen Mitarbeiter unter <b>Team → Personalakte</b> an und gib seine E-Mail ein. Er bekommt automatisch eine Einladung.', invBtn)}
+      ${appStep('2','Mitarbeiter öffnet den Link auf dem Handy',
+        'In der Einladungs-Mail tippt er auf den Link, legt einmalig ein Passwort fest – fertig, er ist drin. Den Link kannst du ihm auch selbst per WhatsApp schicken.',
+        `<button class="mini-btn" style="margin-top:10px" onclick="appCopyLink()"><i data-lucide="link"></i> App-Link kopieren</button>`)}
+      ${appStep('3','„Zum Startbildschirm hinzufügen"',
+        'Damit die App wie eine echte App startet: im <b>Browser-Menü</b> auf „Zum Startbildschirm hinzufügen" (iPhone: Teilen-Symbol → Zum Home-Bildschirm · Android: ⋮ → App installieren). Danach liegt das Icon auf dem Handy.')}
+    </div>
+  </div>
+
+  <div class="panel appsteps">
+    <div class="panel__head"><i data-lucide="hand-helping"></i> Das erledigt dein Team direkt in der App</div>
+    <div class="appdo__grid">
+      ${appDoCard('fingerprint','Ein- &amp; ausstempeln','GPS-genau auf der Baustelle. Zuschläge &amp; Fahrzeiten rechnet das System automatisch dazu.')}
+      ${appDoCard('plane','Urlaub beantragen','Zeitraum wählen, absenden. Der Antrag landet direkt bei dir zur Freigabe.')}
+      ${appDoCard('thermometer','Krankmeldung','In Sekunden krankmelden – optional mit Foto der AU. Du bist sofort informiert.')}
+    </div>
+  </div>
+
+  <div class="sheet-note" style="margin-top:14px"><i data-lucide="info"></i> <span><b>Hinweis:</b> Die App läuft aktuell direkt im Handy-Browser und lässt sich wie oben als Icon installieren – kein App-Store-Download nötig. Eigene Apps im App Store &amp; Google Play sind in Vorbereitung.</span></div>
+  `;
+}
 
 function teamTabList(){
   if(viewRole === 'mitarbeiter'){
@@ -10849,6 +11027,57 @@ async function deleteStelle(id){
 let stelleDraft = null;
 const BESCHAEFT_OPTS = ['Vollzeit','Teilzeit','Minijob','Ausbildung','Werkstudent','Praktikum'];
 const VERTRAG_OPTS  = ['Unbefristet','Befristet','Saisonal','Auf Probe'];
+// Gängige Stellentitel je Branchen-Theme – als Auswahl (datalist), eigener Titel bleibt möglich.
+// Standardisierte Titel lassen sich im Portal deutlich besser finden/filtern.
+const STELLE_ROLLEN = {
+  galabau: ['Landschaftsgärtner (m/w/d)','Gärtner Garten- & Landschaftsbau (m/w/d)','Vorarbeiter GaLaBau (m/w/d)','Kolonnenführer (m/w/d)','Baumpfleger / Fachagrarwirt Baumpflege (m/w/d)','Baugeräteführer (m/w/d)','Pflasterer (m/w/d)','Bauleiter GaLaBau (m/w/d)','LKW-Fahrer / Kraftfahrer (m/w/d)','Auszubildende:r Landschaftsgärtner (m/w/d)'],
+  tiefbau: ['Baugeräteführer / Baggerfahrer (m/w/d)','Straßenbauer (m/w/d)','Tiefbaufacharbeiter (m/w/d)','Rohrleitungsbauer (m/w/d)','Kanalbauer (m/w/d)','Pflasterer (m/w/d)','Polier Tiefbau (m/w/d)','Bauleiter Tiefbau (m/w/d)','Vorarbeiter Tiefbau (m/w/d)','LKW-Fahrer / Kraftfahrer (m/w/d)','Auszubildende:r Tiefbaufacharbeiter (m/w/d)'],
+  landwirtschaft: ['Landwirt (m/w/d)','Landmaschinenmechatroniker (m/w/d)','Schlepper-/Maschinenfahrer (m/w/d)','Tierwirt (m/w/d)','Betriebsleiter Landwirtschaft (m/w/d)','Melker:in (m/w/d)','Auszubildende:r Landwirt (m/w/d)']
+};
+function stelleRollenOpts(){ return STELLE_ROLLEN[settings.theme||'galabau'] || STELLE_ROLLEN.galabau; }
+// Branche = echte Auswahl statt Freitext, damit Bewerber im Portal sauber filtern können.
+// Vorrang haben die vom Betrieb gewählten Branchen; sonst die ganze Familie des aktiven Themes.
+function brancheOptsForCompany(){
+  let list = (settings.branchen||[]).filter(Boolean);
+  if(!list.length){ const fam = BRANCHEN_CATALOG.find(f=>f.theme===(settings.theme||'galabau')); list = fam?fam.branchen.slice():[]; }
+  return list;
+}
+// Gehalt: erlaubt sind Zahlen, Spannen, Einheiten und wenige Standard-Phrasen. Alles andere = ungültig (rot).
+function gehaltValid(raw){
+  const s = String(raw||'').trim();
+  if(!s) return true; // optional
+  if(/^(nach vereinbarung|auf anfrage|verhandlungsbasis|vb)$/i.test(s)) return true;
+  if(!/\d/.test(s)) return false; // kein Betrag und keine erlaubte Phrase
+  const rest = s.replace(/\d/g,'').replace(/[.,\s\-–—€\/+]/g,'')
+                .replace(/\b(monat|monatlich|jahr|jährlich|std|stunde|stunden|woche|h|ca|brutto|netto|bis|ab|pro|und|mehr)\b/gi,'');
+  return rest.trim()==='';
+}
+function stelleGehaltLive(el){ const f=el.closest('.field'); if(f&&f.classList.contains('field--err')){ f.classList.remove('field--err'); const e=f.querySelector('.field__err'); if(e) e.hidden=true; } }
+function stelleGehaltBlur(el){
+  const f = el.closest('.field'); if(!f) return;
+  const ok = gehaltValid(el.value);
+  if(ok){ el.value = formatGehaltDisplay(el.value); }
+  stelleDraft.gehalt = el.value;
+  f.classList.toggle('field--err', !ok);
+  const e = f.querySelector('.field__err'); if(e) e.hidden = ok;
+  if(!ok) icons();
+}
+// Eintritt/Beginn: auswählbar statt Freitext. „Zu einem Datum" blendet ein Datumsfeld ein.
+const EINTRITT_PRESETS = ['ab sofort','nach Vereinbarung','zum nächsten Monatsersten'];
+function eintrittMode(v){
+  if(!v) return 'ab sofort';
+  if(EINTRITT_PRESETS.includes(v)) return v;
+  return 'datum';
+}
+function eintrittDateVal(v){ const m=String(v||'').match(/(\d{4})-(\d{2})-(\d{2})/); if(m) return `${m[1]}-${m[2]}-${m[3]}`;
+  const d=String(v||'').match(/(\d{2})\.(\d{2})\.(\d{4})/); return d?`${d[3]}-${d[2]}-${d[1]}`:''; }
+function stelleEintrittMode(sel){
+  const wrap = document.getElementById('eintrittDateWrap');
+  if(sel.value==='datum'){ if(wrap) wrap.hidden=false; const di=document.getElementById('eintrittDate'); stelleDraft.eintritt = di&&di.value ? 'ab '+fmtDateDE(di.value) : ''; }
+  else { if(wrap) wrap.hidden=true; stelleDraft.eintritt = sel.value; }
+}
+function stelleEintrittDate(inp){ stelleDraft.eintritt = inp.value ? 'ab '+fmtDateDE(inp.value) : ''; }
+function fmtDateDE(iso){ const m=String(iso||'').match(/(\d{4})-(\d{2})-(\d{2})/); return m?`${m[3]}.${m[2]}.${m[1]}`:iso; }
 const STELLE_BILDER_MAX = 4;       // max. Job-Galerie-Bilder
 const STELLE_IMG_MAX_KB = 800;     // max. Größe je Bild (Data-URL in der DB)
 // Benefits-Liste (jsonb) ODER Freitext -> eine Zeile je Benefit für die Bearbeitung.
@@ -10890,7 +11119,7 @@ function renderBulletPrev(id, text){
   if(el){ el.innerHTML = bulletPrevHtml(text); icons(); }
 }
 function stelleSecHead(txt, hint){
-  return `<div style="margin:22px 0 10px"><div style="font-weight:800;font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)">${escapeHtml(txt)}</div>${hint?`<div style="font-size:12px;color:var(--muted);margin-top:2px">${escapeHtml(hint)}</div>`:''}</div>`;
+  return `<div style="margin:26px 0 12px;padding-top:18px;border-top:1px solid var(--line)"><div style="font-weight:800;font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--green)">${escapeHtml(txt)}</div>${hint?`<div style="font-size:12px;color:var(--muted);margin-top:3px;line-height:1.45">${escapeHtml(hint)}</div>`:''}</div>`;
 }
 // Kleines (i)-Info-Symbol mit Hover-/Tap-Tooltip – an Formular-Labels („wo trage ich was ein?").
 function infoTip(text){
@@ -10991,9 +11220,14 @@ function renderStelleForm(){
       <div class="stelle-brand" id="stBrandingBox">${stelleBrandingInnerHtml()}</div>
 
       ${stelleSecHead('Eckdaten','Erscheinen als Titel und Tags oben in der Anzeige.')}
-      <div class="field"><label>Stellentitel *</label><input value="${v(d.titel)}" placeholder="z. B. Baugeräteführer (m/w/d)" oninput="stelleDraft.titel=this.value"></div>
+      <div class="field"><label>Stellentitel *${infoTip('Wähle einen gängigen Titel aus der Liste – oder tippe deinen eigenen. Standardisierte Titel werden im Stellenportal besser gefunden und gefiltert (z. B. „Baggerfahrer").')}</label>
+        <input list="stellenRollenList" value="${v(d.titel)}" placeholder="Aus der Liste wählen oder tippen …" oninput="stelleDraft.titel=this.value">
+        <datalist id="stellenRollenList">${stelleRollenOpts().map(o=>`<option value="${escapeHtml(o)}"></option>`).join('')}</datalist>
+      </div>
       <div class="fieldrow">
-        <div class="field"><label>Branche</label><input value="${v(d.branche)}" placeholder="z. B. Straßen- &amp; Tiefbau" oninput="stelleDraft.branche=this.value"></div>
+        <div class="field"><label>Branche${infoTip('Die Branche bestimmt, unter welcher Kategorie Bewerber deine Stelle im Portal finden und filtern. Deshalb Auswahl statt Freitext.')}</label>
+          <select onchange="stelleDraft.branche=this.value">${(()=>{ const opts=brancheOptsForCompany().slice(); if(d.branche&&!opts.includes(d.branche)) opts.unshift(d.branche); return opts.map(o=>`<option ${d.branche===o?'selected':''}>${escapeHtml(o)}</option>`).join(''); })()}</select>
+        </div>
         <div class="field"><label>Ort</label><input value="${v(d.ort)}" placeholder="z. B. Köln" oninput="stelleDraft.ort=this.value"></div>
       </div>
       <div class="fieldrow">
@@ -11005,13 +11239,19 @@ function renderStelleForm(){
         </div>
       </div>
       <div class="fieldrow">
-        <div class="field"><label>Eintritt / Beginn</label><input value="${v(d.eintritt)}" placeholder="z. B. ab sofort" oninput="stelleDraft.eintritt=this.value"></div>
-        <div class="field"><label>Gehalt (Freitext)${infoTip('Gib das Gehalt einfach ein – z. B. 3.700 oder 3.700 €. Wir formatieren es automatisch einheitlich (3.700 €). Auch Spannen wie 3.200 – 3.800 € / Monat sind möglich.')}</label><input value="${v(d.gehalt)}" placeholder="z. B. 3.200 – 3.800 € / Monat" oninput="stelleDraft.gehalt=this.value" onblur="this.value=formatGehaltDisplay(this.value);stelleDraft.gehalt=this.value"></div>
+        <div class="field"><label>Eintritt / Beginn</label>
+          <select id="eintrittMode" onchange="stelleEintrittMode(this)">${[...EINTRITT_PRESETS.map(o=>`<option value="${o}" ${eintrittMode(d.eintritt)===o?'selected':''}>${o}</option>`), `<option value="datum" ${eintrittMode(d.eintritt)==='datum'?'selected':''}>zu einem bestimmten Datum</option>`].join('')}</select>
+          <div id="eintrittDateWrap" style="margin-top:8px" ${eintrittMode(d.eintritt)==='datum'?'':'hidden'}><input type="date" id="eintrittDate" value="${eintrittDateVal(d.eintritt)}" onchange="stelleEintrittDate(this)"></div>
+        </div>
+        <div class="field"><label>Gehalt${infoTip('Nur Zahlen – z. B. 3200 oder eine Spanne 3200-3800. Wir formatieren automatisch einheitlich (3.200 €). „nach Vereinbarung" ist auch erlaubt. Buchstaben/Unsinn werden rot markiert.')}</label>
+          <input inputmode="numeric" value="${v(d.gehalt)}" placeholder="z. B. 3.200 – 3.800 € / Monat" oninput="stelleDraft.gehalt=this.value;stelleGehaltLive(this)" onblur="stelleGehaltBlur(this)">
+          <div class="field__err" hidden><i data-lucide="alert-circle"></i>Bitte nur Zahlen eingeben – z. B. 3200 oder 3200-3800.</div>
+        </div>
       </div>
 
       ${stelleSecHead('Stellenbeschreibung','„Über die Stelle" + Listen für Aufgaben, Profil und Benefits.')}
       <div class="field"><label>Kurzbeschreibung</label><textarea rows="3" placeholder="Worum geht es in dieser Stelle?" oninput="stelleDraft.beschreibung=this.value">${v(d.beschreibung)}</textarea></div>
-      <p class="sheet-note" style="margin:2px 0 12px"><i data-lucide="list"></i> <b>Tipp:</b> Bei Aufgaben, Profil und Benefits wird <b>jede Zeile zu einem Aufzählungspunkt</b> auf der Anzeige – einfach pro Zeile einen Punkt schreiben. Unter dem Feld siehst du eine Live-Vorschau.</p>
+      <p class="sheet-note" style="margin:2px 0 12px"><i data-lucide="check-square"></i> <span><b>So funktionieren die Listen unten:</b> Schreib pro Zeile einen Punkt und drück <b>Enter</b> für den nächsten. Jede Zeile wird auf der Anzeige automatisch zu einem <b>Häkchen-Punkt</b> ✓ – die Live-Vorschau unter jedem Feld zeigt dir sofort, wie es beim Bewerber aussieht.</span></p>
       <div class="field"><label>Deine Aufgaben${infoTip('Was macht der Mitarbeiter im Alltag? Jede Zeile wird zu einem Aufzählungspunkt. Beispiele: Bagger & Radlader bedienen, Aushub & Verfüllarbeiten, Pflasterarbeiten.')}</label><textarea rows="4" placeholder="Eine Aufgabe pro Zeile&#10;z. B. Bedienung von Bagger &amp; Radlader&#10;Aushub und Verfüllarbeiten" oninput="stelleDraft.aufgaben=this.value;renderBulletPrev('bpAufgaben',this.value)">${v(d.aufgaben)}</textarea><div class="bullet-prev" id="bpAufgaben">${bulletPrevHtml(d.aufgaben)}</div></div>
       <div class="field"><label>Dein Profil${infoTip('Was sollte der Bewerber mitbringen? Jede Zeile ein Punkt. Beispiele: Erfahrung im Tiefbau, Führerschein Klasse B / CE, selbstständige Arbeitsweise, Teamgeist.')}</label><textarea rows="4" placeholder="Eine Anforderung pro Zeile&#10;z. B. Erfahrung im Tiefbau&#10;Führerschein Klasse B" oninput="stelleDraft.profil=this.value;renderBulletPrev('bpProfil',this.value)">${v(d.profil)}</textarea><div class="bullet-prev" id="bpProfil">${bulletPrevHtml(d.profil)}</div></div>
       <div class="field"><label>Das bieten wir (Benefits)${infoTip('Trag hier die Benefits / den Mehrwert ein, den der Bewerber bekommt. Beispiele: kostenloses Wasser, bezahlter Führerschein, Firmenfahrzeug, Firmenhandy, bezahlte Anfahrt. Jede Zeile ein Punkt.')}</label><textarea rows="4" placeholder="Ein Benefit pro Zeile&#10;z. B. Firmenwagen&#10;30 Tage Urlaub&#10;Weihnachts- &amp; Urlaubsgeld" oninput="stelleDraft.benefits=this.value;renderBulletPrev('bpBenefits',this.value)">${v(d.benefits)}</textarea><div class="bullet-prev" id="bpBenefits">${bulletPrevHtml(d.benefits)}</div></div>
@@ -12934,6 +13174,11 @@ function zeitViewTeam(){
       ${kpi('timer', hoursStr(avg).replace(' h',''), 'Ø Stunden', 'heute pro Kopf', false)}
       ${kpi('check-circle-2', String(done.length), 'Feierabend', 'heute fertig', false)}
     </div>
+    ${can('editEmployees') ? `<button class="app-bridge" onclick="setView('app')">
+      <span class="app-bridge__ic"><i data-lucide="smartphone"></i></span>
+      <span class="app-bridge__txt"><b>Neu hier? So kommt die App aufs Handy deiner Kolonne.</b><small>Mitarbeiter einladen, Link teilen, fertig – in 3 Schritten.</small></span>
+      <i data-lucide="chevron-right" class="app-bridge__go"></i>
+    </button>` : ''}
     ${mitdenkStrip()}
     ${absentStrip()}
     <div class="zsec-h"><b>Live im Einsatz</b><span>${running.length} eingestempelt · tippen für Details</span></div>
