@@ -3685,7 +3685,7 @@ function renderCheckout(){
 
   card.innerHTML = `
     <div style="padding:20px 20px 22px">
-      <div class="gate__top"><span class="gate__paid" style="background:rgba(var(--brand-rgb),.10); color:var(--green-2); border-color:rgba(var(--brand-rgb),.22)"><i data-lucide="lock"></i> Sichere Zahlung · Schritt 2 von 2</span></div>
+      <div class="gate__top" style="display:flex;align-items:center;justify-content:space-between;gap:12px"><span class="gate__paid" style="background:rgba(var(--brand-rgb),.10); color:var(--green-2); border-color:rgba(var(--brand-rgb),.22)"><i data-lucide="lock"></i> Sichere Zahlung · Schritt 2 von 2</span><button class="iconbtn" onclick="coCancel()" aria-label="Schließen" title="Später – zum Cockpit"><i data-lucide="x"></i></button></div>
       <div class="gate__h">Bestellung abschließen</div>
       <div class="gate__sub">Dein Konto ist erstellt. Jetzt nur noch Betrieb &amp; Zahlart angeben – dann ist dein Kontingent freigeschaltet.</div>
 
@@ -3726,6 +3726,7 @@ function renderCheckout(){
       <button class="btn full" style="margin-top:13px" id="coSubmitBtn" onclick="coSubmit()">
         <i data-lucide="${coState.method==='rechnung'?'file-check':'lock'}"></i> ${coState.method==='rechnung'?'Zahlungspflichtig bestellen':'Weiter zur Zahlung'}
       </button>
+      <div style="text-align:center;margin-top:12px"><a onclick="coCancel()" style="color:var(--muted);font-size:13px;cursor:pointer;text-decoration:underline">Später – erst mal ins Cockpit</a></div>
     </div>`;
   icons();
 }
@@ -3845,6 +3846,17 @@ function coDone(isInvoice){
 function coFinish(){
   document.getElementById('checkout').classList.add('hidden');
   try{ openConsentGate(); }catch(e){}
+}
+
+// Kauf verschieben/abbrechen: Der Kauf-Flow lebt in localStorage (gcos_entry) und wird
+// sonst bei JEDEM Besuch von os.green-careers.de wiederbelebt -> der Nutzer säße dauerhaft
+// im Checkout fest, ohne Weg ins Cockpit (und damit ohne Logout). Hier den Kauf-Flow aus
+// dem Eintritts-Kontext entfernen und sauber neu ins Cockpit laden (deterministischer
+// Normal-Einstieg statt halbem UI-Zustand).
+function coCancel(){
+  try{ const e = gcEntry(); ['flow','pkg','mode','qty','term','code'].forEach(k=>delete e[k]); saveEntry(e); }catch(_){}
+  try{ history.replaceState(null, '', window.location.pathname); }catch(_){}
+  location.reload();
 }
 
 // Rechte-Check: Admin darf alles, Büro/Mitarbeiter laut Einstellungen
