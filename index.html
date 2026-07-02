@@ -124,18 +124,39 @@
   .brandsub{ font-size:11px; color:var(--muted); margin-top:3px; }
   .auth h1{ font-family:'Fraunces',serif; font-size:29px; font-weight:600; letter-spacing:-.02em; line-height:1.08; }
   .auth .sub{ color:var(--muted); font-size:14px; line-height:1.5; margin:8px 0 22px; }
-  .field{ margin-bottom:14px; }
-  .field label{ display:block; font-size:12px; font-weight:600; color:var(--ink-2); margin-bottom:6px; }
-  .field input{
+  .field{ margin-bottom:15px; }
+  .field label{ display:block; font-size:12px; font-weight:700; color:var(--ink-2); margin-bottom:7px; letter-spacing:.005em; }
+  .field input,
+  .field select,
+  .field textarea{
     width:100%;
+    font:inherit;
+    font-size:14px;
+    color:var(--ink);
     border:1px solid var(--line);
-    border-radius:8px;
-    padding:12px 13px;
+    border-radius:11px;
+    padding:12px 14px;
     background:#FBFDFB;
     outline:none;
     transition:border-color .16s, box-shadow .16s, background .16s;
+    -webkit-appearance:none; -moz-appearance:none; appearance:none;
   }
-  .field input:focus{ border-color:var(--green); background:#fff; box-shadow:0 0 0 3px rgba(22,163,74,.12); }
+  .field input::placeholder,
+  .field textarea::placeholder{ color:#9AA7A0; }
+  .field input:hover,
+  .field select:hover,
+  .field textarea:hover{ border-color:#C7D3CB; }
+  .field input:focus,
+  .field select:focus,
+  .field textarea:focus{ border-color:var(--green); background:#fff; box-shadow:0 0 0 3px rgba(22,163,74,.12); }
+  .field textarea{ resize:vertical; min-height:86px; line-height:1.55; }
+  .field select{
+    cursor:pointer;
+    padding-right:40px;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%235A685D' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;
+    background-position:right 13px center;
+  }
   .auth__row{ display:flex; align-items:center; justify-content:space-between; gap:14px; margin:2px 0 18px; font-size:12.5px; color:var(--muted); }
   .auth__chk{ display:flex; align-items:center; gap:7px; min-width:0; }
   .auth a{ color:var(--green-2); text-decoration:none; font-weight:600; cursor:pointer; }
@@ -2108,8 +2129,6 @@
   .empty .lucide{ width:30px; height:30px; color:var(--line-2); }
 
   .fieldrow{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-  .field select{ width:100%; border:1px solid var(--line); border-radius:8px; padding:11px 12px; background:#FBFDFB; outline:none; }
-  .field select:focus{ border-color:var(--green); background:#fff; box-shadow:0 0 0 3px rgba(22,163,74,.12); }
   .field input[type=date]{ width:100%; }
   .afprev{ background:var(--canvas); border:1px solid var(--line); border-radius:8px; padding:11px 13px; margin:4px 0 14px; font-size:13px; }
   .afprev.warn{ background:#FFFBF2; border-color:#F0DcA8; }
@@ -3834,7 +3853,7 @@ function coDone(isInvoice){
         <p>Deine Zahlung ist eingegangen. Wir schalten dein Kontingent jetzt frei.</p>
         <div id="coContingentBox" class="co-cont-box" style="margin:14px 0;padding:13px 15px;border:1px solid var(--line);border-radius:12px;display:flex;gap:11px;align-items:center;font-size:13px;line-height:1.45;background:var(--soft-green)">
           <i data-lucide="loader" style="width:19px;height:19px;color:var(--green);flex:0 0 auto" class="co-spin"></i>
-          <span>Kontingent wird freigeschaltet … einen Moment.</span>
+          <span>Kontingent wird freigeschaltet … das dauert nur wenige Sekunden.</span>
         </div>
         <p>Richte jetzt <b>${firma}</b> ein – dann kannst du direkt deine erste Stelle veröffentlichen.</p>
         <button class="btn full" style="margin-top:16px" onclick="coFinish()"><i data-lucide="arrow-right"></i> Weiter zur Einrichtung</button>
@@ -6873,14 +6892,46 @@ function acceptConsent(){
   toast('Einwilligung dokumentiert – Nachweis gespeichert');
   setTimeout(maybeOnboard, 220);
 }
+// Vertrag lesen: Öffnet den Vertrag als eigene, voll lesbare Seite in einem NEUEN TAB.
+// Wichtig: Das Consent-Gate liegt auf z-index 500 – ein normales openSheet (220) öffnet
+// SICH HINTER dem Gate und ist nicht lesbar. Deshalb ein echter neuer Tab. Fällt der
+// Popup-Blocker dazwischen, wird ein In-App-Leser ÜBER dem Gate (z-index 600) gezeigt.
 function viewDoc(doc){
-  openSheet(`
-    <div class="sheet__head">
-      <span class="avatar" style="width:46px;height:46px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="file-text" style="width:20px;height:20px"></i></span>
-      <div><div class="sheet__title">${DOC_TITLES[doc]}</div><div class="sheet__sub">Version ${CONSENT_VERSION} · Stand 06/2026</div></div>
-      <button class="sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+  const html = DOCS[doc]; if(!html) return;
+  const title = DOC_TITLES[doc] || 'Vertrag';
+  const page = `<!doctype html><html lang="de"><head><meta charset="utf-8">`
+    + `<meta name="viewport" content="width=device-width,initial-scale=1">`
+    + `<title>${title} · GreenCareers OS</title><style>`
+    + `:root{--green:#16A34A;--green-2:#0E7C38;--ink:#12211D;--muted:#5A685D;--line:#E4EAE4}`
+    + `*{box-sizing:border-box}`
+    + `body{margin:0;background:#F4F7F3;color:var(--ink);font:16px/1.65 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif}`
+    + `.doc-top{position:sticky;top:0;background:#fff;border-bottom:1px solid var(--line);padding:15px 22px;display:flex;align-items:center;gap:13px}`
+    + `.doc-top .badge{width:40px;height:40px;border-radius:11px;background:linear-gradient(135deg,var(--green),var(--green-2));display:grid;place-items:center;color:#fff;font-weight:800;font-size:13px;flex:0 0 auto}`
+    + `.doc-top h1{font-size:16px;margin:0;font-weight:800}`
+    + `.doc-top .sub{font-size:12.5px;color:var(--muted);margin-top:2px}`
+    + `.doc-wrap{max-width:760px;margin:0 auto;padding:26px 22px 64px}`
+    + `.doc-card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:30px 32px;box-shadow:0 2px 12px rgba(20,40,25,.05)}`
+    + `.doc-card p{margin:0 0 14px}.doc-card strong{color:var(--ink)}`
+    + `@media(max-width:640px){.doc-card{padding:22px 18px}}`
+    + `</style></head><body>`
+    + `<div class="doc-top"><span class="badge">GC</span><div><h1>${title}</h1>`
+    + `<div class="sub">GreenCareers OS · Version ${CONSENT_VERSION} · Stand 06/2026</div></div></div>`
+    + `<div class="doc-wrap"><div class="doc-card">${html}</div></div></body></html>`;
+  let w = null;
+  try { w = window.open('', '_blank'); } catch(_) {}
+  if (w && w.document) { w.document.open(); w.document.write(page); w.document.close(); return; }
+  // Fallback: Popup blockiert -> lesbaren Layer ÜBER dem Gate zeigen
+  let el = document.getElementById('docReader');
+  if(!el){ el = document.createElement('div'); el.id = 'docReader'; document.body.appendChild(el); }
+  el.style.cssText = 'position:fixed;inset:0;z-index:600;background:#F4F7F3;overflow-y:auto';
+  el.innerHTML = `
+    <div style="position:sticky;top:0;background:#fff;border-bottom:1px solid var(--line);padding:14px 18px;display:flex;align-items:center;gap:12px">
+      <span class="avatar" style="width:40px;height:40px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="file-text" style="width:19px;height:19px"></i></span>
+      <div style="flex:1"><div style="font-weight:800;font-size:15px">${title}</div><div style="font-size:12px;color:var(--muted)">Version ${CONSENT_VERSION} · Stand 06/2026</div></div>
+      <button class="btn ghost" onclick="document.getElementById('docReader').remove()"><i data-lucide="x"></i> Schließen</button>
     </div>
-    <div class="sheet__body"><div class="doc">${DOCS[doc]}</div></div>`);
+    <div style="max-width:760px;margin:0 auto;padding:24px 20px 60px"><div class="doc" style="background:#fff;border:1px solid var(--line);border-radius:16px;padding:26px 28px">${html}</div></div>`;
+  icons();
 }
 
 /* ===================== FINANZEN (Angebote + Rechnungen) ===================== */
@@ -10486,13 +10537,31 @@ function kontingentBannerHtml(){
     </div>`;
   }
   const pct = Number.isFinite(k.total) && k.total>0 ? Math.min(100, Math.round(k.used/k.total*100)) : 0;
-  return `<div class="panel" style="display:flex;gap:14px;align-items:center;padding:14px 16px;margin-bottom:14px">
-    <i data-lucide="briefcase" style="width:20px;height:20px;color:var(--green);flex:0 0 auto"></i>
-    <div style="flex:1;min-width:0">
-      <div style="font-size:13px;font-weight:700"><span style="color:var(--green-2)">${k.used} von ${total}</span> Stellen veröffentlicht${Number.isFinite(k.free)?` · ${free} frei`:''}</div>
-      <div style="font-size:11px;color:var(--muted);margin-top:2px">${[k.tierLabel?k.tierLabel+'-Kontingent':'', lz].filter(Boolean).join(' · ')}${bisTxt}</div>
-      ${Number.isFinite(k.total)?`<div style="height:6px;border-radius:4px;background:var(--soft-green);overflow:hidden;margin-top:7px"><span style="display:block;height:100%;width:${pct}%;background:var(--green)"></span></div>`:''}
+  const isUnlimited = !Number.isFinite(k.total);
+  const stat = (num, label, hl) => `<div style="text-align:center;min-width:50px">
+      <div style="font-size:21px;font-weight:800;line-height:1;color:${hl?'var(--green-2)':'var(--ink)'}">${num}</div>
+      <div style="font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-top:5px">${label}</div>
+    </div>`;
+  const sep = `<span style="width:1px;height:32px;background:var(--line);flex:0 0 auto"></span>`;
+  const stats = isUnlimited
+    ? `<div style="display:flex;align-items:center;gap:7px;font-size:13px;font-weight:800;color:var(--green-2)"><i data-lucide="infinity" style="width:18px;height:18px"></i> unbegrenzt</div>`
+    : `<div style="display:flex;gap:18px;align-items:center;flex:0 0 auto">${stat(k.used,'belegt')}${sep}${stat(free,'frei',true)}${sep}${stat(total,'gesamt')}</div>`;
+  const hint = isUnlimited ? '' : (free>0
+    ? `<div style="font-size:11.5px;color:var(--muted);margin-top:8px"><b style="color:var(--green-2)">${free} ${free===1?'Stelle':'Stellen'} frei</b> – jederzeit veröffentlichen. Sobald eine Stelle live geht, wandert sie von „frei" zu „belegt".</div>`
+    : `<div style="font-size:11.5px;color:var(--muted);margin-top:8px">Alle Plätze belegt – nimm eine Stelle offline oder erweitere dein Kontingent, um eine weitere zu veröffentlichen.</div>`);
+  return `<div class="panel" style="padding:15px 18px;margin-bottom:14px">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:11px;min-width:0">
+        <span style="width:38px;height:38px;border-radius:10px;background:var(--soft-green);display:grid;place-items:center;color:var(--green-2);flex:0 0 auto"><i data-lucide="briefcase" style="width:19px;height:19px"></i></span>
+        <div style="min-width:0">
+          <div style="font-size:13.5px;font-weight:800;color:var(--ink);display:flex;align-items:center;gap:8px;flex-wrap:wrap">Dein Stellen-Kontingent${k.tierLabel?` <span style="font-size:11px;font-weight:700;color:var(--green-2);background:var(--soft-green);border-radius:999px;padding:2px 10px">${k.tierLabel}</span>`:''}</div>
+          <div style="font-size:11.5px;color:var(--muted);margin-top:2px">${lz}${bisTxt}</div>
+        </div>
+      </div>
+      ${stats}
     </div>
+    ${!isUnlimited?`<div style="height:6px;border-radius:4px;background:var(--soft-green);overflow:hidden;margin-top:13px"><span style="display:block;height:100%;width:${pct}%;background:var(--green)"></span></div>`:''}
+    ${hint}
   </div>`;
 }
 
