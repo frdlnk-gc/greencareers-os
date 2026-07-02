@@ -3511,6 +3511,23 @@ function loadSettings(){
 function resetDemoModules(s){ return s; }
 function saveSettings(){ try{ localStorage.setItem('gcos_settings_v2', JSON.stringify(settings)); }catch(e){} }
 
+/* ===================== MANDANTEN-ISOLATION =====================
+   Alle account-gebundenen Local-Caches leeren. Verhindert, dass Daten eines
+   vorherigen Accounts (Logo, Titelbild, Portal-Profil, Bewerber-Pipeline,
+   Abwesenheiten, Baustellen, Vorlagen) in einem ANDEREN Konto durchbluten –
+   z. B. wenn sich im selben Browser ein neuer Betrieb registriert.
+   Wird bei Account-Wechsel (afterAuth) und beim Logout aufgerufen. */
+function gcResetTenantState(){
+  ['gcos_settings_v2','gcos_stages_v1','gcos_absences_v3','gcos_sites_v1','gc_templates']
+    .forEach(k => { try{ localStorage.removeItem(k); }catch(_){} });
+  settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
+  stages   = DEFAULT_STAGES.map(s => ({...s}));
+  absences = []; absSeq = 1;
+  sites    = [ {id:'s0', customerId:null, customer:'Bauhof / Werkstatt', label:'Bauhof', addr:'', lat:53.5511, lng:9.9937, tasks:[], material:[], status:'aktiv'} ];
+  siteSeq  = 1;
+  try{ TEMPLATES = loadTemplates(); }catch(_){}
+}
+
 /* ===================== ENTRY-BRAND (GreenCareers vs GreyCareers OS) =====================
    Über welche Marke kam der Nutzer rein? Das Portal hängt beim Weiterleiten in die
    Registrierung Parameter an, z. B. os.green-careers.de/?brand=grey&flow=buy&pkg=premium&mode=einmal&qty=2
@@ -4453,6 +4470,8 @@ async function submitInviteProfile(){
 
 async function gcLogout(){
   if(sbAuth) await sbAuth.auth.signOut();
+  gcResetTenantState();                                  // Mandanten-Caches leeren -> nächster Login startet clean
+  try{ localStorage.removeItem('gcos_entry'); }catch(_){}  // Checkout-Funnel des Vorgängers nicht mitnehmen
   GC_USER=null; GC_PROFILE=null; _enteredApp=false;
   location.reload();
 }
@@ -4469,26 +4488,31 @@ async function afterAuth(session){
   // Echte Rolle aus dem Profil übernehmen (kein Demo-Default mehr). Unbekannt/leer -> Inhaber.
   { const R=['admin','buero','buchhaltung','mitarbeiter','kolonnenfuehrer'];
     viewRole = (GC_PROFILE && R.includes(GC_PROFILE.role)) ? GC_PROFILE.role : 'admin'; }
+  // MANDANTEN-ISOLATION: Gehört der lokale Cache zu einem ANDEREN Account (oder noch
+  // gar keinem)? Dann komplett leeren, bevor irgendetwas gerendert wird. So sieht ein
+  // frisch registrierter Betrieb NIE Logo/Titelbild/Daten eines Vorgängers.
+  { const _cid = (GC_PROFILE && GC_PROFILE.customer_id) || null;
+    if(settings.cid !== _cid){ gcResetTenantState(); settings.cid = _cid; saveSettings(); } }
   // Firmenstammdaten aus Supabase ziehen, falls schon ein Betrieb verknüpft ist
   if(GC_PROFILE && GC_PROFILE.customer_id){
     try{
       const { data:cust } = await sbAuth.from('customers').select('*').eq('id',GC_PROFILE.customer_id).maybeSingle();
       if(cust){
         GC_CUSTOMER = cust;   // Kontingent-Quelle (produkt, kauftyp, stellen_kontingent)
-        settings.company = Object.assign({}, settings.company, { name:cust.name, ort:cust.ort||settings.company.ort, email:cust.email||GC_USER.email });
-        if(cust.logo_url){ settings.company.logo = cust.logo_url; }   // Portal-Logo = Branding-Logo
-        if(cust.branchen&&cust.branchen.length) settings.branchen = cust.branchen.slice();
+        settings.company = Object.assign({}, settings.company, { name:cust.name, ort:cust.ort||'', email:cust.email||GC_USER.email });
+        settings.company.logo = cust.logo_url || '';   // DB ist autoritativ: NULL => kein Logo (kein alter Account-Rest)
+        settings.branchen = (cust.branchen&&cust.branchen.length) ? cust.branchen.slice() : [];
         if(cust.theme){ settings.theme = cust.theme; }
-        // Unternehmensprofil aus der DB in den lokalen Spiegel laden (Portal-Felder).
-        settings.portal = Object.assign({}, settings.portal, {
-          titelbild: cust.titelbild || settings.portal.titelbild || '',
-          ueberUns: cust.ueber_uns || settings.portal.ueberUns || '',
-          bilder: Array.isArray(cust.unternehmensbilder) ? cust.unternehmensbilder : (settings.portal.bilder||[]),
-          website: cust.website || settings.portal.website || '',
-          karriereUrl: cust.karriere_url || settings.portal.karriereUrl || '',
-          mitarbeiterAnzahl: cust.mitarbeiter_anzahl || settings.portal.mitarbeiterAnzahl || '',
-          gruendungsjahr: cust.gruendungsjahr || settings.portal.gruendungsjahr || '',
-          social: Object.assign({ instagram:'', facebook:'', linkedin:'' }, settings.portal.social, cust.social||{})
+        // Unternehmensprofil AUTORITATIV aus der DB übernehmen: NULL => leer, niemals der Rest eines anderen Kontos.
+        settings.portal = Object.assign({}, DEFAULT_SETTINGS.portal, {
+          titelbild: cust.titelbild || '',
+          ueberUns: cust.ueber_uns || '',
+          bilder: Array.isArray(cust.unternehmensbilder) ? cust.unternehmensbilder : [],
+          website: cust.website || '',
+          karriereUrl: cust.karriere_url || '',
+          mitarbeiterAnzahl: cust.mitarbeiter_anzahl || '',
+          gruendungsjahr: cust.gruendungsjahr || '',
+          social: Object.assign({ instagram:'', facebook:'', linkedin:'' }, cust.social||{})
         });
         settings.onboarded = true; saveSettings();
       }
