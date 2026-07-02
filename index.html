@@ -7,7 +7,7 @@
 <!-- Marken-Favicon: orangefarbenes „C" (statt Browser-Standard-Weltkugel). Farbe wird per JS
      an die aktive Markenfarbe angepasst (grey=orange, green=grün). -->
 <link id="favicon" rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Crect%20width='32'%20height='32'%20rx='7'%20fill='%23ffffff'/%3E%3Ctext%20x='16'%20y='24'%20font-family='Arial,sans-serif'%20font-size='24'%20font-weight='800'%20fill='%23EA580C'%20text-anchor='middle'%3EC%3C/text%3E%3C/svg%3E" />
-<script src="https://unpkg.com/lucide@latest"></script>
+<script src="https://unpkg.com/lucide@0.544.0"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -3453,7 +3453,7 @@ function crewLabelOf(id){ const c = crewById(id); return c ? c.label : 'Springer
 function crewOf(e){ if(e.crewId) return crewLabelOf(e.crewId); return e.sysRole === 'buero' ? 'Büro' : 'Springer'; }
 function crewMembers(id){ return employees.filter(e => e.crewId === id); }
 // Springer = Feld-Mitarbeiter ohne feste Kolonne (Büro/Admin zählen nicht dazu)
-function springerPool(){ return employees.filter(e => !e.crewId && e.sysRole !== 'buero'); }
+function springerPool(){ return employees.filter(e => !e.crewId && e.sysRole !== 'buero' && !absentToday(e.id)); }
 function assignCrew(empId, crewId){ const e = emp(empId); if(e){ e.crewId = crewId || null; } }
 // Heute abwesend (genehmigt & deckt TODAY ab) → für Besetzungsplanung
 function absentToday(id){ return absences.find(x => x.empId === id && x.status === 'genehmigt' && covers(x, TODAY)) || null; }
@@ -4669,8 +4669,9 @@ async function gcAuthBoot(){
 }
 // Welche Navigationspunkte sieht die aktuelle Rolle?
 function navForRole(){
-  if(viewRole === 'mitarbeiter'){
-    // Mitarbeiter: eigener Bereich (Zeiten/Urlaub) + Plantafel zum Nachsehen. Kein Cockpit, keine Kunden.
+  if(viewRole === 'mitarbeiter' || viewRole === 'kolonnenfuehrer'){
+    // Mitarbeiter/Kolonnenführer: eigener Bereich (Zeiten/Urlaub) + Plantafel zum Nachsehen.
+    // Kein Cockpit, keine Kunden, keine Finanzen – und KEINE betriebsweiten Personaldaten.
     return [
       Object.assign({}, NAV.find(n => n.id === 'team'), {label:'Mein Bereich', icon:'hard-hat', badge:''}),
       NAV.find(n => n.id === 'planung'),
@@ -4704,7 +4705,7 @@ function applyRole(){
   const ownerName = (settings.company && settings.company.owner && settings.company.owner.trim())
     || (typeof GC_USER!=='undefined' && GC_USER && GC_USER.user_metadata && GC_USER.user_metadata.name)
     || 'Inhaber';
-  const person = viewRole === 'mitarbeiter' ? selfEmp() : (viewRole === 'buero' ? emp(11) : (viewRole === 'buchhaltung' ? {name:'Buchhaltung'} : {name:ownerName}));
+  const person = (viewRole === 'mitarbeiter' || viewRole === 'kolonnenfuehrer') ? selfEmp() : (viewRole === 'buero' ? emp(11) : (viewRole === 'buchhaltung' ? {name:'Buchhaltung'} : {name:ownerName}));
   const name = person ? person.name : ownerName;
   document.getElementById('sideUserName').textContent = name;
   document.getElementById('sideUserRole').textContent = r.label;
@@ -4717,7 +4718,7 @@ function applyRole(){
   const free = allowed.filter(id => !isLocked(id));
   if(free.length){ if(!free.includes(currentView)) currentView = free[0]; }
   else { currentView = STARTMODUL_FREI[0]; }   // Rolle nur mit gesperrten Modulen → sicherer Fallback „Heute"
-  if(viewRole === 'mitarbeiter' && activeTeamTab !== 'urlaub' && activeTeamTab !== 'zeit') activeTeamTab = 'zeit';
+  if((viewRole === 'mitarbeiter' || viewRole === 'kolonnenfuehrer') && activeTeamTab !== 'urlaub' && activeTeamTab !== 'zeit') activeTeamTab = 'zeit';
   setView(currentView);
 }
 // Rolle umschalten
@@ -5962,7 +5963,7 @@ const FAB_MITARBEITER = [
 ];
 let fabOpen = false;
 function fabItemsForView(){
-  if(viewRole === 'mitarbeiter') return FAB_MITARBEITER;
+  if(viewRole === 'mitarbeiter' || viewRole === 'kolonnenfuehrer') return FAB_MITARBEITER;
   let items = (FAB_ACTIONS[currentView] || FAB_ACTIONS.heute).slice();
   // Büro ohne Mitarbeiter-Recht: „Mitarbeiter anlegen" ausblenden
   if(!can('editEmployees')) items = items.filter(it => it.label !== 'Mitarbeiter anlegen');
@@ -6147,6 +6148,10 @@ function denkMitHtml(){
 // Bündelt das, was JETZT eine Reaktion des Inhabers braucht – aus echten Daten
 function notifItems(){
   const out=[];
+  // DATENSCHUTZ: Diese Glocke bündelt betriebsweite Meldungen (wer ist krank,
+  // welche Anträge offen, neue Bewerber). Das darf NUR Inhaber/Büro sehen.
+  // Ein Mitarbeiter/Kolonnenführer bekommt hier NICHTS über Kollegen zu sehen.
+  if(!can('approveAbsence') && !can('editEmployees')) return out;
   // Neue Bewerber zuerst (umsatzrelevant)
   const neu=applicants.filter(a=>a.stage==='neu');
   if(neu.length) out.push({icon:'user-plus',color:'#16A34A',title:neu.length+(neu.length===1?' neuer Bewerber':' neue Bewerber'),sub:'Im Recruiting prüfen',act:`closeSheet();setView('recruiting')`});
@@ -6664,7 +6669,7 @@ const VIEWS = {
   markt: () => `
     <div class="pagehead">
       <div><h2>Markt</h2><p>Das Netzwerk für GaLaBau-Betriebe: Schwarmwissen, Tipps und Maschinen-Marktplatz – nur unter verifizierten Kollegen.</p></div>
-      <span class="market-members"><i data-lucide="badge-check"></i> 187 verifizierte Betriebe</span>
+      <span class="market-members"><i data-lucide="badge-check"></i> Nur verifizierte Betriebe</span>
     </div>
     <div class="tabs" id="marktTabs">
       ${marktTabList().map(t => `<button class="tab ${activeMarktTab===t.id?'on':''}" data-mtab="${t.id}" onclick="marktTab('${t.id}')">${t.label}${t.count!==''?`<span class="count">${t.count}</span>`:''}</button>`).join('')}
@@ -6709,6 +6714,7 @@ function mitarbeiterAppView(){
         ${invBtn}
         <button class="mini-btn" style="margin-top:10px" onclick="appCopyLink()"><i data-lucide="smartphone"></i> App-Adresse kopieren</button>
       </div>
+      <div class="apphero__note" style="margin-top:10px;display:flex;gap:7px;align-items:flex-start;font-size:12.5px;color:var(--muted)"><i data-lucide="key-round" style="width:14px;height:14px;flex:none;margin-top:2px"></i><span>Zum <b>Einloggen</b> braucht jeder Mitarbeiter seinen <b>persönlichen Einladungs-Link</b> (Team → Personalakte). Die App-Adresse allein reicht nicht.</span></div>
       <div class="apphero__stat">${withAccess} von ${total} Mitarbeitern haben schon einen Zugang.</div>
     </div>
     <div class="apphero__phone">
@@ -6749,7 +6755,7 @@ function mitarbeiterAppView(){
 }
 
 function teamTabList(){
-  if(viewRole === 'mitarbeiter'){
+  if(viewRole === 'mitarbeiter' || viewRole === 'kolonnenfuehrer'){
     return [
       {id:'zeit', label:'Meine Zeiten', count:''},
       {id:'urlaub', label:'Meine Abwesenheiten', count:''},
@@ -6854,6 +6860,7 @@ function kolonnenView(){
 }
 function moveMember(empId, crewId){
   assignCrew(empId, crewId || null);
+  persistEmployee(emp(empId));   // WICHTIG: Zuordnung sofort in die DB – sonst nach Reload weg
   teamTab('kolonnen');
   const c = crewId ? crewLabelOf(crewId) : 'Springer';
   toast(`${emp(empId).name.split(' ')[0]} → ${c}`);
@@ -6882,6 +6889,8 @@ function openCrewForm(id){
 function submitCrew(id){
   const label = document.getElementById('crName').value.trim();
   if(!label){ toast('Bitte einen Namen eingeben'); return; }
+  // Doppelte Kolonnennamen vermeiden (sonst in Dropdowns/Plantafel nicht unterscheidbar).
+  if(crews.some(c => c.id !== id && c.label.trim().toLowerCase() === label.toLowerCase())){ toast(`„${label}" gibt es schon – bitte anderen Namen wählen`); return; }
   const color = crewDraft ? crewDraft.color : CREW_COLORS[0];
   if(id){
     const c = crewById(id); c.label = label; c.color = color;
@@ -6898,6 +6907,8 @@ function submitCrew(id){
 }
 function deleteCrew(id){
   const c = crewById(id); const uuid = c ? c._uuid : null;
+  const memberCount = crewMembers(id).length;
+  if(!confirm(`Kolonne „${c?c.label:''}" wirklich löschen?${memberCount?` ${memberCount} Mitglied(er) werden dann Springer.`:''}`)) return;
   const members = crewMembers(id);                 // Mitglieder VOR dem Nullen einsammeln
   members.forEach(m => m.crewId = null);            // werden Springer
   const i = crews.findIndex(c => c.id === id); if(i > -1) crews.splice(i,1);
@@ -8617,8 +8628,8 @@ function renderMarktForm(){
   const isSale = d.type==='markt';
   openSheet(`
     <div class="sheet__head">
-      <span class="avatar" style="width:46px;height:46px;background:linear-gradient(135deg,var(--violet,#7C3AED),#2563EB)"><i data-lucide="${isSale?'tag':'help-circle'}" style="width:20px;height:20px"></i></span>
-      <div><div class="sheet__title">${isSale?'Gerät / Material anbieten':'Frage oder Tipp posten'}</div><div class="sheet__sub">Sichtbar für 187 verifizierte Betriebe</div></div>
+      <span class="avatar" style="width:46px;height:46px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="${isSale?'tag':'help-circle'}" style="width:20px;height:20px"></i></span>
+      <div><div class="sheet__title">${isSale?'Gerät / Material anbieten':'Frage oder Tipp posten'}</div><div class="sheet__sub">Sichtbar für verifizierte Betriebe</div></div>
       <button class="sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body">
@@ -8649,8 +8660,8 @@ function submitMarkt(){
   if(d.type==='markt' && !d.sale.item.trim()){ toast('Bitte Artikel angeben'); return; }
   marktSeq++;
   const me = settings.company?.name || 'Müller GaLaBau';
-  const post = { id:'m'+marktSeq, type:d.type, who: settings.company?.owner || 'Georg Müller',
-    firm: me, city: settings.company?.city || 'Hamburg', color:'#0E7A43', when:'gerade eben', me:true,
+  const post = { id:'m'+marktSeq, type:d.type, who: currentUser().name || settings.company?.owner || me,
+    firm: me, city: settings.company?.city || '', color:'#0E7A43', when:'gerade eben', me:true,
     text:d.text.trim(), likes:0, comments:0,
     tags: d.tags.split(',').map(s=>s.trim()).filter(Boolean) };
   if(d.type==='markt') post.sale = { item:d.sale.item.trim(), price:d.sale.price.trim()||'VB', cond:d.sale.cond.trim(), img:'' };
@@ -9314,6 +9325,9 @@ function typeMeta(t){ return {
 }[t]; }
 function statusMeta(s){ return { offen:['Offen','a'], genehmigt:['Genehmigt','g'], abgelehnt:['Abgelehnt','n'] }[s]; }
 function conflictWarn(a){
+  // DATENSCHUTZ: Überschneidungs-Hinweis nennt Abwesenheiten von Kollegen –
+  // das darf nur ein Genehmiger (Inhaber/Büro) sehen, nie der Mitarbeiter selbst.
+  if(!can('approveAbsence')) return '';
   const list = absences.filter(x => x.id !== a.id && x.status !== 'abgelehnt' && x.empId !== a.empId && rangesOverlap(x.from, effTo(x), a.from, effTo(a)));
   if(!list.length) return '';
   const self = emp(a.empId); const cid = self && self.crewId;
@@ -9325,7 +9339,7 @@ function conflictWarn(a){
 function openCount(){ return absences.filter(a => a.status === 'offen').length; }
 
 function urlaubView(){
-  if(viewRole === 'mitarbeiter') return urlaubViewSelf();
+  if(viewRole === 'mitarbeiter' || viewRole === 'kolonnenfuehrer') return urlaubViewSelf();
   return `
     ${urlaubStats()}
     <div class="usub">
@@ -9599,8 +9613,8 @@ function editAbsence(id){
   const a = absences.find(x => x.id === id); if(!a) return;
   openAbsenceForm(a.empId, a.from, a.to, a.type, a.note, id);
 }
-function approveAbsence(id){ const a = absences.find(x => x.id === id); if(!a) return; a.status = 'genehmigt'; saveAbsences(); persistAbsence(a); afterAbsChange(); toast(`${(emp(a.empId)||{name:'Eintrag'}).name}: genehmigt`); }
-function rejectAbsence(id){ const a = absences.find(x => x.id === id); if(!a) return; a.status = 'abgelehnt'; saveAbsences(); persistAbsence(a); afterAbsChange(); toast(`${(emp(a.empId)||{name:'Eintrag'}).name}: abgelehnt`); }
+function approveAbsence(id){ if(!can('approveAbsence')) return; const a = absences.find(x => x.id === id); if(!a) return; if(a.status !== 'offen') return; a.status = 'genehmigt'; saveAbsences(); persistAbsence(a); afterAbsChange(); toast(`${(emp(a.empId)||{name:'Eintrag'}).name}: genehmigt`); }
+function rejectAbsence(id){ if(!can('approveAbsence')) return; const a = absences.find(x => x.id === id); if(!a) return; if(a.status !== 'offen') return; if(!confirm(`Antrag von ${(emp(a.empId)||{name:'diesem Mitarbeiter'}).name} wirklich ablehnen?`)) return; a.status = 'abgelehnt'; saveAbsences(); persistAbsence(a); afterAbsChange(); toast(`${(emp(a.empId)||{name:'Eintrag'}).name}: abgelehnt`); }
 function deleteAbsence(id){ const i = absences.findIndex(x => x.id === id); if(i < 0) return; const e = emp(absences[i].empId); const n = e ? e.name : 'Eintrag'; if(!confirm(`Eintrag von ${n} wirklich löschen?`)) return; const uuid = absences[i]._uuid; absences.splice(i,1); saveAbsences(); if(uuid) deleteAbsenceDb(uuid); afterAbsChange(); toast(`${n}: Eintrag gelöscht`); }
 function afterAbsChange(){ renderUrlaub(); refreshUrlaubBadge(); }
 function viewAu(id){ const url = auImages[id]; if(!url) return; openSheet(`<div class="sheet__head"><div><div class="sheet__title">AU-Bescheinigung</div><div class="sheet__sub">Foto vom Mitarbeiter hochgeladen</div></div><button class="iconbtn sheet__close" onclick="openAbsence(${id})" aria-label="Zurück"><i data-lucide="x"></i></button></div><div class="sheet__body"><img src="${url}" alt="AU" style="width:100%;border-radius:10px;border:1px solid var(--line)"></div>`); }
@@ -10223,6 +10237,14 @@ function persistAkteSoon(){
   _akteSaveId = e._uuid;
   clearTimeout(_akteSaveTimer);
   _akteSaveTimer = setTimeout(()=>{ const t = emp(akteEmpId); if(t && t._uuid === _akteSaveId) persistEmployee(t); }, 600);
+}
+// Ausstehende (debounced) Akte-Speicherung SOFORT schreiben – z. B. beim Schließen
+// der Akte, damit der letzte Eintrag (Notiz/Gespräch) nicht im 600ms-Fenster verloren geht.
+function flushAkteSave(){
+  if(!_akteSaveTimer) return;
+  clearTimeout(_akteSaveTimer); _akteSaveTimer = null;
+  const t = emp(akteEmpId);
+  if(t && t._uuid && t._uuid === _akteSaveId && osConnected()) persistEmployee(t);
 }
 
 // Team des Betriebs aus der DB laden (RLS-scoped per my_team-RPC) und in den In-Memory-Stamm spiegeln.
@@ -13351,6 +13373,12 @@ async function leadClockOutAll(){
   toast(`${n} Mitarbeiter ausgestempelt um ${NOW}`);
 }
 function clockCard(){
+  // Selbst-Stempeln ist ein Recht, das der Betrieb pro Rolle freigibt. Ist es entzogen,
+  // zeigen wir statt der Stempeluhr einen klaren Hinweis (kein toter Button).
+  if(!can('clockSelf')) return `<div class="clockcard">
+      <div class="clockcard__top"><span class="clockcard__lbl"><i data-lucide="lock"></i> Zeiterfassung</span><span class="clockcard__time">${NOW}</span></div>
+      <div class="clockcard__sub">Deine Arbeitszeit wird im Büro erfasst – du musst dich nicht selbst einstempeln.</div>
+    </div>`;
   if(!myEntry){
     return `<div class="clockcard in">
       <div class="clockcard__top"><span class="clockcard__lbl"><i data-lucide="fingerprint"></i> Stempeluhr</span><span class="clockcard__time">${NOW}</span></div>
@@ -13365,6 +13393,7 @@ function clockCard(){
       <div class="clockcard__sub">${myEntry.in}–${myEntry.out} Uhr · ${s.customer}${myEntry.pauseMin?` · ${myEntry.pauseMin} Min Pause`:''}</div>
       <div class="clockcard__row">
         <button class="clockbtn proto" onclick="openProtocol('${s.id}','self')"><i data-lucide="clipboard-list"></i> Tagesprotokoll ausfüllen</button>
+        <button class="clockbtn go" onclick="openClockIn()"><i data-lucide="play"></i> Erneut einstempeln</button>
       </div>
       ${hasProto('self',s.id)?`<div class="clockcard__ok"><i data-lucide="check"></i> Tagesprotokoll abgegeben</div>`:''}
     </div>`;
@@ -13402,8 +13431,8 @@ function openClockIn(){
   const cards = sites.filter(s => s.id !== 's0').map(s => `
     <button class="sitepick" onclick="clockConfirm('${s.id}')">
       <span class="sitepick__ico"><i data-lucide="hard-hat"></i></span>
-      <span class="sitepick__txt"><b>${s.customer}</b><small>${s.label} · ${s.addr.split(',')[1]||s.addr}</small>
-        <span class="sitepick__chips"><span><i data-lucide="list-checks"></i> ${s.tasks.length} Aufgaben</span><span><i data-lucide="package"></i> ${s.material.length} Material</span></span></span>
+      <span class="sitepick__txt"><b>${s.customer||s.label||'Baustelle'}</b><small>${s.label||''}${s.addr?' · '+(s.addr.split(',')[1]||s.addr):''}</small>
+        <span class="sitepick__chips"><span><i data-lucide="list-checks"></i> ${(s.tasks||[]).length} Aufgaben</span><span><i data-lucide="package"></i> ${(s.material||[]).length} Material</span></span></span>
       <i data-lucide="chevron-right"></i>
     </button>`).join('');
   openSheet(`
@@ -13419,11 +13448,12 @@ function openClockIn(){
 }
 function clockConfirm(siteId){
   const s = site(siteId);
-  const mat = s.material.length ? `<div class="load">
+  const _mat = s.material || [], _tasks = s.tasks || [];
+  const mat = _mat.length ? `<div class="load">
     <div class="load__h"><i data-lucide="package"></i> Material laden <small>vorm Losfahren abhaken – spart die Baumarkt-Doppelfahrt</small></div>
-    ${s.material.map((m,i) => `<label class="loaditem"><input type="checkbox" id="ld${i}"><span>${m}</span></label>`).join('')}
+    ${_mat.map((m,i) => `<label class="loaditem"><input type="checkbox" id="ld${i}"><span>${m}</span></label>`).join('')}
   </div>` : '';
-  const tasks = s.tasks.length ? `<div class="taskbox"><div class="taskbox__h"><i data-lucide="list-checks"></i> Aufgaben heute</div>${s.tasks.map(t => `<div class="taskline"><i data-lucide="dot"></i> ${t}</div>`).join('')}</div>` : '';
+  const tasks = _tasks.length ? `<div class="taskbox"><div class="taskbox__h"><i data-lucide="list-checks"></i> Aufgaben heute</div>${_tasks.map(t => `<div class="taskline"><i data-lucide="dot"></i> ${t}</div>`).join('')}</div>` : '';
   openSheet(`
     <div class="sheet__head">
       <span class="avatar" style="width:50px;height:50px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="hard-hat" style="width:22px;height:22px"></i></span>
@@ -13522,7 +13552,8 @@ function geoConsentLine(empId){
 /* ---- Owner-Detail eines Stempel-Eintrags ---- */
 function openTimeEntry(id){
   const e = timeEntries.find(x => x.id === id); if(!e) return;
-  const emp_ = emp(e.empId); const s = site(e.siteId); const min = entryMin(e);
+  const emp_ = emp(e.empId) || (e.empId === 'self' ? (selfEmp() || {name:(currentUser().name||'Ich'), role:'', phone:''}) : {name:'—', role:'', phone:''});
+  const s = site(e.siteId) || {id:e.siteId, customer:'—', label:'', addr:''}; const min = entryMin(e);
   const p = protocols.find(x => x.empId === e.empId && x.siteId === e.siteId);
   openSheet(`
     <div class="sheet__head">
@@ -13541,11 +13572,46 @@ function openTimeEntry(id){
       </dl>
       ${(settings.geo && !e.manual) ? `<div class="dsgvo" style="margin-top:6px"><i data-lucide="lock"></i> <span>Der Standort wurde <b>einmalig beim Stempeln</b> erfasst und ist <b>unveränderlich</b> – Mitarbeiter können ihn nicht nachträglich bearbeiten.</span></div>` : ''}
       ${p ? `<div class="protobox"><div class="protobox__h"><i data-lucide="clipboard-check"></i> Tagesprotokoll</div><div class="protobox__txt">${p.text||'—'}</div>${p.photos.length?`<div class="protogrid">${p.photos.map(src=>`<img src="${src}" alt="Baustelle">`).join('')}</div>`:''}${p.damageText?`<div class="protodmg"><i data-lucide="alert-octagon"></i> Schaden: ${p.damageText}${p.damagePhoto?`<img src="${p.damagePhoto}" alt="Schaden">`:''}</div>`:''}</div>` : `<div class="protobox empty2"><i data-lucide="clipboard-list"></i> Noch kein Tagesprotokoll abgegeben.</div>`}
+      ${can('clockOthers') ? `<div class="sheet-actions"><button class="btn ghost" style="flex:1" onclick="openTimeEdit(${e.id})"><i data-lucide="pencil"></i> Zeit korrigieren</button></div>` : ''}
       <div class="sheet-actions">
         <button class="btn ghost" style="flex:1" onclick="${s.customerId?`openCustomer('${s.customerId}')`:`openSiteSheet('${s.id}')`}"><i data-lucide="folder-open"></i> Kundenkartei</button>
         ${emp_.phone?`<a class="btn ghost" style="flex:1" href="tel:${emp_.phone.replace(/[^\d+]/g,'')}"><i data-lucide="phone"></i> Anrufen</a>`:`<button class="btn ghost" style="flex:1" onclick="toast('Für ${escapeHtml(emp_.name)} ist keine Telefonnummer hinterlegt')"><i data-lucide="phone"></i> Anrufen</button>`}
       </div>
     </div>`);
+}
+// Zeit-Korrektur durch Büro/Admin (clockOthers). Der Standortnachweis bleibt unangetastet –
+// korrigiert werden nur Start/Ende/Pause, z. B. wenn jemand das Ausstempeln vergessen hat.
+function openTimeEdit(id){
+  const e = timeEntries.find(x => x.id === id); if(!e || !can('clockOthers')) return;
+  const emp_ = emp(e.empId) || (e.empId === 'self' ? (selfEmp() || {name:(currentUser().name||'Ich')}) : {name:'—'});
+  const s = site(e.siteId) || {customer:'—', label:''};
+  openSheet(`
+    <div class="sheet__head">
+      <span class="avatar" style="width:50px;height:50px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="pencil" style="width:20px;height:20px"></i></span>
+      <div><div class="sheet__title">Zeit korrigieren</div><div class="sheet__sub">${emp_.name} · ${s.customer} · ${s.label}</div></div>
+      <button class="iconbtn sheet__close" onclick="openTimeEntry(${e.id})"><i data-lucide="arrow-left"></i></button>
+    </div>
+    <div class="sheet__body">
+      <div class="field"><label>Start</label><input id="teIn" type="time" value="${e.in||''}"></div>
+      <div class="field"><label>Ende <span class="opt">leer = läuft noch</span></label><input id="teOut" type="time" value="${e.out||''}"></div>
+      <div class="field"><label>Pause (Minuten)</label><input id="tePause" type="number" min="0" step="5" value="${e.pauseMin||0}"></div>
+      <div class="dsgvo" style="margin-top:6px"><i data-lucide="lock"></i> <span>Der <b>Standortnachweis</b> bleibt unverändert. Korrekturen werden als solche erfasst.</span></div>
+      <div class="sheet-actions">
+        <button class="btn" style="flex:1" onclick="saveTimeEdit(${e.id})"><i data-lucide="check"></i> Speichern</button>
+      </div>
+    </div>`);
+}
+function saveTimeEdit(id){
+  const e = timeEntries.find(x => x.id === id); if(!e || !can('clockOthers')) return;
+  const vin = (document.getElementById('teIn')||{}).value || '';
+  const vout = (document.getElementById('teOut')||{}).value || '';
+  const vpause = Math.max(0, parseInt((document.getElementById('tePause')||{}).value, 10) || 0);
+  if(!vin){ toast('Startzeit fehlt'); return; }
+  // Bruttozeit prüfen (Ende über Mitternacht erlaubt), Pause darf nicht größer sein.
+  if(vout){ let gross = hm2min(vout) - hm2min(vin); if(gross < 0) gross += 1440; if(vpause > gross){ toast('Pause länger als die erfasste Arbeitszeit'); return; } }
+  e.in = vin; e.out = vout || null; e.pauseMin = vpause; e.manual = true;
+  if(myEntry && myEntry.id === id){ myEntry = e.out ? myEntry : e; }
+  persistTimeEntry(e); renderZeit(); openTimeEntry(id); toast('Zeit korrigiert');
 }
 /* ---- Baustelle anlegen / bearbeiten + Leistungsverzeichnis (Aufgaben/Material) ---- */
 // Temp-Stand des offenen Formulars (wie protoPhotos): Aufgaben/Material werden live in die Listen
@@ -13931,9 +13997,10 @@ function akteFilled(v){
 }
 function akteCompleteness(e,hr){
   const nk = hr.nk||{}; const psa = hr.psa||{};
+  // Ein Profilfoto ist kein Personalakten-Pflichtfeld -> zählt nicht zur Vollständigkeit.
   const checks = [ e.phone, e.email, hr.bd, hr.addr, hr.pphone, nk.n,
     hr.persnr, hr.bereich, hr.contract, hr.hours, hr.salary, hr.kk, hr.sv, hr.taxId, hr.iban,
-    hr.fs, hr.fsExp, hr.certs, psa.s, hr.photo ];
+    hr.fs, hr.fsExp, hr.certs, psa.s ];
   const t = checks.length;
   const f = checks.filter(akteFilled).length;
   return {f, t, pct: Math.round(f/t*100)};
@@ -13956,7 +14023,7 @@ function openEmployee(id){
   if(currentView !== 'team'){ setView('team'); } else { renderAkte(); }
 }
 function akteSetTab(tab){ akteTab = tab; renderAkte(); }
-function closeAkte(){ akteEmpId = null; teamTab('mitarbeiter'); }
+function closeAkte(){ flushAkteSave(); akteEmpId = null; teamTab('mitarbeiter'); }
 
 function renderAkte(){
   const e = emp(akteEmpId);
@@ -14194,7 +14261,7 @@ function akteGespraecheCard(e,hr,priv){
     ${kv('Abwesenheit '+yr, `${vac.taken} Urlaubstage · ${krank} Krankheitstage`)}
   </div>
   <p class="compose-hint" style="margin:9px 0 0"><i data-lucide="info" style="width:13px;height:13px;vertical-align:-2px"></i> Diese Übersicht <b>informiert</b> – sie bewertet die Person nicht. Empfohlener Rhythmus: alle 3–6 Monate.</p>`;
-  const ctxCard = akteCard({title:'Überblick', icon:'bar-chart-3', section:null, editable:false, body:ctx, priv:true});
+  const ctxCard = akteCard({title:'Überblick', icon:'calendar-check', section:null, editable:false, body:ctx, priv:true});
 
   // Erfassungs-Formular (Text oder Sprache) – nur Personalverwaltung
   let form = '';
@@ -14477,7 +14544,7 @@ function uploadEmpDoc(id){
 function openAkteDoc(i){
   const e=emp(akteEmpId); if(!e) return;
   const hr=hrData(e); const d=hr.docs&&hr.docs[i];
-  if(d&&d.url){ const w=window.open(); if(w){ w.document.write(d.name.match(/\.pdf$/i)?`<iframe src="${d.url}" style="border:0;width:100%;height:100%"></iframe>`:`<img src="${d.url}" style="max-width:100%">`); } else { toast('Pop-up wurde blockiert'); } }
+  if(d&&d.url){ const w=window.open(); if(w){ const u=String(d.url).replace(/"/g,'&quot;'); w.document.write(d.name.match(/\.pdf$/i)?`<iframe src="${u}" style="border:0;width:100%;height:100%"></iframe>`:`<img src="${u}" style="max-width:100%">`); } else { toast('Pop-up wurde blockiert'); } }
   else { toast(d?('„'+d.name+'" – Beispiel-Dokument ohne Datei'):'Dokument nicht gefunden'); }
 }
 function addEmpNote(id){
@@ -14486,7 +14553,7 @@ function addEmpNote(id){
   if(!txt){ toast('Bitte erst etwas eintippen'); return; }
   const e = emp(id); if(!e) return;
   const hr = hrData(e);
-  hr.notes.unshift({date:TODAY, author: (settings.company&&settings.company.owner) || 'Georg Müller', text:txt});
+  hr.notes.unshift({date:TODAY, author: currentUser().name, text:txt});
   if(akteEmpId===id) renderAkte();
   toast('Notiz gespeichert');
 }
@@ -14603,10 +14670,14 @@ function gcCopyText(txt){
   });
 }
 // WhatsApp-Deeplink mit vorformulierter Nachricht + persönlichem Link.
-function waShareUrl(e, link){
+function waShareUrl(e, link, already){
   const first = (e.name||'').split(' ')[0] || 'Hallo';
   const firma = (settings.company && settings.company.name) ? settings.company.name : 'unserem Betrieb';
-  const txt = `Hallo ${first}, hier ist dein Zugang zur Mitarbeiter-App von ${firma}. Tipp auf den Link, leg einmal dein Passwort fest – danach kannst du Zeiten stempeln und Urlaub/Krankmeldung direkt vom Handy einreichen:\n${link}`;
+  // Schon registriert -> Login-Link (Passwort existiert). Sonst -> Passwort einmal festlegen.
+  const step = already
+    ? 'Tipp auf den Link und logg dich mit deinem Passwort ein'
+    : 'Tipp auf den Link, leg einmal dein Passwort fest';
+  const txt = `Hallo ${first}, hier ist dein Zugang zur Mitarbeiter-App von ${firma}. ${step} – danach kannst du Zeiten stempeln und Urlaub/Krankmeldung direkt vom Handy einreichen:\n${link}`;
   return 'https://wa.me/?text=' + encodeURIComponent(txt);
 }
 // Pro Mitarbeiter: Einladungs-Link erzeugen, kopieren und Teilen-Sheet öffnen.
@@ -14626,7 +14697,7 @@ async function copyInviteLink(id){
   }
 }
 function openInviteLinkSheet(e, link, already){
-  const wa = waShareUrl(e, link);
+  const wa = waShareUrl(e, link, already);
   const first = escapeHtml((e.name||'').split(' ')[0] || 'dein Mitarbeiter');
   openSheet(`
     <div class="sheet__head">
@@ -14635,7 +14706,7 @@ function openInviteLinkSheet(e, link, already){
       <button class="iconbtn sheet__close" onclick="closeSheet()" aria-label="Schließen"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body">
-      <p class="sheet-note" style="margin-top:0"><i data-lucide="info"></i> So kommt ${first} in die App: Link per WhatsApp schicken → er tippt drauf → legt einmal ein Passwort fest → fertig. Er sieht danach nur seinen Bereich (Zeiten &amp; Urlaub).</p>
+      <p class="sheet-note" style="margin-top:0"><i data-lucide="info"></i> So kommt ${first} in die App: Link per WhatsApp schicken → er tippt drauf → ${already?'loggt sich mit seinem Passwort ein':'legt einmal ein Passwort fest'} → fertig. Er sieht danach nur seinen Bereich (Zeiten &amp; Urlaub).</p>
       <div class="field"><label>Persönlicher Einladungs-Link</label><input id="invLinkFld" readonly value="${link.replace(/"/g,'&quot;')}" onclick="this.select()"></div>
       <div class="sheet-actions">
         <a class="btn" style="flex:1.4;text-decoration:none" href="${wa}" target="_blank" rel="noopener"><i data-lucide="message-circle"></i> Per WhatsApp senden</a>
@@ -14662,7 +14733,9 @@ async function submitEmployee(id){
   }
   const invite = document.getElementById('efInvite').checked;
   const newId = empSeq++;
-  const eNew = { id:newId, name, role, crewId, phone, since:String(new Date(TODAY).getFullYear()), annual, email, sysRole, account: invite ? 'invited' : 'none' };
+  // Nur als „eingeladen" markieren, wenn wirklich eine E-Mail da ist – sonst wird nie ein Link erzeugt
+  // und der Status „invited" wäre gelogen.
+  const eNew = { id:newId, name, role, crewId, phone, since:String(new Date(TODAY).getFullYear()), annual, email, sysRole, account: (invite && email) ? 'invited' : 'none' };
   employees.push(eNew);
   persistEmployee(eNew);
   closeSheet(); teamTab('mitarbeiter');
@@ -14672,6 +14745,8 @@ async function submitEmployee(id){
     if(r.link){ await gcCopyText(r.link); openInviteLinkSheet(eNew, r.link, r.already_exists); }
     else if(r.already_exists){ toast(`${email} ist bereits registriert – kann sich direkt einloggen`); }
     else { toast(`${name} angelegt · Link-Erstellung noch nicht aktiv – nutze „Einladungs-Link" in der Akte`); }
+  } else if(invite && !email){
+    toast(`${name} angelegt · für die Einladung fehlt noch eine E-Mail`);
   } else if(email){
     toast(`${name} angelegt · Einladungs-Link später über die Akte`);
   } else {
@@ -14693,6 +14768,9 @@ function deleteEmployee(id){
   const before = absences.length;
   for(let j = absences.length - 1; j >= 0; j--){ if(absences[j].empId === id) absences.splice(j,1); }
   if(absences.length !== before){ saveAbsences(); refreshUrlaubBadge(); }
+  // verwaiste Zeiteinträge aus dem Speicher nehmen, sonst laufen Reports/Kolonnen-Renderer
+  // später in emp(id)===undefined (Server-Zeilen sind über den Mitarbeiter mandantengescoped).
+  for(let k = timeEntries.length - 1; k >= 0; k--){ if(timeEntries[k].empId === id) timeEntries.splice(k,1); }
   closeSheet(); teamTab('mitarbeiter');
   toast(`${e.name} entfernt`);
 }
