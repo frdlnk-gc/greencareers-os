@@ -2539,8 +2539,8 @@
   .gate__top{ padding:22px 22px 0; }
   .gate__paid{ display:inline-flex; align-items:center; gap:7px; font-size:12px; font-weight:700; color:var(--green-2); background:var(--mint); border:1px solid #CDEBD8; padding:6px 11px; border-radius:999px; }
   .gate__paid .lucide{ width:15px; height:15px; }
-  .gate__h{ font-size:18px; font-weight:800; letter-spacing:-.01em; margin:13px 0 5px; }
-  .gate__sub{ font-size:12.5px; color:var(--muted); line-height:1.5; }
+  .gate__h{ font-size:18px; font-weight:800; letter-spacing:-.01em; margin:13px 0 5px; padding:0 22px; }
+  .gate__sub{ font-size:12.5px; color:var(--muted); line-height:1.5; padding:0 22px; }
   .gate__body{ padding:15px 22px 22px; }
   .consent-row{ display:flex; gap:12px; align-items:flex-start; padding:12px 13px; border:1px solid var(--line); border-radius:12px; margin-bottom:9px; cursor:pointer; transition:border-color .14s, background .14s; }
   .consent-row:hover{ border-color:var(--line-2); }
@@ -3726,7 +3726,6 @@ function renderCheckout(){
       <button class="btn full" style="margin-top:13px" id="coSubmitBtn" onclick="coSubmit()">
         <i data-lucide="${coState.method==='rechnung'?'file-check':'lock'}"></i> ${coState.method==='rechnung'?'Zahlungspflichtig bestellen':'Weiter zur Zahlung'}
       </button>
-      <div style="text-align:center;margin-top:12px"><a onclick="coCancel()" style="color:var(--muted);font-size:13px;cursor:pointer;text-decoration:underline">Später – erst mal ins Cockpit</a></div>
     </div>`;
   icons();
 }
@@ -6809,13 +6808,13 @@ function shade(hex, amt){ // amt negativ = dunkler
 /* ===================== CONSENT-GATE (AVV / DSGVO Self-Checkout) ===================== */
 const CONSENT_ITEMS = [
   {key:'avv', doc:'avv', label:'Auftragsverarbeitungsvertrag (AVV)',
-   sub:'Nach Art. 28 DSGVO. Du beauftragst GreenCareers OS, Personal-, Zeit- und Kundendaten in deinem Auftrag zu verarbeiten.', required:true},
+   sub:'Wir verarbeiten Daten nur in deinem Auftrag (Art. 28 DSGVO).', required:true},
   {key:'datenschutz', doc:'datenschutz', label:'Datenschutz &amp; Gesundheitsdaten (Art. 9)',
-   sub:'Verarbeitung von Krank-/Urlaubsdaten erfolgt ausschließlich automatisiert in deinem System – kein GreenCareers-Mitarbeiter sieht Personalien.', required:true},
+   sub:'Krank- und Urlaubsdaten bleiben in deinem System.', required:true},
   {key:'agb', doc:'agb', label:'Allgemeine Geschäftsbedingungen',
    sub:'Nutzungsbedingungen für GreenCareers OS.', required:true},
-  {key:'vollmacht', doc:null, label:'Ich bin befugt, diese Verträge für den Betrieb abzuschließen',
-   sub:'Du bestätigst, dass du Inhaber oder bevollmächtigt bist.', required:true},
+  {key:'vollmacht', doc:null, label:'Ich bin berechtigt, dies für den Betrieb zu bestätigen',
+   sub:'Inhaber oder bevollmächtigt.', required:true},
 ];
 let consentState = { avv:false, datenschutz:false, agb:false, vollmacht:false };
 
@@ -6839,7 +6838,7 @@ function renderConsentGate(){
       <span class="gate__paid"><i data-lucide="badge-check"></i> Zahlung erfolgreich · Tarif „Betrieb" aktiv</span>
     </div>
     <div class="gate__h">Nur noch ein Schritt: Einrichtung freischalten</div>
-    <div class="gate__sub">Bevor echte Personal- und Kundendaten verarbeitet werden, brauchen wir deine Bestätigung. Das ist gesetzlich vorgeschrieben (DSGVO) – läuft komplett digital, kein Termin nötig.</div>
+    <div class="gate__sub">Fast fertig! Bestätige kurz diese Punkte, dann ist dein System startklar.</div>
     <div class="gate__body">
       ${CONSENT_ITEMS.map(it => `
         <label class="consent-row ${consentState[it.key]?'on':''}" onclick="toggleConsent('${it.key}')">
