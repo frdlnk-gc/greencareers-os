@@ -2208,6 +2208,10 @@
   .afprev__warn{ display:flex; align-items:center; gap:6px; margin-top:7px; font-weight:600; color:var(--amber); font-size:12.5px; }
   .afprev__warn .lucide{ width:14px; height:14px; }
   .afprev__hint{ margin-top:6px; font-size:11.5px; color:var(--muted); }
+  .afhalf{ display:flex; align-items:center; gap:11px; padding:11px 13px; margin:0 0 14px; background:var(--canvas); border:1px solid var(--line); border-radius:8px; cursor:pointer; }
+  .afhalf input{ width:18px; height:18px; accent-color:var(--green); cursor:pointer; }
+  .afhalf span{ display:flex; flex-direction:column; line-height:1.3; }
+  .afhalf small{ color:var(--muted); font-size:11.5px; }
 
   /* ----- Teamkalender: klickbare Namen, Hinweis, Balken-Labels ----- */
   .cal-name.clickable{ cursor:pointer; transition:background .14s; }
@@ -3496,15 +3500,22 @@ const DEFAULT_SETTINGS = {
   ruestzeit: true,     // Rüstzeit (Beladen + Anfahrt) sichtbar & wird mitgezählt
   geo: true,           // Standortnachweis beim Stempeln
   clockMode: 'self',   // WER stempelt: 'self' = jeder Mitarbeiter selbst per Handy | 'lead' = nur Kolonnenführer/Vorarbeiter für seine Kolonne | 'admin' = nur Inhaber/Büro manuell
+  // Urlaubs-Regeln – pro Betrieb einstellbar (wie in Absence & Co.):
+  //  halfDays     : dürfen halbe Urlaubstage beantragt werden? (nur bei Einzeltag)
+  //  carryover    : wird Resturlaub ins Folgejahr übertragen?
+  //  carryoverMax : max. übertragbare Tage ('' = unbegrenzt)
+  //  carryoverUntil: Verfallstichtag im Folgejahr (MM-DD) – bis dahin muss der Übertrag genommen sein
+  vacation: { halfDays:false, carryover:false, carryoverMax:'', carryoverUntil:'03-31' },
   perms: {
-    buero:       {approveAbsence:true, editEmployees:true, manageCustomers:true, clockOthers:true},
-    buchhaltung: {manageFinances:true, manageCustomers:true, viewReports:true},
-    mitarbeiter: {requestAbsence:true, clockSelf:true},
+    buero:          {approveAbsence:true, editEmployees:true, manageCustomers:true, clockOthers:true},
+    buchhaltung:    {manageFinances:true, manageCustomers:true, viewReports:true},
+    kolonnenfuehrer:{},
+    mitarbeiter:    {requestAbsence:true, clockSelf:true},
   },
 };
 let settings = loadSettings();
 function loadSettings(){
-  try{ const r = localStorage.getItem('gcos_settings_v2'); if(r){ const s = JSON.parse(r); s.perms = s.perms || {}; s.perms.buero = Object.assign({}, DEFAULT_SETTINGS.perms.buero, s.perms.buero); s.perms.buchhaltung = Object.assign({}, DEFAULT_SETTINGS.perms.buchhaltung, s.perms.buchhaltung); s.perms.mitarbeiter = Object.assign({}, DEFAULT_SETTINGS.perms.mitarbeiter, s.perms.mitarbeiter); s.company = Object.assign({}, DEFAULT_SETTINGS.company, s.company); s.portal = Object.assign({}, JSON.parse(JSON.stringify(DEFAULT_SETTINGS.portal)), s.portal); s.portal.social = Object.assign({}, DEFAULT_SETTINGS.portal.social, s.portal.social); s.portal.bilder = Array.isArray(s.portal.bilder)? s.portal.bilder : []; const merged = Object.assign(JSON.parse(JSON.stringify(DEFAULT_SETTINGS)), s); if(typeof s.clockMode==='undefined' && typeof s.selfClockIn!=='undefined'){ merged.clockMode = s.selfClockIn ? 'self' : 'admin'; } return resetDemoModules(merged); } }catch(e){}
+  try{ const r = localStorage.getItem('gcos_settings_v2'); if(r){ const s = JSON.parse(r); s.perms = s.perms || {}; s.perms.buero = Object.assign({}, DEFAULT_SETTINGS.perms.buero, s.perms.buero); s.perms.buchhaltung = Object.assign({}, DEFAULT_SETTINGS.perms.buchhaltung, s.perms.buchhaltung); s.perms.kolonnenfuehrer = Object.assign({}, DEFAULT_SETTINGS.perms.kolonnenfuehrer, s.perms.kolonnenfuehrer); s.perms.mitarbeiter = Object.assign({}, DEFAULT_SETTINGS.perms.mitarbeiter, s.perms.mitarbeiter); s.vacation = Object.assign({}, DEFAULT_SETTINGS.vacation, s.vacation); s.company = Object.assign({}, DEFAULT_SETTINGS.company, s.company); s.portal = Object.assign({}, JSON.parse(JSON.stringify(DEFAULT_SETTINGS.portal)), s.portal); s.portal.social = Object.assign({}, DEFAULT_SETTINGS.portal.social, s.portal.social); s.portal.bilder = Array.isArray(s.portal.bilder)? s.portal.bilder : []; const merged = Object.assign(JSON.parse(JSON.stringify(DEFAULT_SETTINGS)), s); if(typeof s.clockMode==='undefined' && typeof s.selfClockIn!=='undefined'){ merged.clockMode = s.selfClockIn ? 'self' : 'admin'; } return resetDemoModules(merged); } }catch(e){}
   return JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
 }
 // PRODUKTION: Gebuchte Module bleiben dauerhaft erhalten – kein Reset bei Reload mehr.
@@ -4532,14 +4543,16 @@ async function hydrateSelfEmployee(){
   try{
     const { data:me } = await sbAuth.from('mitarbeiter').select('*').eq('profile_id', GC_USER.id).maybeSingle();
     const nm = (me&&me.name) || (GC_PROFILE&&GC_PROFILE.name) || GC_USER.email;
+    const ex = (me&&me.extra) || {};
     const selfId = 900001;
     if(!emp(selfId)){
       employees.push({
         id:selfId, name:nm, role:(me&&me.position)||'Mitarbeiter',
         crewId:(me&&me.crew)||null, phone:(me&&me.phone)||'',
-        since:String(new Date(TODAY).getFullYear()), annual:30,
+        since: ex._since || String(new Date(TODAY).getFullYear()),
+        annual: (ex._annual != null ? ex._annual : 30),
         email:(me&&me.email)||GC_USER.email,
-        sysRole: GC_PROFILE.role, account:'active'
+        sysRole: (me&&me.sys_role) || GC_PROFILE.role, account:'active'
       });
     }
     viewEmpId = selfId;
@@ -4929,12 +4942,27 @@ function setTabTeam(s, c){
       <div class="setsub">Wer stempelt?</div>
       ${clockModeSeg(clockMode(), "setClockMode('$ID')")}
 
+      <div class="setsec">Urlaub &amp; Abwesenheit</div>
+      <p class="sheet-note"><i data-lucide="palmtree"></i> Regeln nach deinen Arbeitsverträgen – so wie in gängigen Zeiterfassungs- und Urlaubstools.</p>
+      ${swRow('Halbe Urlaubstage erlauben','Mitarbeiter können einen einzelnen Tag als ½ Urlaubstag beantragen (z. B. Vormittag frei).', s.vacation.halfDays, "toggleVacation('halfDays')")}
+      ${swRow('Resturlaub ins Folgejahr übertragen','Nicht genommener Urlaub verfällt zum Jahreswechsel nicht, sondern wird übertragen.', s.vacation.carryover, "toggleVacation('carryover')")}
+      ${s.vacation.carryover ? `
+      <div class="fieldrow">
+        <div class="field" style="max-width:200px"><label>Max. Übertrag (Tage)</label><input type="number" min="0" step="0.5" placeholder="unbegrenzt" value="${s.vacation.carryoverMax}" onchange="setVacationField('carryoverMax', this.value)"></div>
+        <div class="field" style="max-width:200px"><label>Verfällt am (Folgejahr)</label><input type="date" value="${new Date().getFullYear()}-${s.vacation.carryoverUntil}" onchange="setVacationField('carryoverUntil', this.value.slice(5))"></div>
+      </div>
+      <p class="sheet-note" style="margin-top:2px"><i data-lucide="info"></i> Leer = unbegrenzt. Nach dem Stichtag verfällt der übertragene Rest (z. B. 31.03.).</p>` : ''}
+
       <div class="setsec">Rechte „Personalverwaltung"</div>
       <p class="sheet-note"><i data-lucide="user-cog"></i> Lege fest, was die Personalverwaltung (z. B. Sekretariat/Bürokraft) selbstständig darf.</p>
       ${permRow('buero','approveAbsence','Urlaub genehmigen / ablehnen','Anträge der Mitarbeiter freigeben oder ablehnen.')}
       ${permRow('buero','editEmployees','Mitarbeiter &amp; Kolonnen verwalten','Anlegen, bearbeiten, einladen, Kolonnen zuordnen.')}
       ${permRow('buero','manageCustomers','Kunden verwalten','Kunden &amp; Anfragen bearbeiten.')}
       ${permRow('buero','clockOthers','Mitarbeiter ein-/ausstempeln','Im Ausnahmefall für andere stempeln.')}
+
+      <div class="setsec">Rechte „Kolonnenführer / Vorarbeiter"</div>
+      <p class="sheet-note"><i data-lucide="hard-hat"></i> Optional: Lass den Kolonnenführer den Urlaub seines Teams direkt freigeben – praktisch auf der Baustelle.</p>
+      ${permRow('kolonnenfuehrer','approveAbsence','Urlaub genehmigen / ablehnen','Anträge freigeben oder ablehnen (statt oder zusätzlich zum Büro).')}
 
       <div class="setsec">Rechte „Buchhaltung"</div>
       <p class="sheet-note"><i data-lucide="calculator"></i> Für Steuerberater, Lohnbüro oder eine kaufmännische Kraft. Sieht Finanzen &amp; Kunden – aber keine Personalakten, Krankmeldungen oder die Plantafel.</p>
@@ -4996,6 +5024,8 @@ function setTabKonto(s, c){
       <button class="btn ghost btn--block danger" style="margin-top:8px" onclick="gcLogout()"><i data-lucide="log-out"></i> Abmelden</button>`;
 }
 function toggleSetting(key){ settings[key] = !settings[key]; saveSettings(); refreshSettings(); rerenderCurrent(); }
+function toggleVacation(key){ settings.vacation = settings.vacation || {}; settings.vacation[key] = !settings.vacation[key]; saveSettings(); refreshSettings(); rerenderCurrent(); }
+function setVacationField(key, val){ settings.vacation = settings.vacation || {}; settings.vacation[key] = (val||'').trim(); saveSettings(); rerenderCurrent(); }
 function togglePerm(role, cap){ settings.perms[role] = settings.perms[role] || {}; settings.perms[role][cap] = !settings.perms[role][cap]; saveSettings(); refreshSettings(); }
 function refreshSettings(){ const open = document.getElementById('settingsBody'); if(open){ const sc = open.scrollTop; closeSheet(); openSettings(); const nb = document.getElementById('settingsBody'); if(nb) nb.scrollTop = sc; } }
 function rerenderCurrent(){ renderNav(); if(currentView === 'team'){ teamTab(activeTeamTab); } else { setView(currentView); } }
@@ -9301,17 +9331,49 @@ function rangesOverlap(s1,e1,s2,e2){ return s1 <= e2 && s2 <= e1; }
 function weekRange(iso){ const dt = dParse(iso); const day = (dt.getDay()+6)%7; const mon = new Date(dt); mon.setDate(dt.getDate()-day); const sun = new Date(mon); sun.setDate(mon.getDate()+6); return [dISO(mon), dISO(sun)]; }
 function isoWeek(dt){ const d = new Date(Date.UTC(dt.getFullYear(),dt.getMonth(),dt.getDate())); const day = (d.getUTCDay()+6)%7; d.setUTCDate(d.getUTCDate()-day+3); const ft = new Date(Date.UTC(d.getUTCFullYear(),0,4)); const fd = (ft.getUTCDay()+6)%7; ft.setUTCDate(ft.getUTCDate()-fd+3); return 1+Math.round((d-ft)/(7*864e5)); }
 
+// Tage einer Abwesenheit – halber Tag nur wenn Betrieb es erlaubt UND es ein Einzeltag ist.
+function absDays(a){
+  if(a && a.half && a.from === a.to && settings.vacation && settings.vacation.halfDays) return 0.5;
+  return workdays(a.from, a.to);
+}
+// Deutsche Tage-Formatierung: 12 statt 12,0 – aber 0,5 / 12,5 mit Komma.
+function fmtDays(n){ return (Math.round(n*2)/2).toString().replace('.', ','); }
+// Übertrag aus dem Vorjahr – nur wenn aktiviert. Rest des Vorjahres (Anspruch − genommen/geplant),
+// gedeckelt durch carryoverMax. Nach dem Verfallstichtag (carryoverUntil) verfällt der Übertrag.
+function carryoverFor(id){
+  const vc = settings.vacation;
+  if(!vc || !vc.carryover) return 0;
+  const e = emp(id); if(!e) return 0;
+  const curYr = +String(TODAY).slice(0,4);
+  const prevYr = String(curYr - 1);
+  let used = 0;
+  absences.forEach(a => {
+    if(a.empId !== id || a.type !== 'urlaub' || a.status !== 'genehmigt') return;
+    if(String(a.from).slice(0,4) !== prevYr) return;
+    used += absDays(a);
+  });
+  let carry = Math.max(0, (e.annual || 0) - used);
+  const max = parseFloat(String(vc.carryoverMax).replace(',', '.'));
+  if(!isNaN(max) && max >= 0) carry = Math.min(carry, max);
+  // Verfall: nach dem Stichtag im laufenden Jahr ist der Übertrag weg.
+  const until = (vc.carryoverUntil || '03-31');
+  if(TODAY > `${curYr}-${until}`) return 0;
+  return carry;
+}
 function vacInfo(id){
   const yr = String(TODAY).slice(0,4);   // Anspruch e.annual gilt pro Kalenderjahr
   let taken = 0, planned = 0;
   absences.forEach(a => {
     if(a.empId !== id || a.type !== 'urlaub' || a.status !== 'genehmigt') return;
     if(String(a.from).slice(0,4) !== yr) return;   // Vorjahres-/Folgejahres-Urlaub nicht gegen dieses Jahr rechnen
-    const wd = workdays(a.from, a.to);
+    const wd = absDays(a);
     if(a.from <= TODAY) taken += wd; else planned += wd;
   });
   const e = emp(id);
-  return { taken, planned, rest: Math.max(0, (e ? (e.annual||0) : 0) - taken - planned) };
+  const annual = e ? (e.annual||0) : 0;
+  const carry = carryoverFor(id);
+  const base = annual + carry;
+  return { taken, planned, carry, base, annual, rest: Math.max(0, base - taken - planned) };
 }
 function empStatus(id){
   const a = absences.find(x => x.empId === id && x.status === 'genehmigt' && covers(x, TODAY));
@@ -9358,15 +9420,27 @@ function urlaubViewSelf(){
   const mine = absences.filter(a => a.empId === me.id).sort((a,b) => b.from.localeCompare(a.from));
   return `
     <div class="ustat">
-      <div class="ustat__card"><span class="ustat__ic green"><i data-lucide="palmtree"></i></span><div><div class="ustat__n">${v.rest}</div><div class="ustat__l">Resturlaub</div><div class="ustat__s">von ${me.annual} Tagen</div></div></div>
-      <div class="ustat__card"><span class="ustat__ic blue"><i data-lucide="calendar-check"></i></span><div><div class="ustat__n">${v.planned}</div><div class="ustat__l">geplant</div><div class="ustat__s">${v.taken} genommen</div></div></div>
+      <div class="ustat__card"><span class="ustat__ic green"><i data-lucide="palmtree"></i></span><div><div class="ustat__n">${fmtDays(v.rest)}</div><div class="ustat__l">Resturlaub</div><div class="ustat__s">von ${fmtDays(v.base)} Tagen${v.carry?` (inkl. ${fmtDays(v.carry)} Übertrag)`:''}</div></div></div>
+      <div class="ustat__card"><span class="ustat__ic blue"><i data-lucide="calendar-check"></i></span><div><div class="ustat__n">${fmtDays(v.planned)}</div><div class="ustat__l">geplant</div><div class="ustat__s">${fmtDays(v.taken)} genommen</div></div></div>
       <div class="ustat__card ${mine.some(a=>a.status==='offen')?'warn':''}"><span class="ustat__ic amber"><i data-lucide="hourglass"></i></span><div><div class="ustat__n">${mine.filter(a=>a.status==='offen').length}</div><div class="ustat__l">offene Anträge</div><div class="ustat__s">${mine.some(a=>a.status==='offen')?'wartet auf Freigabe':'alles bearbeitet'}</div></div></div>
     </div>
     <div class="usub">
       <div class="zsec-h" style="margin:0"><b>Meine Abwesenheiten</b><span>${mine.length} Eintrag(e)</span></div>
       <button class="btn" onclick="openAbsenceForm()"><i data-lucide="plus"></i> Abwesenheit beantragen</button>
     </div>
-    ${mine.length ? `<div class="reqlist">${mine.map(reqRow).join('')}</div>` : `<div class="empty"><i data-lucide="calendar-check"></i><div>Noch keine Abwesenheiten. Stell oben deinen ersten Antrag.</div></div>`}`;
+    ${mine.length ? `<div class="reqlist">${mine.map(reqRow).join('')}</div>` : `<div class="empty"><i data-lucide="calendar-check"></i><div>Noch keine Abwesenheiten. Stell oben deinen ersten Antrag.</div></div>`}
+    ${selfApprovalQueue(me.id)}`;
+}
+// Kolonnenführer mit Genehmigungsrecht sieht in „Mein Bereich" zusätzlich die offenen
+// Anträge seines Teams zur Freigabe. Ohne das Recht (Standard) bleibt der Bereich leer.
+function selfApprovalQueue(selfId){
+  if(!can('approveAbsence')) return '';
+  const open = absences.filter(a => a.status === 'offen' && a.empId !== selfId)
+                       .sort((a,b) => a.from.localeCompare(b.from));
+  if(!open.length) return `<div class="usub" style="margin-top:22px"><div class="zsec-h" style="margin:0"><b>Freizugeben</b><span>0 offen</span></div></div>
+    <div class="empty"><i data-lucide="check-circle-2"></i><div>Aktuell keine offenen Urlaubsanträge deines Teams.</div></div>`;
+  return `<div class="usub" style="margin-top:22px"><div class="zsec-h" style="margin:0"><b>Freizugeben</b><span>${open.length} offen</span></div></div>
+    <div class="reqlist">${open.map(reqRow).join('')}</div>`;
 }
 function urlaubBody(){
   if(urlaubSub === 'antraege') return antraegeHTML();
@@ -9513,9 +9587,9 @@ function personCalHTML(id){
       <button class="btn" onclick="openAbsenceForm(${id})"><i data-lucide="plus"></i> Abwesenheit erfassen</button>
     </div>
     <div class="pcal-stats">
-      <div class="pcal-stat"><div class="pcal-stat__n">${v.rest}</div><div class="pcal-stat__l">Resturlaub <small>von ${e.annual}</small></div></div>
-      <div class="pcal-stat"><div class="pcal-stat__n">${v.taken}</div><div class="pcal-stat__l">Urlaub genommen</div></div>
-      <div class="pcal-stat"><div class="pcal-stat__n">${v.planned}</div><div class="pcal-stat__l">Urlaub geplant</div></div>
+      <div class="pcal-stat"><div class="pcal-stat__n">${fmtDays(v.rest)}</div><div class="pcal-stat__l">Resturlaub <small>von ${fmtDays(v.base)}${v.carry?` inkl. ${fmtDays(v.carry)} Übertrag`:''}</small></div></div>
+      <div class="pcal-stat"><div class="pcal-stat__n">${fmtDays(v.taken)}</div><div class="pcal-stat__l">Urlaub genommen</div></div>
+      <div class="pcal-stat"><div class="pcal-stat__n">${fmtDays(v.planned)}</div><div class="pcal-stat__l">Urlaub geplant</div></div>
       <div class="pcal-stat"><div class="pcal-stat__n">${krankAT}</div><div class="pcal-stat__l">Kranktage ${yr}</div></div>
     </div>
     <div class="panel pad">
@@ -9537,7 +9611,7 @@ function antraegeHTML(){
 }
 function reqRow(a){
   const e = emp(a.empId) || {name:'Unbekannt', role:'', crewId:null}; const tm = typeMeta(a.type); const sm = statusMeta(a.status);
-  const dur = a.type === 'krank' ? (a.to ? `${workdays(a.from,a.to)} AT` : 'laufend') : `${workdays(a.from,a.to)} AT`;
+  const dur = a.type === 'krank' ? (a.to ? `${fmtDays(absDays(a))} AT` : 'laufend') : `${fmtDays(absDays(a))} AT${a.half?' (½)':''}`;
   const warn = a.status !== 'abgelehnt' ? conflictWarn(a) : '';
   return `<div class="req">
     <button class="req__main" onclick="openAbsence(${a.id})">
@@ -9557,10 +9631,11 @@ function reqRow(a){
 }
 
 function resturlaubHTML(){
-  return `<div class="panel table-wrap"><table class="team-table"><thead><tr><th>Mitarbeiter</th><th>Anspruch</th><th>Genommen</th><th>Geplant</th><th>Rest</th><th style="min-width:150px">Auslastung</th></tr></thead><tbody>
-    ${employees.map(e => { const v = vacInfo(e.id); const used = v.taken + v.planned; const pct = e.annual > 0 ? Math.min(100, Math.round(used / e.annual * 100)) : 0; return `<tr class="clickable" onclick="openPersonCal(${e.id})" title="Einzelkalender öffnen">
+  const showCarry = !!(settings.vacation && settings.vacation.carryover);
+  return `<div class="panel table-wrap"><table class="team-table"><thead><tr><th>Mitarbeiter</th><th>Anspruch</th>${showCarry?'<th>Übertrag</th>':''}<th>Genommen</th><th>Geplant</th><th>Rest</th><th style="min-width:150px">Auslastung</th></tr></thead><tbody>
+    ${employees.map(e => { const v = vacInfo(e.id); const used = v.taken + v.planned; const pct = v.base > 0 ? Math.min(100, Math.round(used / v.base * 100)) : 0; return `<tr class="clickable" onclick="openPersonCal(${e.id})" title="Einzelkalender öffnen">
       <td data-label="Mitarbeiter"><span class="person-cell"><span class="avatar">${initials(e.name)}</span>${escapeHtml(e.name)}</span></td>
-      <td data-label="Anspruch">${e.annual||0}</td><td data-label="Genommen">${v.taken}</td><td data-label="Geplant">${v.planned}</td><td data-label="Rest"><b>${v.rest}</b></td>
+      <td data-label="Anspruch">${e.annual||0}</td>${showCarry?`<td data-label="Übertrag">${v.carry?fmtDays(v.carry):'–'}</td>`:''}<td data-label="Genommen">${fmtDays(v.taken)}</td><td data-label="Geplant">${fmtDays(v.planned)}</td><td data-label="Rest"><b>${fmtDays(v.rest)}</b></td>
       <td data-label="Auslastung"><div class="vbar"><span class="${pct>=85?'hot':''}" style="width:${pct}%"></span></div></td>
     </tr>`; }).join('')}
   </tbody></table></div>`;
@@ -9569,7 +9644,7 @@ function resturlaubHTML(){
 function openAbsence(id){
   const a = absences.find(x => x.id === id); if(!a) return;
   const e = emp(a.empId) || {name:'Unbekannt', role:'', crewId:null}; const tm = typeMeta(a.type); const sm = statusMeta(a.status);
-  const dur = a.type === 'krank' ? (a.to ? `${workdays(a.from,a.to)} Arbeitstage` : 'laufend (AU)') : `${workdays(a.from,a.to)} Arbeitstage`;
+  const dur = a.type === 'krank' ? (a.to ? `${fmtDays(absDays(a))} Arbeitstage` : 'laufend (AU)') : `${fmtDays(absDays(a))} Arbeitstage${a.half?' (halber Tag)':''}`;
   const warn = a.status !== 'abgelehnt' ? conflictWarn(a) : '';
   openSheet(`
     <div class="sheet__head">
@@ -9584,7 +9659,7 @@ function openAbsence(id){
         <div class="detail-row"><dt>Dauer</dt><dd>${dur}</dd></div>
         ${a.note?`<div class="detail-row"><dt>Notiz</dt><dd>${escapeHtml(a.note)}</dd></div>`:''}
         ${a.au?`<div class="detail-row"><dt>AU-Bescheinigung</dt><dd>${auImages[a.id]?`<img class="authumb" src="${auImages[a.id]}" alt="AU" onclick="viewAu(${a.id})" title="Größer ansehen">`:`<span class="aupin"><i data-lucide="paperclip"></i> ${a.au}</span>`}</dd></div>`:''}
-        ${a.type==='urlaub'?`<div class="detail-row"><dt>Resturlaub</dt><dd>${vacInfo(a.empId).rest} Tage übrig</dd></div>`:''}
+        ${a.type==='urlaub'?`<div class="detail-row"><dt>Resturlaub</dt><dd>${fmtDays(vacInfo(a.empId).rest)} Tage übrig</dd></div>`:''}
         ${warn?`<div class="detail-row"><dt>Hinweis</dt><dd style="color:var(--amber);font-weight:600"><i data-lucide="alert-triangle" style="width:14px;height:14px;vertical-align:-2px"></i> ${warn}</dd></div>`:''}
       </dl>
       ${absenceActions(a)}
@@ -9611,7 +9686,7 @@ function absenceActions(a){
 }
 function editAbsence(id){
   const a = absences.find(x => x.id === id); if(!a) return;
-  openAbsenceForm(a.empId, a.from, a.to, a.type, a.note, id);
+  openAbsenceForm(a.empId, a.from, a.to, a.type, a.note, id, a.half);
 }
 function approveAbsence(id){ if(!can('approveAbsence')) return; const a = absences.find(x => x.id === id); if(!a) return; if(a.status !== 'offen') return; a.status = 'genehmigt'; saveAbsences(); persistAbsence(a); afterAbsChange(); toast(`${(emp(a.empId)||{name:'Eintrag'}).name}: genehmigt`); }
 function rejectAbsence(id){ if(!can('approveAbsence')) return; const a = absences.find(x => x.id === id); if(!a) return; if(a.status !== 'offen') return; if(!confirm(`Antrag von ${(emp(a.empId)||{name:'diesem Mitarbeiter'}).name} wirklich ablehnen?`)) return; a.status = 'abgelehnt'; saveAbsences(); persistAbsence(a); afterAbsChange(); toast(`${(emp(a.empId)||{name:'Eintrag'}).name}: abgelehnt`); }
@@ -9619,7 +9694,7 @@ function deleteAbsence(id){ const i = absences.findIndex(x => x.id === id); if(i
 function afterAbsChange(){ renderUrlaub(); refreshUrlaubBadge(); }
 function viewAu(id){ const url = auImages[id]; if(!url) return; openSheet(`<div class="sheet__head"><div><div class="sheet__title">AU-Bescheinigung</div><div class="sheet__sub">Foto vom Mitarbeiter hochgeladen</div></div><button class="iconbtn sheet__close" onclick="openAbsence(${id})" aria-label="Zurück"><i data-lucide="x"></i></button></div><div class="sheet__body"><img src="${url}" alt="AU" style="width:100%;border-radius:10px;border:1px solid var(--line)"></div>`); }
 
-function openAbsenceForm(preEmp, preFrom, preTo, preType, preNote, editId){
+function openAbsenceForm(preEmp, preFrom, preTo, preType, preNote, editId, preHalf){
   afAuData = null;
   afEditId = editId || null;
   // Mitarbeiter-Ansicht: nur eigener Antrag möglich
@@ -9649,6 +9724,7 @@ function openAbsenceForm(preEmp, preFrom, preTo, preType, preNote, editId){
         <div class="field"><label>Von</label><input type="date" id="afFrom" value="${from}" onchange="absencePreview()"></div>
         <div class="field"><label>Bis</label><input type="date" id="afTo" value="${to}" onchange="absencePreview()"></div>
       </div>
+      <label class="afhalf" id="afHalfField" style="display:none"><input type="checkbox" id="afHalf" ${preHalf?'checked':''} onchange="absencePreview()"><span><b>Halber Tag</b><small>zählt als ½ Urlaubstag</small></span></label>
       <div class="field"><label>Notiz (optional)</label><input id="afNote" placeholder="z. B. Brückentag, AU liegt vor ..." value="${(preNote||'').replace(/"/g,'&quot;')}"></div>
       <div class="field afau" id="afAuField" style="display:none">
         <label>Arbeitsunfähigkeits&shy;bescheinigung <span class="opt">optional</span></label>
@@ -9702,15 +9778,20 @@ function absencePreview(){
   const to = document.getElementById('afTo').value;
   if(!empId){ host.className = 'afprev warn'; host.innerHTML = `<div class="afprev__warn"><i data-lucide="alert-triangle"></i> Bitte zuerst einen Mitarbeiter wählen.</div>`; icons(); return; }
   if(!from || !to || to < from){ host.className = 'afprev warn'; host.innerHTML = `<div class="afprev__warn"><i data-lucide="alert-triangle"></i> Bitte gültigen Zeitraum wählen (Bis darf nicht vor Von liegen).</div>`; icons(); return; }
-  const wd = workdays(from, to);
+  // Halber-Tag-Feld: nur bei Urlaub/Sonderurlaub, nur wenn Betrieb es erlaubt UND es genau ein Tag ist.
+  const halfAllowed = !!(settings.vacation && settings.vacation.halfDays) && type !== 'krank' && from === to;
+  const hf = document.getElementById('afHalfField'); const hcb = document.getElementById('afHalf');
+  if(hf) hf.style.display = halfAllowed ? '' : 'none';
+  const half = halfAllowed && hcb && hcb.checked;
+  const wd = absDays({ from, to, half });
   const warn = conflictWarn({id:-1, empId, type, from, to, status:'offen'});
   const lbl = type === 'urlaub' ? 'Urlaubstag(e)' : type === 'krank' ? 'Krankheitstag(e)' : 'Sondertag(e)';
   let extra = '';
-  if(type === 'urlaub'){ const after = vacInfo(empId).rest - wd; extra = after < 0 ? ` · <b>Kontingent überzogen um ${Math.abs(after)} Tag(e)</b> (Resturlaub 0)` : ` · Resturlaub danach: <b>${after}</b> Tage`; }
+  if(type === 'urlaub'){ const after = vacInfo(empId).rest - wd; extra = after < 0 ? ` · <b>Kontingent überzogen um ${fmtDays(Math.abs(after))} Tag(e)</b> (Resturlaub 0)` : ` · Resturlaub danach: <b>${fmtDays(after)}</b> Tage`; }
   host.className = 'afprev' + (warn ? ' warn' : '');
   const directOk = type==='krank' || can('approveAbsence');
   const hint = type==='krank' ? 'Krankmeldung wird sofort eingetragen.' : (directOk ? 'Wird direkt genehmigt eingetragen.' : 'Wird als Antrag „offen" gesendet — die Personalverwaltung gibt frei.');
-  host.innerHTML = `<div class="afprev__main"><b>${wd}</b> ${lbl} (Mo–Fr gezählt)${extra}</div>${warn?`<div class="afprev__warn"><i data-lucide="alert-triangle"></i> ${warn}</div>`:''}<div class="afprev__hint">${hint}</div>`;
+  host.innerHTML = `<div class="afprev__main"><b>${fmtDays(wd)}</b> ${lbl} (Mo–Fr gezählt)${extra}</div>${warn?`<div class="afprev__warn"><i data-lucide="alert-triangle"></i> ${warn}</div>`:''}<div class="afprev__hint">${hint}</div>`;
   icons();
 }
 function submitAbsence(){
@@ -9721,15 +9802,18 @@ function submitAbsence(){
   const note = document.getElementById('afNote').value.trim();
   if(!empId){ toast('Bitte zuerst einen Mitarbeiter wählen'); return; }
   if(!from || !to || to < from){ toast('Bitte gültigen Zeitraum wählen'); return; }
+  // Halber Tag: nur gültig, wenn Betrieb es erlaubt, kein Krank, und genau ein Tag.
+  const halfCb = document.getElementById('afHalf');
+  const half = !!(settings.vacation && settings.vacation.halfDays) && type !== 'krank' && from === to && halfCb && halfCb.checked;
   // Resturlaub-Schutz: Urlaubsanträge, die das Kontingent überziehen, brauchen eine bewusste Bestätigung.
   // In der Bearbeitung zählt der eigene Eintrag noch mit, daher abziehen, um Doppelzählung zu vermeiden.
   if(type === 'urlaub'){
     let rest = vacInfo(empId).rest;
-    if(afEditId){ const old = absences.find(x => x.id === afEditId); if(old && old.type === 'urlaub' && old.empId === empId) rest += workdays(old.from, old.to); }
-    const after = rest - workdays(from, to);
+    if(afEditId){ const old = absences.find(x => x.id === afEditId); if(old && old.type === 'urlaub' && old.empId === empId) rest += absDays(old); }
+    const after = rest - absDays({ from, to, half });
     if(after < 0){
       const who = emp(empId);
-      if(!confirm(`${who ? who.name : 'Mitarbeiter'} überzieht das Urlaubskontingent um ${Math.abs(after)} Tag(e) (Resturlaub 0). Trotzdem eintragen?`)) return;
+      if(!confirm(`${who ? who.name : 'Mitarbeiter'} überzieht das Urlaubskontingent um ${fmtDays(Math.abs(after))} Tag(e) (Resturlaub 0). Trotzdem eintragen?`)) return;
     }
   }
   // Überschneidungs-Schutz: gleichzeitige Abwesenheiten in derselben Kolonne bewusst bestätigen (Krankmeldung lässt sich nicht ablehnen).
@@ -9742,7 +9826,7 @@ function submitAbsence(){
   const status = type === 'krank' ? 'genehmigt' : (can('approveAbsence') ? 'genehmigt' : 'offen');
   if(afEditId){
     const a = absences.find(x => x.id === afEditId);
-    if(a){ Object.assign(a, { empId, type, from, to, note }); if(type !== 'krank') a.au = a.au || ''; saveAbsences(); persistAbsence(a); }
+    if(a){ Object.assign(a, { empId, type, from, to, note, half }); if(type !== 'krank') a.au = a.au || ''; saveAbsences(); persistAbsence(a); }
     afEditId = null; afAuData = null;
     closeSheet();
     activeTeamTab = 'urlaub'; akteEmpId = null;
@@ -9753,7 +9837,7 @@ function submitAbsence(){
   const newId = absSeq++;
   const au = (type === 'krank' && afAuData) ? afAuData.name : '';
   if(type === 'krank' && afAuData) auImages[newId] = afAuData.url;
-  const aNew = { id: newId, empId, type, from, to, note, status, au };
+  const aNew = { id: newId, empId, type, from, to, note, status, au, half };
   absences.push(aNew);
   afAuData = null;
   saveAbsences();
@@ -10305,7 +10389,8 @@ function absRowPayload(a){
     bis: a.to || a.from,
     note: a.note || null,
     status: a.status || 'offen',
-    au: a.au || null
+    au: a.au || null,
+    halbtags: !!a.half
   };
 }
 async function persistAbsence(a){
@@ -10346,7 +10431,7 @@ async function loadAbsencesDb(){
     if(empId == null) return;                    // unbekannte Person (z. B. gelöscht) überspringen
     const newId = absSeq++;
     absences.push({ id:newId, _uuid:r.id, empId, type:r.art, from:r.von, to:r.bis || r.von,
-                    note:r.note || '', status:r.status || 'offen', au:r.au || '' });
+                    note:r.note || '', status:r.status || 'offen', au:r.au || '', half:!!r.halbtags });
   });
   saveAbsences();                                // lokalen Cache mit DB-Stand spiegeln
 }
@@ -14144,7 +14229,7 @@ function akteBeschaeftigungCard(e,hr){
     ${akteRow('Vertragsart', akteFilled(hr.contract)?escapeHtml(hr.contract):'', 'beschaeftigung')}
     ${akteRow('Wochenstunden', akteFilled(hr.hours)?(hr.hours+' h'):'', 'beschaeftigung')}
     ${akteFilled(hr.probe)?kv('Probezeit bis', deDate(hr.probe)):''}
-    ${kv('Urlaub '+new Date(TODAY).getFullYear(), `${vac.rest} Rest <small style="color:var(--muted);font-weight:500">(${vac.taken} genommen · ${vac.planned} geplant · ${e.annual} ges.)</small>`)}
+    ${kv('Urlaub '+new Date(TODAY).getFullYear(), `${fmtDays(vac.rest)} Rest <small style="color:var(--muted);font-weight:500">(${fmtDays(vac.taken)} genommen · ${fmtDays(vac.planned)} geplant · ${e.annual} ges.)</small>`)}
   </div>`;
   return akteCard({title:'Beschäftigung', icon:'briefcase', section:'beschaeftigung', body, priv:true});
 }
@@ -14210,9 +14295,10 @@ function akteAbsenceCard(e,hr){
   const vac = vacInfo(e.id);
   const body = `<div class="dw-quiz">
     ${kv('Urlaubsanspruch '+new Date(TODAY).getFullYear(), e.annual+' Tage')}
-    ${kv('Genommen', vac.taken+' Tage')}
-    ${kv('Verplant', vac.planned+' Tage')}
-    ${kv('Resturlaub', `<b>${vac.rest} Tage</b>`)}
+    ${vac.carry?kv('Übertrag Vorjahr', fmtDays(vac.carry)+' Tage'):''}
+    ${kv('Genommen', fmtDays(vac.taken)+' Tage')}
+    ${kv('Verplant', fmtDays(vac.planned)+' Tage')}
+    ${kv('Resturlaub', `<b>${fmtDays(vac.rest)} Tage</b>`)}
   </div>
   <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:13px">
     <button class="mini-btn primary" onclick="closeAkte();teamTab('urlaub');openAbsenceForm(${e.id})"><i data-lucide="plane"></i> Abwesenheit erfassen</button>
@@ -14258,7 +14344,7 @@ function akteGespraecheCard(e,hr,priv){
     ${kv('Dokumentierte Gespräche', String(list.length))}
     ${kv('Letztes Gespräch', list.length ? deDate(list[0].date) : '—')}
     ${due ? `<div class="dw-quiz__row"><span class="dw-quiz__k">Nächster Turnus (Empfehlung)</span><span class="dw-quiz__v">${deDate(due)} <span class="akte-badge ${dueStatus[0]}" style="margin-left:6px">${dueStatus[1]}</span></span></div>` : kv('Nächster Turnus', 'nach erstem Gespräch')}
-    ${kv('Abwesenheit '+yr, `${vac.taken} Urlaubstage · ${krank} Krankheitstage`)}
+    ${kv('Abwesenheit '+yr, `${fmtDays(vac.taken)} Urlaubstage · ${krank} Krankheitstage`)}
   </div>
   <p class="compose-hint" style="margin:9px 0 0"><i data-lucide="info" style="width:13px;height:13px;vertical-align:-2px"></i> Diese Übersicht <b>informiert</b> – sie bewertet die Person nicht. Empfohlener Rhythmus: alle 3–6 Monate.</p>`;
   const ctxCard = akteCard({title:'Überblick', icon:'calendar-check', section:null, editable:false, body:ctx, priv:true});
