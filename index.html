@@ -3325,7 +3325,7 @@ function loadStages(){
   try{ const raw = localStorage.getItem('gcos_stages_v1'); if(raw){ const p = JSON.parse(raw); if(Array.isArray(p) && p.length && p.some(s => s.id === 'neu')) return p; } }catch(e){}
   return DEFAULT_STAGES.map(s => ({...s}));
 }
-function saveStages(){ try{ localStorage.setItem('gcos_stages_v1', JSON.stringify(stages)); }catch(e){} }
+function saveStages(){ try{ localStorage.setItem('gcos_stages_v1', JSON.stringify(stages)); }catch(e){} if(typeof persistSettingsDb==='function') persistSettingsDb(); }
 function stageById(id){ return stages.find(s => s.id === id) || stages[0]; }
 // Mitarbeiterstamm – im Echtbetrieb legt der Betrieb sein Team selbst an (leerer Start).
 const employees = [];
@@ -3514,13 +3514,83 @@ const DEFAULT_SETTINGS = {
   },
 };
 let settings = loadSettings();
+// Rohe Settings (aus localStorage ODER aus der DB) tief mit den Defaults verschmelzen.
+function applySettingsRaw(s){
+  s = s || {};
+  s.perms = s.perms || {};
+  s.perms.buero = Object.assign({}, DEFAULT_SETTINGS.perms.buero, s.perms.buero);
+  s.perms.buchhaltung = Object.assign({}, DEFAULT_SETTINGS.perms.buchhaltung, s.perms.buchhaltung);
+  s.perms.kolonnenfuehrer = Object.assign({}, DEFAULT_SETTINGS.perms.kolonnenfuehrer, s.perms.kolonnenfuehrer);
+  s.perms.mitarbeiter = Object.assign({}, DEFAULT_SETTINGS.perms.mitarbeiter, s.perms.mitarbeiter);
+  s.vacation = Object.assign({}, DEFAULT_SETTINGS.vacation, s.vacation);
+  s.company = Object.assign({}, DEFAULT_SETTINGS.company, s.company);
+  s.portal = Object.assign({}, JSON.parse(JSON.stringify(DEFAULT_SETTINGS.portal)), s.portal);
+  s.portal.social = Object.assign({}, DEFAULT_SETTINGS.portal.social, s.portal.social);
+  s.portal.bilder = Array.isArray(s.portal.bilder)? s.portal.bilder : [];
+  const merged = Object.assign(JSON.parse(JSON.stringify(DEFAULT_SETTINGS)), s);
+  if(typeof s.clockMode==='undefined' && typeof s.selfClockIn!=='undefined'){ merged.clockMode = s.selfClockIn ? 'self' : 'admin'; }
+  return resetDemoModules(merged);
+}
 function loadSettings(){
-  try{ const r = localStorage.getItem('gcos_settings_v2'); if(r){ const s = JSON.parse(r); s.perms = s.perms || {}; s.perms.buero = Object.assign({}, DEFAULT_SETTINGS.perms.buero, s.perms.buero); s.perms.buchhaltung = Object.assign({}, DEFAULT_SETTINGS.perms.buchhaltung, s.perms.buchhaltung); s.perms.kolonnenfuehrer = Object.assign({}, DEFAULT_SETTINGS.perms.kolonnenfuehrer, s.perms.kolonnenfuehrer); s.perms.mitarbeiter = Object.assign({}, DEFAULT_SETTINGS.perms.mitarbeiter, s.perms.mitarbeiter); s.vacation = Object.assign({}, DEFAULT_SETTINGS.vacation, s.vacation); s.company = Object.assign({}, DEFAULT_SETTINGS.company, s.company); s.portal = Object.assign({}, JSON.parse(JSON.stringify(DEFAULT_SETTINGS.portal)), s.portal); s.portal.social = Object.assign({}, DEFAULT_SETTINGS.portal.social, s.portal.social); s.portal.bilder = Array.isArray(s.portal.bilder)? s.portal.bilder : []; const merged = Object.assign(JSON.parse(JSON.stringify(DEFAULT_SETTINGS)), s); if(typeof s.clockMode==='undefined' && typeof s.selfClockIn!=='undefined'){ merged.clockMode = s.selfClockIn ? 'self' : 'admin'; } return resetDemoModules(merged); } }catch(e){}
+  try{ const r = localStorage.getItem('gcos_settings_v2'); if(r){ return applySettingsRaw(JSON.parse(r)); } }catch(e){}
   return JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
 }
 // PRODUKTION: Gebuchte Module bleiben dauerhaft erhalten – kein Reset bei Reload mehr.
 function resetDemoModules(s){ return s; }
-function saveSettings(){ try{ localStorage.setItem('gcos_settings_v2', JSON.stringify(settings)); }catch(e){} }
+
+// ── Betriebseinstellungen ↔ Supabase (betrieb_einstellungen.data) ─────────────
+//  WARUM: Alles, was pro Betrieb verstellt werden kann (Rechte-Matrix, Urlaubs-
+//  regeln, clockMode, Rüstzeit, Geo, Startmodul, gebuchte Module, Rechnungs-/
+//  Bankdaten, Vorlagen-Defaults), MUSS server-seitig liegen – nicht nur im Browser.
+//  'portal' wird bewusst NICHT dupliziert: es ist in customers autoritativ und wird
+//  bei afterAuth ohnehin von dort überschrieben (spart große Base64-Bilder im Blob).
+let _settingsHydrated = false;   // erst nach dem DB-Load dürfen wir zurückschreiben
+let _settingsSaveTimer = null;
+function settingsForDb(){
+  const s = JSON.parse(JSON.stringify(settings));
+  delete s.portal;   // customers ist die Wahrheit fürs öffentliche Profil
+  s._stages    = stages;                                            // Bewerber-Pipeline-Spalten (pro Betrieb einstellbar)
+  s._templates = (typeof TEMPLATES !== 'undefined') ? TEMPLATES : undefined;  // WhatsApp/E-Mail-Vorlagen
+  return s;
+}
+function canWriteSettings(){
+  return !!(GC_PROFILE && ['owner','buero','gc_admin'].includes(GC_PROFILE.role));
+}
+function persistSettingsDb(){
+  if(!osConnected() || !_settingsHydrated) return;   // kein Clobbern vor dem Erst-Load
+  if(!canWriteSettings()) return;                     // nur Manager dürfen speichern (RLS deckt es zusätzlich ab)
+  clearTimeout(_settingsSaveTimer);
+  _settingsSaveTimer = setTimeout(async ()=>{
+    try{
+      const { error } = await sbAuth.rpc('save_settings', { p_data: settingsForDb() });
+      if(error) console.warn('save_settings:', error.message || error);
+    }catch(e){ console.warn('save_settings:', e); }
+  }, 600);
+}
+async function loadSettingsDb(){
+  if(!osConnected()) return;
+  try{
+    const { data, error } = await sbAuth.rpc('my_settings');
+    if(error){ console.warn('my_settings:', error.message || error); return; }
+    if(data && typeof data === 'object' && Object.keys(data).length){
+      const raw = Object.assign(JSON.parse(JSON.stringify(settings)), data);
+      // Pipeline-Spalten + Vorlagen aus dem Blob zurück in die Modul-Variablen holen.
+      if(Array.isArray(raw._stages) && raw._stages.length && raw._stages.some(s=>s.id==='neu')){
+        stages = raw._stages.map(s=>({...s}));
+        try{ localStorage.setItem('gcos_stages_v1', JSON.stringify(stages)); }catch(_){}
+      }
+      if(raw._templates && (raw._templates.whatsapp || raw._templates.email) && typeof TEMPLATES !== 'undefined'){
+        TEMPLATES = { whatsapp: raw._templates.whatsapp || DEFAULT_TEMPLATES.whatsapp,
+                      email:    raw._templates.email    || DEFAULT_TEMPLATES.email };
+        try{ localStorage.setItem('gc_templates', JSON.stringify(TEMPLATES)); }catch(_){}
+      }
+      delete raw._stages; delete raw._templates;
+      settings = applySettingsRaw(raw);
+      try{ localStorage.setItem('gcos_settings_v2', JSON.stringify(settings)); }catch(_){}
+    }
+  }catch(e){ console.warn('my_settings:', e); }
+}
+function saveSettings(){ try{ localStorage.setItem('gcos_settings_v2', JSON.stringify(settings)); }catch(e){} persistSettingsDb(); }
 
 /* ===================== MANDANTEN-ISOLATION =====================
    Alle account-gebundenen Local-Caches leeren. Verhindert, dass Daten eines
@@ -4490,6 +4560,7 @@ async function gcLogout(){
 // Nach erfolgreicher Authentifizierung: Profil laden, App betreten
 async function afterAuth(session){
   if(!session||!session.user) return;
+  _settingsHydrated = false;   // bis DB-Settings geladen sind: NICHT zurückschreiben
   GC_USER = session.user;
   // Profil (role + customer_id) laden; existiert via Trigger handle_new_user
   try{
@@ -4504,6 +4575,11 @@ async function afterAuth(session){
   // frisch registrierter Betrieb NIE Logo/Titelbild/Daten eines Vorgängers.
   { const _cid = (GC_PROFILE && GC_PROFILE.customer_id) || null;
     if(settings.cid !== _cid){ gcResetTenantState(); settings.cid = _cid; saveSettings(); } }
+  // Betriebseinstellungen (Rechte-Matrix, Urlaubsregeln, clockMode, Rüstzeit, Geo,
+  // Startmodul, Module, Rechnungs-/Bankdaten ...) SERVER-SEITIG laden. Danach erst
+  // freigeben, dass Änderungen wieder in die DB zurückgeschrieben werden.
+  await loadSettingsDb();
+  _settingsHydrated = true;
   // Firmenstammdaten aus Supabase ziehen, falls schon ein Betrieb verknüpft ist
   if(GC_PROFILE && GC_PROFILE.customer_id){
     try{
@@ -14945,7 +15021,7 @@ function loadTemplates(){
   return JSON.parse(JSON.stringify(DEFAULT_TEMPLATES));
 }
 let TEMPLATES = loadTemplates();
-function saveTemplates(){ try{ localStorage.setItem('gc_templates', JSON.stringify(TEMPLATES)); }catch(e){} }
+function saveTemplates(){ try{ localStorage.setItem('gc_templates', JSON.stringify(TEMPLATES)); }catch(e){} if(typeof persistSettingsDb==='function') persistSettingsDb(); }
 function fillTemplate(text, a){
   const vorname = (a.name||'').split(' ')[0] || '';
   const beruf = (a.role || (a.pq && a.pq.beruf) || 'Mitarbeiter');
