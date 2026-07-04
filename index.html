@@ -12930,7 +12930,7 @@ function openCompose(id, channel, preTplId){
         ${list.map((t,i)=>`<option value="${i}" ${i===di?'selected':''}>${escapeHtml(t.name)}${i===stdIdx?' · Standard':''}</option>`).join('')}
       </select>
       <textarea id="composeTa" class="compose-ta">${escapeHtml(first)}</textarea>
-      <p class="compose-hint">Platzhalter wie <code>{Vorname}</code> und <code>{Beruf}</code> werden automatisch ersetzt. Versand öffnet ${isWa?'WhatsApp':'dein Mailprogramm'} – nichts wird automatisch verschickt.</p>
+      <p class="compose-hint">Platzhalter wie <code>{Vorname}</code>, <code>{Beruf}</code>, <code>{Firma}</code> und <code>{Absender}</code> werden automatisch ersetzt. Versand öffnet ${isWa?'WhatsApp':'dein Mailprogramm'} – nichts wird automatisch verschickt.</p>
       <div class="sheet-actions">
         <button class="btn" style="flex:1" onclick="composeSend(${id},'${channel}')"><i data-lucide="send"></i> In ${isWa?'WhatsApp':'E-Mail'} öffnen</button>
         <button class="btn ghost" onclick="composeSaveTpl(${id},'${channel}')"><i data-lucide="bookmark-plus"></i> Als Vorlage</button>
@@ -12955,7 +12955,7 @@ function composeSend(id, channel){
     window.open(`https://wa.me/${num}?text=${encodeURIComponent(text)}`, '_blank');
     toast('WhatsApp wird geöffnet');
   } else {
-    const sub = encodeURIComponent('Deine Bewerbung bei Müller GaLaBau');
+    const sub = encodeURIComponent('Deine Bewerbung bei ' + ((settings.company && settings.company.name) || 'uns'));
     window.location.href = `mailto:${a.email||''}?subject=${sub}&body=${encodeURIComponent(text)}`;
     toast('E-Mail wird geöffnet');
   }
@@ -15240,17 +15240,17 @@ function copyVal(text, label, ev){
 /* Vorlagen (Du-Form) – fertig + eigene (localStorage) */
 const DEFAULT_TEMPLATES = {
   whatsapp: [
-    { id:'wa-dank', name:'Danke für die Bewerbung', text:'Hallo {Vorname}, danke, dass du dich bei uns als {Beruf} beworben hast! Wir schauen uns deine Bewerbung an und melden uns zeitnah. Liebe Grüße, dein Team von Müller GaLaBau' },
+    { id:'wa-dank', name:'Danke für die Bewerbung', text:'Hallo {Vorname}, danke, dass du dich bei uns als {Beruf} beworben hast! Wir schauen uns deine Bewerbung an und melden uns zeitnah. Liebe Grüße, dein Team von {Firma}' },
     { id:'wa-kennen', name:'Kennenlernen', text:'Hallo {Vorname}, deine Bewerbung gefällt uns – wir würden dich gerne kennenlernen. Wann hättest du diese Woche kurz Zeit für ein Telefonat?' },
     { id:'wa-termin', name:'Vorstellungsgespräch', text:'Hallo {Vorname}, wir würden gerne ein Vorstellungsgespräch mit dir vereinbaren. Passt es dir am Donnerstag um 16 Uhr bei uns auf dem Hof? Sag gern Bescheid!' },
     { id:'wa-probe', name:'Probetag anbieten', text:'Hallo {Vorname}, am besten lernst du uns direkt auf der Baustelle kennen. Hättest du Lust auf einen bezahlten Probetag? Dann finden wir einen Termin.' },
-    { id:'wa-absage', name:'Absage (freundlich)', text:'Hallo {Vorname}, danke für dein Interesse und deine Bewerbung als {Beruf}. Wir haben uns dieses Mal für einen anderen Bewerber entschieden – das ist ausdrücklich keine Wertung deiner Person. Wir wünschen dir für deinen weiteren Weg alles Gute! Dein Team von Müller GaLaBau' }
+    { id:'wa-absage', name:'Absage (freundlich)', text:'Hallo {Vorname}, danke für dein Interesse und deine Bewerbung als {Beruf}. Wir haben uns dieses Mal für einen anderen Bewerber entschieden – das ist ausdrücklich keine Wertung deiner Person. Wir wünschen dir für deinen weiteren Weg alles Gute! Dein Team von {Firma}' }
   ],
   email: [
-    { id:'ml-dank', name:'Danke für die Bewerbung', text:'Hallo {Vorname},\n\nvielen Dank, dass du dich bei uns als {Beruf} beworben hast. Wir haben deine Unterlagen erhalten und melden uns in den nächsten Tagen bei dir.\n\nViele Grüße\nGeorg Müller\nMüller GaLaBau' },
-    { id:'ml-kennen', name:'Kennenlernen', text:'Hallo {Vorname},\n\ndeine Bewerbung hat uns angesprochen – wir würden dich gerne kennenlernen. Melde dich gern, wann es dir für ein kurzes Telefonat passt.\n\nViele Grüße\nGeorg Müller\nMüller GaLaBau' },
-    { id:'ml-termin', name:'Vorstellungsgespräch', text:'Hallo {Vorname},\n\nwir würden gerne ein persönliches Vorstellungsgespräch mit dir vereinbaren. Wie sieht es bei dir am Donnerstag um 16 Uhr bei uns auf dem Betriebshof aus?\n\nViele Grüße\nGeorg Müller\nMüller GaLaBau' },
-    { id:'ml-absage', name:'Absage (freundlich)', text:'Hallo {Vorname},\n\nvielen Dank für deine Bewerbung als {Beruf} und dein Interesse an unserem Betrieb. Nach sorgfältiger Prüfung haben wir uns dieses Mal für einen anderen Bewerber entschieden.\n\nDas ist ausdrücklich keine Wertung deiner Qualifikation – wir wünschen dir für deinen weiteren beruflichen Weg alles Gute.\n\nViele Grüße\nGeorg Müller\nMüller GaLaBau' }
+    { id:'ml-dank', name:'Danke für die Bewerbung', text:'Hallo {Vorname},\n\nvielen Dank, dass du dich bei uns als {Beruf} beworben hast. Wir haben deine Unterlagen erhalten und melden uns in den nächsten Tagen bei dir.\n\nViele Grüße\n{Absender}\n{Firma}' },
+    { id:'ml-kennen', name:'Kennenlernen', text:'Hallo {Vorname},\n\ndeine Bewerbung hat uns angesprochen – wir würden dich gerne kennenlernen. Melde dich gern, wann es dir für ein kurzes Telefonat passt.\n\nViele Grüße\n{Absender}\n{Firma}' },
+    { id:'ml-termin', name:'Vorstellungsgespräch', text:'Hallo {Vorname},\n\nwir würden gerne ein persönliches Vorstellungsgespräch mit dir vereinbaren. Wie sieht es bei dir am Donnerstag um 16 Uhr bei uns auf dem Betriebshof aus?\n\nViele Grüße\n{Absender}\n{Firma}' },
+    { id:'ml-absage', name:'Absage (freundlich)', text:'Hallo {Vorname},\n\nvielen Dank für deine Bewerbung als {Beruf} und dein Interesse an unserem Betrieb. Nach sorgfältiger Prüfung haben wir uns dieses Mal für einen anderen Bewerber entschieden.\n\nDas ist ausdrücklich keine Wertung deiner Qualifikation – wir wünschen dir für deinen weiteren beruflichen Weg alles Gute.\n\nViele Grüße\n{Absender}\n{Firma}' }
   ]
 };
 function loadTemplates(){
@@ -15265,7 +15265,12 @@ function saveTemplates(){ try{ localStorage.setItem('gc_templates', JSON.stringi
 function fillTemplate(text, a){
   const vorname = (a.name||'').split(' ')[0] || '';
   const beruf = (a.role || (a.pq && a.pq.beruf) || 'Mitarbeiter');
-  return String(text).replace(/\{Vorname\}/g, vorname).replace(/\{Beruf\}/g, beruf);
+  // Echte Betriebsdaten statt Demo-Namen: {Firma}/{Absender} aus den Einstellungen (DB) –
+  // ersetzt auch in selbst gespeicherten Vorlagen.
+  const firma = (settings.company && settings.company.name) || (typeof GC_CUSTOMER!=='undefined' && GC_CUSTOMER && GC_CUSTOMER.name) || 'unserem Team';
+  const absender = (settings.company && settings.company.owner) || firma;
+  return String(text).replace(/\{Vorname\}/g, vorname).replace(/\{Beruf\}/g, beruf)
+    .replace(/\{Firma\}/g, firma).replace(/\{Absender\}/g, absender);
 }
 // Standard-Vorlage je Kanal: gemerkte ID oder – falls keine/ungültig – die erste Vorlage.
 function defaultTplIndex(channel){
