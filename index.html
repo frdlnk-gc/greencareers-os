@@ -10442,7 +10442,7 @@ function maRowPayload(e){
     position: e.role || null,
     crew: crewUuidFor(e.crewId),        // Client-crewId -> UUID (sonst null/Springer)
     phone: e.phone || null,
-    sys_role: (e.sysRole === 'buero' ? 'buero' : 'mitarbeiter'),
+    sys_role: (['buero','kolonnenfuehrer'].includes(e.sysRole) ? e.sysRole : 'mitarbeiter'),
     status: (['none','invited','active'].includes(e.account) ? e.account : 'none'),
     extra: Object.assign({}, hr, { _annual:e.annual, _since:e.since, _startDate:e.startDate||'' })
   };
@@ -10525,7 +10525,7 @@ async function loadTeam(){
             crewId:r.crew||null, phone:r.phone||'', email:r.email||'',
             since: ex._since || String(new Date(TODAY).getFullYear()),
             annual: (ex._annual != null ? ex._annual : 30),
-            sysRole: (r.sys_role==='buero'?'buero':'mitarbeiter'),
+            sysRole: (['buero','kolonnenfuehrer'].includes(r.sys_role)?r.sys_role:'mitarbeiter'),
             account: r.status||'none', startDate: ex._startDate||'' };
       employees.push(e);
     }
@@ -14861,7 +14861,7 @@ function efRoleSelChange(){
 }
 function openEmployeeForm(id){
   const e = id ? emp(id) : null;
-  const roleOpts = [['mitarbeiter','Mitarbeiter'],['buero','Personalverwaltung']].map(([v,l]) => `<option value="${v}" ${e&&e.sysRole===v?'selected':''}>${l}</option>`).join('');
+  const roleOpts = [['mitarbeiter','Mitarbeiter'],['kolonnenfuehrer','Kolonnenführer / Vorarbeiter'],['buero','Personalverwaltung']].map(([v,l]) => `<option value="${v}" ${e&&e.sysRole===v?'selected':''}>${l}</option>`).join('');
   openSheet(`
     <div class="sheet__head">
       <span class="avatar" style="width:50px;height:50px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="${e?'user-cog':'user-plus'}" style="width:22px;height:22px"></i></span>
