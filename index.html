@@ -4621,15 +4621,20 @@ async function hydrateSelfEmployee(){
     const nm = (me&&me.name) || (GC_PROFILE&&GC_PROFILE.name) || GC_USER.email;
     const ex = (me&&me.extra) || {};
     const selfId = 900001;
+    const maUuid = (me && me.id) || null;   // mitarbeiter.id = Bindeschlüssel: OHNE _uuid persistieren Zeit/Urlaub/Krank NIE
     if(!emp(selfId)){
       employees.push({
-        id:selfId, name:nm, role:(me&&me.position)||'Mitarbeiter',
+        id:selfId, _uuid: maUuid, name:nm, role:(me&&me.position)||'Mitarbeiter',
         crewId:(me&&me.crew)||null, phone:(me&&me.phone)||'',
         since: ex._since || String(new Date(TODAY).getFullYear()),
         annual: (ex._annual != null ? ex._annual : 30),
         email:(me&&me.email)||GC_USER.email,
         sysRole: (me&&me.sys_role) || GC_PROFILE.role, account:'active'
       });
+    } else {
+      // Self-Datensatz existiert schon (Re-Hydrate): fehlende mitarbeiter-UUID nachziehen,
+      // sonst laufen alle künftigen Persist-Aufrufe weiter ins Leere.
+      const self = emp(selfId); if(self && !self._uuid && maUuid) self._uuid = maUuid;
     }
     viewEmpId = selfId;
     viewRole  = GC_PROFILE.role;
