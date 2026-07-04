@@ -2159,7 +2159,7 @@
   .cal-c.we{ background:#F7F9F6; }
   .cal-c.today{ background:rgba(22,163,74,.06); }
   .cal-fill{ position:absolute; top:7px; bottom:7px; left:0; right:0; color:var(--green); background:currentColor; cursor:pointer; }
-  .cal-fill.urlaub{ color:#16A34A; }
+  .cal-fill.urlaub{ color:var(--green); }
   .cal-fill.krank{ color:#C24141; }
   .cal-fill.sonder{ color:#7C3AED; }
   .cal-fill.s{ left:3px; border-top-left-radius:6px; border-bottom-left-radius:6px; }
@@ -2173,10 +2173,10 @@
   .cal-nav .iconbtn{ width:32px; height:32px; }
   .cal-legend{ display:flex; gap:14px; flex-wrap:wrap; font-size:11.5px; color:var(--muted); font-weight:600; }
   .dot{ width:11px; height:11px; border-radius:3px; display:inline-block; margin-right:5px; vertical-align:-1px; }
-  .dot.urlaub{ background:#16A34A; }
+  .dot.urlaub{ background:var(--green); }
   .dot.krank{ background:#C24141; }
   .dot.sonder{ background:#7C3AED; }
-  .dot.offen{ background:color-mix(in srgb,#16A34A 16%,transparent); border:1.6px dashed #16A34A; }
+  .dot.offen{ background:color-mix(in srgb,var(--green) 16%,transparent); border:1.6px dashed var(--green); }
 
   .reqlist{ display:flex; flex-direction:column; gap:8px; }
   .req{ display:flex; align-items:center; gap:12px; padding:11px 13px; background:var(--card); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); }
@@ -2256,15 +2256,15 @@
   .pcal-day.today .pcal-day__n{ color:var(--green-3); }
   .pcal-day__tag{ position:absolute; left:5px; right:5px; bottom:5px; font-size:10px; font-weight:600; color:#fff; padding:3px 5px; border-radius:6px; line-height:1.25; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .pcal-day.has{ cursor:pointer; }
-  .pcal-day.has.urlaub{ background:color-mix(in srgb,#16A34A 13%,#fff); }
+  .pcal-day.has.urlaub{ background:color-mix(in srgb,var(--green) 13%,#fff); }
   .pcal-day.has.krank{ background:color-mix(in srgb,#C24141 13%,#fff); }
   .pcal-day.has.sonder{ background:color-mix(in srgb,#7C3AED 13%,#fff); }
-  .pcal-day.has.urlaub .pcal-day__tag{ background:#16A34A; }
+  .pcal-day.has.urlaub .pcal-day__tag{ background:var(--green); }
   .pcal-day.has.krank .pcal-day__tag{ background:#C24141; }
   .pcal-day.has.sonder .pcal-day__tag{ background:#7C3AED; }
   .pcal-day.has.off{ background:repeating-linear-gradient(135deg,#fff,#fff 6px,#F3F6F2 6px,#F3F6F2 12px); }
   .pcal-day.has.off .pcal-day__tag{ background:#fff; border:1.4px dashed currentColor; }
-  .pcal-day.has.off.urlaub .pcal-day__tag{ color:#16A34A; }
+  .pcal-day.has.off.urlaub .pcal-day__tag{ color:var(--green); }
   .pcal-day.has.off.krank .pcal-day__tag{ color:#C24141; }
   .pcal-day.has.off.sonder .pcal-day__tag{ color:#7C3AED; }
   .pcal-listhead{ font-size:13px; font-weight:600; color:var(--ink-2); margin:20px 0 10px; }
@@ -3758,11 +3758,11 @@ function coMethods(c){
 
 function coParseCodePct(raw){
   if(!raw) return 0;
-  // Vertriebs-Nachlässe (Julian/Liam): NUR ganze 5er-Stufen bis 50 % ("Sale 5" … "Sale 50").
+  // Vertriebs-Nachlässe (Julian/Liam): NUR Sale 10, 20, 30, 40, 50 (Vorgabe Freddy 2026-07-04).
   const re = new RegExp('^\\s*'+CO_RABATT_PREFIX+'\\s*([0-9]{1,2})\\s*$','i');
   const m = String(raw).match(re); if(!m) return 0;
   const pct = parseInt(m[1],10);
-  return (pct>=5 && pct<=50 && pct%5===0) ? pct : 0;
+  return (pct>=10 && pct<=50 && pct%10===0) ? pct : 0;
 }
 function buyFlowPending(){ const e = gcEntry(); return e.flow==='buy' && !e.paid && !!e.pkg; }
 // Rückkehr von Stripe: success_url = os.green-careers.de/?paid=1&session_id=…
@@ -5337,6 +5337,23 @@ function applyTheme(theme){
   if(t === 'galabau') document.documentElement.removeAttribute('data-theme');
   else document.documentElement.dataset.theme = t;
   setFavicon();
+  syncAccentColors();
+}
+// JS-Farbkonstanten an die Marken-Akzentfarbe koppeln: Grey-Kunde (Tiefbau) darf NIE
+// GaLaBau-Grün sehen – erste Kolonnen-/Stage-Farbe + Default-Stufe "In Bearbeitung"
+// folgen daher der aktiven --green (Orange im Tiefbau-, Gold im Landwirtschafts-Theme).
+function syncAccentColors(){
+  try{
+    const acc = getComputedStyle(document.documentElement).getPropertyValue('--green').trim() || '#16A34A';
+    // Bekannte Marken-Akzente (galabau/tiefbau/landwirtschaft) werden beim Theme-Wechsel
+    // in BEIDE Richtungen umgemappt; individuelle Kundenfarben bleiben unangetastet.
+    const ACCENTS = ['#16A34A','#EA580C','#CA8A04'];
+    const remap = c => (ACCENTS.includes(c) && c !== acc) ? acc : c;
+    if(typeof CREW_COLORS !== 'undefined')  CREW_COLORS[0]  = remap(CREW_COLORS[0]);
+    if(typeof STAGE_COLORS !== 'undefined') STAGE_COLORS[0] = remap(STAGE_COLORS[0]);
+    if(typeof DEFAULT_STAGES !== 'undefined'){ const d = DEFAULT_STAGES.find(s=>s.id==='inbearb'); if(d) d.color = remap(d.color); }
+    if(typeof stages !== 'undefined' && Array.isArray(stages)){ const s = stages.find(x=>x.id==='inbearb'); if(s) s.color = remap(s.color); }
+  }catch(_){}
 }
 // Marken-Favicon (orangefarbenes/grünes „C") an die aktive Akzentfarbe (--green) anpassen.
 function setFavicon(){
@@ -6697,10 +6714,11 @@ function staticModuleHtml(key){
     case 'denkmit': return denkMitHtml();
     case 'kpi': {
       const neuB = applicants.filter(a=>a.stage==='neu').length;
-      const anfr = inbox.length;
+      // "Neue Anfragen" (Kunden-Inbox) ist noch in Entwicklung – ehrlich als "Bald" labeln
+      // statt dauerhaft eine tote 0 zu zeigen, die in einen Coming-Soon-Teaser führt.
       return `<div class="kpi-grid">
           ${kpi('phone-call',String(neuB),neuB===1?'Bewerber ansehen':'Bewerber ansehen','neu im Board',neuB>0,"setView('recruiting')")}
-          ${kpi('inbox',String(anfr),'Neue Anfragen','WhatsApp · Mail · Tel.',false,"goModule('kunden')")}
+          ${kpi('inbox','Bald','Anfragen-Inbox','WhatsApp · Mail · Tel. – in Entwicklung',false,"goModule('kunden')")}
         </div>`;
     }
     case 'wichtig': {
@@ -7121,8 +7139,22 @@ function moduleBody(id){
     </div><div class="mod-line"><i data-lucide="phone"></i> Rückruf: ${names}</div>`;
   }
   if(id === 'geburtstage'){
-    return `<div class="mod-line"><span class="mod-ava">LB</span> <b>Lukas Berger</b> wird am <b>14.06.</b> 19</div>
-      <div class="mod-line"><span class="mod-ava">SV</span> <b>Sven Albrecht</b> · 5 Jahre dabei (01.07.)</div>`;
+    // ECHTE Daten aus der Personalakte (hr.bd = Geburtsdatum, dwHireISO = Eintritt) – keine Demo-Namen.
+    const items = [];
+    employees.forEach(e => {
+      const hr = hrData(e);
+      if(hr.bd){ const nx = dwNextAnnual(hr.bd); const days = dwDaysTo(nx);
+        if(days >= 0 && days <= 60){ const turns = nx.getFullYear() - new Date(hr.bd).getFullYear();
+          items.push({ days, html:`<div class="mod-line"><span class="mod-ava">${escapeHtml(initials(e.name))}</span> <b>${escapeHtml(e.name)}</b> wird ${turns}<span style="margin-left:auto;color:var(--muted)">${deDate(dwISO(nx))}</span></div>` }); } }
+      const hi = dwHireISO(e, hr);
+      if(hi){ const nx = dwNextAnnual(hi); const days = dwDaysTo(nx);
+        const yrs = nx.getFullYear() - new Date(hi).getFullYear();
+        if(days >= 0 && days <= 60 && yrs >= 1 && yrs % 5 === 0){
+          items.push({ days, html:`<div class="mod-line"><span class="mod-ava">${escapeHtml(initials(e.name))}</span> <b>${escapeHtml(e.name)}</b> · ${yrs} Jahre dabei<span style="margin-left:auto;color:var(--muted)">${deDate(dwISO(nx))}</span></div>` }); } }
+    });
+    if(!items.length) return `<div class="mod-line"><i data-lucide="cake"></i> Keine Geburtstage/Jubiläen in den nächsten 60 Tagen. Geburtsdatum pflegst du in der Personalakte.</div>`;
+    items.sort((a,b) => a.days - b.days);
+    return items.slice(0,3).map(i => i.html).join('');
   }
   if(id === 'scheine'){
     const items = [];
@@ -7280,10 +7312,15 @@ function acceptConsent(){
 function viewDoc(doc){
   const html = DOCS[doc]; if(!html) return;
   const title = DOC_TITLES[doc] || 'Vertrag';
+  // Markentreu: Grey-Kunde (Tiefbau) bekommt Orange + GreyCareers-Branding, nie Grün.
+  const _grey = (settings.theme === 'tiefbau');
+  const _c1 = _grey ? '#EA580C' : '#16A34A', _c2 = _grey ? '#C2410C' : '#0E7C38';
+  const _osn = (typeof osName==='function') ? osName() : 'GreenCareers OS';
+  const _badge = _grey ? 'GY' : 'GC';
   const page = `<!doctype html><html lang="de"><head><meta charset="utf-8">`
     + `<meta name="viewport" content="width=device-width,initial-scale=1">`
-    + `<title>${title} · GreenCareers OS</title><style>`
-    + `:root{--green:#16A34A;--green-2:#0E7C38;--ink:#12211D;--muted:#5A685D;--line:#E4EAE4}`
+    + `<title>${title} · ${_osn}</title><style>`
+    + `:root{--green:${_c1};--green-2:${_c2};--ink:#12211D;--muted:#5A685D;--line:#E4EAE4}`
     + `*{box-sizing:border-box}`
     + `body{margin:0;background:#F4F7F3;color:var(--ink);font:16px/1.65 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif}`
     + `.doc-top{position:sticky;top:0;background:#fff;border-bottom:1px solid var(--line);padding:15px 22px;display:flex;align-items:center;gap:13px}`
@@ -7295,8 +7332,8 @@ function viewDoc(doc){
     + `.doc-card p{margin:0 0 14px}.doc-card strong{color:var(--ink)}`
     + `@media(max-width:640px){.doc-card{padding:22px 18px}}`
     + `</style></head><body>`
-    + `<div class="doc-top"><span class="badge">GC</span><div><h1>${title}</h1>`
-    + `<div class="sub">GreenCareers OS · Version ${CONSENT_VERSION} · Stand 06/2026</div></div></div>`
+    + `<div class="doc-top"><span class="badge">${_badge}</span><div><h1>${title}</h1>`
+    + `<div class="sub">${_osn} · Version ${CONSENT_VERSION} · Stand 06/2026</div></div></div>`
     + `<div class="doc-wrap"><div class="doc-card">${html}</div></div></body></html>`;
   let w = null;
   try { w = window.open('', '_blank'); } catch(_) {}
@@ -10473,6 +10510,18 @@ async function loadPortalData(){
 // Betrieb ändert sich NICHTS am bisherigen Verhalten. Ist ein echter Betrieb eingeloggt, werden
 // Änderungen zusätzlich in die mitarbeiter-Tabelle geschrieben und beim Laden von dort zurückgelesen.
 // Fehler werden SICHTBAR getoastet (kein stilles Scheitern -> keine falsche Persistenz-Sicherheit).
+// Roh-DB-Fehler (englisch/technisch) in verständliches Deutsch übersetzen – Original in die Konsole.
+function friendlyDbError(err){
+  const m = String((err && err.message) || err || '');
+  console.warn('DB-Fehler:', m);
+  const s = m.toLowerCase();
+  if(s.includes('row-level security') || s.includes('permission') || s.includes('berechtigung')) return 'Dafür fehlt dir die Berechtigung.';
+  if(s.includes('duplicate key')) return 'Diesen Eintrag gibt es bereits.';
+  if(s.includes('failed to fetch') || s.includes('network') || s.includes('load failed')) return 'Keine Verbindung – bitte erneut versuchen.';
+  if(s.includes('jwt') || s.includes('token')) return 'Deine Sitzung ist abgelaufen – bitte neu einloggen.';
+  if(s.includes('payload') || s.includes('too large')) return 'Die Datei/Daten sind zu groß.';
+  return 'Das hat leider nicht geklappt – bitte erneut versuchen.';
+}
 function osConnected(){ return !!(sbAuth && GC_PROFILE && GC_PROFILE.customer_id); }
 
 // employee + Personalakte -> mitarbeiter-Row. position=Funktion, crew=Kolonne, Rest der HR-Felder in extra.
@@ -10498,21 +10547,21 @@ async function persistEmployee(e){
   try{
     if(e._uuid){
       const { error } = await sbAuth.from('mitarbeiter').update(maRowPayload(e)).eq('id', e._uuid);
-      if(error){ toast('Speichern fehlgeschlagen: '+error.message); }
+      if(error){ toast('Speichern fehlgeschlagen: '+friendlyDbError(error)); }
     } else {
       const { data, error } = await sbAuth.from('mitarbeiter').insert(maRowPayload(e)).select('id').single();
-      if(error){ toast('Anlegen fehlgeschlagen: '+error.message); }
+      if(error){ toast('Anlegen fehlgeschlagen: '+friendlyDbError(error)); }
       else if(data && data.id){ e._uuid = data.id; }
     }
-  }catch(err){ toast('Speichern fehlgeschlagen: '+String(err)); }
+  }catch(err){ toast('Speichern fehlgeschlagen: '+friendlyDbError(err)); }
 }
 
 async function deleteEmployeeDb(uuid){
   if(!osConnected() || !uuid) return;
   try{
     const { error } = await sbAuth.from('mitarbeiter').delete().eq('id', uuid);
-    if(error){ toast('Löschen in der DB fehlgeschlagen: '+error.message); }
-  }catch(err){ toast('Löschen in der DB fehlgeschlagen: '+String(err)); }
+    if(error){ toast('Löschen in der DB fehlgeschlagen: '+friendlyDbError(error)); }
+  }catch(err){ toast('Löschen in der DB fehlgeschlagen: '+friendlyDbError(err)); }
 }
 
 // Personalakte-Änderungen gebündelt (debounced) als reines UPDATE schreiben – nur für Personen, die
@@ -10605,20 +10654,20 @@ async function persistAbsence(a){
   try{
     if(a._uuid){
       const { error } = await sbAuth.from('abwesenheiten').update(payload).eq('id', a._uuid);
-      if(error){ toast('Abwesenheit speichern fehlgeschlagen: '+error.message); }
+      if(error){ toast('Abwesenheit speichern fehlgeschlagen: '+friendlyDbError(error)); }
     } else {
       const { data, error } = await sbAuth.from('abwesenheiten').insert(payload).select('id').single();
-      if(error){ toast('Abwesenheit anlegen fehlgeschlagen: '+error.message); }
+      if(error){ toast('Abwesenheit anlegen fehlgeschlagen: '+friendlyDbError(error)); }
       else if(data && data.id){ a._uuid = data.id; }
     }
-  }catch(err){ toast('Abwesenheit speichern fehlgeschlagen: '+String(err)); }
+  }catch(err){ toast('Abwesenheit speichern fehlgeschlagen: '+friendlyDbError(err)); }
 }
 async function deleteAbsenceDb(uuid){
   if(!osConnected() || !uuid) return;
   try{
     const { error } = await sbAuth.from('abwesenheiten').delete().eq('id', uuid);
-    if(error){ toast('Abwesenheit löschen (DB) fehlgeschlagen: '+error.message); }
-  }catch(err){ toast('Abwesenheit löschen (DB) fehlgeschlagen: '+String(err)); }
+    if(error){ toast('Abwesenheit löschen (DB) fehlgeschlagen: '+friendlyDbError(error)); }
+  }catch(err){ toast('Abwesenheit löschen (DB) fehlgeschlagen: '+friendlyDbError(err)); }
 }
 // Abwesenheiten aus der DB laden und den localStorage-Stand für den verbundenen Betrieb ersetzen
 // (DB = Wahrheit). Muss NACH loadTeam laufen, damit employee._uuid für das Mapping steht.
@@ -10665,20 +10714,20 @@ async function persistCrew(c){
   try{
     if(c._uuid){
       const { error } = await sbAuth.from('kolonnen').update(crewRowPayload(c)).eq('id', c._uuid);
-      if(error){ toast('Kolonne speichern fehlgeschlagen: '+error.message); }
+      if(error){ toast('Kolonne speichern fehlgeschlagen: '+friendlyDbError(error)); }
     } else {
       const { data, error } = await sbAuth.from('kolonnen').insert(crewRowPayload(c)).select('id').single();
-      if(error){ toast('Kolonne anlegen fehlgeschlagen: '+error.message); }
+      if(error){ toast('Kolonne anlegen fehlgeschlagen: '+friendlyDbError(error)); }
       else if(data && data.id){ c._uuid = data.id; }
     }
-  }catch(err){ toast('Kolonne speichern fehlgeschlagen: '+String(err)); }
+  }catch(err){ toast('Kolonne speichern fehlgeschlagen: '+friendlyDbError(err)); }
 }
 async function deleteCrewDb(uuid){
   if(!osConnected() || !uuid) return;
   try{
     const { error } = await sbAuth.from('kolonnen').delete().eq('id', uuid);
-    if(error){ toast('Kolonne löschen (DB) fehlgeschlagen: '+error.message); }
-  }catch(err){ toast('Kolonne löschen (DB) fehlgeschlagen: '+String(err)); }
+    if(error){ toast('Kolonne löschen (DB) fehlgeschlagen: '+friendlyDbError(error)); }
+  }catch(err){ toast('Kolonne löschen (DB) fehlgeschlagen: '+friendlyDbError(err)); }
 }
 // Kolonnen des Betriebs laden (RLS-scoped per my_kolonnen). Setzt crew.id = UUID, damit plan-Buckets
 // und employee.crewId (aus loadTeam, läuft DANACH) auf dieselbe UUID verweisen. Muss VOR loadTeam laufen.
@@ -10730,13 +10779,13 @@ async function persistKunde(c){
   try{
     if(c._uuid){
       const { error } = await sbAuth.from('kunden').update(kunRowPayload(c)).eq('id', c._uuid);
-      if(error){ toast('Kunde speichern fehlgeschlagen: '+error.message); }
+      if(error){ toast('Kunde speichern fehlgeschlagen: '+friendlyDbError(error)); }
     } else {
       const { data, error } = await sbAuth.from('kunden').insert(kunRowPayload(c)).select('id').single();
-      if(error){ toast('Kunde anlegen fehlgeschlagen: '+error.message); }
+      if(error){ toast('Kunde anlegen fehlgeschlagen: '+friendlyDbError(error)); }
       else if(data && data.id){ c._uuid = data.id; }
     }
-  }catch(err){ toast('Kunde speichern fehlgeschlagen: '+String(err)); }
+  }catch(err){ toast('Kunde speichern fehlgeschlagen: '+friendlyDbError(err)); }
 }
 // Kunden des Betriebs laden (RLS-scoped per my_kunden). Setzt customer.id = UUID, damit Plantafel-Jobs
 // (customerId) nach einem Reload auf dieselbe UUID verweisen wie plantafel.kunde_id.
@@ -10781,10 +10830,10 @@ async function persistSite(s){
   try{
     if(s._uuid){
       const { error } = await sbAuth.from('baustellen').update(siteRowPayload(s)).eq('id', s._uuid);
-      if(error){ toast('Baustelle speichern fehlgeschlagen: '+error.message); }
+      if(error){ toast('Baustelle speichern fehlgeschlagen: '+friendlyDbError(error)); }
     } else {
       const { data, error } = await sbAuth.from('baustellen').insert(siteRowPayload(s)).select('id').single();
-      if(error){ toast('Baustelle anlegen fehlgeschlagen: '+error.message); }
+      if(error){ toast('Baustelle anlegen fehlgeschlagen: '+friendlyDbError(error)); }
       else if(data && data.id){
         const oldId = s.id; s._uuid = data.id; s.id = data.id;     // Client-ID -> UUID umhängen
         timeEntries.forEach(t => { if(t.siteId === oldId) t.siteId = s.id; });
@@ -10792,13 +10841,13 @@ async function persistSite(s){
         saveSites();
       }
     }
-  }catch(err){ toast('Baustelle speichern fehlgeschlagen: '+String(err)); }
+  }catch(err){ toast('Baustelle speichern fehlgeschlagen: '+friendlyDbError(err)); }
 }
 async function deleteSiteDb(uuid){
   if(!osConnected() || !uuid) return;
   try{ const { error } = await sbAuth.from('baustellen').delete().eq('id', uuid);
-    if(error){ toast('Baustelle löschen (DB) fehlgeschlagen: '+error.message); } }
-  catch(err){ toast('Baustelle löschen (DB) fehlgeschlagen: '+String(err)); }
+    if(error){ toast('Baustelle löschen (DB) fehlgeschlagen: '+friendlyDbError(error)); } }
+  catch(err){ toast('Baustelle löschen (DB) fehlgeschlagen: '+friendlyDbError(err)); }
 }
 // Baustellen des Betriebs laden (RLS-scoped per my_baustellen). Setzt site.id = UUID, damit Zeit-Einträge
 // (site_id) nach einem Reload auf dieselbe Baustelle verweisen. Muss NACH loadKunden laufen (Kunden-Name).
@@ -10851,20 +10900,20 @@ async function persistPlanJob(job, crewId, dayId){
   try{
     if(job._uuid){
       const { error } = await sbAuth.from('plantafel').update(payload).eq('id', job._uuid);
-      if(error){ toast('Planung speichern fehlgeschlagen: '+error.message); }
+      if(error){ toast('Planung speichern fehlgeschlagen: '+friendlyDbError(error)); }
     } else {
       const { data, error } = await sbAuth.from('plantafel').insert(payload).select('id').single();
-      if(error){ toast('Planung anlegen fehlgeschlagen: '+error.message); }
+      if(error){ toast('Planung anlegen fehlgeschlagen: '+friendlyDbError(error)); }
       else if(data && data.id){ job._uuid = data.id; }
     }
-  }catch(err){ toast('Planung speichern fehlgeschlagen: '+String(err)); }
+  }catch(err){ toast('Planung speichern fehlgeschlagen: '+friendlyDbError(err)); }
 }
 async function deletePlanJobDb(uuid){
   if(!osConnected() || !uuid) return;
   try{
     const { error } = await sbAuth.from('plantafel').delete().eq('id', uuid);
-    if(error){ toast('Planung löschen (DB) fehlgeschlagen: '+error.message); }
-  }catch(err){ toast('Planung löschen (DB) fehlgeschlagen: '+String(err)); }
+    if(error){ toast('Planung löschen (DB) fehlgeschlagen: '+friendlyDbError(error)); }
+  }catch(err){ toast('Planung löschen (DB) fehlgeschlagen: '+friendlyDbError(err)); }
 }
 // Plantafel des sichtbaren Fensters laden (my_plantafel von..bis). Mappt absolutes datum -> sichtbaren
 // Slot und crew_id (UUID = crew.id nach loadCrews) zurück. Muss NACH loadCrews + loadKunden laufen.
@@ -10930,13 +10979,13 @@ async function persistTimeEntry(e){
   try{
     if(e._uuid){
       const { error } = await sbAuth.from('zeit_eintraege').update(payload).eq('id', e._uuid);
-      if(error){ toast('Zeit speichern fehlgeschlagen: '+error.message); }
+      if(error){ toast('Zeit speichern fehlgeschlagen: '+friendlyDbError(error)); }
     } else {
       const { data, error } = await sbAuth.from('zeit_eintraege').insert(payload).select('id').single();
-      if(error){ toast('Zeit anlegen fehlgeschlagen: '+error.message); }
+      if(error){ toast('Zeit anlegen fehlgeschlagen: '+friendlyDbError(error)); }
       else if(data && data.id){ e._uuid = data.id; }
     }
-  }catch(err){ toast('Zeit speichern fehlgeschlagen: '+String(err)); }
+  }catch(err){ toast('Zeit speichern fehlgeschlagen: '+friendlyDbError(err)); }
 }
 // Heutige Stempel-Einträge des Betriebs laden (my_zeit_eintraege heute..heute). Mappt mitarbeiter_id ->
 // numerische empId (bzw. 'self' für den eingeloggten Nutzer). Muss NACH loadTeam laufen (employee._uuid).
@@ -12899,7 +12948,7 @@ async function deleteBewerber(id){
   if(osConnected() && a._uuid){
     try{
       const { error } = await sbAuth.rpc('delete_my_bewerber', { p_bewerber_id: a._uuid });
-      if(error){ toast('Löschen fehlgeschlagen: '+error.message); return; }
+      if(error){ toast('Löschen fehlgeschlagen: '+friendlyDbError(error)); return; }
     }catch(e){ toast('Löschen fehlgeschlagen: '+String(e)); return; }
   }
   const i = applicants.findIndex(x => x.id === id); if(i>=0) applicants.splice(i,1);
@@ -13173,7 +13222,7 @@ function openProbetag(id){
         <div class="field"><label>Uhrzeit</label><input id="ptTime" type="time" value="07:00"></div>
       </div>
       <div class="field"><label>Baustelle / Treffpunkt</label><input id="ptOrt" placeholder="z. B. Betriebshof, Musterstr. 1"></div>
-      <p class="compose-hint"><i data-lucide="info"></i> Wird in deinen ${escapeHtml(brandNet())}-Kalender gelegt und mit Google Kalender synchronisiert (in dieser Demo simuliert). Die volle Kalenderansicht kommt im nächsten Schritt.</p>
+      <p class="compose-hint"><i data-lucide="info"></i> Der Probetag wird beim Bewerber gespeichert und im Recruiting-Board als Status angezeigt. Kalender-Ansicht &amp; Google-Sync folgen in Kürze.</p>
       <div class="sheet-actions">
         <button class="btn" style="flex:1" onclick="saveProbetag(${id})"><i data-lucide="check"></i> Probetag eintragen</button>
         <button class="btn ghost" onclick="openApplicant(${id})">Zurück</button>
@@ -14903,9 +14952,9 @@ async function akteUpload(e, file){
   if(!path || !osConnected()) return null;
   try{
     const { error } = await sbAuth.storage.from('personalakte').upload(path, file, { upsert:false, contentType:file.type||undefined });
-    if(error){ toast('Upload fehlgeschlagen: '+error.message); return null; }
+    if(error){ toast('Upload fehlgeschlagen: '+friendlyDbError(error)); return null; }
     return path;
-  }catch(err){ toast('Upload fehlgeschlagen: '+String(err)); return null; }
+  }catch(err){ toast('Upload fehlgeschlagen: '+friendlyDbError(err)); return null; }
 }
 const _akteUrlCache = {};
 async function akteSignedUrl(path){
@@ -15024,7 +15073,7 @@ function openEmployeeForm(id){
         <button class="btn ghost" onclick="closeSheet()">Abbrechen</button>
       </div>
       ${e ? `<button class="btn danger btn--block" onclick="deleteEmployee(${e.id})"><i data-lucide="trash-2"></i> Mitarbeiter löschen</button>` : ''}
-    </div>`);
+    </div>`, {guard:true});
 }
 /* Ruft die Edge Function 'invite-mitarbeiter' (Service-Role-Versand) auf.
    Defensiv: ist die Function noch nicht deployed / kein Login -> sauberer Fallback,
@@ -15194,25 +15243,42 @@ function openMessage(id){
       </div>
     </div>`);
 }
+let _sheetGuard = false;   // true = Formular mit Eingaben: Backdrop/Escape fragen erst nach
 function openSheet(html, opts){
   document.getElementById('sheet').innerHTML = html;
   const modal = document.getElementById('modal');
   modal.classList.toggle('as-drawer', !!(opts && opts.drawer));
   document.getElementById('sheet').classList.toggle('wide', !!(opts && opts.wide));
   modal.classList.remove('hidden');
+  _sheetGuard = !!(opts && opts.guard);
   icons();
 }
 function closeSheet(){
   const modal = document.getElementById('modal');
   modal.classList.add('hidden');
   modal.classList.remove('as-drawer');
+  _sheetGuard = false;
   if(currentView === 'kunden') customerTab(activeCustomerTab);
 }
+// Versehentliches Schließen (Tipp neben das Sheet / Escape) wirft bei Formularen sonst
+// alle Eingaben weg – bei guard:true erst bestätigen lassen. Buttons im Sheet rufen
+// closeSheet() direkt auf und bleiben ungefragt.
+function requestCloseSheet(){
+  if(_sheetGuard){
+    const dirty = Array.from(document.querySelectorAll('#sheet input, #sheet textarea, #sheet select'))
+      .some(el => el.type==='checkbox' ? el.checked : (el.value||'').trim() !== '');
+    if(dirty && !confirm('Eingaben verwerfen?')) return;
+  }
+  closeSheet();
+}
 document.getElementById('modal').addEventListener('click', event => {
-  if(event.target.id === 'modal') closeSheet();
+  if(event.target.id === 'modal') requestCloseSheet();
 });
 document.addEventListener('keydown', event => {
-  if(event.key === 'Escape') closeSheet();
+  if(event.key === 'Escape'){
+    const modal = document.getElementById('modal');
+    if(modal && !modal.classList.contains('hidden')) requestCloseSheet();
+  }
 });
 
 /* ----- Kontakt-Helfer (Welle 6) ----- */
