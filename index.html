@@ -5170,6 +5170,13 @@ function hasGeoConsent(key){
   const r = settings.geoConsent && settings.geoConsent[key || geoActorKey()];
   return !!(r && r.accepted && r.version === GEO_CONSENT_VERSION);
 }
+// Dokumentierte ABLEHNUNG (accepted=false) – dann wird ohne Standort gestempelt, nicht endlos neu gefragt.
+function geoDeclined(key){
+  const r = settings.geoConsent && settings.geoConsent[key || geoActorKey()];
+  return !!(r && r.accepted === false && r.version === GEO_CONSENT_VERSION);
+}
+// Darf für diesen Stempel überhaupt ein Standort erfasst werden? (Betrieb aktiv UND eingewilligt)
+function geoMayCapture(){ return !!settings.geo && hasGeoConsent(); }
 function recordGeoConsent(key, type, accepted){
   if(!settings.geoConsent) settings.geoConsent = {};
   settings.geoConsent[key] = Object.freeze({
@@ -5183,6 +5190,9 @@ function recordGeoConsent(key, type, accepted){
 function ensureGeoConsent(retry){
   if(!settings.geo) return true;                 // Standortnachweis aus -> nichts zu erfassen
   if(hasGeoConsent()) return true;               // diese Person hat (für diese Version) schon zugestimmt
+  // Mitarbeiter hat bereits dokumentiert ABGELEHNT -> Stempeln OHNE Standort zulassen (Einwilligung
+  // muss freiwillig sein: ohne Standort arbeiten zu können ist Voraussetzung dafür).
+  if(geoActorType() === 'employee' && geoDeclined()) return true;
   _geoConsentRetry = retry || null;
   openGeoConsent();
   return false;
@@ -5248,7 +5258,10 @@ function declineGeoConsent(){
     toast('Standortnachweis deaktiviert');
     rerenderCurrent();
   } else {
-    toast('Ohne Einwilligung kein Standort-Stempeln – bitte Büro ansprechen');
+    // Ablehnung ist eine gültige Antwort: dokumentieren und den Stempel-Vorgang OHNE Standort fortsetzen.
+    const retry = _geoConsentRetry; _geoConsentRetry = null;
+    toast('Ohne Standort gestempelt – deine Arbeitszeit wird trotzdem erfasst.');
+    if(typeof retry === 'function'){ setTimeout(retry, 60); } else { rerenderCurrent(); }
   }
 }
 function closeGeoConsent(){ _geoConsentRetry = null; closeSheet(); }
@@ -13418,6 +13431,12 @@ function zeitView(){
 // Mitarbeiter-Sicht: Stempeluhr je nach Modus (selbst / Kolonnenführer / Büro) + eigene Zeiten von heute
 function selfClockArea(){
   const m = clockMode();
+  // Im „lead"-Modus stempelt NUR der Kolonnenführer für die Kolonne. Ein normales
+  // Kolonnen-Mitglied bekommt eine Info-Karte statt der Kolonnenführer-Stempel-UI.
+  if(m === 'lead' && viewRole !== 'kolonnenfuehrer') return `<div class="clockcard">
+      <div class="clockcard__top"><span class="clockcard__lbl"><i data-lucide="users"></i> Zeiterfassung</span><span class="clockcard__time">${NOW}</span></div>
+      <div class="clockcard__sub">Dein Kolonnenführer stempelt die Zeiten für die ganze Kolonne. Deine erfassten Zeiten siehst du unten.</div>
+    </div>`;
   if(m === 'lead') return leadClockCard();
   if(m === 'admin') return `<div class="clockcard">
       <div class="clockcard__top"><span class="clockcard__lbl"><i data-lucide="building-2"></i> Zeiterfassung</span><span class="clockcard__time">${NOW}</span></div>
@@ -13593,7 +13612,7 @@ function openLeadClockIn(){
 async function leadClockDo(siteId){
   if(!ensureGeoConsent(() => leadClockDo(siteId))) return;   // Kolonnenführer bestätigt Standorterfassung
   const btn = document.querySelector('.sitepicks');   // visuelles Feedback ist optional
-  const g = await geoStamp(siteId);                    // ein Stempel für die ganze Kolonne
+  const g = geoMayCapture() ? await geoStamp(siteId) : null;   // ein Stempel für die ganze Kolonne
   const crew = leadCrewMembers().filter(e => !leadRunningFor(e.id));
   crew.forEach(e => { const entry = { id: timeSeq++, empId: e.id, siteId, in: NOW, out: null, ruest: settings.ruestzeit, pauseMin: 0, geo:g, byLead:true, proto:false }; timeEntries.push(entry); persistTimeEntry(entry); });
   closeSheet(); renderZeit();
@@ -13602,7 +13621,7 @@ async function leadClockDo(siteId){
 }
 async function leadClockOutAll(){
   if(!ensureGeoConsent(() => leadClockOutAll())) return;
-  const g = await geoStamp(null);
+  const g = geoMayCapture() ? await geoStamp(null) : null;
   const crew = leadCrewMembers();
   let n = 0;
   crew.forEach(e => { const r = leadRunningFor(e.id); if(r){ r.out = NOW; r.geoOut = g; persistTimeEntry(r); n++; } });
@@ -13715,7 +13734,7 @@ async function doClockIn(siteId){
   if(btn){ btn.disabled = true; btn.innerHTML = settings.geo ? '<i data-lucide="loader"></i> Standort wird erfasst …' : '<i data-lucide="loader"></i> Stempeln …'; icons(); }
   // Echter Standort-Nachweis: einmalige Erfassung beim Stempeln (geoStamp = navigator.geolocation, punktuell).
   // Der erfasste Punkt ist unveränderlich (Object.freeze) – der Mitarbeiter kann ihn nicht nachträglich bearbeiten.
-  const g = await geoStamp(siteId);
+  const g = geoMayCapture() ? await geoStamp(siteId) : null;
   myEntry = { id: timeSeq++, empId:'self', siteId, in:NOW, out:null, ruest, pauseMin:0, geo:g };
   timeEntries.push(myEntry);   // sofort in der Tagesliste sichtbar (gleiche Objekt-Referenz wie myEntry)
   persistTimeEntry(myEntry);
@@ -13738,7 +13757,24 @@ function myPause(){
   if((myEntry.pauseMin||0) + 30 > gross){ toast('Pause kann nicht länger als die bisher erfasste Arbeitszeit sein.'); return; }
   myEntry.pauseMin = (myEntry.pauseMin||0) + 30; persistTimeEntry(myEntry); renderZeit(); toast('30 Min Pause erfasst');
 }
-async function myClockOut(){ if(!myEntry) return; if(!ensureGeoConsent(() => myClockOut())) return; myEntry.out = NOW; myEntry.geoOut = await geoStamp(myEntry.siteId); persistTimeEntry(myEntry); renderZeit(); toast(`Ausgestempelt um ${NOW} · ${hoursStr(entryMin(myEntry))}`); }
+// Gesetzliche Mindestpause nach § 4 ArbZG: 30 Min ab >6 h, 45 Min ab >9 h Arbeitszeit.
+function legalBreakMin(grossMin){ if(grossMin > 9*60) return 45; if(grossMin > 6*60) return 30; return 0; }
+function maybeLegalBreak(e){
+  let gross = hm2min(e.out) - hm2min(e.in); if(gross < 0) gross += 1440;
+  const need = legalBreakMin(gross);
+  if(need > (e.pauseMin||0)){
+    if(confirm(`Bei ${hoursStr(gross)} Arbeitszeit sind gesetzlich mind. ${need} Min Pause vorgeschrieben (§ 4 ArbZG). ${e.pauseMin?`Statt ${e.pauseMin} Min `:''}${need} Min Pause eintragen?`)) e.pauseMin = need;
+  }
+}
+async function myClockOut(){
+  if(!myEntry) return;
+  if(!ensureGeoConsent(() => myClockOut())) return;
+  myEntry.out = NOW;
+  myEntry.geoOut = geoMayCapture() ? await geoStamp(myEntry.siteId) : null;
+  maybeLegalBreak(myEntry);   // gesetzliche Mindestpause anbieten, bevor gespeichert wird
+  persistTimeEntry(myEntry); renderZeit();
+  toast(`Ausgestempelt um ${NOW} · ${hoursStr(entryMin(myEntry))}`);
+}
 
 // Reverse-Geocoding: macht aus den GPS-Koordinaten eine lesbare Adresse (Straße/Hausnr · PLZ Ort).
 // Rein informativ für den Arbeitgeber – er sieht WO gestempelt wurde, ohne Koordinaten lesen zu müssen.
