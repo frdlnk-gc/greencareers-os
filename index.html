@@ -3481,7 +3481,7 @@ const DEFAULT_SETTINGS = {
   geoConsent: {},      // Standort-Einwilligung je Person: { 'owner'|'emp:<id>': {accepted,at,name,role,version,type} } – DSGVO-Nachweis
   company: {name:'', owner:'', email:'', start:'07:00',
     logo:'', color:'',
-    street:'', zip:'', city:'', phone:'',
+    street:'', zip:'', city:'', bundesland:'', phone:'',
     taxNo:'', ustId:'',
     bank:'', iban:'', bic:'',
     zahlungsziel:14, skonto:0, kleinunternehmer:false,
@@ -4058,11 +4058,10 @@ function can(cap){
 const STARTMODUL_FREI = ['heute', 'stellen', 'recruiting', 'team', 'app'];
 function isLocked(id){
   if(STARTMODUL_FREI.includes(id)) return false;   // Heute/Bewerber/Team immer frei
-  if(!settings.startModul) return false;            // „voller Funktionsumfang"-Schalter aus → alles frei
-  return !(settings.owned||[]).includes(id);        // sonst nur, was gebucht wurde
+  return !(settings.owned||[]).includes(id);        // Zusatzmodule (Kunden/Planung/Finanzen/Markt) NUR wenn gebucht – sonst „Demnächst" (unfertig)
 }
 function ownsModule(id){ return (settings.owned||[]).includes(id); }
-function moduleLocked(){ toast('Im Startmodul „Personal" gesperrt – in den Einstellungen freischalten'); }
+function moduleLocked(){ toast('Dieser Bereich ist noch nicht freigeschaltet.'); }
 // Vorschau auf einen Bereich, der im Startmodul „Personal" noch ausgeblendet ist.
 const COMING_SOON = {
   kunden: {icon:'handshake', title:'Kunden', tag:'Anfragen & Kundenstamm', price:29, requires:[],
@@ -4662,7 +4661,9 @@ function enterApp(){
   const isEmployee = GC_PROFILE && (GC_PROFILE.role==='mitarbeiter' || GC_PROFILE.role==='buero');
   if(isEmployee){ settings.onboarded = true; return; }
   // Erstnutzung: 1) AVV/DSGVO  2) Einrichtung  3) Tour. Danach direkt ins Cockpit.
-  if(!settings.onboarded || !(GC_PROFILE&&GC_PROFILE.customer_id)) openConsentGate();
+  // AVV/DSGVO-Gate auch für vorab verknüpfte Accounts (Testkunden!) erzwingen, solange
+  // noch keine (aktuelle) Einwilligung vorliegt – sonst gibt es keinen Consent-Nachweis.
+  if(!settings.onboarded || !(GC_PROFILE&&GC_PROFILE.customer_id) || !settings.consent || settings.consent.version !== CONSENT_VERSION) openConsentGate();
 }
 
 // Erkennt, ob die Seite gerade über einen Auth-Mail-Link (E-Mail-Bestätigung / Reset) geöffnet wurde.
@@ -5013,8 +5014,7 @@ function setTabAbrechnung(s, c){
 function setTabTeam(s, c){
   return `
       <div class="setsec">Module &amp; Umfang</div>
-      <p class="sheet-note"><i data-lucide="package"></i> Im <b>Startmodul „Personal"</b> sind nur „Heute" &amp; „Team" (Bewerber, Mitarbeiter, Urlaub, Zeit) aktiv – ideal zum schnellen Loslegen. Planung, Kunden, Finanzen &amp; Markt schaltest du später frei.</p>
-      ${swRow('Startmodul „Personal"','An = Fokus auf Bewerber &amp; Team, alle anderen Bereiche gesperrt. Aus = voller Funktionsumfang.', s.startModul, "toggleSetting('startModul')")}
+      <p class="sheet-note"><i data-lucide="package"></i> Aktiv sind <b>Heute, Bewerber, Team, Personalakte, Urlaub &amp; Zeit</b> – dein Basis-Paket. Planung, Kunden, Finanzen &amp; Markt kannst du unten dazubuchen, sobald du sie brauchst.</p>
 
       <div class="setsec">Zeiterfassung</div>
       <div class="field" style="max-width:180px"><label>Arbeitsbeginn</label><input type="time" value="${c.start}" onchange="settings.company.start=this.value;saveSettings()"></div>
@@ -5033,6 +5033,12 @@ function setTabTeam(s, c){
         <div class="field" style="max-width:200px"><label>Verfällt am (Folgejahr)</label><input type="date" value="${new Date().getFullYear()}-${s.vacation.carryoverUntil}" onchange="setVacationField('carryoverUntil', this.value.slice(5))"></div>
       </div>
       <p class="sheet-note" style="margin-top:2px"><i data-lucide="info"></i> Leer = unbegrenzt. Nach dem Stichtag verfällt der übertragene Rest (z. B. 31.03.).</p>` : ''}
+      <div class="field" style="max-width:340px;margin-top:8px"><label>Bundesland <span style="font-weight:400;color:var(--muted)">(für gesetzliche Feiertage)</span></label>
+        <select onchange="settings.company.bundesland=this.value;saveSettings();rerenderCurrent()">
+          ${['','BW','BY','BE','BB','HB','HH','HE','MV','NI','NW','RP','SL','SN','ST','SH','TH'].map(v=>`<option value="${v}"${((s.company&&s.company.bundesland)||'')===v?' selected':''}>${({'':'— bundesweit (ohne Landesfeiertage) —',BW:'Baden-Württemberg',BY:'Bayern',BE:'Berlin',BB:'Brandenburg',HB:'Bremen',HH:'Hamburg',HE:'Hessen',MV:'Mecklenburg-Vorpommern',NI:'Niedersachsen',NW:'Nordrhein-Westfalen',RP:'Rheinland-Pfalz',SL:'Saarland',SN:'Sachsen',ST:'Sachsen-Anhalt',SH:'Schleswig-Holstein',TH:'Thüringen'})[v]}</option>`).join('')}
+        </select>
+      </div>
+      <p class="sheet-note" style="margin-top:2px"><i data-lucide="map-pin"></i> Legt fest, welche Feiertage (z. B. Fronleichnam, Allerheiligen, Reformationstag, Buß- &amp; Bettag) NICHT als Urlaubstag abgezogen werden.</p>
 
       <div class="setsec">Rechte „Personalverwaltung"</div>
       <p class="sheet-note"><i data-lucide="user-cog"></i> Lege fest, was die Personalverwaltung (z. B. Sekretariat/Bürokraft) selbstständig darf.</p>
@@ -5702,7 +5708,7 @@ function renderOnboard(){
             </div>
           </div>`).join('')}
       </div>
-      <p class="sheet-note"><i data-lucide="palette"></i> ${primary ? `Primärbranche: <strong>${primary}</strong> – dein Tool erscheint im passenden Farbschema.` : 'Noch keine Auswahl – Standardfarbe Grün.'}</p>`;
+      <p class="sheet-note"><i data-lucide="palette"></i> ${primary ? `Primärbranche: <strong>${primary}</strong> – dein Tool erscheint im passenden Farbschema.` : ('Noch keine Auswahl – Standardfarbe '+(((typeof entryBrand==='function'&&entryBrand())?entryBrand().theme:'')==='tiefbau'?'Orange':'Grün')+'.')}</p>`;
   } else if(step === 'betrieb'){
     const _famColor = (BRANCHEN_CATALOG.find(f=>f.theme===(OB_DRAFT.theme||'galabau'))||{}).color || '#16A34A';
     const _osBase = (OB_DRAFT.company.name||'').trim() || osBrandLabel(OB_DRAFT.theme);
@@ -5750,7 +5756,7 @@ function renderOnboard(){
       <p class="sheet-note"><i data-lucide="hard-hat"></i> Mitarbeiter dürfen standardmäßig selbst stempeln und Urlaub beantragen.</p>`;
   } else {
     body = `
-      <div class="obdone"><span class="obdone__ic"><i data-lucide="check"></i></span><h3>Alles startklar, ${OB_DRAFT.company.owner.split(' ')[0]}!</h3><p>Dein Betrieb ist eingerichtet. Lege als Nächstes Mitarbeiter an und lade sie ein – oder leg direkt los.</p></div>`;
+      <div class="obdone"><span class="obdone__ic"><i data-lucide="check"></i></span><h3>${(function(){const vn=(OB_DRAFT.company.owner||'').trim().split(' ')[0];return vn?'Alles startklar, '+escapeHtml(vn)+'!':'Alles startklar!';})()}</h3><p>Dein Betrieb ist eingerichtet. Lege als Nächstes Mitarbeiter an und lade sie ein – oder leg direkt los.</p></div>`;
   }
   const isLast = step === 'fertig';
   const isFirst = obStep === 0;
@@ -5774,7 +5780,10 @@ function obToggleBranche(b){
   const i = OB_DRAFT.branchen.indexOf(b);
   if(i >= 0) OB_DRAFT.branchen.splice(i, 1);
   else OB_DRAFT.branchen.push(b);
-  OB_DRAFT.theme = brancheTheme(OB_DRAFT.branchen[0]);
+  // Markentreu: ohne Branchen-Auswahl NICHT auf Grün zurückfallen, sondern die Eintritts-Marke behalten
+  // (Grey-Einstieg bleibt orange), sonst settings.theme, sonst Grün.
+  OB_DRAFT.theme = OB_DRAFT.branchen.length ? brancheTheme(OB_DRAFT.branchen[0])
+                   : ((entryBrand() && entryBrand().theme) || settings.theme || 'galabau');
   applyTheme(OB_DRAFT.theme);   // Live-Vorschau im Onboarding
   if(OB_DRAFT.company.color) applyBrandColorValue(OB_DRAFT.company.color); // eigene Farbe behält Vorrang
   renderOnboard();
@@ -5853,11 +5862,10 @@ async function finishOnboarding(){
 
 // ---- Software-Tour (geführte Kurz-Tour, jederzeit per X schließbar) ----
 const TOUR_STEPS = [
-  { sel:['#sideNav','#mobileNav'], title:'Dein ganzer Betrieb', text:'Heute, Team, Planung, Kunden, Finanzen und Markt – alles in einem Tool. Hier wechselst du den Bereich.' },
+  { sel:['#sideNav','#mobileNav'], title:'Dein ganzer Betrieb', text:'Heute, Bewerber, Team & Personalakte – alles in einem Tool. Weitere Bereiche (Planung, Kunden, Finanzen, Markt) kannst du später dazubuchen. Hier wechselst du den Bereich.' },
   { sel:['.add-module'], title:'Cockpit selbst bauen', text:'Mit „Modul hinzufügen“ holst du dir Umsatz, Geburtstage, Lager und mehr direkt auf die Startseite.' },
   { sel:['#brainPill'], title:'GaLaBrain', text:'Dein KI-Assistent für alle Fragen – Rechnung, Steuer, Personal, Kalkulation. Per Chat oder Sprache, jederzeit.' },
   { sel:['#fab'], title:'Schnell anlegen', text:'Mitarbeiter, Einsatz, Rechnung oder Angebot – mit dem Plus legst du von überall in Sekunden neu an.' },
-  { sel:['#rolePill'], title:'Demo-Schalter', text:'Nur in dieser Vorschau: Sieh die App als Inhaber, Personalverwaltung, Buchhaltung oder Mitarbeiter. Im echten Produkt ist dieser Platz frei.' },
 ];
 let tourIdx = 0;
 let CUR_TOUR = TOUR_STEPS;   // aktive Schritt-Liste (Haupt-Tour oder Modul-Tour)
@@ -9395,13 +9403,35 @@ function easterSunday(y){
   return new Date(y, mo-1, da);
 }
 const _holCache = {};
+// Länderspezifische gesetzliche Feiertage – zusätzlich zu den bundesweiten.
+// fix = feste MM-DD, ost = Offsets ab Ostersonntag (Fronleichnam = +60), bbt = Buß- und Bettag (nur SN).
+const LAND_FEIERTAGE = {
+  BW:{fix:['01-06','11-01'],ost:[60]}, BY:{fix:['01-06','11-01'],ost:[60]},
+  BE:{fix:['03-08'],ost:[]},           BB:{fix:['10-31'],ost:[]},
+  HB:{fix:['10-31'],ost:[]},           HH:{fix:['10-31'],ost:[]},
+  HE:{fix:[],ost:[60]},                MV:{fix:['03-08','10-31'],ost:[]},
+  NI:{fix:['10-31'],ost:[]},           NW:{fix:['11-01'],ost:[60]},
+  RP:{fix:['11-01'],ost:[60]},         SL:{fix:['08-15','11-01'],ost:[60]},
+  SN:{fix:['10-31'],ost:[],bbt:true},  ST:{fix:['01-06','10-31'],ost:[]},
+  SH:{fix:['10-31'],ost:[]},           TH:{fix:['09-20','10-31'],ost:[]},
+};
+function bussUndBettag(y){ const d = new Date(y,10,22); while(d.getDay()!==3) d.setDate(d.getDate()-1); return d; } // Mittwoch vor dem 23.11.
+function currentBundesland(){ return (settings.company && settings.company.bundesland) || ''; }
 function holidaySet(y){
-  if(_holCache[y]) return _holCache[y];
+  const bl = currentBundesland();
+  const key = y + '|' + bl;
+  if(_holCache[key]) return _holCache[key];
   const md = dt => String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');
-  const s = new Set(['01-01','05-01','10-03','12-25','12-26']);   // feste Feiertage (MM-DD)
+  const s = new Set(['01-01','05-01','10-03','12-25','12-26']);   // bundesweite feste Feiertage (MM-DD)
   const es = easterSunday(y);
   [-2,1,39,50].forEach(off => { const dt = new Date(es); dt.setDate(es.getDate()+off); s.add(md(dt)); }); // Karfreitag, Ostermontag, Christi Himmelfahrt, Pfingstmontag
-  _holCache[y] = s; return s;
+  const land = LAND_FEIERTAGE[bl];
+  if(land){
+    land.fix.forEach(f => s.add(f));
+    land.ost.forEach(off => { const dt = new Date(es); dt.setDate(es.getDate()+off); s.add(md(dt)); }); // Fronleichnam = Ostern +60
+    if(land.bbt) s.add(md(bussUndBettag(y)));
+  }
+  _holCache[key] = s; return s;
 }
 function isHoliday(dt){ return holidaySet(dt.getFullYear()).has(String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0')); }
 function workdays(from,to){ if(!from || !to) return 0; let n = 0; const end = dParse(to); for(let dt = dParse(from); dt <= end; dt.setDate(dt.getDate()+1)){ if(!isWeekend(dt) && !isHoliday(dt)) n++; } return n; }
@@ -9417,6 +9447,19 @@ function absDays(a){
   if(a && a.half && a.from === a.to && settings.vacation && settings.vacation.halfDays) return 0.5;
   return workdays(a.from, a.to);
 }
+// Werktage einer Abwesenheit, die INS Kalenderjahr yr fallen – jahresübergreifende Anträge
+// (z. B. 28.12.–05.01., GaLaBau-Betriebsferien) werden korrekt pro Jahr gesplittet.
+function absDaysInYear(a, yr){
+  const y = String(yr);
+  if(a && a.half && a.from === a.to && settings.vacation && settings.vacation.halfDays){
+    return String(a.from).slice(0,4) === y ? 0.5 : 0;
+  }
+  const ys = y+'-01-01', ye = y+'-12-31';
+  const from = a.from > ys ? a.from : ys;
+  const to   = (a.to||a.from) < ye ? (a.to||a.from) : ye;
+  if(from > to) return 0;
+  return workdays(from, to);
+}
 // Deutsche Tage-Formatierung: 12 statt 12,0 – aber 0,5 / 12,5 mit Komma.
 function fmtDays(n){ return (Math.round(n*2)/2).toString().replace('.', ','); }
 // Übertrag aus dem Vorjahr – nur wenn aktiviert. Rest des Vorjahres (Anspruch − genommen/geplant),
@@ -9430,15 +9473,31 @@ function carryoverFor(id){
   let used = 0;
   absences.forEach(a => {
     if(a.empId !== id || a.type !== 'urlaub' || a.status !== 'genehmigt') return;
-    if(String(a.from).slice(0,4) !== prevYr) return;
-    used += absDays(a);
+    used += absDaysInYear(a, prevYr);   // auch jahresübergreifende Anträge zählen nur ihren Vorjahres-Anteil
   });
   let carry = Math.max(0, (e.annual || 0) - used);
   const max = parseFloat(String(vc.carryoverMax).replace(',', '.'));
   if(!isNaN(max) && max >= 0) carry = Math.min(carry, max);
-  // Verfall: nach dem Stichtag im laufenden Jahr ist der Übertrag weg.
+  // Verfall nach dem Stichtag: NUR der noch nicht verbrauchte Übertrag verfällt.
+  // Bereits vor dem Stichtag genommene Urlaubstage bleiben durch den Übertrag gedeckt
+  // (sonst würde der Resturlaub am 1. April rückwirkend nach unten springen).
   const until = (vc.carryoverUntil || '03-31');
-  if(TODAY > `${curYr}-${until}`) return 0;
+  const cutoff = `${curYr}-${until}`;
+  if(TODAY > cutoff){
+    let takenBeforeCutoff = 0;
+    const ys = `${curYr}-01-01`;
+    absences.forEach(a => {
+      if(a.empId !== id || a.type !== 'urlaub' || a.status !== 'genehmigt') return;
+      if(a.half && a.from === a.to && settings.vacation && settings.vacation.halfDays){
+        if(a.from >= ys && a.from <= cutoff) takenBeforeCutoff += 0.5;
+        return;
+      }
+      const from = a.from > ys ? a.from : ys;
+      const to   = (a.to||a.from) < cutoff ? (a.to||a.from) : cutoff;
+      if(from <= to) takenBeforeCutoff += workdays(from, to);
+    });
+    return Math.min(carry, takenBeforeCutoff);
+  }
   return carry;
 }
 function vacInfo(id){
@@ -9446,8 +9505,8 @@ function vacInfo(id){
   let taken = 0, planned = 0;
   absences.forEach(a => {
     if(a.empId !== id || a.type !== 'urlaub' || a.status !== 'genehmigt') return;
-    if(String(a.from).slice(0,4) !== yr) return;   // Vorjahres-/Folgejahres-Urlaub nicht gegen dieses Jahr rechnen
-    const wd = absDays(a);
+    const wd = absDaysInYear(a, yr);   // jahresübergreifende Anträge: nur der Anteil DIESES Jahres zählt
+    if(wd <= 0) return;
     if(a.from <= TODAY) taken += wd; else planned += wd;
   });
   const e = emp(id);
@@ -9883,6 +9942,14 @@ function submitAbsence(){
   const note = document.getElementById('afNote').value.trim();
   if(!empId){ toast('Bitte zuerst einen Mitarbeiter wählen'); return; }
   if(!from || !to || to < from){ toast('Bitte gültigen Zeitraum wählen'); return; }
+  // Eigen-Überschneidung: dieselbe Person nicht doppelt für denselben Zeitraum erfassen
+  // (verhindert Doppel-Anträge durch Doppel-Tap und die daraus folgende Doppelzählung im Saldo).
+  {
+    const clash = absences.find(x => x.empId === empId && x.id !== afEditId && x.status !== 'abgelehnt'
+                   && rangesOverlap(x.from, effTo(x), from, to));
+    if(clash){ const tm = typeMeta(clash.type);
+      if(!confirm(`Für diese Person besteht im Zeitraum bereits „${tm?tm.label:clash.type}" (${dDEs(clash.from)}–${dDEs(effTo(clash))}). Trotzdem zusätzlich eintragen?`)) return; }
+  }
   // Halber Tag: nur gültig, wenn Betrieb es erlaubt, kein Krank, und genau ein Tag.
   const halfCb = document.getElementById('afHalf');
   const half = !!(settings.vacation && settings.vacation.halfDays) && type !== 'krank' && from === to && halfCb && halfCb.checked;
