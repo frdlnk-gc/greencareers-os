@@ -3755,10 +3755,11 @@ function coMethods(c){
 
 function coParseCodePct(raw){
   if(!raw) return 0;
-  const re = new RegExp('^\\s*'+CO_RABATT_PREFIX+'\\s*([0-9]{1,2}(?:[.,][0-9]{1,2})?)\\s*$','i');
+  // Vertriebs-Nachlässe (Julian/Liam): NUR ganze 5er-Stufen bis 50 % ("Sale 5" … "Sale 50").
+  const re = new RegExp('^\\s*'+CO_RABATT_PREFIX+'\\s*([0-9]{1,2})\\s*$','i');
   const m = String(raw).match(re); if(!m) return 0;
-  const pct = parseFloat(m[1].replace(',','.'));
-  return (pct>0 && pct<=60) ? pct : 0;
+  const pct = parseInt(m[1],10);
+  return (pct>=5 && pct<=50 && pct%5===0) ? pct : 0;
 }
 function buyFlowPending(){ const e = gcEntry(); return e.flow==='buy' && !e.paid && !!e.pkg; }
 // Rückkehr von Stripe: success_url = os.green-careers.de/?paid=1&session_id=…
