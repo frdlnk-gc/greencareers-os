@@ -3141,8 +3141,10 @@
       <span class="brandmark" style="margin-bottom:16px"><i data-lucide="mail-check"></i></span>
       <h1>Bestätige deine E-Mail</h1>
       <p class="sub">Wir haben einen Bestätigungs-Link an <b id="verifyEmail"></b> geschickt. Klicke ihn an – danach kommst du automatisch in die Einrichtung.</p>
-      <p class="sub" style="font-size:12.5px">Keine Mail erhalten? Prüfe den Spam-Ordner.</p>
-      <button class="btn ghost full" onclick="showAuth('login')">Zurück zum Login</button>
+      <p class="sub" style="font-size:12.5px">Keine Mail erhalten? Prüfe den Spam-Ordner oder sende sie erneut.</p>
+      <button class="btn full" id="resendBtn" onclick="resendVerify()"><i data-lucide="send"></i> Bestätigungs-Mail erneut senden</button>
+      <button class="btn ghost full" onclick="showAuth('register')" style="margin-top:8px">Falsche Adresse? Zurück zur Registrierung</button>
+      <button class="btn ghost full" onclick="showAuth('login')" style="margin-top:8px">Zurück zum Login</button>
     </div>
     <div id="resetView" class="hidden">
       <span class="auth__back" onclick="showAuth('login')"><i data-lucide="arrow-left"></i> Zurück</span>
@@ -3548,7 +3550,8 @@ let _settingsHydrated = false;   // erst nach dem DB-Load dürfen wir zurücksch
 let _settingsSaveTimer = null;
 function settingsForDb(){
   const s = JSON.parse(JSON.stringify(settings));
-  delete s.portal;   // customers ist die Wahrheit fürs öffentliche Profil
+  delete s.portal;      // customers ist die Wahrheit fürs öffentliche Profil
+  delete s.geoConsent;  // geo_consent-Tabelle ist autoritativ (pro Person, auch Mitarbeiter-Schreibrecht)
   s._stages    = stages;                                            // Bewerber-Pipeline-Spalten (pro Betrieb einstellbar)
   s._templates = (typeof TEMPLATES !== 'undefined') ? TEMPLATES : undefined;  // WhatsApp/E-Mail-Vorlagen
   return s;
@@ -4439,6 +4442,22 @@ async function doReset(){
   showAuth('sent');
 }
 
+// Bestätigungs-Mail erneut senden (Spam/verloren). Mit 60-Sek-Cooldown gegen Doppelklicks/Rate-Limit.
+let _resendAt = 0;
+async function resendVerify(){
+  const email = ((document.getElementById('verifyEmail')||{}).textContent || '').trim().toLowerCase();
+  if(!email){ toast('Keine Adresse gefunden – bitte neu registrieren.'); return; }
+  if(!sbAuth){ toast('Auth-Dienst nicht geladen.'); return; }
+  if(Date.now() < _resendAt){ toast('Bitte kurz warten, dann erneut versuchen.'); return; }
+  const btn = document.getElementById('resendBtn'); if(btn) btn.disabled = true;
+  try{
+    const { error } = await sbAuth.auth.resend({ type:'signup', email });
+    if(error){ toast(friendlyAuthError(error.message)); }
+    else { toast('Bestätigungs-Mail wurde erneut gesendet.'); _resendAt = Date.now() + 60000; }
+  }catch(e){ toast('Erneutes Senden fehlgeschlagen.'); }
+  setTimeout(()=>{ const b=document.getElementById('resendBtn'); if(b) b.disabled = false; }, 3000);
+}
+
 // Neues Passwort setzen (nach Klick auf den Recovery-Link). Nutzt die temporäre
 // Recovery-Session, die Supabase über den Link aufgebaut hat.
 async function doSetNewPassword(){
@@ -5165,7 +5184,7 @@ function geoStamp(){
 const GEO_CONSENT_VERSION = 'v1';
 let _geoConsentRetry = null;     // Aktion, die nach Zustimmung fortgesetzt wird (z. B. einstempeln)
 function geoActorType(){ return viewRole === 'mitarbeiter' ? 'employee' : 'owner'; }
-function geoActorKey(){ return viewRole === 'mitarbeiter' ? ('emp:' + viewEmpId) : 'owner'; }
+function geoActorKey(){ if(viewRole === 'mitarbeiter'){ const me=(typeof selfEmp==='function')?selfEmp():null; return 'emp:' + ((me && me._uuid) || viewEmpId); } return 'owner'; }
 function geoActorName(){ try{ return currentUser().name; }catch(e){ return ''; } }
 function hasGeoConsent(key){
   const r = settings.geoConsent && settings.geoConsent[key || geoActorKey()];
@@ -5186,6 +5205,23 @@ function recordGeoConsent(key, type, accepted){
     at: (typeof dDEs==='function' && typeof TODAY!=='undefined' ? dDEs(TODAY) + ' ' : '') + NOW
   });
   saveSettings();
+  // Server-seitig sichern (überlebt Session-/Gerätewechsel) – set_geo_consent ist SECURITY DEFINER,
+  // sodass auch ein Mitarbeiter seine eigene Einwilligung persistieren darf (nicht über die Manager-Settings).
+  if(osConnected()){
+    try{ sbAuth.rpc('set_geo_consent', { p_owner: type==='owner', p_accepted: !!accepted, p_version: GEO_CONSENT_VERSION,
+           p_name: geoActorName()||null, p_at: (typeof dDEs==='function'?dDEs(TODAY)+' ':'')+NOW }); }
+    catch(e){ console.warn('set_geo_consent:', e); }
+  }
+}
+async function loadGeoConsents(){
+  if(!osConnected()) return;
+  try{
+    const { data, error } = await sbAuth.rpc('my_geo_consents');
+    if(error || !data) return;
+    settings.geoConsent = settings.geoConsent || {};
+    data.forEach(r => { settings.geoConsent[r.actor_key] = { accepted:!!r.accepted, version:r.version,
+      name:r.actor_name||'', at:r.at_label||'', type: r.actor_key==='owner'?'owner':'employee' }; });
+  }catch(e){ console.warn('my_geo_consents:', e); }
 }
 // Gibt true zurück, wenn fortgefahren werden darf. Sonst öffnet es die Einwilligung und gibt false zurück.
 function ensureGeoConsent(retry){
@@ -10335,6 +10371,11 @@ const PORTAL_BASES = {
   grey:  'https://strassen-tiefbau.green-careers.de',
 };
 function portalBase(){
+  // Primär das Betriebs-Theme (aus der DB, gerätunabhängig): Tiefbau -> Grey-Portal.
+  // entryBrand() (localStorage) nur als Fallback vor dem ersten Laden der customers-Zeile.
+  const theme = (settings && settings.theme) || null;
+  if(theme === 'tiefbau') return PORTAL_BASES.grey;
+  if(theme === 'galabau' || theme === 'landwirtschaft') return PORTAL_BASES.green;
   const eb = (typeof entryBrand==='function') ? entryBrand() : null;
   return (eb && eb.theme==='tiefbau') ? PORTAL_BASES.grey : PORTAL_BASES.green;
 }
@@ -10417,6 +10458,7 @@ async function loadPortalData(){
     await loadKunden(); // Endkunden des Betriebs (kunden-Tabelle) – VOR der Plantafel (kunde_id-Mapping)
     await loadSites();  // Baustellen (baustellen-Tabelle, v19) – NACH loadKunden (kunde-Name-Mapping), VOR loadTimeEntries (site_id-Auflösung)
     await loadTeam();   // echtes Team (mitarbeiter-Tabelle) + Personalakten (extra) des Betriebs laden
+    await loadGeoConsents();  // Standort-Einwilligungen (geo_consent) – NACH loadTeam (braucht _uuid-Keys)
     await loadAbsencesDb();   // Abwesenheiten (abwesenheiten-Tabelle) – NACH loadTeam (braucht employee._uuid fürs Mapping)
     await loadPlantafel();    // Plantafel (plantafel-Tabelle) – NACH loadCrews + loadKunden (crew/kunde-Mapping)
     await loadTimeEntries();  // heutige Stempel-Einträge (zeit_eintraege) – NACH loadTeam (employee._uuid-Mapping)
@@ -10876,6 +10918,7 @@ function zeitRowPayload(e){
     geo: e.geo || null,
     geo_out: e.geoOut || null,
     manual: !!e.manual,
+    corrected: !!e.corrected,
     by_lead: !!e.byLead,
     proto: !!e.proto
   };
@@ -10915,7 +10958,7 @@ async function loadTimeEntries(){
     const entry = { id: timeSeq++, _uuid:r.id, empId,
       siteId: (site(r.site_id) ? r.site_id : 's0'),   // unbekannte Baustelle -> Bauhof (Anzeige-Fallback)
       in: r.start_zeit || '', out: r.end_zeit || null, ruest: !!r.ruest, pauseMin: r.pause_min || 0,
-      geo: r.geo || null, geoOut: r.geo_out || null, manual: !!r.manual, byLead: !!r.by_lead, proto: !!r.proto };
+      geo: r.geo || null, geoOut: r.geo_out || null, manual: !!r.manual, corrected: !!r.corrected, byLead: !!r.by_lead, proto: !!r.proto };
     // Alle Einträge (auch die eigenen) in timeEntries führen, damit „Meine Zeiten heute"
     // die vollständige Tages-Historie zeigt. myEntry referenziert nur den laufenden Eintrag.
     timeEntries.push(entry);
@@ -11689,7 +11732,9 @@ async function submitStelle(publish){
   };
   if(status === 'aktiv'){
     row.slug = d.slug || genSlug(d.titel);
-    row.published_at = new Date().toISOString();
+    // published_at NUR setzen, wenn die Stelle NEU live geht (vorher nicht 'aktiv') – sonst
+    // würde jede Bearbeitung einer laufenden Stelle sie künstlich als „heute" ganz nach oben bumpen.
+    if(d.status !== 'aktiv') row.published_at = new Date().toISOString();
   }
   try{
     if(d.id){
@@ -12428,6 +12473,15 @@ function moveCandidate(id, from, to){
   renderBewerberKanban();
   toast(`${candidate.name} → ${stageById(to).label}`);
   if(to === 'eingestellt') offerHireHandover(candidate);
+  else if(to === 'abgelehnt') offerRejection(candidate);
+}
+// Nach dem Verschieben auf „Abgelehnt": freundliche Absage anbieten (Marke/Portal-Ruf).
+function offerRejection(a){
+  if(!a) return;
+  if(!(a.email || a.phone)) return;   // ohne Kontaktweg keine Absage möglich
+  if(!confirm(`${(a.name||'').split(' ')[0]} wurde abgelehnt. Jetzt eine freundliche Absage senden?`)) return;
+  const chan = a.email ? 'email' : 'whatsapp';
+  openCompose(a.id, chan, chan === 'email' ? 'ml-absage' : 'wa-absage');
 }
 // Recruiting → Personalakte: Wird ein Bewerber auf „Eingestellt" gezogen, bietet das System direkt
 // die Übernahme in die Personalakte an – mit allen schon bekannten Daten vorausgefüllt. So läuft der
@@ -12781,9 +12835,10 @@ function openApplicant(id){
       </div>
 
       <div class="contact-actions">
-        <a class="ca-btn ca-btn--call" href="tel:${tel}"><i data-lucide="phone-call"></i> Anrufen</a>
-        <button class="ca-btn ca-btn--wa" onclick="openCompose(${id},'whatsapp')"><i data-lucide="message-circle"></i> WhatsApp</button>
-        <button class="ca-btn ca-btn--mail" onclick="openCompose(${id},'email')"><i data-lucide="mail"></i> E-Mail</button>
+        ${a.phone ? `<a class="ca-btn ca-btn--call" href="tel:${tel}"><i data-lucide="phone-call"></i> Anrufen</a>
+        <button class="ca-btn ca-btn--wa" onclick="openCompose(${id},'whatsapp')"><i data-lucide="message-circle"></i> WhatsApp</button>`
+        : `<button class="ca-btn ca-btn--call" onclick="toast('Keine Telefonnummer hinterlegt')" style="opacity:.55"><i data-lucide="phone-off"></i> Keine Nummer</button>`}
+        <button class="ca-btn ca-btn--mail" onclick="openCompose(${id},'email')"${a.email?'':' style="opacity:.55" title="Keine E-Mail hinterlegt"'}><i data-lucide="mail"></i> E-Mail</button>
       </div>
 
       ${!WABOT_ENABLED ? '' : (botDone
@@ -12834,15 +12889,33 @@ function openApplicant(id){
         <button class="btn ghost" style="flex:1" onclick="planInterview(${id})"><i data-lucide="calendar-clock"></i> Gespräch planen</button>
         <button class="btn" style="flex:1" onclick="openProbetag(${id})"><i data-lucide="calendar-plus"></i> Probetag planen</button>
       </div>
+      <button class="btn ghost sm danger" style="margin-top:14px;width:100%" onclick="deleteBewerber(${id})"><i data-lucide="trash-2"></i> Bewerber löschen (DSGVO)</button>
     </div>`, {drawer:true});
+}
+// DSGVO-Löschung (Art. 17): entfernt den Bewerber aus dem eigenen Betrieb (RPC delete_my_bewerber, Manager).
+async function deleteBewerber(id){
+  const a = findCandidate(id); if(!a) return;
+  if(!confirm(`Bewerber „${a.name}" endgültig löschen?\n\nDiese DSGVO-Löschung entfernt alle Daten dieses Bewerbers in deinem Betrieb und lässt sich nicht rückgängig machen.`)) return;
+  if(osConnected() && a._uuid){
+    try{
+      const { error } = await sbAuth.rpc('delete_my_bewerber', { p_bewerber_id: a._uuid });
+      if(error){ toast('Löschen fehlgeschlagen: '+error.message); return; }
+    }catch(e){ toast('Löschen fehlgeschlagen: '+String(e)); return; }
+  }
+  const i = applicants.findIndex(x => x.id === id); if(i>=0) applicants.splice(i,1);
+  closeSheet();
+  if(currentView === 'recruiting') renderBewerberKanban();
+  toast('Bewerber gelöscht (DSGVO)');
 }
 
 /* ----- Anschreiben (WhatsApp / E-Mail) mit Vorlagen ----- */
-function openCompose(id, channel){
+function openCompose(id, channel, preTplId){
   const a = findCandidate(id); if(!a) return;
   const isWa = channel === 'whatsapp';
   const list = isWa ? TEMPLATES.whatsapp : TEMPLATES.email;
-  const di = defaultTplIndex(channel);
+  const stdIdx = defaultTplIndex(channel);
+  let di = stdIdx;
+  if(preTplId){ const pi = list.findIndex(t => t.id === preTplId); if(pi >= 0) di = pi; }   // z. B. Absage vorwählen
   const first = list[di] ? fillTemplate(list[di].text, a) : '';
   openSheet(`
     <div class="sheet__head">
@@ -12854,7 +12927,7 @@ function openCompose(id, channel){
       <div class="compose-tplrow"><label class="copy-row__label">Vorlage</label><button class="compose-mng" onclick="openTemplates('${channel}')"><i data-lucide="settings-2"></i> Vorlagen verwalten</button></div>
       <select class="compose-tpl" onchange="composePick(${id},'${channel}',this.value)">
         <option value="">— eigener Text —</option>
-        ${list.map((t,i)=>`<option value="${i}" ${i===di?'selected':''}>${escapeHtml(t.name)}${i===di?' · Standard':''}</option>`).join('')}
+        ${list.map((t,i)=>`<option value="${i}" ${i===di?'selected':''}>${escapeHtml(t.name)}${i===stdIdx?' · Standard':''}</option>`).join('')}
       </select>
       <textarea id="composeTa" class="compose-ta">${escapeHtml(first)}</textarea>
       <p class="compose-hint">Platzhalter wie <code>{Vorname}</code> und <code>{Beruf}</code> werden automatisch ersetzt. Versand öffnet ${isWa?'WhatsApp':'dein Mailprogramm'} – nichts wird automatisch verschickt.</p>
@@ -12878,6 +12951,7 @@ function composeSend(id, channel){
   const text = ta ? ta.value : '';
   if(channel === 'whatsapp'){
     const num = waNumber(a.phone);
+    if(!num || num.length < 8){ toast('Keine gültige Telefonnummer hinterlegt – bitte per E-Mail kontaktieren.'); return; }
     window.open(`https://wa.me/${num}?text=${encodeURIComponent(text)}`, '_blank');
     toast('WhatsApp wird geöffnet');
   } else {
@@ -13379,11 +13453,13 @@ function geoFenceBadge(e){
 }
 function geoBadge(e){
   if(e.manual) return `<span class="geo na"><i data-lucide="user-cog"></i> manuell erfasst</span>`;
-  if(!settings.geo) return '';   // Standortnachweis per Einstellung deaktiviert
+  // Büro-Korrektur behält den ursprünglichen Standort-Nachweis, ergänzt nur ein „korrigiert"-Kennzeichen.
+  const corr = e.corrected ? `<span class="geo na" style="margin-left:6px"><i data-lucide="pencil"></i> korrigiert</span>` : '';
+  if(!settings.geo) return corr;   // Standortnachweis per Einstellung deaktiviert
   if(!e.geo || e.geo.lat == null)
-    return `<span class="geo na"><i data-lucide="map-pin-off"></i> kein Standort</span>`;
+    return `<span class="geo na"><i data-lucide="map-pin-off"></i> kein Standort</span>` + corr;
   // Mit Baustellen-Koordinaten: präziser Abgleich vor Ort / entfernt. Sonst neutral „erfasst".
-  return geoFenceBadge(e) || `<span class="geo ok"><i data-lucide="map-pin"></i> Standort erfasst</span>`;
+  return (geoFenceBadge(e) || `<span class="geo ok"><i data-lucide="map-pin"></i> Standort erfasst</span>`) + corr;
 }
 function hasProto(empId, siteId){ return protocols.some(p => p.empId === empId && p.siteId === siteId); }
 
@@ -13816,7 +13892,8 @@ function geoPointRow(label, g){
 }
 // Sichtbarer Einwilligungs-Nachweis für den Arbeitgeber: hat dieser Mitarbeiter der Standorterfassung zugestimmt?
 function geoConsentLine(empId){
-  const r = settings.geoConsent && settings.geoConsent['emp:' + empId];
+  const em = emp(empId); const key = 'emp:' + ((em && em._uuid) || empId);
+  const r = settings.geoConsent && settings.geoConsent[key];
   if(r && r.accepted)
     return `<div class="detail-row"><dt>Einwilligung</dt><dd><span style="color:var(--green-2);font-weight:600"><i data-lucide="shield-check" style="width:14px;height:14px;vertical-align:-2px"></i> Standorterfassung am ${r.at} Uhr bestätigt</span></dd></div>`;
   if(r && !r.accepted)
@@ -13842,6 +13919,7 @@ function openTimeEntry(id){
         <div class="detail-row"><dt>Zeit</dt><dd>${e.in}${e.out?' – '+e.out:' – läuft'} Uhr · <b>${hoursStr(min)}</b>${e.pauseMin?` · ${e.pauseMin} Min Pause`:''}</dd></div>
         ${e.manual ? `<div class="detail-row"><dt>Standort</dt><dd><span style="color:var(--muted);font-weight:600"><i data-lucide="user-cog" style="width:14px;height:14px;vertical-align:-2px"></i> manuell vom Büro erfasst – kein Standortnachweis</span></dd></div>`
           : settings.geo ? `${geoPointRow('Standort Start', e.geo)}${e.out ? geoPointRow('Standort Ende', e.geoOut) : ''}${geoConsentLine(e.empId)}` : ''}
+        ${e.corrected ? `<div class="detail-row"><dt>Korrektur</dt><dd><span style="color:var(--muted);font-weight:600"><i data-lucide="pencil" style="width:14px;height:14px;vertical-align:-2px"></i> Zeiten vom Büro korrigiert – Standortnachweis unverändert</span></dd></div>` : ''}
         <div class="detail-row"><dt>Adresse</dt><dd>${s.addr}</dd></div>
       </dl>
       ${(settings.geo && !e.manual) ? `<div class="dsgvo" style="margin-top:6px"><i data-lucide="lock"></i> <span>Der Standort wurde <b>einmalig beim Stempeln</b> erfasst und ist <b>unveränderlich</b> – Mitarbeiter können ihn nicht nachträglich bearbeiten.</span></div>` : ''}
@@ -13883,7 +13961,9 @@ function saveTimeEdit(id){
   if(!vin){ toast('Startzeit fehlt'); return; }
   // Bruttozeit prüfen (Ende über Mitternacht erlaubt), Pause darf nicht größer sein.
   if(vout){ let gross = hm2min(vout) - hm2min(vin); if(gross < 0) gross += 1440; if(vpause > gross){ toast('Pause länger als die erfasste Arbeitszeit'); return; } }
-  e.in = vin; e.out = vout || null; e.pauseMin = vpause; e.manual = true;
+  // WICHTIG: NICHT e.manual setzen (das würde den echten Standort-Nachweis verstecken).
+  // Nur als „korrigiert" markieren – Geo-Punkte bleiben sichtbar (siehe Dialog-Zusage).
+  e.in = vin; e.out = vout || null; e.pauseMin = vpause; e.corrected = true;
   if(myEntry && myEntry.id === id){ myEntry = e.out ? myEntry : e; }
   persistTimeEntry(e); renderZeit(); openTimeEntry(id); toast('Zeit korrigiert');
 }
@@ -14754,8 +14834,12 @@ function removeAkteCert(i){
 function removeAkteDoc(i){
   const e = emp(akteEmpId); if(!e) return;
   const hr = hrData(e);
-  if(hr.docs && hr.docs[i]) hr.docs.splice(i,1);
-  renderAkte(); toast('Dokument entfernt');
+  const d = hr.docs && hr.docs[i];
+  if(d){
+    if(d.path && osConnected()){ try{ sbAuth.storage.from('personalakte').remove([d.path]); }catch(_){}; delete _akteUrlCache[d.path]; }
+    hr.docs.splice(i,1);
+  }
+  renderAkte(); persistAkteSoon(); toast('Dokument entfernt');
 }
 // Echte Datei-Auswahl per verstecktem <input type=file>; Datei wird als DataURL im Browser gehalten (kein Server nötig)
 function pickFile(accept, onLoad){
@@ -14806,21 +14890,61 @@ function docTypeFromName(name){
   if(/bescheinig|attest/.test(n)) return 'Bescheinigung';
   return 'Dokument';
 }
+// ---- Personalakte-Dateien in Supabase Storage (privat, RLS-geschützt) statt Base64 in extra ----
+// Pfad: <customer_id>/<mitarbeiter_id>/<zeit>_<name>. Ohne DB-Verbindung/_uuid -> Base64-Fallback.
+function aktePath(e, filename){
+  const cid = GC_PROFILE && GC_PROFILE.customer_id, maid = e && e._uuid;
+  if(!cid || !maid) return null;
+  const safe = String(filename||'datei').replace(/[^\w.\-]+/g,'_').slice(-80);
+  return cid + '/' + maid + '/' + Date.now() + '_' + safe;
+}
+async function akteUpload(e, file){
+  const path = aktePath(e, file.name);
+  if(!path || !osConnected()) return null;
+  try{
+    const { error } = await sbAuth.storage.from('personalakte').upload(path, file, { upsert:false, contentType:file.type||undefined });
+    if(error){ toast('Upload fehlgeschlagen: '+error.message); return null; }
+    return path;
+  }catch(err){ toast('Upload fehlgeschlagen: '+String(err)); return null; }
+}
+const _akteUrlCache = {};
+async function akteSignedUrl(path){
+  if(!path || !osConnected()) return null;
+  const c = _akteUrlCache[path]; if(c && c.exp > Date.now()) return c.url;
+  try{
+    const { data, error } = await sbAuth.storage.from('personalakte').createSignedUrl(path, 3600);
+    if(error || !data) return null;
+    _akteUrlCache[path] = { url:data.signedUrl, exp: Date.now()+3300*1000 };
+    return data.signedUrl;
+  }catch(_){ return null; }
+}
 function uploadEmpDoc(id){
   const e = emp(id); if(!e) return;
-  pickFile('application/pdf,image/*', (file, dataUrl)=>{
+  pickFile('application/pdf,image/*', async (file, dataUrl)=>{
     const hr = hrData(e);
-    hr.docs.unshift({ name:file.name, type:docTypeFromName(file.name), date:TODAY, url:dataUrl });
+    const path = await akteUpload(e, file);
+    hr.docs.unshift(path
+      ? { name:file.name, type:docTypeFromName(file.name), date:TODAY, path }        // Storage-Pfad (bevorzugt)
+      : { name:file.name, type:docTypeFromName(file.name), date:TODAY, url:dataUrl }); // Fallback (offline/kein _uuid)
     if(akteEmpId===id) renderAkte();
+    persistAkteSoon();
     toast('„'+file.name+'" hinzugefügt');
   });
 }
-// Dokument anzeigen: echte Datei im neuen Tab öffnen, sonst ehrlicher Hinweis
-function openAkteDoc(i){
+// Dokument anzeigen: Storage-Datei per signierter URL, Legacy-Base64 direkt.
+async function openAkteDoc(i){
   const e=emp(akteEmpId); if(!e) return;
   const hr=hrData(e); const d=hr.docs&&hr.docs[i];
-  if(d&&d.url){ const w=window.open(); if(w){ const u=String(d.url).replace(/"/g,'&quot;'); w.document.write(d.name.match(/\.pdf$/i)?`<iframe src="${u}" style="border:0;width:100%;height:100%"></iframe>`:`<img src="${u}" style="max-width:100%">`); } else { toast('Pop-up wurde blockiert'); } }
-  else { toast(d?('„'+d.name+'" – Beispiel-Dokument ohne Datei'):'Dokument nicht gefunden'); }
+  if(!d){ toast('Dokument nicht gefunden'); return; }
+  if(d.url){ const w=window.open(); if(w){ const u=String(d.url).replace(/"/g,'&quot;'); w.document.write(/\.pdf$/i.test(d.name)?`<iframe src="${u}" style="border:0;width:100%;height:100%"></iframe>`:`<img src="${u}" style="max-width:100%">`); } else { toast('Pop-up wurde blockiert'); } return; }
+  if(d.path){
+    const w=window.open('about:blank');   // synchron öffnen, damit die User-Geste erhalten bleibt
+    const url = await akteSignedUrl(d.path);
+    if(!url){ if(w) w.close(); toast('Datei konnte nicht geladen werden'); return; }
+    if(w) w.location.href = url; else toast('Pop-up wurde blockiert');
+    return;
+  }
+  toast('„'+d.name+'" – kein Anhang');
 }
 function addEmpNote(id){
   const ta = document.getElementById('akteNote');
@@ -15097,6 +15221,7 @@ function waNumber(phone){
   n = n.replace(/^\+/,'');
   if(n.startsWith('00')) n = n.slice(2);
   else if(n.startsWith('0')) n = '49' + n.slice(1);
+  if(n.startsWith('490')) n = '49' + n.slice(3);   // Schreibweise "+49 (0) 176 …" -> Trunk-0 nach Ländercode entfernen
   return n;
 }
 function copyVal(text, label, ev){
@@ -15118,12 +15243,14 @@ const DEFAULT_TEMPLATES = {
     { id:'wa-dank', name:'Danke für die Bewerbung', text:'Hallo {Vorname}, danke, dass du dich bei uns als {Beruf} beworben hast! Wir schauen uns deine Bewerbung an und melden uns zeitnah. Liebe Grüße, dein Team von Müller GaLaBau' },
     { id:'wa-kennen', name:'Kennenlernen', text:'Hallo {Vorname}, deine Bewerbung gefällt uns – wir würden dich gerne kennenlernen. Wann hättest du diese Woche kurz Zeit für ein Telefonat?' },
     { id:'wa-termin', name:'Vorstellungsgespräch', text:'Hallo {Vorname}, wir würden gerne ein Vorstellungsgespräch mit dir vereinbaren. Passt es dir am Donnerstag um 16 Uhr bei uns auf dem Hof? Sag gern Bescheid!' },
-    { id:'wa-probe', name:'Probetag anbieten', text:'Hallo {Vorname}, am besten lernst du uns direkt auf der Baustelle kennen. Hättest du Lust auf einen bezahlten Probetag? Dann finden wir einen Termin.' }
+    { id:'wa-probe', name:'Probetag anbieten', text:'Hallo {Vorname}, am besten lernst du uns direkt auf der Baustelle kennen. Hättest du Lust auf einen bezahlten Probetag? Dann finden wir einen Termin.' },
+    { id:'wa-absage', name:'Absage (freundlich)', text:'Hallo {Vorname}, danke für dein Interesse und deine Bewerbung als {Beruf}. Wir haben uns dieses Mal für einen anderen Bewerber entschieden – das ist ausdrücklich keine Wertung deiner Person. Wir wünschen dir für deinen weiteren Weg alles Gute! Dein Team von Müller GaLaBau' }
   ],
   email: [
     { id:'ml-dank', name:'Danke für die Bewerbung', text:'Hallo {Vorname},\n\nvielen Dank, dass du dich bei uns als {Beruf} beworben hast. Wir haben deine Unterlagen erhalten und melden uns in den nächsten Tagen bei dir.\n\nViele Grüße\nGeorg Müller\nMüller GaLaBau' },
     { id:'ml-kennen', name:'Kennenlernen', text:'Hallo {Vorname},\n\ndeine Bewerbung hat uns angesprochen – wir würden dich gerne kennenlernen. Melde dich gern, wann es dir für ein kurzes Telefonat passt.\n\nViele Grüße\nGeorg Müller\nMüller GaLaBau' },
-    { id:'ml-termin', name:'Vorstellungsgespräch', text:'Hallo {Vorname},\n\nwir würden gerne ein persönliches Vorstellungsgespräch mit dir vereinbaren. Wie sieht es bei dir am Donnerstag um 16 Uhr bei uns auf dem Betriebshof aus?\n\nViele Grüße\nGeorg Müller\nMüller GaLaBau' }
+    { id:'ml-termin', name:'Vorstellungsgespräch', text:'Hallo {Vorname},\n\nwir würden gerne ein persönliches Vorstellungsgespräch mit dir vereinbaren. Wie sieht es bei dir am Donnerstag um 16 Uhr bei uns auf dem Betriebshof aus?\n\nViele Grüße\nGeorg Müller\nMüller GaLaBau' },
+    { id:'ml-absage', name:'Absage (freundlich)', text:'Hallo {Vorname},\n\nvielen Dank für deine Bewerbung als {Beruf} und dein Interesse an unserem Betrieb. Nach sorgfältiger Prüfung haben wir uns dieses Mal für einen anderen Bewerber entschieden.\n\nDas ist ausdrücklich keine Wertung deiner Qualifikation – wir wünschen dir für deinen weiteren beruflichen Weg alles Gute.\n\nViele Grüße\nGeorg Müller\nMüller GaLaBau' }
   ]
 };
 function loadTemplates(){
