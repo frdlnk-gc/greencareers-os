@@ -10310,8 +10310,9 @@ function mapBewerberRow(r){
     stage: normStage(r.status), letter: ex.nachricht || '',
     comments: Array.isArray(nz.comments) ? nz.comments : [],
     interviews: Array.isArray(nz.interviews) ? nz.interviews : [],
-    pq: ex.pq || {branche:'',beruf:'',erfahrung:'',gehalt:'',verfuegbar:'',ort:''},
-    pqStatus:'offen', botScore:null, role: ex.beruf || '', tags:[], available:'', hot:false};
+    pq: nz.pq || ex.pq || {branche:'',beruf:'',erfahrung:'',gehalt:'',verfuegbar:'',ort:''},
+    pqStatus: nz.pqStatus || 'offen', botScore: (nz.botScore != null ? nz.botScore : null),
+    role: (nz.pq && nz.pq.beruf) || ex.beruf || '', tags:[], available: (nz.pq && nz.pq.verfuegbar) || '', hot:false};
 }
 // Echte Stellen + Bewerber des eingeloggten Betriebs laden (RLS scoped automatisch auf die Firma).
 // Nur für verbundene Betriebe – sonst bleiben die Demo-Daten des Prototyps stehen.
@@ -11671,7 +11672,8 @@ const _notizTimers = {};
 function persistBewerberNotiz(a){
   if(!a || !osConnected() || !a._uuid || !sbAuth) return;
   const uuid = a._uuid;
-  const payload = { interviews: a.interviews || [], comments: a.comments || [] };
+  const payload = { interviews: a.interviews || [], comments: a.comments || [],
+                    pq: a.pq || {}, pqStatus: a.pqStatus || 'offen', botScore: (a.botScore != null ? a.botScore : null) };
   clearTimeout(_notizTimers[uuid]);
   _notizTimers[uuid] = setTimeout(async ()=>{
     try{
@@ -13172,6 +13174,7 @@ function botSubmitAnswer(text){
   const a = findCandidate(botSession.id); if(!a) return;
   const field = botSession.awaiting; if(!field) return;
   a.pq[field] = field==='erfahrung' ? (parseInt(text,10)||0) : text;   // echte Antwort sofort speichern
+  persistBewerberNotiz(a);   // tenant-privat in Supabase sichern (debounced) – sonst nach Reload weg
   botSession.msgs.push({who:'in', text: field==='erfahrung' ? `${parseInt(text,10)||0} Jahre` : text});
   botSession.idx++;
   if(currentView==='recruiting') renderBewerberKanban();
@@ -13190,6 +13193,7 @@ function finishBotNow(a){
   a.tags = pqTags(a);
   a.available = a.pq.verfuegbar || a.available;
   a.role = a.pq.beruf || a.role;
+  persistBewerberNotiz(a);   // Vorqualifizierung (pq + Status + Score) tenant-privat sichern
   botSession.awaiting = null;
   botSession.done = true;
   botSession.msgs.push({who:'bot', text:`Top, danke dir! ✅ Ich hab alles notiert – das Team von ${botCompanyName()} meldet sich zeitnah bei dir.`});
