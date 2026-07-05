@@ -11208,46 +11208,43 @@ function kontingentBannerHtml(){
   if(!k.hasData) return '';
   const lz = k.kauftyp==='abo'
     ? (k.term==='12m' ? 'Abo · 12 Monate' : (k.term==='6m' ? 'Abo · 6 Monate' : 'Abo'))
-    : (k.kauftyp==='einmal' ? 'Einmalkauf · 3 Monate' : '');
-  const bisTxt = k.bis ? ` · bis ${dDE(dISO(new Date(k.bis)))}` : '';
-  const total = Number.isFinite(k.total) ? k.total : '∞';
-  const free  = Number.isFinite(k.free) ? k.free : '∞';
+    : (k.kauftyp==='einmal' ? 'Einmalkauf' : '');
+  const bisTxt = k.bis ? `läuft bis ${dDE(dISO(new Date(k.bis)))}` : (k.kauftyp==='abo' ? 'verlängert sich automatisch' : '');
   if(!k.frei){
-    return `<div class="panel" style="display:flex;gap:12px;align-items:center;padding:14px 16px;margin-bottom:14px;border-color:#F0C36D;background:#FFF8EC">
+    return `<div class="panel" style="display:flex;gap:12px;align-items:center;padding:14px 16px;margin-bottom:14px;border-color:#F0C36D;background:#FFF8EC;flex-wrap:wrap">
       <i data-lucide="clock" style="width:20px;height:20px;color:#A66400;flex:0 0 auto"></i>
-      <div style="font-size:13px;line-height:1.45"><b>${k.tierLabel?k.tierLabel+'-':''}Kontingent reserviert</b> – wird freigeschaltet, sobald deine Zahlung bei uns eingeht. Bei Kreditkarte/PayPal/Lastschrift automatisch, bei Rechnung nach Zahlungseingang.</div>
+      <div style="font-size:13px;line-height:1.45;flex:1;min-width:220px"><b>${k.tierLabel?k.tierLabel+'-':''}Kontingent reserviert</b> – wird freigeschaltet, sobald deine Zahlung bei uns eingeht. Bei Kreditkarte/PayPal/Lastschrift automatisch, bei Rechnung nach Zahlungseingang.</div>
+      <button class="mini-btn" onclick="refreshKontingent(true)"><i data-lucide="refresh-cw"></i> Zahlung jetzt prüfen</button>
     </div>`;
   }
-  const pct = Number.isFinite(k.total) && k.total>0 ? Math.min(100, Math.round(k.used/k.total*100)) : 0;
   const isUnlimited = !Number.isFinite(k.total);
-  const stat = (num, label, hl) => `<div style="text-align:center;min-width:50px">
-      <div style="font-size:21px;font-weight:800;line-height:1;color:${hl?'var(--green-2)':'var(--ink)'}">${num}</div>
-      <div style="font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-top:5px">${label}</div>
-    </div>`;
-  const sep = `<span style="width:1px;height:32px;background:var(--line);flex:0 0 auto"></span>`;
-  const stats = isUnlimited
-    ? `<div style="display:flex;align-items:center;gap:7px;font-size:13px;font-weight:800;color:var(--green-2)"><i data-lucide="infinity" style="width:18px;height:18px"></i> unbegrenzt</div>`
-    : `<div style="display:flex;gap:18px;align-items:center;flex:0 0 auto">${stat(k.used,'belegt')}${sep}${stat(free,'frei',true)}${sep}${stat(total,'gesamt')}</div>`;
-  const hint = isUnlimited ? '' : (free>0
-    ? `<div style="font-size:11.5px;color:var(--muted);margin-top:8px"><b style="color:var(--green-2)">${free} ${free===1?'Stelle':'Stellen'} frei</b> – jederzeit veröffentlichen. Sobald eine Stelle live geht, wandert sie von „frei" zu „belegt".</div>`
-    : `<div style="font-size:11.5px;color:var(--muted);margin-top:8px">Alle Plätze belegt – nimm eine Stelle offline oder erweitere dein Kontingent, um eine weitere zu veröffentlichen.</div>`);
-  return `<div class="panel" style="padding:15px 18px;margin-bottom:14px">
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
-      <div style="display:flex;align-items:center;gap:11px;min-width:0">
-        <span style="width:38px;height:38px;border-radius:10px;background:var(--soft-green);display:grid;place-items:center;color:var(--green-2);flex:0 0 auto"><i data-lucide="briefcase" style="width:19px;height:19px"></i></span>
-        <div style="min-width:0">
-          <div style="font-size:13.5px;font-weight:800;color:var(--ink);display:flex;align-items:center;gap:8px;flex-wrap:wrap">Dein Stellen-Kontingent${k.tierLabel?` <span style="font-size:11px;font-weight:700;color:var(--green-2);background:var(--soft-green);border-radius:999px;padding:2px 10px">${k.tierLabel}</span>`:''}</div>
-          <div style="font-size:11.5px;color:var(--muted);margin-top:2px">${lz}${bisTxt}</div>
-        </div>
-      </div>
-      ${stats}
+  const total = isUnlimited ? '∞' : k.total;
+  const free  = isUnlimited ? '∞' : k.free;
+  const pct = (!isUnlimited && k.total>0) ? Math.min(100, Math.round(k.used/k.total*100)) : 8;
+  const tierBadge = { 'smart':'Basis', 'premium':'Empfohlen', 'exzellenz':'Top-Platzierung' }[k.tier] || '';
+  const tierDesc  = { 'smart':'Standard-Reichweite', 'premium':'erhöhte Sichtbarkeit, Logo', 'exzellenz':'Premium-Reichweite, Top-Platzierung' }[k.tier] || '';
+  const freiTxt = isUnlimited ? 'unbegrenzt' : `${free} ${free===1?'Kontingent':'Kontingente'} frei`;
+  return `<div style="margin-bottom:16px">
+    <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:9px">
+      <div><div style="font-weight:800;font-size:14px">Verfügbares Kontingent</div>
+      <div style="font-size:12px;color:var(--muted)">${isUnlimited?'unbegrenzte Stellen':`${free} von ${total} Kontingenten noch frei`}</div></div>
+      <button class="mini-btn" onclick="openZahlungInfo()" style="font-size:12px">Kontingent verlängern <i data-lucide="arrow-right"></i></button>
     </div>
-    ${!isUnlimited?`<div style="height:6px;border-radius:4px;background:var(--soft-green);overflow:hidden;margin-top:13px"><span style="display:block;height:100%;width:${pct}%;background:var(--green)"></span></div>`:''}
-    ${hint}
+    <div class="panel" style="padding:17px 18px;max-width:460px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+        <div style="display:flex;align-items:center;gap:8px"><span style="width:9px;height:9px;border-radius:50%;background:var(--green)"></span><b style="font-size:14px">${k.tierLabel||'Kontingent'}</b></div>
+        ${tierBadge?`<span style="font-size:10.5px;font-weight:800;color:var(--green-2);background:var(--soft-green);border-radius:999px;padding:3px 10px">${tierBadge}</span>`:''}
+      </div>
+      <div style="margin-top:12px;font-size:26px;font-weight:800;line-height:1">${k.used} <span style="font-size:14px;color:var(--muted);font-weight:600">/ ${total} genutzt</span></div>
+      <div style="font-size:12px;color:var(--muted);margin-top:5px">${freiTxt}${tierDesc?' · '+tierDesc:''}</div>
+      <div style="height:7px;border-radius:100px;background:var(--line);margin-top:11px;overflow:hidden"><span style="display:block;height:100%;width:${pct}%;border-radius:100px;background:var(--green)"></span></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:13px">
+        <span style="font-size:12px;color:var(--muted)"><i data-lucide="calendar" style="width:13px;height:13px;vertical-align:-2px"></i> ${bisTxt}${lz?' · '+lz:''}</span>
+        <button class="mini-btn" onclick="openZahlungInfo()">Nachbuchen</button>
+      </div>
+    </div>
   </div>`;
 }
-
-// Bestell-/Zahlungs-Übersicht für die Einstellungen: ehrlich aus den customers-Daten.
 function bestellungSettingsHtml(){
   const k = jobContingent();
   if(!k.hasData){
@@ -11409,22 +11406,45 @@ function stellenViewHtml(){
         <p>Schließe zuerst die Einrichtung deines Betriebs ab – danach kannst du hier Stellen anlegen und veröffentlichen.</p>
       </div>`;
   }
-  const list = jobs.slice();
+  const k = jobContingent();
+  const aktiv = jobs.filter(j=>j.status==='aktiv');
+  const rest  = jobs.filter(j=>j.status!=='aktiv');
+  const belegt = Number.isFinite(k.total) ? k.used : aktiv.length;
+  const freiN  = Number.isFinite(k.free) ? k.free : '∞';
+  const f = stellenFilter;
+  const match = j => (!f.q || (j.title||'').toLowerCase().includes(f.q) || (j.ort||'').toLowerCase().includes(f.q))
+                  && (f.status==='alle' || (f.status==='aktiv' ? j.status==='aktiv' : j.status!=='aktiv'));
+  const fAktiv = aktiv.filter(match), fRest = rest.filter(match);
+  const tabBtn=(id,label)=>`<button class="tab ${f.status===id?'on':''}" onclick="setStellenStatusFilter('${id}')">${label}</button>`;
+  const grp=(color,label,arr)=> arr.length ? `
+    <div style="display:flex;align-items:center;gap:8px;margin:16px 0 10px"><span style="width:8px;height:8px;border-radius:50%;background:${color}"></span><b style="font-size:13px">${label}</b><span style="font-size:11.5px;color:var(--muted);background:var(--line);border-radius:999px;padding:1px 8px">${arr.length}</span></div>
+    <div class="stellen-grid">${arr.map(stelleCard).join('')}</div>` : '';
   return `<div class="pagehead">
-      <div><h2>Stellen</h2><p>Anlegen, veröffentlichen und Bewerber verwalten – alles an einem Ort. Veröffentlichte Stellen erscheinen automatisch auf dem ${escapeHtml(brandNet())}-Portal.</p></div>
+      <div><h2>Ihre Stellenanzeigen</h2><p>${belegt} ${belegt===1?'belegtes Kontingent':'belegte Kontingente'} · ${aktiv.length} ${aktiv.length===1?'aktives Inserat':'aktive Inserate'} · ${freiN} frei · Stand ${dDE(TODAY)}</p></div>
       <button class="mini-btn primary" onclick="openStelleForm()"><i data-lucide="plus"></i> Stelle anlegen</button>
     </div>
     ${firstJobNudgeHtml()}
     ${kontingentBannerHtml()}
-    ${list.length
-      ? `<div class="stellen-grid">${list.map(stelleCard).join('')}</div>`
-      : `<div class="panel" style="padding:44px;text-align:center;color:var(--muted)">
-           <i data-lucide="briefcase" style="width:34px;height:34px;opacity:.5"></i>
-           <h3 style="margin:12px 0 4px;color:var(--ink)">Noch keine Stelle angelegt</h3>
-           <p>Leg deine erste Stelle an – sobald du sie veröffentlichst, erscheint sie automatisch auf dem ${escapeHtml(brandNet())}-Portal und Bewerbungen landen direkt hier im Kanban.</p>
-           <button class="mini-btn primary" style="margin-top:14px" onclick="openStelleForm()"><i data-lucide="plus"></i> Erste Stelle anlegen</button>
-         </div>`}`;
+    ${jobs.length ? `
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:4px 0 4px">
+      <b style="font-size:14px;margin-right:auto">Inserate &amp; Status</b>
+      <input placeholder="Stelle suchen …" value="${escapeHtml(f.q)}" oninput="setStellenSearch(this.value)"
+        style="border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:13px;min-width:170px">
+      <div class="tabs" style="margin:0">${tabBtn('alle','Alle')}${tabBtn('aktiv','Aktiv')}${tabBtn('inaktiv','Pausiert &amp; Entwürfe')}</div>
+    </div>
+    ${grp('var(--green)','Aktiv',fAktiv)}
+    ${grp('#D97706','Pausiert &amp; Entwürfe',fRest)}
+    ${(!fAktiv.length && !fRest.length) ? `<div class="panel" style="padding:26px;text-align:center;color:var(--muted)">Keine Stelle passt zu deiner Suche.</div>` : ''}`
+    : `<div class="panel" style="padding:44px;text-align:center;color:var(--muted)">
+         <i data-lucide="briefcase" style="width:34px;height:34px;opacity:.5"></i>
+         <h3 style="margin:12px 0 4px;color:var(--ink)">Noch keine Stelle angelegt</h3>
+         <p>Leg deine erste Stelle an – sobald du sie veröffentlichst, erscheint sie automatisch auf dem ${escapeHtml(brandNet())}-Portal und Bewerbungen landen direkt hier im Kanban.</p>
+         <button class="mini-btn primary" style="margin-top:14px" onclick="openStelleForm()"><i data-lucide="plus"></i> Erste Stelle anlegen</button>
+       </div>`}`;
 }
+let stellenFilter = { q:'', status:'alle' };
+function setStellenSearch(v){ stellenFilter.q = (v||'').trim().toLowerCase(); const el=document.getElementById('view'); if(el && currentView==='stellen'){ const pos=document.activeElement; setView('stellen'); const inp=document.querySelector('#view input[placeholder="Stelle suchen …"]'); if(inp){ inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); } } }
+function setStellenStatusFilter(s){ stellenFilter.status = s; setView('stellen'); }
 function stelleCard(j){
   const sm = STATUS_META[j.status] || STATUS_META.pausiert;
   const n = bewCountForJob(j.id), neu = bewNeuForJob(j.id);
