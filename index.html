@@ -42,6 +42,8 @@
     --violet:#7C3AED;
     --violet-soft:#F1EAFE;
     --red:#C24141;
+    --shadow-sm:0 1px 3px rgba(18,33,29,.07);
+    --shadow-soft:0 6px 20px rgba(18,33,29,.09);
     --red-soft:#FDECEC;
     --radius:8px;
     --shadow:0 1px 1px rgba(20,30,20,.04),0 12px 30px rgba(18,33,24,.07);
@@ -2484,8 +2486,8 @@
   .obdone__ic .lucide{ width:28px; height:28px; }
   .obdone h3{ font-size:20px; font-weight:700; margin-bottom:6px; }
   .obdone p{ font-size:13.5px; color:var(--muted); line-height:1.5; max-width:340px; margin:0 auto; }
-  .btn.danger{ color:var(--red); background:#fff; border:1px solid #E6CFCF; box-shadow:none; }
-  .btn.danger:hover{ background:var(--red-soft); }
+  .btn.danger{ background-color:var(--red) !important; background-image:none !important; border:0; box-shadow:none; }
+  .btn.danger:hover{ background-color:#A83636 !important; }
   /* Baustelle: Leistungsverzeichnis-Editor + Baustellen-Karten */
   .lvsec{ border:1px solid var(--line); border-radius:12px; padding:12px 13px; margin-top:14px; background:var(--canvas); }
   .lvsec__h{ display:flex; align-items:center; gap:7px; font-size:13px; font-weight:700; }
@@ -3235,7 +3237,7 @@
       <div class="viewtitle" id="viewTitle"></div>
       <span class="topbar__spacer"></span>
       <div class="weather-mini" id="weatherMini" onclick="openWeatherForecast()" title="16-Tage-Wetter"><span class="bubble"><i data-lucide="cloud-sun"></i></span><span><b>--°</b> · Hamburg<br />Wetter lädt …</span></div>
-      <button class="brainpill" id="brainPill" onclick="openBrain()" title="GaLaBrain"><i data-lucide="sparkles"></i><span>GaLaBrain</span></button>
+      <button class="brainpill" id="brainPill" onclick="openBrain()" title="Assistent"><i data-lucide="sparkles"></i><span>Assistent</span></button>
       <button class="iconbtn bell" onclick="openNotifications()" title="Benachrichtigungen"><i data-lucide="bell"></i><span class="bell__badge" id="bellBadge" style="display:none"></span></button>
     </header>
     <div class="previewbar hidden" id="previewBar"></div>
@@ -5999,7 +6001,7 @@ async function finishOnboarding(){
 const TOUR_STEPS = [
   { sel:['#sideNav','#mobileNav'], title:'Dein ganzer Betrieb', text:'Heute, Bewerber, Team & Personalakte – alles in einem Tool. Weitere Bereiche (Planung, Kunden, Finanzen, Markt) kannst du später dazubuchen. Hier wechselst du den Bereich.' },
   { sel:['.add-module'], title:'Cockpit selbst bauen', text:'Mit „Modul hinzufügen“ holst du dir Umsatz, Geburtstage, Lager und mehr direkt auf die Startseite.' },
-  { sel:['#brainPill'], title:'GaLaBrain', text:'Dein KI-Assistent für alle Fragen – Rechnung, Steuer, Personal, Kalkulation. Per Chat oder Sprache, jederzeit.' },
+  { sel:['#brainPill'], title:'Assistent', text:'Dein KI-Assistent für alle Fragen – Rechnung, Steuer, Personal, Kalkulation. Per Chat oder Sprache, jederzeit.' },
   { sel:['#fab'], title:'Schnell anlegen', text:'Mitarbeiter, Einsatz, Rechnung oder Angebot – mit dem Plus legst du von überall in Sekunden neu an.' },
 ];
 let tourIdx = 0;
@@ -6440,15 +6442,32 @@ function notifItems(){
   });
   return out;
 }
-function notifCount(){ try{ return notifItems().length; }catch(e){ return 0; } }
+// Gelesen-Logik: Angesehene Punkte zählen nicht mehr ins Glocken-Badge (persistiert in
+// settings._notifSeen). Taucht ein NEUER Punkt auf (anderer Schlüssel), erscheint die Zahl wieder.
+function notifKey(it){ return (it.title||'')+'|'+(it.sub||''); }
+function notifUnseen(){
+  try{
+    const seen = new Set(settings._notifSeen||[]);
+    return notifItems().filter(it=>!seen.has(notifKey(it)));
+  }catch(e){ return []; }
+}
+function notifCount(){ return notifUnseen().length; }
 function refreshBell(){
   const b=document.getElementById('bellBadge'); if(!b) return;
   const n=notifCount();
   b.textContent=n>9?'9+':String(n);
   b.style.display=n>0?'grid':'none';
 }
+function markNotifsSeen(){
+  try{
+    const keys = notifItems().map(notifKey);
+    settings._notifSeen = Array.from(new Set([...(settings._notifSeen||[]), ...keys])).slice(-60);
+    saveSettings(); refreshBell();
+  }catch(e){}
+}
 function openNotifications(){
   const items=notifItems();
+  markNotifsSeen();   // Ansehen = gelesen -> Badge verschwindet (bis etwas Neues kommt)
   const body = items.length
     ? `<div class="dw-feed">${items.map(it=>`<div class="dw-item" onclick="${it.act}" style="cursor:pointer">
          <span class="dw-item__ic" style="background:${it.color}1A;color:${it.color}"><i data-lucide="${it.icon}"></i></span>
@@ -8554,7 +8573,7 @@ function openInvoice(id){
           : `<div class="inv-totals__row"><span>zzgl. ${vr[0]?vr[0].rate:inv.vat}% MwSt.</span><span class="num">${eur(invVatAmt(inv))}</span></div>`; })()}
         <div class="inv-totals__row grand"><span>Gesamt</span><span class="num">${eur(invGross(inv))}</span></div>
       </div>
-      <p class="sheet-note" style="margin-top:12px"><i data-lucide="sparkles"></i> Unsicher bei MwSt., Pflichtangaben oder Mahnung? <a onclick="brainInvoiceHelp('${inv.id}')" style="color:var(--green);font-weight:700;cursor:pointer">Frag das GaLaBrain</a></p>
+      <p class="sheet-note" style="margin-top:12px"><i data-lucide="sparkles"></i> Unsicher bei MwSt., Pflichtangaben oder Mahnung? <a onclick="brainInvoiceHelp('${inv.id}')" style="color:var(--green);font-weight:700;cursor:pointer">Frag den Assistenten</a></p>
       ${invActions(inv)}
     </div>`);
 }
@@ -8787,7 +8806,7 @@ function renderInvoiceForm(){
           </select></label>
       </div>
       <div class="inv-totals" id="invDraftTotals">${invTotalsHtml()}</div>
-      <p class="sheet-note"><i data-lucide="sparkles"></i> MwSt.-Frage? <a onclick="openBrain('Wie weise ich die MwSt. auf der Rechnung korrekt aus?')" style="color:var(--green);font-weight:700;cursor:pointer">GaLaBrain fragen</a></p>
+      <p class="sheet-note"><i data-lucide="sparkles"></i> MwSt.-Frage? <a onclick="openBrain('Wie weise ich die MwSt. auf der Rechnung korrekt aus?')" style="color:var(--green);font-weight:700;cursor:pointer">Assistent fragen</a></p>
       <div class="sheet-actions">
         <button class="btn" style="flex:1" onclick="submitInvoice(true)"><i data-lucide="send"></i> ${d.kind==='angebot'?'Speichern & versenden':'Speichern & stellen'}</button>
         <button class="btn ghost" onclick="submitInvoice(false)">Als Entwurf</button>
@@ -8987,7 +9006,7 @@ const BRAIN_CHIPS = [
 function openBrain(prefill){
   if(!brainMsgs.length){
     const vn = ((settings.company && settings.company.owner) ? settings.company.owner.split(' ')[0] : '').trim();
-    brainMsgs = [{ role:'bot', text:`Moin${vn?' '+escapeHtml(vn):''}! Ich bin dein GaLaBrain. Frag mich alles rund um deinen Betrieb – Rechnung, Steuer, Personal, Kalkulation, Recht. Du kannst auch das <strong>Mikrofon antippen</strong> und einfach sprechen – erneut antippen zum Senden.<br><br>💡 <strong>Neuen Mitarbeiter? Sprich mir einfach den ganzen Satz</strong>, z. B. „<em>Ich habe einen neuen Mitarbeiter, der heißt Mirko Mustermann, wohnt in Karlstadt, geboren am 14.08.1994, wird als Landschaftsgärtner eingestellt und startet zum 01.07.2026.</em>" Ich fülle alles aus – du prüfst und speicherst.` }];
+    brainMsgs = [{ role:'bot', text:`Moin${vn?' '+escapeHtml(vn):''}! Ich bin dein Assistent. Frag mich alles rund um deinen Betrieb – Rechnung, Steuer, Personal, Kalkulation, Recht. Du kannst auch das <strong>Mikrofon antippen</strong> und einfach sprechen – erneut antippen zum Senden.<br><br>💡 <strong>Neuen Mitarbeiter? Sprich mir einfach den ganzen Satz</strong>, z. B. „<em>Ich habe einen neuen Mitarbeiter, der heißt Mirko Mustermann, wohnt in Karlstadt, geboren am 14.08.1994, wird als Landschaftsgärtner eingestellt und startet zum 01.07.2026.</em>" Ich fülle alles aus – du prüfst und speicherst.` }];
   }
   renderBrain();
   if(prefill){ setTimeout(()=> brainSend(prefill), 200); }
@@ -8996,7 +9015,7 @@ function renderBrain(){
   openSheet(`
     <div class="brain-head">
       <span class="brain-av"><i data-lucide="sparkles"></i></span>
-      <div><div class="sheet__title">GaLaBrain</div><div class="sheet__sub">Dein KI-Assistent für den Betrieb</div></div>
+      <div><div class="sheet__title">Assistent</div><div class="sheet__sub">Dein KI-Assistent für den Betrieb</div></div>
       <button class="sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
     </div>
     <div class="brain-body">
@@ -9005,7 +9024,7 @@ function renderBrain(){
       <div class="brain-input">
         <button class="brain-mic" id="brainMic" title="Antippen und sprechen – erneut antippen zum Senden"
           onclick="brainMicToggle(event)"><i data-lucide="mic"></i></button>
-        <input type="text" id="brainText" placeholder="Frag dein GaLaBrain…" onkeydown="if(event.key==='Enter'){brainSend(this.value); this.value='';}">
+        <input type="text" id="brainText" placeholder="Frag dein Assistent…" onkeydown="if(event.key==='Enter'){brainSend(this.value); this.value='';}">
         <button class="brain-send" onclick="const t=document.getElementById('brainText'); brainSend(t.value); t.value='';"><i data-lucide="arrow-up"></i></button>
       </div>
     </div>`);
@@ -9033,7 +9052,7 @@ function brainSend(text){
   }, 750);
 }
 let _brainLastAnswer = '';
-/* ===== GaLaBrain Wissensbasis: Scoring statt starrer Regex-Kette ===== */
+/* ===== Assistent Wissensbasis: Scoring statt starrer Regex-Kette ===== */
 const BRAIN_KB = [
   { id:'adoption', kw:['intensiv','akzeptanz','überzeug','gewöhn','annehmen','mitmachen','dazu bringen','dazu zu bringen','widerstand','skeptisch','motivier','adoption','wollen nicht','nutzen die app','app nutzen','app zu nutzen','zu nutzen','team dazu','mitarbeiter dazu','sauber stempeln','konsequent stempeln','einführen','ausrede'],
     a:`Damit dein Team die Zeiterfassung wirklich nutzt, zählt vor allem <strong>Einfachheit + ein klarer Nutzen für die Leute selbst</strong>:<br>• <strong>Eine Geste statt Zettel</strong>: Stempeln läuft per Handy mit einem Tipp „auf Kunde" – das ist schneller als jeder Stundenzettel. Zeig es einmal auf der Baustelle vor, dann sitzt es.<br>• <strong>Den Vorteil benennen</strong>: korrekt erfasste Stunden = <strong>pünktlicher, korrekter Lohn</strong> inkl. Rüstzeit und Zuschläge. Wer stempelt, muss nichts mehr nachträglich reklamieren.<br>• <strong>Vorbild Vorarbeiter</strong>: Wenn die Kolonnenführer konsequent stempeln, zieht der Rest nach. Mach es zur festen Routine bei Arbeitsbeginn/-ende.<br>• <strong>Reibung raus</strong>: Standortnachweis nur einmal beim Ein-/Ausstempeln, keine Dauerortung – das nimmt die „Überwachungs"-Angst. Erklär das offen.<br>• <strong>Erste 2 Wochen begleiten</strong>: täglich kurz in „Team → Zeiterfassung" reinschauen, wer noch nicht stempelt, freundlich erinnern.<br><br>In der App siehst du unter <strong>Team → Zeiterfassung</strong> live, wer eingestempelt ist – das ist dein Kontrollinstrument ohne Nachfragen.` },
@@ -9090,9 +9109,9 @@ const BRAIN_KB = [
   { id:'subunternehmer', kw:['subunternehmer','nachunternehmer','fremdleistung','freie mitarbeiter','scheinselbst','sub beauftrag','fremdfirma'],
     a:`Wenn du <strong>Subunternehmer</strong> einsetzt, beachte:<br>• <strong>Scheinselbstständigkeit vermeiden</strong>: Ein Sub muss wirklich selbstständig sein (eigene Geräte, eigene Leute, eigenes Risiko, mehrere Auftraggeber) – sonst drohen Nachzahlungen von Sozialabgaben.<br>• <strong>Bauabzugsteuer</strong>: Ohne gültige <strong>Freistellungsbescheinigung</strong> des Subs musst du 15 % einbehalten und ans Finanzamt abführen.<br>• <strong>Unbedenklichkeitsbescheinigungen</strong> (Finanzamt, SOKA, BG) vom Sub einholen – sonst haftest du u. U. für dessen Abgaben.<br>• Sauberer <strong>Werkvertrag</strong> mit klarem Gewerk, nicht „Stunden schaffen".<br><br>Bewahr die Bescheinigungen auf – bei Prüfung musst du sie vorlegen können.` },
   { id:'sprache', kw:['sprachsteuerung','spracheingabe','mikrofon','einsprechen','diktier','per sprache','sprachbefehl','sprachassistent','reden statt tippen'],
-    a:`Du kannst die App auch <strong>per Sprache</strong> bedienen:<br>• <strong>Ganzen Mitarbeiter einsprechen:</strong> Tipp das Mikrofon an und sag z. B. „<em>Ich habe einen neuen Mitarbeiter, der heißt Mirko Mustermann, wohnt in Karlstadt, geboren am 14.08.1994, wird als Landschaftsgärtner eingestellt, startet zum 01.07.2026 und bekommt 3.000 € im Monat.</em>" – ich erkenne Name, Funktion, Geburtsdatum, Eintritt, Wohnort &amp; Gehalt, fülle alles aus und du musst nur noch prüfen &amp; speichern.<br>• Im GaLaBrain das <strong>Mikrofon antippen</strong> und deine Frage sprechen – erneut antippen sendet sie.<br>• Über den <strong>Sprach-Button unten rechts</strong> gibst du Befehle, z. B. „<em>zeig mir die Bewerber</em>", „<em>Urlaub eintragen</em>", „<em>Rechnung schreiben</em>" oder „<em>einstempeln</em>" – die App springt direkt an die richtige Stelle.<br>• Sagst du etwas, das wie eine Frage klingt, beantworte ich es direkt im GaLaBrain.<br><br>Gerade auf der Baustelle mit Handschuhen ist das Gold wert – reden statt tippen.` },
+    a:`Du kannst die App auch <strong>per Sprache</strong> bedienen:<br>• <strong>Ganzen Mitarbeiter einsprechen:</strong> Tipp das Mikrofon an und sag z. B. „<em>Ich habe einen neuen Mitarbeiter, der heißt Mirko Mustermann, wohnt in Karlstadt, geboren am 14.08.1994, wird als Landschaftsgärtner eingestellt, startet zum 01.07.2026 und bekommt 3.000 € im Monat.</em>" – ich erkenne Name, Funktion, Geburtsdatum, Eintritt, Wohnort &amp; Gehalt, fülle alles aus und du musst nur noch prüfen &amp; speichern.<br>• Im Assistenten das <strong>Mikrofon antippen</strong> und deine Frage sprechen – erneut antippen sendet sie.<br>• Über den <strong>Sprach-Button unten rechts</strong> gibst du Befehle, z. B. „<em>zeig mir die Bewerber</em>", „<em>Urlaub eintragen</em>", „<em>Rechnung schreiben</em>" oder „<em>einstempeln</em>" – die App springt direkt an die richtige Stelle.<br>• Sagst du etwas, das wie eine Frage klingt, beantworte ich es direkt im Assistenten.<br><br>Gerade auf der Baustelle mit Handschuhen ist das Gold wert – reden statt tippen.` },
   { id:'hilfe', kw:['was kann','was kannst du','wie funktioniert die app','wie funktioniert das','überblick','was bietet','welche funktionen','was macht die app','wie nutze ich die app','kann das tool'],
-    a:`Kurzer Überblick, was dein Cockpit alles kann:<br>• <strong>Heute</strong>: dein Tagesstart – offene To-dos, Wetter, Baustellenlage, qualifizierte Bewerber.<br>• <strong>Bewerber</strong>: komplettes Recruiting – Pipeline, Vorqualifizierung, direkt anrufen/WhatsApp/Mail.<br>• <strong>Team</strong>: Zeiterfassung, Urlaub/Krank, Kolonnen und die digitale Personalakte.<br>• <strong>Planung, Kunden, Finanzen, Markt</strong>: als Zusatzmodule freischaltbar (Plantafel, Angebote/Rechnungen, Branchen-Netzwerk).<br>• <strong>GaLaBrain</strong> (ich): Fragen zu Recht, Steuer, Kalkulation – per Text oder Sprache.<br><br>Frag mich einfach konkret, z. B. „Wie kalkuliere ich Pflaster?" oder sag per Sprachbefehl „Mitarbeiter anlegen".` },
+    a:`Kurzer Überblick, was dein Cockpit alles kann:<br>• <strong>Heute</strong>: dein Tagesstart – offene To-dos, Wetter, Baustellenlage, qualifizierte Bewerber.<br>• <strong>Bewerber</strong>: komplettes Recruiting – Pipeline, Vorqualifizierung, direkt anrufen/WhatsApp/Mail.<br>• <strong>Team</strong>: Zeiterfassung, Urlaub/Krank, Kolonnen und die digitale Personalakte.<br>• <strong>Planung, Kunden, Finanzen, Markt</strong>: als Zusatzmodule freischaltbar (Plantafel, Angebote/Rechnungen, Branchen-Netzwerk).<br>• <strong>Assistent</strong> (ich): Fragen zu Recht, Steuer, Kalkulation – per Text oder Sprache.<br><br>Frag mich einfach konkret, z. B. „Wie kalkuliere ich Pflaster?" oder sag per Sprachbefehl „Mitarbeiter anlegen".` },
 ];
 function brainScore(s, kw){ let sc=0; for(const k of kw){ if(s.includes(k)) sc += (k.includes(' ')?3:1); } return sc; }
 function brainBest(s){ let best=null, score=0; for(const e of BRAIN_KB){ const sc=brainScore(s, e.kw); if(sc>score){ score=sc; best=e; } } return {best, score}; }
@@ -9233,15 +9252,15 @@ function voiceFabDown(ev){ voiceFabToggle(ev); }
 function voiceFabUp(ev){ /* Toggle-Modus: pointerup ignorieren */ }
 function showVoiceHud(msg){ const h=document.getElementById('voiceHud'); const t=document.getElementById('voiceHudTxt'); if(t) t.textContent=msg||'Sprich jetzt…'; if(h){ h.classList.remove('hidden'); icons(); } }
 function hideVoiceHud(){ const h=document.getElementById('voiceHud'); if(h) h.classList.add('hidden'); }
-// Befehl interpretieren: Navigation, Aktion oder Frage ans GaLaBrain
+// Befehl interpretieren: Navigation, Aktion oder Frage ans Assistent
 function voiceCommand(raw){
   const s = raw.toLowerCase().trim();
   const has = (...ws)=> ws.some(w=> s.includes(w));
   const isQuestion = /\b(wie|was|warum|wieso|wann|wo|welche|wer|darf|muss|kann ich|kann man|brauche ich|ist es|gibt es)\b/.test(s) || s.includes('?');
-  // 1) Explizit ans GaLaBrain
+  // 1) Explizit ans Assistent
   if(has('galabrain','gala brain','frag das brain','frage das brain','frag die ki','assistent')){
     const q = raw.replace(/.*?(galabrain|gala brain|brain|ki|assistent)\s*/i,'').trim();
-    toast('GaLaBrain'); openBrain(q || undefined); return;
+    toast('Assistent'); openBrain(q || undefined); return;
   }
   // 2) Konkrete Aktionen (Anlegen / Eintragen)
   if(has('krank') && has('eintrag','melde','anleg','erfass')){ toast('Krankheit eintragen'); fabGo('team','urlaub'); openAbsenceForm(undefined,undefined,undefined,'krank'); return; }
@@ -9266,7 +9285,7 @@ function voiceCommand(raw){
     if(has('markt','netzwerk','marktplatz')){ toast('Markt'); setView('markt'); return; }
     if(has('heute','start','dashboard','übersicht','startseite')){ toast('Dashboard'); setView('heute'); return; }
   }
-  // 4) Sonst: als Frage ans GaLaBrain
+  // 4) Sonst: als Frage ans Assistent
   openBrain(raw);
 }
 
@@ -9572,7 +9591,7 @@ const DOCS = {
     <p><strong>§4 Pflichten des Kunden.</strong> Der Kunde ist für die Richtigkeit seiner eingegebenen Daten, die Rechtmäßigkeit der Datenverarbeitung gegenüber seinen Betroffenen sowie die Geheimhaltung der Zugangsdaten verantwortlich.</p>
     <p><strong>§5 Verfügbarkeit.</strong> Angestrebt wird eine Verfügbarkeit von 99,5 % im Jahresmittel. Geplante Wartungsfenster werden vorab angekündigt.</p>
     <p><strong>§6 Datenschutz.</strong> Die Verarbeitung personenbezogener Daten regelt der Auftragsverarbeitungsvertrag (AVV) nach Art. 28 DSGVO, der Bestandteil dieser Vereinbarung ist.</p>
-    <p><strong>§7 Haftung.</strong> GreenCareers OS leistet keine Rechts-, Steuer- oder Unternehmensberatung. Hinweise des Assistenten (GaLaBrain) sind Orientierung und ersetzen nicht die Beratung durch Steuerberater oder Rechtsanwalt. Im Übrigen Haftung nur für Vorsatz und grobe Fahrlässigkeit; bei leichter Fahrlässigkeit nur bei Verletzung wesentlicher Vertragspflichten und begrenzt auf den vertragstypisch vorhersehbaren Schaden.</p>
+    <p><strong>§7 Haftung.</strong> GreenCareers OS leistet keine Rechts-, Steuer- oder Unternehmensberatung. Hinweise des Assistenten (Assistent) sind Orientierung und ersetzen nicht die Beratung durch Steuerberater oder Rechtsanwalt. Im Übrigen Haftung nur für Vorsatz und grobe Fahrlässigkeit; bei leichter Fahrlässigkeit nur bei Verletzung wesentlicher Vertragspflichten und begrenzt auf den vertragstypisch vorhersehbaren Schaden.</p>
     <p><strong>§8 Laufzeit &amp; Kündigung.</strong> Kostenpflichtige Module sind monatlich kündbar. Vor Löschung ist ein Datenexport möglich.</p>
     <p><strong>§9 Schlussbestimmungen.</strong> Es gilt deutsches Recht. Sollte eine Bestimmung unwirksam sein, bleibt der übrige Vertrag wirksam.</p>
     <p style="color:var(--muted);font-size:13px">Stand 06/2026 · Version ${'v1.2'}.</p>`,
