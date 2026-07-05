@@ -4630,6 +4630,7 @@ async function afterAuth(session){
     await hydrateSelfEmployee();
   }
   enterApp();
+  updateBetriebBanner();   // eingeloggt ohne Betrieb? -> roter Hinweis statt stilles Nicht-Speichern
   loadPortalData();   // echte Stellen + Bewerber des Betriebs aus Supabase ziehen
 }
 
@@ -10523,6 +10524,45 @@ function friendlyDbError(err){
   return 'Das hat leider nicht geklappt – bitte erneut versuchen.';
 }
 function osConnected(){ return !!(sbAuth && GC_PROFILE && GC_PROFILE.customer_id); }
+// FAIL-LOUD: Eingeloggt, aber kein Betrieb verknüpft -> Eingaben würden NUR lokal landen.
+// Das darf nie wieder still passieren (Launch-Test 04.07.: "Mitarbeiter nicht gespeichert").
+let _betriebWarnAt = 0;
+function betriebFehltWarn(){
+  if(!GC_USER || (GC_PROFILE && GC_PROFILE.customer_id)) return false;
+  if(Date.now() - _betriebWarnAt > 8000){
+    _betriebWarnAt = Date.now();
+    toast('⚠️ Betrieb nicht verbunden – diese Eingabe wird NICHT dauerhaft gespeichert! Unten „Jetzt verbinden" tippen.');
+  }
+  updateBetriebBanner();
+  return true;
+}
+function updateBetriebBanner(){
+  const need = !!(GC_USER && _enteredApp && !(GC_PROFILE && GC_PROFILE.customer_id));
+  let b = document.getElementById('noBizBanner');
+  if(!need){ if(b) b.remove(); return; }
+  if(b) return;
+  b = document.createElement('div'); b.id = 'noBizBanner';
+  b.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:9999;background:#B91C1C;color:#fff;padding:11px 16px;font-size:14px;font-weight:600;display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap;box-shadow:0 -4px 16px rgba(0,0,0,.25)';
+  b.innerHTML = '<span>⚠️ Dein Betrieb ist noch nicht verbunden – Eingaben werden aktuell NICHT gespeichert.</span><button onclick="retryLinkBetrieb()" style="background:#fff;color:#B91C1C;border:none;border-radius:8px;padding:7px 14px;font-weight:800;cursor:pointer">Jetzt verbinden</button>';
+  document.body.appendChild(b);
+}
+// Selbstheilung: Betrieb nachträglich anlegen/verknüpfen (create_my_company ist idempotent
+// und verwendet einen eigenen Waisen-Betrieb wieder, statt Duplikate anzulegen).
+async function retryLinkBetrieb(){
+  if(!sbAuth || !GC_USER) return;
+  const nm = (settings.company && settings.company.name) || '';
+  if(!nm){ toast('Bitte zuerst den Betriebsnamen in der Einrichtung angeben.'); if(typeof openConsentGate==='function') openConsentGate(); return; }
+  try{
+    const { data, error } = await sbAuth.rpc('create_my_company', {
+      p_name: nm, p_branchen: settings.branchen||[], p_theme: settings.theme||'galabau',
+      p_ort: (settings.company&&settings.company.ort)||null, p_telefon: (settings.company&&settings.company.telefon)||null });
+    if(error){ toast('Verbinden fehlgeschlagen: '+friendlyDbError(error)); return; }
+    GC_PROFILE = GC_PROFILE||{}; GC_PROFILE.customer_id = data;
+    updateBetriebBanner();
+    toast('Betrieb verbunden – ab jetzt wird alles in der Datenbank gespeichert.');
+    try{ loadPortalData(); }catch(_){}
+  }catch(e){ toast('Verbinden fehlgeschlagen – bitte erneut versuchen.'); }
+}
 
 // employee + Personalakte -> mitarbeiter-Row. position=Funktion, crew=Kolonne, Rest der HR-Felder in extra.
 function maRowPayload(e){
@@ -10543,7 +10583,8 @@ function maRowPayload(e){
 // Anlegen ODER aktualisieren. Bei INSERT die zurückgegebene UUID am In-Memory-Objekt vermerken (_uuid),
 // damit Folge-Updates dieselbe Zeile treffen.
 async function persistEmployee(e){
-  if(!osConnected() || !e) return;
+  if(!e) return;
+  if(!osConnected()){ betriebFehltWarn(); return; }
   try{
     if(e._uuid){
       const { error } = await sbAuth.from('mitarbeiter').update(maRowPayload(e)).eq('id', e._uuid);
@@ -10648,7 +10689,8 @@ function absRowPayload(a){
   };
 }
 async function persistAbsence(a){
-  if(!osConnected() || !a) return;
+  if(!a) return;
+  if(!osConnected()){ betriebFehltWarn(); return; }
   const payload = absRowPayload(a);
   if(!payload){ return; }                       // Person (noch) nicht in der DB -> still überspringen
   try{
@@ -10826,7 +10868,8 @@ function siteRowPayload(s){
   };
 }
 async function persistSite(s){
-  if(!osConnected() || !s || s.id === 's0') return;
+  if(!osConnected()){ betriebFehltWarn(); return; }
+  if(!s || s.id === 's0') return;
   try{
     if(s._uuid){
       const { error } = await sbAuth.from('baustellen').update(siteRowPayload(s)).eq('id', s._uuid);
@@ -10973,7 +11016,8 @@ function zeitRowPayload(e){
   };
 }
 async function persistTimeEntry(e){
-  if(!osConnected() || !e) return;
+  if(!osConnected()){ betriebFehltWarn(); return; }
+  if(!e) return;
   const payload = zeitRowPayload(e);
   if(!payload) return;                             // Person (noch) nicht in der DB -> still überspringen
   try{
