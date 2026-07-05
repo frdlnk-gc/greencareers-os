@@ -11678,13 +11678,13 @@ function openStelleForm(id){
        ansprechpartner_foto:r.ansprechpartner_foto||'',
        kontakt_email:r.kontakt_email||'', kontakt_telefon:r.kontakt_telefon||'',
        bilder:Array.isArray(r.stellen_bilder)?r.stellen_bilder.slice():[],
-       status:j.status, slug:j.slug}
+       status:j.status, slug:j.slug, _neverPublished: !r.published_at}
     : {id:null, titel:'', branche:(settings.branchen&&settings.branchen[0])||'',
        ort:(co.ort||co.city||''), beschaeftigungsart:'Vollzeit', vertragsart:'Unbefristet',
        eintritt:'ab sofort', gehalt:'', beschreibung:'', aufgaben:'', profil:'', benefits:'',
        ansprechpartner:(co.owner||''), ansprechpartner_rolle:'', ansprechpartner_foto:'',
        kontakt_email:(co.email||''), kontakt_telefon:(co.phone||''),
-       bilder:[], status:'pausiert', slug:''};
+       bilder:[], status:'pausiert', slug:'', _neverPublished:true};
   renderStelleForm();
 }
 // Live-Vorschau: zeigt, wie Zeilen als Aufzählungspunkte auf der Anzeige erscheinen.
@@ -11928,9 +11928,9 @@ async function stelleAutoSaveNow(){
     kontakt_email:(d.kontakt_email||'').trim()||null, kontakt_telefon:(d.kontakt_telefon||'').trim()||null,
     stellen_bilder:(d.bilder||[]).filter(Boolean), status:d.status||'pausiert' };
   try{
-    if(d.id){ const {error}=await sbAuth.from('stellenanzeigen').update(row).eq('id',d.id); done(!error); }
+    if(d.id){ if(d._neverPublished !== false){ row.slug = genSlug(d.titel); d.slug = row.slug; } const {error}=await sbAuth.from('stellenanzeigen').update(row).eq('id',d.id); done(!error); }
     else{
-      row.customer_id=GC_PROFILE.customer_id; row.slug=d.slug||genSlug(d.titel);
+      row.customer_id=GC_PROFILE.customer_id; row.slug=genSlug(d.titel);
       const {data,error}=await sbAuth.from('stellenanzeigen').insert(row).select('id,slug').single();
       if(!error&&data){ d.id=data.id; d.slug=data.slug||row.slug; }
       done(!error);
@@ -12162,7 +12162,9 @@ async function submitStelle(publish){
     status
   };
   if(status === 'aktiv'){
-    row.slug = d.slug || genSlug(d.titel);
+    // Slug: vor der ERSTEN Veröffentlichung immer aus dem aktuellen Titel (sonst trägt die
+    // Stelle für immer den Slug eines alten Arbeitstitels); danach stabil (geteilte Links).
+    row.slug = (d._neverPublished !== false) ? genSlug(d.titel) : (d.slug || genSlug(d.titel));
     // published_at NUR setzen, wenn die Stelle NEU live geht (vorher nicht 'aktiv') – sonst
     // würde jede Bearbeitung einer laufenden Stelle sie künstlich als „heute" ganz nach oben bumpen.
     if(d.status !== 'aktiv') row.published_at = new Date().toISOString();
@@ -12173,7 +12175,7 @@ async function submitStelle(publish){
       if(error) throw error;
     }else{
       row.customer_id = GC_PROFILE.customer_id;
-      if(!row.slug) row.slug = genSlug(d.titel);   // Slug von Anfang an, auch für Entwürfe
+      row.slug = genSlug(d.titel);   // Entwurf: Slug folgt dem Titel (bis zur ersten Veröffentlichung)
       const { error } = await sbAuth.from('stellenanzeigen').insert(row);
       if(error) throw error;
     }
