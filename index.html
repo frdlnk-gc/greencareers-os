@@ -3784,10 +3784,22 @@ function buyFlowPending(){ const e = gcEntry(); return e.flow==='buy' && !e.paid
 // Rückkehr von Stripe: success_url = os.green-careers.de/?paid=1&session_id=…
 function coStripeReturn(){ try{ return new URLSearchParams(window.location.search).get('paid')==='1'; }catch(_){ return false; } }
 function openCheckoutSuccess(){
-  // Webhook-Rennen: Stripe schaltet das Kontingent per Webhook frei – kurz nachladen,
-  // damit 'Veröffentlichen' direkt nach der Rückkehr funktioniert.
-  setTimeout(()=>{ try{ refreshKontingent(false); }catch(_){} }, 4000);
-  setTimeout(()=>{ try{ refreshKontingent(false); }catch(_){} }, 15000);
+  // SELF-HEALING: Zahlung direkt bei Stripe bestätigen (confirm-checkout holt die
+  // Session server-seitig, legt die Bestellung an und schaltet das Kontingent frei) –
+  // funktioniert auch, wenn der Stripe-Webhook nicht/zu spät feuert.
+  (async ()=>{
+    try{
+      const sid = new URLSearchParams(window.location.search).get('session_id') || '';
+      if(sid){
+        await fetch(SB_URL+'/functions/v1/confirm-checkout', {
+          method:'POST', headers:{ 'Content-Type':'application/json', 'apikey':SB_ANON },
+          body: JSON.stringify({ session_id: sid })
+        });
+      }
+    }catch(_){ }
+    try{ refreshKontingent(false); }catch(_){ }
+  })();
+  setTimeout(()=>{ try{ refreshKontingent(false); }catch(_){} }, 6000);
   const e = gcEntry(); e.paid = true; saveEntry(e);
   coState.firma = (settings.company && settings.company.name) || coState.firma || '';
   try{ history.replaceState(null,'',window.location.pathname); }catch(_){}   // ?paid=1 aus URL entfernen
