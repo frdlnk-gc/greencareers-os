@@ -11645,10 +11645,10 @@ function stelleBrandingInnerHtml(){
   const titel = pp.titelbild || '';
   const miss = brandingMissing();
   const logoBox = logo
-    ? `<div class="sbprev-logo"><img src="${escapeHtml(logo)}" alt="Logo"></div>`
+    ? `<div class="sbprev-logo" style="cursor:pointer" title="Zum Bearbeiten tippen" onclick="openImageEditMenu('logo')"><img src="${escapeHtml(logo)}" alt="Logo"></div>`
     : `<div class="sbprev-logo"><span>kein&nbsp;Logo</span></div>`;
   const titelBox = titel
-    ? `<div class="sbprev-titel" style="background-image:url('${titel}')"></div>`
+    ? `<div class="sbprev-titel" style="background-image:url('${titel}');cursor:pointer" title="Zum Bearbeiten tippen" onclick="openImageEditMenu('titelbild')"></div>`
     : `<div class="sbprev-titel"><span>kein Titelbild</span></div>`;
   const note = miss.any
     ? `<div class="sbrand-note warn"><i data-lucide="alert-triangle"></i><span>Lade <b>${[miss.logo?'Logo':'',miss.titel?'Titelbild':''].filter(Boolean).join(' &amp; ')}</b> hoch, damit deine Anzeige im Portal vollständig und professionell aussieht. Gilt für alle deine Stellen.</span></div>`
@@ -11671,6 +11671,57 @@ function stelleBrandingInnerHtml(){
 function renderStelleBranding(){
   const el = document.getElementById('stBrandingBox');
   if(el){ el.innerHTML = stelleBrandingInnerHtml(); icons(); }
+}
+// Klick auf ein VORHANDENES Bild: Der Nutzer will anpassen ODER ersetzen – wir fragen.
+// "Anpassen" öffnet den Zuschneiden-Dialog mit dem bestehenden Bild (kein Neu-Upload nötig).
+function openImageEditMenu(kind, idx){
+  const isLogo = kind==='logo', isTitel = kind==='titelbild';
+  const src = isLogo ? (settings.company&&settings.company.logo) : isTitel ? (settings.portal&&settings.portal.titelbild) : (stelleDraft&&stelleDraft.bilder&&stelleDraft.bilder[idx]);
+  if(!src) return;
+  const title = isLogo ? 'Logo' : isTitel ? 'Titelbild' : 'Stellen-Bild';
+  const acts = [
+    { label:'Bild anpassen (zuschneiden & zoomen)', icon:'crop', onclick:`cpopClose();editExistingImage('${kind}',${idx==null?'null':idx})` },
+    { label:'Neues Bild hochladen', variant:'ghost', icon:'upload', onclick:`cpopClose();triggerImageUpload('${kind}',${idx==null?'null':idx})` },
+  ];
+  if(!isLogo || true) acts.push({ label:'Entfernen', variant:'ghost', icon:'trash-2', onclick:`cpopClose();removeImage('${kind}',${idx==null?'null':idx})` });
+  cpopShow({ icon:'image', iconClass:'', title: title+' bearbeiten', body:'Was möchtest du tun?', actions: acts.concat([{label:'Abbrechen', variant:'ghost'}]) });
+}
+function editExistingImage(kind, idx){
+  if(kind==='logo'){
+    openImageCropper({ src:(settings.company&&settings.company.logo), aspect:1, round:false, outW:512, mime:'image/png',
+      title:'Logo anpassen', hint:'Quadratisch (1:1) · zoomen & verschieben',
+      onDone:(url)=>{ settings.company.logo=url; saveSettings(); applyBranding(); renderStelleBranding(); savePortalProfile(); toast('Logo angepasst'); } });
+  } else if(kind==='titelbild'){
+    openImageCropper({ src:(settings.portal&&settings.portal.titelbild), aspect:16/6, round:false, outW:1600, mime:'image/jpeg', maxKB:420,
+      title:'Titelbild anpassen', hint:'Querformat · zoomen & verschieben',
+      onDone:(url)=>{ settings.portal.titelbild=url; saveSettings(); renderStelleBranding(); savePortalProfile(); toast('Titelbild angepasst'); } });
+  } else {
+    const src = stelleDraft.bilder[idx];
+    openImageCropper({ src, aspect:4/3, round:false, outW:1200, mime:'image/jpeg', maxKB:STELLE_IMG_MAX_KB,
+      title:'Bild anpassen', hint:'Querformat (4:3) · zoomen & verschieben',
+      onDone:(url)=>{ stelleDraft.bilder[idx]=url; renderStelleBilderPrev(); if(typeof stelleWizChanged==='function') stelleWizChanged(); toast('Bild angepasst'); } });
+  }
+}
+function triggerImageUpload(kind, idx){
+  const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*';
+  inp.onchange=()=>{
+    if(kind==='logo') stelleCoLogoPick(inp);
+    else if(kind==='titelbild') stelleCoTitelPick(inp);
+    else {
+      // Stellen-Bild an Position idx ERSETZEN
+      const f=inp.files&&inp.files[0]; if(!f) return;
+      openImageCropper({ file:f, aspect:4/3, round:false, outW:1200, mime:'image/jpeg', maxKB:STELLE_IMG_MAX_KB, maxUploadKB:12000,
+        title:'Bild zuschneiden', hint:'Querformat (4:3)',
+        onDone:(url)=>{ stelleDraft.bilder[idx]=url; renderStelleBilderPrev(); if(typeof stelleWizChanged==='function') stelleWizChanged(); toast('Bild ersetzt'); } });
+    }
+  };
+  inp.click();
+}
+function removeImage(kind, idx){
+  if(kind==='logo'){ if(!confirm('Logo wirklich entfernen?')) return; settings.company.logo=''; saveSettings(); applyBranding(); renderStelleBranding(); savePortalProfile(); }
+  else if(kind==='titelbild'){ if(!confirm('Titelbild wirklich entfernen?')) return; settings.portal.titelbild=''; saveSettings(); renderStelleBranding(); savePortalProfile(); }
+  else { stelleBildDel(idx); if(typeof stelleWizChanged==='function') stelleWizChanged(); }
+  toast('Entfernt');
 }
 function stelleCoLogoPick(input){
   const f = input.files && input.files[0]; if(!f) return; input.value = '';
@@ -11748,19 +11799,33 @@ function stKacheln(kind,opts){
     </div>`;}).join('')+`</div>`;
 }
 function stPreviewCardHtml(){
+  // 1:1 die Job-Karte des echten GreenCareers-/GreyCareers-Portals (jcover+jbody-Struktur) –
+  // KEINE Fantasie-Vorschau. Cover = erstes Stellen-Bild, sonst Unternehmens-Titelbild.
   const d=stelleDraft, v=s=>escapeHtml(s||'');
   const L=stLists();
-  const tags=[d.ort, d.beschaeftigungsart, d.vertragsart].filter(Boolean).map(x=>`<span style="background:rgba(255,255,255,.16);border-radius:100px;padding:2px 9px;font-size:10.5px;font-weight:700">${escapeHtml(x)}</span>`).join(' ');
-  const aufg=(L.aufgaben.filter(Boolean).slice(0,3).map(a=>`<div style="display:flex;gap:7px;font-size:12px;margin-top:5px"><span style="color:var(--green)">✓</span><span>${escapeHtml(a)}</span></div>`).join(''))||`<div style="font-size:12px;color:var(--muted);margin-top:5px">Noch keine Aufgaben eingetragen.</div>`;
-  return `<div style="background:linear-gradient(135deg,var(--green),var(--green-2));color:#fff;border-radius:14px;padding:15px 16px">
-      <div style="display:flex;align-items:center;gap:9px;margin-bottom:9px">${settings.company&&settings.company.logo?`<img src="${settings.company.logo}" style="width:30px;height:30px;border-radius:8px;object-fit:cover;background:#fff">`:''}<div><b style="font-size:12.5px">${v(settings.company&&settings.company.name||'Dein Betrieb')}</b><div style="font-size:10.5px;opacity:.8">${v(d.ort||'')}</div></div></div>
-      <div style="font-weight:800;font-size:16.5px;line-height:1.25">${v(d.titel||'Dein Stellentitel')}</div>
-      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:8px">${tags}</div>
-      ${d.gehalt?`<div style="margin-top:8px;display:inline-block;background:rgba(255,255,255,.16);border-radius:7px;padding:3px 9px;font-size:11.5px;font-weight:700">${v(d.gehalt)}</div>`:''}
+  const cov = (d.bilder && d.bilder[0]) || (settings.portal && settings.portal.titelbild) || '';
+  const firma = (settings.company && settings.company.name) || 'Dein Betrieb';
+  const gehaltTag = d.gehalt ? `<span style="display:inline-block;background:#E8F6EE;color:#0E7A43;border-radius:100px;padding:4px 10px;font-size:11.5px;font-weight:700">💶 ${v(d.gehalt)}</span>` : '';
+  const tag = s => `<span style="display:inline-block;background:#F1F3F0;color:#3A4540;border-radius:100px;padding:4px 10px;font-size:11.5px;font-weight:600">${s}</span>`;
+  const aufg = L.aufgaben.filter(Boolean).slice(0,3).map(a=>`<div style="display:flex;gap:7px;font-size:12px;margin-top:5px;color:#3A4540"><span style="color:var(--green)">✓</span><span>${escapeHtml(a)}</span></div>`).join('');
+  return `<div style="border:1px solid var(--line);border-radius:16px;overflow:hidden;background:#fff;box-shadow:0 2px 10px rgba(20,30,25,.06)">
+    <div style="position:relative;height:120px;background:#1B2420;display:grid;place-items:center;color:#fff;font-weight:800;font-size:22px">
+      ${cov?`<img src="${cov}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">`:escapeHtml(initials(firma))}
+      <span style="position:absolute;top:9px;right:9px;background:rgba(0,0,0,.55);color:#fff;border-radius:100px;padding:3px 9px;font-size:10px;font-weight:700">heute</span>
+      ${(settings.company&&settings.company.logo)?`<img src="${settings.company.logo}" alt="" style="position:absolute;left:12px;bottom:-14px;width:38px;height:38px;border-radius:50%;object-fit:cover;border:2.5px solid #fff;background:#fff">`:''}
     </div>
-    <div style="border:1px solid var(--line);border-top:none;border-radius:0 0 14px 14px;padding:12px 14px;margin-top:-10px;padding-top:20px;background:var(--card,#fff)">
-      <div style="font-size:10.5px;font-weight:800;letter-spacing:.05em;color:var(--muted);text-transform:uppercase">Ihre Aufgaben</div>${aufg}
-    </div>`;
+    <div style="padding:${(settings.company&&settings.company.logo)?'20px':'13px'} 15px 13px">
+      <div style="font-weight:800;font-size:15px;line-height:1.3;color:#16211B">${v(d.titel||'Dein Stellentitel')}</div>
+      <div style="font-size:12px;color:#6B7770;margin-top:2px">${v(firma)}</div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:9px">
+        ${d.ort?tag('📍 '+v(d.ort)):''}
+        ${d.beschaeftigungsart?tag('🕒 '+v(d.beschaeftigungsart)):''}
+        ${gehaltTag}
+      </div>
+      ${aufg?`<div style="margin-top:10px;padding-top:9px;border-top:1px solid #EEF1EE"><div style="font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#8A948E">Ihre Aufgaben</div>${aufg}</div>`:''}
+      <div style="display:flex;justify-content:space-between;margin-top:11px;font-size:11.5px"><span style="color:#8A948E">heute</span><b style="color:var(--green)">Details ansehen →</b></div>
+    </div>
+  </div>`;
 }
 function stPreviewUpdate(){ const el=document.getElementById('stWizPrev'); if(el){ el.innerHTML=stPreviewCardHtml(); icons(); } }
 let _stSaveTimer=null;
@@ -11936,7 +12001,11 @@ function stelleFotoClear(){
 function renderStelleBilderHtml(){
   const arr = (stelleDraft && stelleDraft.bilder) || [];
   if(!arr.length) return '<div style="font-size:12px;color:var(--muted)">Noch keine Bilder.</div>';
-  return arr.map((src,i)=>`<div class="pthumb"><img src="${escapeHtml(src)}" alt="Bild ${i+1}"><button type="button" onclick="stelleBildDel(${i})"><i data-lucide="x"></i></button></div>`).join('');
+  return arr.map((src,i)=>`<div class="pthumb" style="position:relative;cursor:pointer" title="Zum Bearbeiten tippen" onclick="openImageEditMenu('bild',${i})">
+      <img src="${escapeHtml(src)}" alt="Bild ${i+1}">
+      ${i===0?`<span style="position:absolute;left:5px;top:5px;background:var(--green);color:#fff;border-radius:100px;padding:2px 8px;font-size:9.5px;font-weight:800">Titelbild</span>`:''}
+      <button type="button" onclick="event.stopPropagation();stelleBildDel(${i})"><i data-lucide="x"></i></button>
+    </div>`).join('');
 }
 function renderStelleBilderPrev(){
   const el = document.getElementById('stBilderPrev');
@@ -11964,6 +12033,7 @@ function stelleBilderAdd(input){
 function stelleBildDel(i){
   if(!stelleDraft || !stelleDraft.bilder) return;
   stelleDraft.bilder.splice(i,1); renderStelleBilderPrev();
+  if(typeof stelleWizChanged==='function') stelleWizChanged();
 }
 let _stelleSaving = false;   // Re-Entry-Guard gegen Doppel-/Dreifach-Klick (async-Insert)
 async function submitStelle(publish){
