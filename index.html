@@ -3147,6 +3147,14 @@
       <button class="btn ghost full" onclick="showAuth('register')" style="margin-top:8px">Falsche Adresse? Zurück zur Registrierung</button>
       <button class="btn ghost full" onclick="showAuth('login')" style="margin-top:8px">Zurück zum Login</button>
     </div>
+    <div id="inviteLandingView" class="hidden">
+      <span class="brandmark" style="margin-bottom:16px"><i data-lucide="key-round"></i></span>
+      <h1>Deine Einladung</h1>
+      <p class="sub">Du wurdest zu <b id="invLandCompany">deinem Betrieb</b> eingeladen. Tippe auf den Button, um deinen Zugang zu aktivieren und ein Passwort festzulegen.</p>
+      <div class="auth__err" style="display:none"></div>
+      <button class="btn full" id="invLandBtn" onclick="activateInvite()"><i data-lucide="unlock"></i> Zugang jetzt aktivieren</button>
+      <p class="sub" style="font-size:12px;margin-top:12px">Link funktioniert nicht? Bitte deinen Chef, dir in der Personalakte einen neuen Einladungs-Link zu erstellen – es gilt immer der zuletzt erstellte.</p>
+    </div>
     <div id="resetView" class="hidden">
       <span class="auth__back" onclick="showAuth('login')"><i data-lucide="arrow-left"></i> Zurück</span>
       <h1>Passwort zurücksetzen</h1>
@@ -4318,7 +4326,7 @@ let draggedJob = null;
 let dragClickBlockUntil = 0;
 
 function showAuth(view){
-  ['login','register','verify','reset','sent','newpw','invite','inviteprofile'].forEach(id => { const el=document.getElementById(`${id}View`); if(el) el.classList.toggle('hidden', id !== view); });
+  ['login','register','verify','reset','sent','newpw','invite','inviteprofile','inviteLanding'].forEach(id => { const el=document.getElementById(`${id}View`); if(el) el.classList.toggle('hidden', id !== view); });
   authErr('');
   const ok=document.getElementById('loginOk'); if(ok){ ok.style.display='none'; ok.innerHTML=''; }
   icons();
@@ -4713,6 +4721,20 @@ function _clearAuthHash(){
 let _confirmFlow = false;   // true, solange wir einen frischen E-Mail-Bestätigungs-Link abarbeiten
 async function gcAuthBoot(){
   if(!sbAuth){ return; }
+  // 0) Preview-sicherer Einladungs-Zwischenlink (?gcinvite=<token_hash>): Landing zeigen,
+  //    Token wird ERST beim Button-Klick eingelöst (WhatsApp-Preview kann nichts konsumieren).
+  try{
+    const q = new URLSearchParams(window.location.search);
+    const tok = q.get('gcinvite');
+    if(tok){
+      _confirmFlow = true;
+      _gcInviteTok = tok; _gcInviteType = (q.get('t') === 'magiclink') ? 'magiclink' : 'invite';
+      try{ history.replaceState(null, '', window.location.pathname); }catch(_){}
+      showAuth('inviteLanding');
+      icons();
+      return;
+    }
+  }catch(_){}
   const linkType = _authLinkType();
 
   // 1) Frische E-Mail-BESTÄTIGUNG nach Registrierung:
@@ -15297,8 +15319,45 @@ async function requestInviteLink({name,email,position,sysRole}){
       body: JSON.stringify({ name, email, position, sys_role:sysRole, mode:'link', redirect_to: window.location.origin + window.location.pathname })
     });
     const data = await res.json().catch(()=>({}));
-    return { ok: res.ok && data.ok !== false, status:res.status, data, link: data.link || null, already_exists: !!data.already_exists };
+    // WICHTIG: Der rohe action_link ist ein EINMAL-Link, den WhatsApp-/Browser-Vorschauen
+    // beim Vorladen KONSUMIEREN ("Link abgelaufen"). Deshalb verpacken wir den Token in
+    // einen eigenen Zwischenlink: erst der Button-Klick auf unserer Seite löst verifyOtp aus.
+    let share = data.link || null;
+    try{
+      if(share){
+        const u = new URL(share); const tok = u.searchParams.get('token');
+        const typ = u.searchParams.get('type') || data.link_type || 'invite';
+        if(tok) share = window.location.origin + window.location.pathname + '?gcinvite=' + encodeURIComponent(tok) + '&t=' + encodeURIComponent(typ);
+      }
+    }catch(_){}
+    return { ok: res.ok && data.ok !== false, status:res.status, data, link: share, already_exists: !!data.already_exists };
   }catch(e){ return {ok:false, reason:'network', error:String(e)}; }
+}
+// Einladung aktivieren (Landing-Klick): verifyOtp konsumiert den Token BEWUSST erst jetzt.
+let _gcInviteTok = null, _gcInviteType = 'invite';
+async function activateInvite(){
+  const btn = document.getElementById('invLandBtn');
+  if(btn){ btn.disabled = true; btn.innerHTML = 'Wird aktiviert …'; }
+  try{
+    const { data, error } = await sbAuth.auth.verifyOtp({ type: _gcInviteType, token_hash: _gcInviteTok });
+    if(error || !data || !data.session){
+      authErr('Dieser Einladungs-Link wurde bereits benutzt oder ersetzt. Bitte lass dir einen neuen schicken.');
+      if(btn){ btn.disabled = false; btn.innerHTML = '<i data-lucide="unlock"></i> Erneut versuchen'; icons(); }
+      return;
+    }
+    const s = data.session;
+    _inviteMeta = (s.user && (s.user.user_metadata || {})) || {};
+    _inviteMeta._email = (s.user && s.user.email) || '';
+    const cid = _inviteMeta.customer_id;
+    if(cid){ try{ const { data:c } = await sbAuth.from('customers').select('name,theme').eq('id',cid).maybeSingle();
+      if(c){ const cn=document.getElementById('inviteCompany'); if(cn&&c.name) cn.textContent=c.name; if(c.theme){ settings.theme=c.theme; applyTheme(c.theme); } } }catch(e){}
+    }
+    showAuth(_gcInviteType==='invite' ? 'invite' : 'newpw');   // Einladung -> Passwort festlegen; Magic-Link -> neues Passwort optional
+    icons();
+  }catch(e){
+    authErr('Aktivierung fehlgeschlagen – bitte erneut versuchen.');
+    if(btn){ btn.disabled = false; btn.innerHTML = '<i data-lucide="unlock"></i> Erneut versuchen'; icons(); }
+  }
 }
 // ECHTE Einladungs-E-Mail über die Edge Function (inviteUserByEmail, Service-Role).
 // Rückgabe: {ok, already_exists, message}. Kein Dummy – die Mail geht wirklich raus.
@@ -15351,6 +15410,41 @@ async function copyInviteLink(id){
     toast('Link-Erstellung noch nicht aktiv – bitte E-Mail-Einladung nutzen');
   }
 }
+// Einladungs-Weg wählen: E-Mail ODER WhatsApp-Link. WICHTIG: Supabase-Einladungs-Tokens
+// sind Einmal-Tokens – der zuletzt erstellte ersetzt alle vorherigen. Deshalb bewusst EIN
+// Weg pro Versand (beides gleichzeitig würde den Mail-Link sofort entwerten).
+function openInviteChoiceSheet(e){
+  const first = escapeHtml((e.name||'').split(' ')[0] || 'Mitarbeiter');
+  openSheet(`
+    <div class="sheet__head">
+      <span class="avatar" style="width:46px;height:46px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="user-plus" style="width:20px;height:20px"></i></span>
+      <div><div class="sheet__title">${first} einladen</div><div class="sheet__sub">${escapeHtml(e.email||'')}</div></div>
+      <button class="iconbtn sheet__close" onclick="closeSheet()" aria-label="Schließen"><i data-lucide="x"></i></button>
+    </div>
+    <div class="sheet__body">
+      <p class="sheet-note" style="margin-top:0"><i data-lucide="info"></i> Wie soll ${first} seinen Zugang bekommen? Es gilt immer der <b>zuletzt erstellte</b> Zugang – du kannst jederzeit einen neuen schicken.</p>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <button class="btn" onclick="inviteViaWhatsApp(${e.id})"><i data-lucide="message-circle"></i> WhatsApp-Link erstellen (empfohlen)</button>
+        <button class="btn ghost" onclick="inviteViaEmail(${e.id})"><i data-lucide="mail"></i> Einladung per E-Mail senden</button>
+        <button class="btn ghost" onclick="closeSheet();toast('Du kannst die Einladung jederzeit über die Personalakte senden.')">Später einladen</button>
+      </div>
+    </div>`);
+}
+async function inviteViaEmail(id){
+  const e = emp(id); if(!e || !e.email){ toast('Keine E-Mail hinterlegt.'); return; }
+  toast('Einladung wird per E-Mail verschickt …');
+  const r = await sendInviteEmail({name:e.name, email:e.email, position:e.role, sysRole:e.sysRole});
+  if(r.ok){ e.account='invited'; persistEmployee(e); closeSheet(); teamTab('mitarbeiter'); toast(`✉️ Einladungs-E-Mail an ${e.email} verschickt`); }
+  else if(r.already_exists){ closeSheet(); toast(`${e.email} ist bereits registriert – kann sich direkt einloggen`); }
+  else { toast('E-Mail-Versand fehlgeschlagen – versuche es mit dem WhatsApp-Link.'); }
+}
+async function inviteViaWhatsApp(id){
+  const e = emp(id); if(!e || !e.email){ toast('Keine E-Mail hinterlegt.'); return; }
+  toast('Persönlicher Link wird erstellt …');
+  const r = await requestInviteLink({name:e.name, email:e.email, position:e.role, sysRole:e.sysRole});
+  if(r.link){ e.account='invited'; persistEmployee(e); await gcCopyText(r.link); openInviteLinkSheet(e, r.link, r.already_exists); }
+  else { toast('Link-Erstellung fehlgeschlagen – bitte erneut versuchen.'); }
+}
 function openInviteLinkSheet(e, link, already, mailSent){
   const wa = waShareUrl(e, link, already);
   const first = escapeHtml((e.name||'').split(' ')[0] || 'dein Mitarbeiter');
@@ -15397,16 +15491,7 @@ async function submitEmployee(id){
   persistEmployee(eNew);
   closeSheet(); teamTab('mitarbeiter');
   if(invite && email){
-    toast(`${name} angelegt · Einladung wird verschickt …`);
-    // 1) ECHTE Einladungs-E-Mail (inviteUserByEmail legt auch den Auth-User an) …
-    const mail = await sendInviteEmail({name, email, position:role, sysRole});
-    // 2) … plus persönlicher Link für WhatsApp (bei bereits existierendem User: Magic-Link).
-    const r = await requestInviteLink({name, email, position:role, sysRole});
-    if(mail.ok){ toast(`✉️ Einladungs-E-Mail an ${email} verschickt`); }
-    if(r.link){ await gcCopyText(r.link); openInviteLinkSheet(eNew, r.link, r.already_exists, mail.ok); }
-    else if(mail.ok){ /* Mail reicht als Einladung */ }
-    else if(r.already_exists || mail.already_exists){ toast(`${email} ist bereits registriert – kann sich direkt einloggen`); }
-    else { toast(`Einladung konnte nicht verschickt werden – bitte später über die Akte erneut versuchen.`); }
+    openInviteChoiceSheet(eNew);
   } else if(invite && !email){
     toast(`${name} angelegt · für die Einladung fehlt noch eine E-Mail`);
   } else if(email){
@@ -15416,8 +15501,9 @@ async function submitEmployee(id){
   }
 }
 async function inviteEmployee(id){
-  // Vereinheitlicht auf den persönlichen Einladungs-Link (WhatsApp-Flow).
-  return copyInviteLink(id);
+  const e = emp(id); if(!e) return;
+  if(!e.email){ toast('Bitte zuerst eine E-Mail in der Akte hinterlegen.'); return; }
+  openInviteChoiceSheet(e);
 }
 function deleteEmployee(id){
   const e = emp(id); if(!e) return;
