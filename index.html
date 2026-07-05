@@ -3784,6 +3784,10 @@ function buyFlowPending(){ const e = gcEntry(); return e.flow==='buy' && !e.paid
 // Rückkehr von Stripe: success_url = os.green-careers.de/?paid=1&session_id=…
 function coStripeReturn(){ try{ return new URLSearchParams(window.location.search).get('paid')==='1'; }catch(_){ return false; } }
 function openCheckoutSuccess(){
+  // Webhook-Rennen: Stripe schaltet das Kontingent per Webhook frei – kurz nachladen,
+  // damit 'Veröffentlichen' direkt nach der Rückkehr funktioniert.
+  setTimeout(()=>{ try{ refreshKontingent(false); }catch(_){} }, 4000);
+  setTimeout(()=>{ try{ refreshKontingent(false); }catch(_){} }, 15000);
   const e = gcEntry(); e.paid = true; saveEntry(e);
   coState.firma = (settings.company && settings.company.name) || coState.firma || '';
   try{ history.replaceState(null,'',window.location.pathname); }catch(_){}   // ?paid=1 aus URL entfernen
@@ -4862,6 +4866,9 @@ function applyRole(){
   // Nav neu, View ggf. zurücksetzen wenn aktueller View für Rolle gesperrt
   const allowed = navForRole().map(n => n.id);
   const free = allowed.filter(id => !isLocked(id));
+  // Reload-Restore: war der Nutzer vor dem Neuladen in einer bestimmten Ansicht (#stellen …),
+  // dort weitermachen – sofern die Rolle sie sehen darf und sie nicht gesperrt ist.
+  try{ const h=(window.location.hash||'').replace(/^#/,''); if(h && !h.includes('=') && free.includes(h)) currentView = h; }catch(_){}
   if(free.length){ if(!free.includes(currentView)) currentView = free[0]; }
   else { currentView = STARTMODUL_FREI[0]; }   // Rolle nur mit gesperrten Modulen → sicherer Fallback „Heute"
   if((viewRole === 'mitarbeiter' || viewRole === 'kolonnenfuehrer') && activeTeamTab !== 'urlaub' && activeTeamTab !== 'zeit') activeTeamTab = 'zeit';
@@ -6116,6 +6123,9 @@ function navTo(view){
 function setView(view){
   if(isLocked(view)){ moduleLocked(); return; }
   currentView = view;
+  // Ansicht im URL-Hash merken -> harter Reload landet wieder HIER statt auf dem Dashboard.
+  // (Nie den Supabase-Auth-Hash ueberschreiben: der enthaelt '=';)
+  try{ if(!(window.location.hash||'').includes('=')) history.replaceState(null, '', '#'+view); }catch(_){}
   const item = navForRole().find(n => n.id === view) || NAV.find(n => n.id === view);
   renderNav();
   document.getElementById('viewTitle').innerHTML = `<i data-lucide="${item.icon}"></i><span>${item.label}</span>`;
@@ -11273,6 +11283,21 @@ document.addEventListener('keydown', e=>{ if(e.key==='Escape') cpopClose(); });
 document.getElementById('cpopOverlay').addEventListener('click', e=>{ if(e.target.id==='cpopOverlay') cpopClose(); });
 
 // Gesperrtes/ausgeschöpftes Kontingent als prominentes, schließbares Popup zeigen.
+// Selbstheilung nach Zahlung: customers-Zeile (Kontingent-Quelle) frisch aus der DB laden.
+// Nach Kartenzahlung schaltet der Stripe-Webhook das Kontingent frei – falls der Kunde
+// schneller ist als der Webhook (oder die Seite offen hatte), holt dieser Button den Stand.
+async function refreshKontingent(announce){
+  if(!osConnected()){ betriebFehltWarn(); return; }
+  try{
+    const { data:cust } = await sbAuth.from('customers').select('*').eq('id', GC_PROFILE.customer_id).maybeSingle();
+    if(cust){ GC_CUSTOMER = cust; if(currentView==='stellen') setView('stellen'); }
+    if(announce){
+      const k = jobContingent();
+      if(k.frei && !k.expired && k.free > 0) toast('✅ Kontingent ist freigeschaltet – du kannst jetzt veröffentlichen!');
+      else toast('Zahlung ist noch nicht verbucht. Bei Karte/PayPal dauert es meist nur Minuten – wir schalten automatisch frei.');
+    }
+  }catch(e){ if(announce) toast('Konnte den Zahlungsstatus gerade nicht prüfen – bitte gleich erneut versuchen.'); }
+}
 function showKontingentBlock(gate){
   if(!gate || gate.ok) return;
   if(gate.reason === 'locked'){
@@ -11280,7 +11305,8 @@ function showKontingentBlock(gate){
       icon:'clock', iconClass:'warn', title:'Kontingent wird gerade freigeschaltet',
       body:'Deine Stelle ist gespeichert. Sie geht <b>automatisch live</b>, sobald deine Zahlung bei uns eingegangen ist.<br><br>Bei <b>Kreditkarte, PayPal oder Lastschrift</b> passiert das in der Regel sofort – bei <b>Kauf auf Rechnung</b>, sobald wir deine Überweisung sehen.',
       actions:[
-        { label:'Zahlung & Rechnung ansehen', variant:'', icon:'receipt', onclick:'cpopClose();openZahlungInfo()' },
+        { label:'Zahlung jetzt prüfen', icon:'refresh-cw', onclick:'cpopClose();refreshKontingent(true)' },
+        { label:'Zahlung & Rechnung ansehen', variant:'ghost', icon:'receipt', onclick:'cpopClose();openZahlungInfo()' },
         { label:'Verstanden', variant:'ghost' }
       ]
     });
