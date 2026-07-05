@@ -15154,6 +15154,23 @@ async function requestInviteLink({name,email,position,sysRole}){
     return { ok: res.ok && data.ok !== false, status:res.status, data, link: data.link || null, already_exists: !!data.already_exists };
   }catch(e){ return {ok:false, reason:'network', error:String(e)}; }
 }
+// ECHTE Einladungs-E-Mail über die Edge Function (inviteUserByEmail, Service-Role).
+// Rückgabe: {ok, already_exists, message}. Kein Dummy – die Mail geht wirklich raus.
+async function sendInviteEmail({name,email,position,sysRole}){
+  if(!sbAuth) return {ok:false, reason:'noauth'};
+  let token=null;
+  try{ const { data:{ session } } = await sbAuth.auth.getSession(); token = session && session.access_token; }catch(e){}
+  if(!token) return {ok:false, reason:'nosession'};
+  try{
+    const res = await fetch(SB_URL+'/functions/v1/invite-mitarbeiter', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+token, 'apikey':SB_ANON },
+      body: JSON.stringify({ name, email, position, sys_role:sysRole, mode:'email', redirect_to: window.location.origin + window.location.pathname })
+    });
+    const data = await res.json().catch(()=>({}));
+    return { ok: res.ok && data.ok !== false, already_exists: !!data.already_exists, message: data.message||data.error||'' };
+  }catch(e){ return {ok:false, reason:'network', error:String(e)}; }
+}
 // Text in die Zwischenablage (mit Fallback für ältere Browser).
 function gcCopyText(txt){
   return new Promise((resolve)=>{
@@ -15188,9 +15205,10 @@ async function copyInviteLink(id){
     toast('Link-Erstellung noch nicht aktiv – bitte E-Mail-Einladung nutzen');
   }
 }
-function openInviteLinkSheet(e, link, already){
+function openInviteLinkSheet(e, link, already, mailSent){
   const wa = waShareUrl(e, link, already);
   const first = escapeHtml((e.name||'').split(' ')[0] || 'dein Mitarbeiter');
+  const mailLine = mailSent ? `<p class="sheet-note" style="margin-top:0;color:var(--green-2)"><i data-lucide="mail-check"></i> Einladungs-E-Mail wurde an ${escapeHtml(e.email||'')} verschickt. Zusätzlich kannst du den Link per WhatsApp schicken:</p>` : '';
   openSheet(`
     <div class="sheet__head">
       <span class="avatar" style="width:46px;height:46px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="link" style="width:20px;height:20px"></i></span>
@@ -15198,6 +15216,7 @@ function openInviteLinkSheet(e, link, already){
       <button class="iconbtn sheet__close" onclick="closeSheet()" aria-label="Schließen"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body">
+      ${mailLine}
       <p class="sheet-note" style="margin-top:0"><i data-lucide="info"></i> So kommt ${first} in die App: Link per WhatsApp schicken → er tippt drauf → ${already?'loggt sich mit seinem Passwort ein':'legt einmal ein Passwort fest'} → fertig. Er sieht danach nur seinen Bereich (Zeiten &amp; Urlaub).</p>
       <div class="field"><label>Persönlicher Einladungs-Link</label><input id="invLinkFld" readonly value="${link.replace(/"/g,'&quot;')}" onclick="this.select()"></div>
       <div class="sheet-actions">
@@ -15232,11 +15251,16 @@ async function submitEmployee(id){
   persistEmployee(eNew);
   closeSheet(); teamTab('mitarbeiter');
   if(invite && email){
-    toast(`${name} angelegt · Einladungs-Link wird erstellt …`);
+    toast(`${name} angelegt · Einladung wird verschickt …`);
+    // 1) ECHTE Einladungs-E-Mail (inviteUserByEmail legt auch den Auth-User an) …
+    const mail = await sendInviteEmail({name, email, position:role, sysRole});
+    // 2) … plus persönlicher Link für WhatsApp (bei bereits existierendem User: Magic-Link).
     const r = await requestInviteLink({name, email, position:role, sysRole});
-    if(r.link){ await gcCopyText(r.link); openInviteLinkSheet(eNew, r.link, r.already_exists); }
-    else if(r.already_exists){ toast(`${email} ist bereits registriert – kann sich direkt einloggen`); }
-    else { toast(`${name} angelegt · Link-Erstellung noch nicht aktiv – nutze „Einladungs-Link" in der Akte`); }
+    if(mail.ok){ toast(`✉️ Einladungs-E-Mail an ${email} verschickt`); }
+    if(r.link){ await gcCopyText(r.link); openInviteLinkSheet(eNew, r.link, r.already_exists, mail.ok); }
+    else if(mail.ok){ /* Mail reicht als Einladung */ }
+    else if(r.already_exists || mail.already_exists){ toast(`${email} ist bereits registriert – kann sich direkt einloggen`); }
+    else { toast(`Einladung konnte nicht verschickt werden – bitte später über die Akte erneut versuchen.`); }
   } else if(invite && !email){
     toast(`${name} angelegt · für die Einladung fehlt noch eine E-Mail`);
   } else if(email){
