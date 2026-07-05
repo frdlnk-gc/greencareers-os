@@ -3430,8 +3430,10 @@ function greetName(){
 }
 function cockpitDateLine(){
   const dt = dParse(TODAY);
-  const aktiv = employees.filter(e => !absentToday(e.id)).length;
-  return WD_LANG[dt.getDay()]+', '+dt.getDate()+'. '+MO_LANG[dt.getMonth()]+' '+dt.getFullYear()+' · KW '+isoWeek(dt)+' · '+aktiv+' Mitarbeiter im Einsatz';
+  // Nur ECHTE Team-Mitglieder zählen (mit DB-Zeile) – der Inhaber-Self-Eintrag ist kein "Einsatz".
+  const aktiv = employees.filter(e => e._uuid && !absentToday(e.id)).length;
+  const einsatz = aktiv > 0 ? ' · '+aktiv+' Mitarbeiter im Einsatz' : '';
+  return WD_LANG[dt.getDay()]+', '+dt.getDate()+'. '+MO_LANG[dt.getMonth()]+' '+dt.getFullYear()+' · KW '+isoWeek(dt)+einsatz;
 }
 // Kolonnen (Trupps) – frei benennbar & farbcodiert. Mitarbeiter hängen per crewId dran.
 // Kein Demo-Trupp: der Betrieb legt seine Kolonnen selbst an (Team → Kolonnen).
@@ -4663,6 +4665,10 @@ async function afterAuth(session){
   }
   enterApp();
   updateBetriebBanner();   // eingeloggt ohne Betrieb? -> roter Hinweis statt stilles Nicht-Speichern
+  // Platzhalter-Name aus altem Onboarding-Fallback? Freundlich zum Umbenennen führen.
+  if(GC_CUSTOMER && GC_CUSTOMER.name === 'Mein Betrieb' && viewRole === 'admin'){
+    setTimeout(()=>toast('Tipp: Dein Betrieb heißt noch „Mein Betrieb" – gib ihm in der Einrichtung deinen echten Firmennamen.'), 1500);
+  }
   loadPortalData();   // echte Stellen + Bewerber des Betriebs aus Supabase ziehen
   // FINALER Hash-Restore: einzelne Boot-Schritte können die View zurücksetzen –
   // was in der URL steht (#stellen …), gewinnt am Ende (Live-Befund 05.07.).
@@ -5945,6 +5951,12 @@ function obNext(){
   obStep++; renderOnboard();
 }
 async function finishOnboarding(){
+  // Firmenname ist Pflicht: Er wird Betriebsname, OS-Titel und Absender auf jeder Anzeige.
+  if(!((OB_DRAFT.company.name||'').trim())){
+    toast('Bitte gib zuerst deinen Firmennamen ein – er erscheint auf deinen Stellenanzeigen.');
+    const f=document.getElementById('obName'); if(f){ f.focus(); f.style.borderColor='#C24141'; }
+    return;
+  }
   settings.company = Object.assign({}, settings.company, OB_DRAFT.company);
   settings.ruestzeit = OB_DRAFT.ruestzeit; settings.geo = OB_DRAFT.geo; settings.clockMode = OB_DRAFT.clockMode || 'self';
   settings.branchen = (OB_DRAFT.branchen||[]).slice();
@@ -5956,7 +5968,7 @@ async function finishOnboarding(){
   if(sbAuth && GC_USER && !(GC_PROFILE && GC_PROFILE.customer_id)){
     try{
       const { data, error } = await sbAuth.rpc('create_my_company', {
-        p_name: settings.company.name || 'Mein Betrieb',
+        p_name: settings.company.name,
         p_branchen: settings.branchen || [],
         p_theme: settings.theme || 'galabau',
         p_ort: settings.company.ort || null,
@@ -6821,7 +6833,16 @@ function staticModuleHtml(key){
     case 'recruiting': {
       const monat = applicants.length;
       const qual = applicants.filter(a=>a.stage!=='neu'&&a.stage!=='abgelehnt').length;
-      const role = (typeof jobs!=='undefined' && jobs[0]) ? jobs[0].title : 'Offene Stelle';
+      const hatStelle = (typeof jobs!=='undefined' && jobs.length>0);
+      if(!hatStelle){
+        return `<div class="panel recruiting-panel">
+          <div class="recruiting-panel__label"><i data-lucide="sparkles"></i> Bewerber-Suche</div>
+          <div class="recruiting-panel__role">Noch keine Stelle online</div>
+          <p style="font-size:12.5px;opacity:.85;margin:6px 0 0">Veröffentliche deine erste Stelle – Bewerbungen landen dann automatisch hier im Board.</p>
+          <button class="btn full" style="margin-top:13px;box-shadow:none" onclick="setView('stellen')">Erste Stelle anlegen</button>
+        </div>`;
+      }
+      const role = jobs[0].title;
       return `<div class="panel recruiting-panel">
           <div class="recruiting-panel__label"><i data-lucide="sparkles"></i> Bewerber-Suche</div>
           <div class="recruiting-panel__role">${role}</div>
