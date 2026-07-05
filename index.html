@@ -1319,6 +1319,7 @@
     border-radius:10px;
     box-shadow:var(--shadow-strong);
   }
+  @media(min-width:960px){ .stwiz-grid{ grid-template-columns:1fr 300px !important; align-items:start; } .stwiz-side{ position:sticky; top:8px; } }
   .sheet.wide{ width:min(100%,880px); }
   /* Einstellungen: Tab-Leiste oben (kein Endlos-Scroll) */
   .settabs{ display:flex; gap:6px; flex-wrap:wrap; padding:10px 18px 0; position:sticky; top:96px; background:#fff; z-index:1; border-bottom:1px solid var(--line); }
@@ -11630,90 +11631,207 @@ function showBrandingGate(miss){
   });
 }
 function stelleForcePublish(){ if(stelleDraft){ stelleDraft._brandOk = true; submitStelle(true); } }
+/* ============ STELLEN-WIZARD (5 Schritte, Referenz: gc-os-demo job-wizard) ============
+   Schritt 1 Eckdaten · 2 Beschreibung · 3 Medien · 4 Ansprechpartner · 5 Vorschau.
+   Aufgaben/Profil/Benefits sind ECHTE Listen (je Zeile ein Input, + hinzufügen, × entfernen);
+   intern gesynct in die \n-Textfelder, damit submitStelle/public_jobs unverändert bleiben.
+   Auto-Save: Entwürfe werden debounced in stellenanzeigen gespeichert (nie Live-Stellen). */
+const ST_STEPS = ['Eckdaten','Beschreibung','Medien','Ansprechpartner','Vorschau'];
+function stLists(){
+  const d = stelleDraft;
+  if(!d._lists){
+    const toArr = s => String(s||'').split(/\r?\n/).map(x=>x.replace(/^[-–•*\s]+/,'').trim()).filter(Boolean);
+    d._lists = { aufgaben:toArr(d.aufgaben), profil:toArr(d.profil), benefits:toArr(d.benefits) };
+  }
+  return d._lists;
+}
+function stListSync(kind){ const d=stelleDraft; d[kind]=stLists()[kind].filter(x=>x.trim()).join('\n'); stelleWizChanged(); stPreviewUpdate(); }
+function stListSet(kind,i,val){ stLists()[kind][i]=val; stListSync(kind); }
+function stListDel(kind,i){ stLists()[kind].splice(i,1); stListSync(kind); renderStelleForm(); }
+function stListAdd(kind){ stLists()[kind].push(''); renderStelleForm(); setTimeout(()=>{ const els=document.querySelectorAll(`[data-stli="${kind}"]`); const last=els[els.length-1]; if(last) last.focus(); },30); }
+function stListKey(ev,kind,i){ if(ev.key==='Enter'){ ev.preventDefault(); if((stLists()[kind][i]||'').trim()) stListAdd(kind); } }
+function stListHtml(kind,label,addLabel,hint){
+  const list = stLists()[kind];
+  const rows = list.map((val,i)=>`
+    <div style="display:flex;align-items:center;gap:9px;margin-bottom:8px">
+      <i data-lucide="check" style="width:16px;height:16px;color:var(--green);flex:none"></i>
+      <input data-stli="${kind}" value="${escapeHtml(val)}" style="flex:1" placeholder="…"
+        oninput="stListSet('${kind}',${i},this.value)" onkeydown="stListKey(event,'${kind}',${i})">
+      <button type="button" class="iconbtn sm" title="Entfernen" aria-label="Entfernen" onclick="stListDel('${kind}',${i})"><i data-lucide="x"></i></button>
+    </div>`).join('');
+  return `<div class="field"><label>${label}${hint?infoTip(hint):''}</label>
+    ${rows || `<div style="font-size:12.5px;color:var(--muted);margin:2px 0 8px">Noch keine Punkte – füge den ersten hinzu.</div>`}
+    <button type="button" class="btn ghost sm" onclick="stListAdd('${kind}')"><i data-lucide="plus"></i> ${addLabel}</button>
+  </div>`;
+}
+function stKacheln(kind,opts){
+  const d=stelleDraft;
+  return `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:9px">`+opts.map(o=>{
+    const sel = d[kind]===o.v;
+    return `<div onclick="stelleDraft['${kind}']='${o.v}';stelleWizChanged();renderStelleForm()" style="cursor:pointer;border:2px solid ${sel?'var(--green)':'var(--line)'};${sel?'background:color-mix(in srgb,var(--green) 7%,transparent);':''}border-radius:12px;padding:11px 13px">
+      <div style="display:flex;align-items:center;gap:8px"><span style="width:16px;height:16px;border-radius:50%;border:2px solid ${sel?'var(--green)':'var(--line)'};display:inline-grid;place-items:center;flex:none">${sel?'<span style="width:7px;height:7px;border-radius:50%;background:var(--green)"></span>':''}</span><b style="font-size:13.5px">${o.v}</b></div>
+      ${o.sub?`<div style="font-size:11.5px;color:var(--muted);margin-top:3px;margin-left:24px">${o.sub}</div>`:''}
+    </div>`;}).join('')+`</div>`;
+}
+function stPreviewCardHtml(){
+  const d=stelleDraft, v=s=>escapeHtml(s||'');
+  const L=stLists();
+  const tags=[d.ort, d.beschaeftigungsart, d.vertragsart].filter(Boolean).map(x=>`<span style="background:rgba(255,255,255,.16);border-radius:100px;padding:2px 9px;font-size:10.5px;font-weight:700">${escapeHtml(x)}</span>`).join(' ');
+  const aufg=(L.aufgaben.filter(Boolean).slice(0,3).map(a=>`<div style="display:flex;gap:7px;font-size:12px;margin-top:5px"><span style="color:var(--green)">✓</span><span>${escapeHtml(a)}</span></div>`).join(''))||`<div style="font-size:12px;color:var(--muted);margin-top:5px">Noch keine Aufgaben eingetragen.</div>`;
+  return `<div style="background:linear-gradient(135deg,var(--green),var(--green-2));color:#fff;border-radius:14px;padding:15px 16px">
+      <div style="display:flex;align-items:center;gap:9px;margin-bottom:9px">${settings.company&&settings.company.logo?`<img src="${settings.company.logo}" style="width:30px;height:30px;border-radius:8px;object-fit:cover;background:#fff">`:''}<div><b style="font-size:12.5px">${v(settings.company&&settings.company.name||'Dein Betrieb')}</b><div style="font-size:10.5px;opacity:.8">${v(d.ort||'')}</div></div></div>
+      <div style="font-weight:800;font-size:16.5px;line-height:1.25">${v(d.titel||'Dein Stellentitel')}</div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:8px">${tags}</div>
+      ${d.gehalt?`<div style="margin-top:8px;display:inline-block;background:rgba(255,255,255,.16);border-radius:7px;padding:3px 9px;font-size:11.5px;font-weight:700">${v(d.gehalt)}</div>`:''}
+    </div>
+    <div style="border:1px solid var(--line);border-top:none;border-radius:0 0 14px 14px;padding:12px 14px;margin-top:-10px;padding-top:20px;background:var(--card,#fff)">
+      <div style="font-size:10.5px;font-weight:800;letter-spacing:.05em;color:var(--muted);text-transform:uppercase">Ihre Aufgaben</div>${aufg}
+    </div>`;
+}
+function stPreviewUpdate(){ const el=document.getElementById('stWizPrev'); if(el){ el.innerHTML=stPreviewCardHtml(); icons(); } }
+let _stSaveTimer=null;
+function stelleWizChanged(){
+  const ind=document.getElementById('stAutoSaveInd'); if(ind){ ind.innerHTML='<i data-lucide="loader"></i> speichert …'; }
+  clearTimeout(_stSaveTimer); _stSaveTimer=setTimeout(stelleAutoSaveNow, 1200);
+  stPreviewUpdate();
+}
+async function stelleAutoSaveNow(){
+  const d=stelleDraft; if(!d) return;
+  const ind=document.getElementById('stAutoSaveInd');
+  const done=ok=>{ if(ind){ ind.innerHTML= ok?'<i data-lucide="check-circle-2"></i> Automatisch gespeichert':'<i data-lucide="alert-circle"></i> Entwurf nur lokal'; icons(); } };
+  if(!osConnected()){ betriebFehltWarn(); done(false); return; }
+  if(d.status==='aktiv'){ done(true); return; }               // Live-Stellen NIE per Auto-Save ändern
+  if(!(d.titel||'').trim()){ done(false); return; }            // ohne Titel kein Draft-Insert
+  const benefitLines=(d.benefits||'').split(/\r?\n/).map(s=>s.replace(/^[-–•*\s]+/,'').trim()).filter(Boolean);
+  const row={ titel:d.titel.trim(), branche:d.branche||null, ort:(d.ort||'').trim()||null,
+    beschaeftigungsart:d.beschaeftigungsart||null, vertragsart:d.vertragsart||null,
+    eintritt:(d.eintritt||'').trim()||null, gehalt:formatGehaltDisplay(d.gehalt)||null,
+    beschreibung:(d.beschreibung||'').trim()||null, aufgaben:(d.aufgaben||'').trim()||null,
+    profil:(d.profil||'').trim()||null, benefits:benefitLines.length?benefitLines.join('\n'):null,
+    benefits_list:benefitLines, ansprechpartner:(d.ansprechpartner||'').trim()||null,
+    ansprechpartner_rolle:(d.ansprechpartner_rolle||'').trim()||null, ansprechpartner_foto:d.ansprechpartner_foto||null,
+    kontakt_email:(d.kontakt_email||'').trim()||null, kontakt_telefon:(d.kontakt_telefon||'').trim()||null,
+    stellen_bilder:(d.bilder||[]).filter(Boolean), status:d.status||'pausiert' };
+  try{
+    if(d.id){ const {error}=await sbAuth.from('stellenanzeigen').update(row).eq('id',d.id); done(!error); }
+    else{
+      row.customer_id=GC_PROFILE.customer_id; row.slug=d.slug||genSlug(d.titel);
+      const {data,error}=await sbAuth.from('stellenanzeigen').insert(row).select('id,slug').single();
+      if(!error&&data){ d.id=data.id; d.slug=data.slug||row.slug; }
+      done(!error);
+    }
+  }catch(e){ done(false); }
+}
+function stWizGo(n){ flushStList(); stelleDraft._step=Math.min(5,Math.max(1,n)); renderStelleForm(); }
+function flushStList(){ ['aufgaben','profil','benefits'].forEach(k=>{ if(stelleDraft&&stelleDraft._lists){ stelleDraft._lists[k]=stelleDraft._lists[k].filter(x=>x.trim()); stelleDraft[k]=stelleDraft._lists[k].join('\n'); } }); }
 function renderStelleForm(){
   const d = stelleDraft; if(!d) return;
   const v = s => escapeHtml(s||'');
   const editing = !!d.id;
-  const apFotoPrev = d.ansprechpartner_foto
-    ? `<div class="pthumb" style="width:64px;height:64px;border-radius:50%"><img src="${v(d.ansprechpartner_foto)}" alt="Foto" style="border-radius:50%"><button type="button" onclick="stelleFotoClear()"><i data-lucide="x"></i></button></div>`
-    : `<div class="ap-foto" style="width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--surface-2,#eef2f7);color:var(--muted);font-size:11px;text-align:center">kein&nbsp;Foto</div>`;
+  d._step = d._step || 1;
+  const step = d._step;
+  const stepper = `<div style="display:flex;gap:4px;align-items:center;margin-bottom:18px;overflow-x:auto;padding-bottom:4px">`+ST_STEPS.map((s,i)=>{
+    const n=i+1, done=n<step, cur=n===step;
+    return `<div onclick="stWizGo(${n})" style="cursor:pointer;display:flex;align-items:center;gap:7px;padding:7px 11px;border-radius:100px;flex:none;${cur?'background:color-mix(in srgb,var(--green) 10%,transparent);':''}">
+      <span style="width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:800;flex:none;${done?'background:var(--green);color:#fff':cur?'background:var(--green);color:#fff':'border:1.6px solid var(--line);color:var(--muted)'}">${done?'✓':n}</span>
+      <span style="font-size:12px;font-weight:${cur?'800':'600'};color:${cur?'var(--ink,#111)':'var(--muted)'};white-space:nowrap">${s}</span>
+    </div>${n<5?'<span style="width:14px;height:1px;background:var(--line);flex:none"></span>':''}`;
+  }).join('')+`</div>`;
+  let body='';
+  if(step===1){
+    body = `
+      <div class="field"><label>Position / Stellenbezeichnung *${infoTip('Klare, suchbare Bezeichnung, am besten mit Zusatz „(m/w/d)". Standardisierte Titel werden im Portal besser gefunden.')}</label>
+        <input list="stellenRollenList" value="${v(d.titel)}" placeholder="z. B. Vorarbeiter Tiefbau (m/w/d)" oninput="stelleDraft.titel=this.value;stelleWizChanged()">
+        <datalist id="stellenRollenList">${stelleRollenOpts().map(o=>`<option value="${escapeHtml(o)}"></option>`).join('')}</datalist>
+      </div>
+      <div class="field"><label>Branche / Sektor${infoTip('Bestimmt, unter welcher Kategorie Bewerber deine Stelle im Portal finden.')}</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">${(()=>{ const opts=brancheOptsForCompany().slice(); if(d.branche&&!opts.includes(d.branche)) opts.unshift(d.branche); return opts.map(o=>{ const sel=d.branche===o; return `<span onclick="stelleDraft.branche='${escapeHtml(o)}';stelleWizChanged();renderStelleForm()" style="cursor:pointer;border:1.6px solid ${sel?'var(--green)':'var(--line)'};${sel?'color:var(--green);font-weight:800;background:color-mix(in srgb,var(--green) 7%,transparent);':''}border-radius:100px;padding:7px 14px;font-size:13px">${sel?'✓ ':''}${escapeHtml(o)}</span>`; }).join(''); })()}</div>
+      </div>
+      <div class="field"><label>Pensum / Arbeitszeit</label>${stKacheln('beschaeftigungsart',BESCHAEFT_OPTS.map(o=>({v:o,sub:o==='Vollzeit'?'Festanstellung':o==='Teilzeit'?'flexibel nach Absprache':o==='Ausbildung'?'3-jährige Lehre':o==='Minijob'?'geringfügig':'befristete Spitzenlast'})))}</div>
+      <div class="field"><label>Vertragsart</label>${stKacheln('vertragsart',VERTRAG_OPTS.map(o=>({v:o,sub:o==='Unbefristet'?'Festanstellung':'mit Option auf Übernahme'})))}</div>
+      <div class="fieldrow">
+        <div class="field"><label>Einsatzort</label><input value="${v(d.ort)}" placeholder="z. B. 65719 Hofheim am Taunus" oninput="stelleDraft.ort=this.value;stelleWizChanged()"></div>
+        <div class="field"><label>Verfügbar ab</label>
+          <select id="eintrittMode" onchange="stelleEintrittMode(this);stelleWizChanged()">${[...EINTRITT_PRESETS.map(o=>`<option value="${o}" ${eintrittMode(d.eintritt)===o?'selected':''}>${o}</option>`), `<option value="datum" ${eintrittMode(d.eintritt)==='datum'?'selected':''}>zu einem bestimmten Datum</option>`].join('')}</select>
+          <div id="eintrittDateWrap" style="margin-top:8px" ${eintrittMode(d.eintritt)==='datum'?'':'hidden'}><input type="date" id="eintrittDate" value="${eintrittDateVal(d.eintritt)}" onchange="stelleEintrittDate(this);stelleWizChanged()"></div>
+        </div>
+      </div>
+      <div class="field"><label>Gehaltsspanne <span style="font-weight:400;color:var(--muted)">(optional)</span>${infoTip('Nur Zahlen – z. B. 3200 oder 3200-3800. Wir formatieren automatisch (3.400 – 4.100 € / Monat). Anzeigen mit Gehalt bekommen spürbar mehr qualifizierte Bewerbungen.')}</label>
+        <input inputmode="numeric" value="${v(d.gehalt)}" placeholder="z. B. 3.400 – 4.100 € / Monat" oninput="stelleDraft.gehalt=this.value;stelleGehaltLive(this);stelleWizChanged()" onblur="stelleGehaltBlur(this)">
+        <div class="field__err" hidden><i data-lucide="alert-circle"></i>Bitte nur Zahlen eingeben – z. B. 3200 oder 3200-3800.</div>
+      </div>`;
+  } else if(step===2){
+    body = `
+      <div class="field"><label>Kurzbeschreibung</label><textarea rows="3" placeholder="Worum geht es in dieser Stelle? 2–3 Sätze reichen." oninput="stelleDraft.beschreibung=this.value;stelleWizChanged()">${v(d.beschreibung)}</textarea></div>
+      ${stListHtml('aufgaben','Ihre Aufgaben','Aufgabe hinzufügen','Was macht der Mitarbeiter im Alltag? Jeder Punkt erscheint mit Häkchen auf der Anzeige.')}
+      ${stListHtml('profil','Ihr Profil','Anforderung hinzufügen','Was sollte der Bewerber mitbringen? Z. B. Ausbildung, Führerschein, Erfahrung.')}
+      ${stListHtml('benefits','Das bieten wir (Benefits)','Benefit hinzufügen','Der Mehrwert für den Bewerber: Firmenwagen, 30 Tage Urlaub, bezahlte Weiterbildung …')}`;
+  } else if(step===3){
+    body = `
+      ${stelleSecHead('Unternehmens-Branding','Logo und Titelbild gelten für ALLE deine Stellen – einmal hochladen, fertig.')}
+      <div class="stelle-brand" id="stBrandingBox">${stelleBrandingInnerHtml()}</div>
+      ${stelleSecHead('Stellen-Bilder','Zeig Team, Baustellen und Fuhrpark – Anzeigen mit echten Bildern werden deutlich häufiger angeklickt. Das erste Bild ist das Titelbild.')}
+      <div class="field">
+        <div id="stBilderPrev" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px">${renderStelleBilderHtml()}</div>
+        <label class="btn ghost sm"><i data-lucide="image-plus"></i> Bild hinzufügen<input type="file" accept="image/*" multiple onchange="stelleBilderAdd(this);stelleWizChanged()" hidden></label>
+        <div style="font-size:11px;color:var(--muted);margin-top:6px">Max. ${STELLE_BILDER_MAX} Bilder, je ${STELLE_IMG_MAX_KB} KB · das erste Bild erscheint als Titelbild in der Trefferliste.</div>
+      </div>`;
+  } else if(step===4){
+    const apFotoPrev = d.ansprechpartner_foto
+      ? `<div class="pthumb" style="width:64px;height:64px;border-radius:50%"><img src="${v(d.ansprechpartner_foto)}" alt="Foto" style="border-radius:50%"><button type="button" onclick="stelleFotoClear()"><i data-lucide="x"></i></button></div>`
+      : `<div class="ap-foto" style="width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--surface-2,#eef2f7);color:var(--muted);font-size:11px;text-align:center">kein&nbsp;Foto</div>`;
+    body = `
+      <p class="sheet-note" style="margin-top:0"><i data-lucide="info"></i> Wird Bewerbern in der Anzeige als direkter Kontakt angezeigt – ein Gesicht schafft Vertrauen.</p>
+      <div class="fieldrow" style="align-items:flex-end">
+        <div class="field"><label>Name</label><input value="${v(d.ansprechpartner)}" placeholder="z. B. Maria Schmidt" oninput="stelleDraft.ansprechpartner=this.value;stelleWizChanged()"></div>
+        <div class="field"><label>Rolle / Funktion</label><input value="${v(d.ansprechpartner_rolle)}" placeholder="z. B. Personalleiterin" oninput="stelleDraft.ansprechpartner_rolle=this.value;stelleWizChanged()"></div>
+      </div>
+      <div class="fieldrow">
+        <div class="field"><label>Kontakt-Telefon</label><input value="${v(d.kontakt_telefon)}" placeholder="z. B. 0221 1234567" oninput="stelleDraft.kontakt_telefon=this.value;stelleWizChanged()"></div>
+        <div class="field"><label>Kontakt-E-Mail</label><input type="email" value="${v(d.kontakt_email)}" placeholder="z. B. bewerbung@firma.de" oninput="stelleDraft.kontakt_email=this.value;stelleWizChanged()"></div>
+      </div>
+      <div class="field"><label>Foto des Ansprechpartners</label>
+        <div style="display:flex;align-items:center;gap:12px"><div id="apFotoPrev">${apFotoPrev}</div>
+        <label class="btn ghost sm"><i data-lucide="upload"></i> Foto wählen<input type="file" accept="image/*" onchange="stelleFotoPick(this)" hidden></label></div>
+      </div>`;
+  } else {
+    flushStList();
+    const L=stLists();
+    const sec=(t2,arr)=>arr.length?`<div style="margin-top:14px"><div style="font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)">${t2}</div>${arr.map(a=>`<div style="display:flex;gap:8px;margin-top:6px;font-size:13.5px"><span style="color:var(--green)">✓</span><span>${escapeHtml(a)}</span></div>`).join('')}</div>`:'';
+    body = `
+      <p class="sheet-note" style="margin-top:0"><i data-lucide="eye"></i> So sieht deine Anzeige für Bewerber aus. Alles gut? Dann veröffentlichen – die Stelle ist sofort im ${escapeHtml(brandNet())}-Portal live.</p>
+      <div style="max-width:560px">${stPreviewCardHtml()}
+        ${d.beschreibung?`<div style="border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-top:12px;font-size:13.5px;line-height:1.6">${escapeHtml(d.beschreibung)}</div>`:''}
+        <div style="border:1px solid var(--line);border-radius:14px;padding:4px 16px 14px;margin-top:12px">
+          ${sec('Ihre Aufgaben',L.aufgaben)}${sec('Ihr Profil',L.profil)}${sec('Das bieten wir',L.benefits)}
+          ${(!L.aufgaben.length&&!L.profil.length&&!L.benefits.length)?'<div style="font-size:12.5px;color:var(--muted);margin-top:12px">Tipp: Aufgaben & Profil in Schritt 2 machen die Anzeige deutlich stärker.</div>':''}
+        </div>
+        ${d.ansprechpartner?`<div style="border:1px solid var(--line);border-radius:14px;padding:12px 16px;margin-top:12px;display:flex;gap:11px;align-items:center">${d.ansprechpartner_foto?`<img src="${v(d.ansprechpartner_foto)}" style="width:42px;height:42px;border-radius:50%;object-fit:cover">`:''}<div><b style="font-size:13.5px">${v(d.ansprechpartner)}</b><div style="font-size:12px;color:var(--muted)">${v(d.ansprechpartner_rolle||'Ansprechpartner')}</div></div></div>`:''}
+      </div>
+      <div class="sheet-actions" style="margin-top:18px">
+        <button class="btn" id="stSaveDraft" style="flex:1" onclick="flushStList();submitStelle(false)"><i data-lucide="save"></i> ${editing?'Speichern':'Als Entwurf speichern'}</button>
+        ${editing && d.status==='aktiv' ? '' : `<button class="btn go" id="stSavePublish" onclick="flushStList();submitStelle(true)"><i data-lucide="rocket"></i> Jetzt veröffentlichen</button>`}
+      </div>`;
+  }
   openSheet(`
     <div class="sheet__head">
       <span class="avatar" style="width:44px;height:44px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="briefcase" style="width:20px;height:20px"></i></span>
-      <div><div class="sheet__title">${editing?'Stelle bearbeiten':'Stelle anlegen'}</div><div class="sheet__sub">${editing?'Änderungen wirken sofort – auch auf dem Portal, wenn die Stelle live ist.':'Je vollständiger, desto besser die Anzeige im Portal. Speichern als Entwurf, danach mit einem Klick veröffentlichen.'}</div></div>
+      <div><div class="sheet__title">${editing?'Stelle bearbeiten':'Stelle erstellen'}</div><div class="sheet__sub">In fünf Schritten zur fertigen Anzeige.</div></div>
       <button class="sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body">
-
-      ${stelleSecHead('Unternehmens-Branding','Logo und Titelbild gelten für ALLE deine Stellen – einmal hochladen, fertig.')}
-      <div class="stelle-brand" id="stBrandingBox">${stelleBrandingInnerHtml()}</div>
-
-      ${stelleSecHead('Eckdaten','Erscheinen als Titel und Tags oben in der Anzeige.')}
-      <div class="field"><label>Stellentitel *${infoTip('Wähle einen gängigen Titel aus der Liste – oder tippe deinen eigenen. Standardisierte Titel werden im Stellenportal besser gefunden und gefiltert (z. B. „Baggerfahrer").')}</label>
-        <input list="stellenRollenList" value="${v(d.titel)}" placeholder="Aus der Liste wählen oder tippen …" oninput="stelleDraft.titel=this.value">
-        <datalist id="stellenRollenList">${stelleRollenOpts().map(o=>`<option value="${escapeHtml(o)}"></option>`).join('')}</datalist>
+      ${stepper}
+      <div style="display:grid;grid-template-columns:1fr;gap:18px" class="stwiz-grid">
+        <div>${body}</div>
+        ${step<5?`<div class="stwiz-side"><div style="font-size:10.5px;font-weight:800;letter-spacing:.06em;color:var(--muted);text-transform:uppercase;margin-bottom:8px"><i data-lucide="eye" style="width:12px;height:12px;vertical-align:-2px"></i> Live-Vorschau</div><div id="stWizPrev">${stPreviewCardHtml()}</div></div>`:''}
       </div>
-      <div class="fieldrow">
-        <div class="field"><label>Branche${infoTip('Die Branche bestimmt, unter welcher Kategorie Bewerber deine Stelle im Portal finden und filtern. Deshalb Auswahl statt Freitext.')}</label>
-          <select onchange="stelleDraft.branche=this.value">${(()=>{ const opts=brancheOptsForCompany().slice(); if(d.branche&&!opts.includes(d.branche)) opts.unshift(d.branche); return opts.map(o=>`<option ${d.branche===o?'selected':''}>${escapeHtml(o)}</option>`).join(''); })()}</select>
-        </div>
-        <div class="field"><label>Ort</label><input value="${v(d.ort)}" placeholder="z. B. Köln" oninput="stelleDraft.ort=this.value"></div>
+      <div style="display:flex;align-items:center;gap:12px;margin-top:22px;padding-top:14px;border-top:1px solid var(--line)">
+        ${step>1?`<button class="btn ghost" onclick="stWizGo(${step-1})"><i data-lucide="arrow-left"></i> Zurück</button>`:`<button class="btn ghost" onclick="closeSheet()">Abbrechen</button>`}
+        <div style="flex:1;text-align:center;font-size:12px;color:var(--muted)">Schritt <b>${step}</b> von 5 · ${ST_STEPS[step-1]}</div>
+        <span id="stAutoSaveInd" style="font-size:11.5px;color:var(--muted);display:inline-flex;align-items:center;gap:5px">${d.id?'<i data-lucide="check-circle-2"></i> Automatisch gespeichert':''}</span>
+        ${step<5?`<button class="btn" onclick="stWizGo(${step+1})">Weiter <i data-lucide="arrow-right"></i></button>`:''}
       </div>
-      <div class="fieldrow">
-        <div class="field"><label>Beschäftigungsart</label>
-          <select onchange="stelleDraft.beschaeftigungsart=this.value">${BESCHAEFT_OPTS.map(o=>`<option ${d.beschaeftigungsart===o?'selected':''}>${o}</option>`).join('')}</select>
-        </div>
-        <div class="field"><label>Vertragsart</label>
-          <select onchange="stelleDraft.vertragsart=this.value">${VERTRAG_OPTS.map(o=>`<option ${d.vertragsart===o?'selected':''}>${o}</option>`).join('')}</select>
-        </div>
-      </div>
-      <div class="fieldrow">
-        <div class="field"><label>Eintritt / Beginn</label>
-          <select id="eintrittMode" onchange="stelleEintrittMode(this)">${[...EINTRITT_PRESETS.map(o=>`<option value="${o}" ${eintrittMode(d.eintritt)===o?'selected':''}>${o}</option>`), `<option value="datum" ${eintrittMode(d.eintritt)==='datum'?'selected':''}>zu einem bestimmten Datum</option>`].join('')}</select>
-          <div id="eintrittDateWrap" style="margin-top:8px" ${eintrittMode(d.eintritt)==='datum'?'':'hidden'}><input type="date" id="eintrittDate" value="${eintrittDateVal(d.eintritt)}" onchange="stelleEintrittDate(this)"></div>
-        </div>
-        <div class="field"><label>Gehalt${infoTip('Nur Zahlen – z. B. 3200 oder eine Spanne 3200-3800. Wir formatieren automatisch einheitlich (3.200 €). „nach Vereinbarung" ist auch erlaubt. Buchstaben/Unsinn werden rot markiert.')}</label>
-          <input inputmode="numeric" value="${v(d.gehalt)}" placeholder="z. B. 3.200 – 3.800 € / Monat" oninput="stelleDraft.gehalt=this.value;stelleGehaltLive(this)" onblur="stelleGehaltBlur(this)">
-          <div class="field__err" hidden><i data-lucide="alert-circle"></i>Bitte nur Zahlen eingeben – z. B. 3200 oder 3200-3800.</div>
-        </div>
-      </div>
-
-      ${stelleSecHead('Stellenbeschreibung','„Über die Stelle" + Listen für Aufgaben, Profil und Benefits.')}
-      <div class="field"><label>Kurzbeschreibung</label><textarea rows="3" placeholder="Worum geht es in dieser Stelle?" oninput="stelleDraft.beschreibung=this.value">${v(d.beschreibung)}</textarea></div>
-      <p class="sheet-note" style="margin:2px 0 12px"><i data-lucide="check-square"></i> <span><b>So funktionieren die Listen unten:</b> Schreib pro Zeile einen Punkt und drück <b>Enter</b> für den nächsten. Jede Zeile wird auf der Anzeige automatisch zu einem <b>Häkchen-Punkt</b> ✓ – die Live-Vorschau unter jedem Feld zeigt dir sofort, wie es beim Bewerber aussieht.</span></p>
-      <div class="field"><label>Deine Aufgaben${infoTip('Was macht der Mitarbeiter im Alltag? Jede Zeile wird zu einem Aufzählungspunkt. Beispiele: Bagger & Radlader bedienen, Aushub & Verfüllarbeiten, Pflasterarbeiten.')}</label><textarea rows="4" placeholder="Eine Aufgabe pro Zeile&#10;z. B. Bedienung von Bagger &amp; Radlader&#10;Aushub und Verfüllarbeiten" oninput="stelleDraft.aufgaben=this.value;renderBulletPrev('bpAufgaben',this.value)">${v(d.aufgaben)}</textarea><div class="bullet-prev" id="bpAufgaben">${bulletPrevHtml(d.aufgaben)}</div></div>
-      <div class="field"><label>Dein Profil${infoTip('Was sollte der Bewerber mitbringen? Jede Zeile ein Punkt. Beispiele: Erfahrung im Tiefbau, Führerschein Klasse B / CE, selbstständige Arbeitsweise, Teamgeist.')}</label><textarea rows="4" placeholder="Eine Anforderung pro Zeile&#10;z. B. Erfahrung im Tiefbau&#10;Führerschein Klasse B" oninput="stelleDraft.profil=this.value;renderBulletPrev('bpProfil',this.value)">${v(d.profil)}</textarea><div class="bullet-prev" id="bpProfil">${bulletPrevHtml(d.profil)}</div></div>
-      <div class="field"><label>Das bieten wir (Benefits)${infoTip('Trag hier die Benefits / den Mehrwert ein, den der Bewerber bekommt. Beispiele: kostenloses Wasser, bezahlter Führerschein, Firmenfahrzeug, Firmenhandy, bezahlte Anfahrt. Jede Zeile ein Punkt.')}</label><textarea rows="4" placeholder="Ein Benefit pro Zeile&#10;z. B. Firmenwagen&#10;30 Tage Urlaub&#10;Weihnachts- &amp; Urlaubsgeld" oninput="stelleDraft.benefits=this.value;renderBulletPrev('bpBenefits',this.value)">${v(d.benefits)}</textarea><div class="bullet-prev" id="bpBenefits">${bulletPrevHtml(d.benefits)}</div></div>
-
-      ${stelleSecHead('Ansprechpartner','Wird Bewerbern in der Anzeige als direkter Kontakt angezeigt.')}
-      <div class="fieldrow" style="align-items:flex-end">
-        <div class="field"><label>Name</label><input value="${v(d.ansprechpartner)}" placeholder="z. B. Maria Schmidt" oninput="stelleDraft.ansprechpartner=this.value"></div>
-        <div class="field"><label>Rolle / Funktion</label><input value="${v(d.ansprechpartner_rolle)}" placeholder="z. B. Personalleiterin" oninput="stelleDraft.ansprechpartner_rolle=this.value"></div>
-      </div>
-      <div class="fieldrow">
-        <div class="field"><label>Kontakt-Telefon</label><input value="${v(d.kontakt_telefon)}" placeholder="z. B. 0221 1234567" oninput="stelleDraft.kontakt_telefon=this.value"></div>
-        <div class="field"><label>Kontakt-E-Mail</label><input type="email" value="${v(d.kontakt_email)}" placeholder="z. B. bewerbung@firma.de" oninput="stelleDraft.kontakt_email=this.value"></div>
-      </div>
-      <div class="field"><label>Foto des Ansprechpartners</label>
-        <div style="display:flex;align-items:center;gap:12px">
-          <div id="apFotoPrev">${apFotoPrev}</div>
-          <label class="btn ghost sm"><i data-lucide="upload"></i> Foto wählen<input type="file" accept="image/*" onchange="stelleFotoPick(this)" hidden></label>
-        </div>
-      </div>
-
-      ${stelleSecHead('Stellen-Bilder','Optional: Bilder von Team, Baustelle, Maschinen – erscheinen in der Anzeige als Galerie.')}
-      <div class="field">
-        <div id="stBilderPrev" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px">${renderStelleBilderHtml()}</div>
-        <label class="btn ghost sm"><i data-lucide="image-plus"></i> Bild hinzufügen<input type="file" accept="image/*" multiple onchange="stelleBilderAdd(this)" hidden></label>
-        <div style="font-size:11px;color:var(--muted);margin-top:6px">Max. ${STELLE_BILDER_MAX} Bilder, je ${STELLE_IMG_MAX_KB} KB.</div>
-      </div>
-
-      <div class="sheet-actions">
-        <button class="btn" id="stSaveDraft" style="flex:1" onclick="submitStelle(false)"><i data-lucide="save"></i> ${editing?'Speichern':'Als Entwurf speichern'}</button>
-        ${editing && d.status==='aktiv' ? '' : `<button class="btn go" id="stSavePublish" onclick="submitStelle(true)"><i data-lucide="rocket"></i> Speichern &amp; veröffentlichen</button>`}
-        <button class="btn ghost" onclick="closeSheet()">Abbrechen</button>
-      </div>
-    </div>`);
+    </div>`, {wide:true, guard:true});
 }
 // ---- Bild-Uploads (Data-URL, konsistent mit Logo-Upload) ----
 function _stelleReadImg(file, cb){
