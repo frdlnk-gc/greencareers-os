@@ -3591,6 +3591,13 @@ async function loadSettingsDb(){
       delete raw._stages; delete raw._templates;
       settings = applySettingsRaw(raw);
       try{ localStorage.setItem('gcos_settings_v2', JSON.stringify(settings)); }catch(_){}
+      // Heute-Cockpit-Zustände aus dem DB-Blob übernehmen (Reload/Gerätewechsel)
+      try{
+        if(settings._dwConfig) Object.keys(settings._dwConfig).forEach(k=>{ if(dwConfig[k]) Object.assign(dwConfig[k], settings._dwConfig[k]); });
+        if(Array.isArray(settings._reminders)) customReminders = settings._reminders.slice();
+        if(Array.isArray(settings._termine)) termine = settings._termine.slice();
+        if(settings._layout && settings._layout.main) moduleLayout = { main:settings._layout.main.slice(), rail:(settings._layout.rail||[]).slice() };
+      }catch(_){}
     }
   }catch(e){ console.warn('my_settings:', e); }
 }
@@ -6291,6 +6298,21 @@ let dwConfig = {
   tuev:      {on:true, lead:30},
   eigene:    {on:true, lead:7},
 };
+// Heute-Cockpit-Zustände überleben Reload + Gerätewechsel: aus settings (DB-Blob) hydratisieren.
+(function hydrateHeuteState(){
+  try{
+    if(settings._dwConfig) Object.keys(settings._dwConfig).forEach(k=>{ if(dwConfig[k]) Object.assign(dwConfig[k], settings._dwConfig[k]); });
+    if(Array.isArray(settings._reminders)) customReminders = settings._reminders.slice();
+    if(Array.isArray(settings._termine)) termine = settings._termine.slice();
+    if(settings._layout && settings._layout.main) moduleLayout = { main:settings._layout.main.slice(), rail:(settings._layout.rail||[]).slice() };
+  }catch(_){}
+})();
+function saveHeuteState(){
+  settings._dwConfig = dwConfig; settings._reminders = customReminders;
+  settings._termine = termine; settings._layout = moduleLayout;
+  saveSettings();
+}
+
 function dwISO(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 function dwTodayMid(){ const t=new Date(TODAY); return new Date(t.getFullYear(),t.getMonth(),t.getDate()); }
 function dwTomorrowISO(){ const t=dwTodayMid(); t.setDate(t.getDate()+1); return dwISO(t); }
@@ -6406,7 +6428,7 @@ function openDenkMitSettings(){
 }
 function saveDenkMitSettings(){
   Object.keys(DW_TYPES).forEach(k=>{ const on=document.getElementById('dwon_'+k); const lead=document.getElementById('dwlead_'+k); if(on) dwConfig[k].on=on.checked; if(lead) dwConfig[k].lead=Math.max(0,parseInt(lead.value,10)||0); });
-  closeSheet(); if(currentView==='heute') setView('heute'); toast('„Denk mit" aktualisiert');
+  saveHeuteState(); closeSheet(); if(currentView==='heute') setView('heute'); toast('„Denk mit" aktualisiert');
 }
 function openReminderForm(rid){
   const r = rid ? customReminders.find(x=>x.id===rid) : null;
@@ -6439,6 +6461,7 @@ function saveReminder(rid){
   const obj = { title, date:(document.getElementById('rmDate')||{}).value||TODAY, recur:(document.getElementById('rmRecur')||{}).value||'none', lead:Math.max(0,parseInt((document.getElementById('rmLead')||{}).value,10)||0), priv:(document.getElementById('rmPriv')||{}).checked };
   if(rid){ const r=customReminders.find(x=>x.id===rid); if(r) Object.assign(r,obj); }
   else { obj.id = ++dwSeq; customReminders.push(obj); }
+  saveHeuteState();
   closeSheet(); if(currentView==='heute') setView('heute'); toast(rid?'Erinnerung gespeichert':'Erinnerung hinzugefügt');
 }
 function deleteReminder(rid){ customReminders = customReminders.filter(x=>x.id!==rid); closeSheet(); if(currentView==='heute') setView('heute'); toast('Erinnerung gelöscht'); }
@@ -6512,6 +6535,7 @@ function saveEvent(editId){
   };
   if(editId){ const t=termine.find(x=>x.id===editId); if(t) Object.assign(t,obj); }
   else { obj.id = tmSeq++; termine.push(obj); }
+  saveHeuteState();
   closeSheet(); if(currentView==='heute') setView('heute'); toast(editId?'Termin gespeichert':'Termin angelegt');
 }
 function deleteEvent(id){ termine = termine.filter(x=>x.id!==id); closeSheet(); if(currentView==='heute') setView('heute'); toast('Termin gelöscht'); }
@@ -6765,6 +6789,7 @@ function persistLayout(){
   const read = id => [...document.querySelectorAll('#'+id+' .module-card')].map(c => c.dataset.mod).filter(Boolean);
   const main = read('mainModules'), rail = read('railModules');
   if(main.length || rail.length) moduleLayout = { main, rail };
+  saveHeuteState();
 }
 
 const VIEWS = {
@@ -10473,6 +10498,7 @@ function mapBewerberRow(r){
     interviews: Array.isArray(nz.interviews) ? nz.interviews : [],
     pq: nz.pq || ex.pq || {branche:'',beruf:'',erfahrung:'',gehalt:'',verfuegbar:'',ort:''},
     pqStatus: nz.pqStatus || 'offen', botScore: (nz.botScore != null ? nz.botScore : null),
+    probetag: nz.probetag || null,
     role: (nz.pq && nz.pq.beruf) || ex.beruf || '', tags:[], available: (nz.pq && nz.pq.verfuegbar) || '', hot:false};
 }
 // Echte Stellen + Bewerber des eingeloggten Betriebs laden (RLS scoped automatisch auf die Firma).
@@ -12010,7 +12036,8 @@ function persistBewerberNotiz(a){
   if(!a || !osConnected() || !a._uuid || !sbAuth) return;
   const uuid = a._uuid;
   const payload = { interviews: a.interviews || [], comments: a.comments || [],
-                    pq: a.pq || {}, pqStatus: a.pqStatus || 'offen', botScore: (a.botScore != null ? a.botScore : null) };
+                    pq: a.pq || {}, pqStatus: a.pqStatus || 'offen', botScore: (a.botScore != null ? a.botScore : null),
+                    probetag: a.probetag || null };
   clearTimeout(_notizTimers[uuid]);
   _notizTimers[uuid] = setTimeout(async ()=>{
     try{
@@ -13400,7 +13427,8 @@ function saveProbetag(id){
   // Probetag speichern und Bewerber auf die Stufe „Probetag vereinbart" ziehen (sofern vorhanden),
   // damit der Status im Recruiting-Board sichtbar ist und die Funktion nicht ins Leere läuft.
   a.probetag = { date: d, time: t, ort };
-  if(stages.some(s => s.id === 'probetag')){ a.stage = 'probetag'; a.hot = false; }
+  if(stages.some(s => s.id === 'probetag')){ a.stage = 'probetag'; a.hot = false; persistBewerberStatus(id, 'probetag'); }
+  persistBewerberNotiz(a);
   closeSheet();
   if(currentView === 'recruiting') renderBewerberKanban();
   toast(`Probetag mit ${a.name.split(' ')[0]} am ${deDate(d)} eingetragen`);
