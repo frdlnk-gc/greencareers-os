@@ -4664,6 +4664,12 @@ async function afterAuth(session){
   enterApp();
   updateBetriebBanner();   // eingeloggt ohne Betrieb? -> roter Hinweis statt stilles Nicht-Speichern
   loadPortalData();   // echte Stellen + Bewerber des Betriebs aus Supabase ziehen
+  // FINALER Hash-Restore: einzelne Boot-Schritte können die View zurücksetzen –
+  // was in der URL steht (#stellen …), gewinnt am Ende (Live-Befund 05.07.).
+  try{
+    const h=(window.location.hash||'').replace(/^#/,'');
+    if(h && !h.includes('=') && h!==currentView && navForRole().some(x=>x.id===h) && !isLocked(h)) setView(h);
+  }catch(_){}
 }
 
 // Aus der eigenen mitarbeiter-Zeile einen lokalen employees-Eintrag bauen (Self-View).
@@ -11315,7 +11321,7 @@ async function refreshKontingent(announce){
   if(!osConnected()){ betriebFehltWarn(); return; }
   try{
     const { data:cust } = await sbAuth.from('customers').select('*').eq('id', GC_PROFILE.customer_id).maybeSingle();
-    if(cust){ GC_CUSTOMER = cust; if(currentView==='stellen') setView('stellen'); }
+    if(cust){ GC_CUSTOMER = cust; }
     if(announce){
       const k = jobContingent();
       if(k.frei && !k.expired && k.free > 0) toast('✅ Kontingent ist freigeschaltet – du kannst jetzt veröffentlichen!');
@@ -12382,6 +12388,12 @@ function submitCustomer(){
 }
 
 function afterRender(view){
+  // Kontingent-Anzeige IMMER DB-frisch: Boot-Reihenfolge/Cache kann GC_CUSTOMER veralten lassen
+  // (Live-Befund 05.07.). Beim Betreten der Stellen-Ansicht still nachladen; bei Abweichung re-rendern.
+  if(view === 'stellen' && osConnected()){
+    const _before = JSON.stringify(jobContingent());
+    refreshKontingent(false).then(()=>{ if(currentView==='stellen' && JSON.stringify(jobContingent()) !== _before) setView('stellen'); }).catch(()=>{});
+  }
   if(view === 'heute') wireModules();
   if(view === 'recruiting') wireKanban();
   if(view === 'team'){ if(akteEmpId){ renderAkte(); } else { teamTab(activeTeamTab); } }
