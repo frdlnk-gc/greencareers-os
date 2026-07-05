@@ -10599,7 +10599,7 @@ async function loadPortalData(){
     let bwRpc = null;
     try{ bwRpc = await sbAuth.rpc('my_bewerber'); }catch(e){ bwRpc = { error: e }; }
     const [st, bwTbl] = await Promise.all([
-      sbAuth.from('stellenanzeigen').select('*').order('created_at',{ascending:false}),
+      sbAuth.from('stellenanzeigen').select('*').eq('customer_id', GC_PROFILE.customer_id).order('created_at',{ascending:false}),
       (bwRpc && !bwRpc.error) ? Promise.resolve(bwRpc)
                               : sbAuth.from('bewerber').select('*').order('created_at',{ascending:false})
     ]);
@@ -10643,6 +10643,7 @@ function osConnected(){ return !!(sbAuth && GC_PROFILE && GC_PROFILE.customer_id
 let _betriebWarnAt = 0;
 function betriebFehltWarn(){
   if(!GC_USER || (GC_PROFILE && GC_PROFILE.customer_id)) return false;
+  if(GC_PROFILE && GC_PROFILE.role === 'gc_admin') return false;   // Admin-Konto ist kein Kundenbetrieb
   if(Date.now() - _betriebWarnAt > 8000){
     _betriebWarnAt = Date.now();
     toast('⚠️ Betrieb nicht verbunden – diese Eingabe wird NICHT dauerhaft gespeichert! Unten „Jetzt verbinden" tippen.');
@@ -10651,7 +10652,7 @@ function betriebFehltWarn(){
   return true;
 }
 function updateBetriebBanner(){
-  const need = !!(GC_USER && _enteredApp && !(GC_PROFILE && GC_PROFILE.customer_id));
+  const need = !!(GC_USER && _enteredApp && !(GC_PROFILE && GC_PROFILE.customer_id) && !(GC_PROFILE && GC_PROFILE.role === 'gc_admin'));
   let b = document.getElementById('noBizBanner');
   if(!need){ if(b) b.remove(); return; }
   if(b) return;
