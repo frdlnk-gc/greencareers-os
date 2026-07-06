@@ -3820,7 +3820,7 @@ function openCheckoutSuccess(){
 }
 // Frische customers-Zeile aus der DB ziehen (Kontingent-Quelle aktualisieren).
 async function refetchCustomer(){
-  if(!(window.sbAuth && GC_PROFILE && GC_PROFILE.customer_id)) return null;
+  if(!(sbAuth && GC_PROFILE && GC_PROFILE.customer_id)) return null;
   try{
     const { data:cust } = await sbAuth.from('customers').select('*').eq('id',GC_PROFILE.customer_id).maybeSingle();
     if(cust){ GC_CUSTOMER = cust; if(cust.logo_url){ settings.company.logo = cust.logo_url; } }
@@ -4648,6 +4648,19 @@ async function afterAuth(session){
       const { data:cust } = await sbAuth.from('customers').select('*').eq('id',GC_PROFILE.customer_id).maybeSingle();
       if(cust){
         GC_CUSTOMER = cust;   // Kontingent-Quelle (produkt, kauftyp, stellen_kontingent)
+        // SELBSTHEILUNG Branding-Sync: Hat der Browser lokal ein Logo/Titelbild/Profil,
+        // das es nie in die DB geschafft hat (Sync-Ausfall), NICHT verwerfen, sondern
+        // übernehmen und gleich nach dem Boot in customers hochschieben. Sonst würde
+        // das autoritative DB-NULL die lokalen Bilder unwiederbringlich löschen.
+        { let _heal = false;
+          const _lLogo  = settings.company && settings.company.logo;
+          const _lTitel = settings.portal  && settings.portal.titelbild;
+          const _lBilder = (settings.portal && Array.isArray(settings.portal.bilder)) ? settings.portal.bilder : [];
+          if(!cust.logo_url  && _lLogo){  cust.logo_url  = _lLogo;  _heal = true; }
+          if(!cust.titelbild && _lTitel){ cust.titelbild = _lTitel; _heal = true; }
+          if(!(Array.isArray(cust.unternehmensbilder) && cust.unternehmensbilder.length) && _lBilder.length){ cust.unternehmensbilder = _lBilder.slice(); _heal = true; }
+          if(_heal) setTimeout(()=>{ try{ savePortalProfile(); }catch(_){} }, 1500);
+        }
         settings.company = Object.assign({}, settings.company, { name:cust.name, ort:cust.ort||'', email:cust.email||GC_USER.email });
         settings.company.logo = cust.logo_url || '';   // DB ist autoritativ: NULL => kein Logo (kein alter Account-Rest)
         settings.branchen = (cust.branchen&&cust.branchen.length) ? cust.branchen.slice() : [];
@@ -4665,6 +4678,11 @@ async function afterAuth(session){
         });
         settings.onboarded = true; saveSettings();
       }
+      // Kontingent-Pakete (Smart/Premium/Exzellenz je eigener Topf) IMMER beim Boot laden –
+      // pickFreeTier()/Kontingent-Banner brauchen sie; ohne diesen Load blieben aktive
+      // Stellen ohne Tier-Zuordnung (Live-Befund 06.07.).
+      try{ const { data:kp } = await sbAuth.from('kontingente').select('*').eq('customer_id', GC_PROFILE.customer_id).order('created_at');
+        window.KONTINGENTE = kp || []; }catch(_){}
     }catch(e){}
   }
   // Eingeloggter Mitarbeiter/Büro: eigene Personalakte-Zeile laden + lokalen
@@ -5768,7 +5786,7 @@ async function savePortalProfile(){
   const btn = document.getElementById('ppSaveBtn');
   // Lokal ist alles schon gespeichert (localStorage). Jetzt an die DB (customers) pushen,
   // damit die Portal-Firmenseite die Daten zeigt. Fail-soft, wenn nicht eingeloggt / RPC fehlt.
-  if(!(window.sbAuth && GC_USER && GC_PROFILE && GC_PROFILE.customer_id)){
+  if(!(sbAuth && GC_USER && GC_PROFILE && GC_PROFILE.customer_id)){
     toast('Lokal gespeichert. Live ans Portal: nach dem Einloggen mit verknüpftem Betrieb.');
     return;
   }
@@ -11360,6 +11378,7 @@ function canPublishJob(){
 }
 // Self-Service-Veröffentlichung: Kontingent prüfen -> direkt live (status 'aktiv'), kein GC-Gate.
 async function publishStelle(id){
+  if(!window.KONTINGENTE){ try{ await refreshKontingent(false); }catch(_){} }
   const gate = canPublishJob();
   if(!gate.ok){ showKontingentBlock(gate); return; }
   // Paket zuweisen: kleinstes freies zuerst (Smart vor Premium vor Exzellenz)
@@ -12049,11 +12068,15 @@ function stPreviewCardHtml(){
     <div style="position:relative;height:170px;background:#1B2420;display:grid;place-items:center;color:#fff;font-weight:800;font-size:22px">
       ${cov?`<img src="${cov}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">`:escapeHtml(initials(firma))}
       <span style="position:absolute;top:9px;right:9px;background:rgba(0,0,0,.55);color:#fff;border-radius:100px;padding:3px 9px;font-size:10px;font-weight:700">heute</span>
-      ${(settings.company&&settings.company.logo)?`<img src="${settings.company.logo}" alt="" style="position:absolute;left:12px;bottom:-14px;width:38px;height:38px;border-radius:50%;object-fit:cover;border:2.5px solid #fff;background:#fff">`:''}
     </div>
-    <div style="padding:${(settings.company&&settings.company.logo)?'20px':'13px'} 15px 13px">
-      <div style="font-weight:800;font-size:15px;line-height:1.3;color:#16211B">${v(d.titel||'Dein Stellentitel')}</div>
-      <div style="font-size:12px;color:#6B7770;margin-top:2px">${v(firma)}</div>
+    <div style="padding:13px 15px">
+      <div style="display:flex;align-items:center;gap:12px">
+        ${(settings.company&&settings.company.logo)?`<span style="width:46px;height:46px;border-radius:11px;flex:none;display:grid;place-items:center;overflow:hidden;background:#fff;border:1px solid var(--line)"><img src="${settings.company.logo}" alt="" style="width:100%;height:100%;object-fit:contain;padding:5px;box-sizing:border-box"></span>`:''}
+        <div>
+          <div style="font-weight:800;font-size:15px;line-height:1.3;color:#16211B">${v(d.titel||'Dein Stellentitel')}</div>
+          <div style="font-size:12px;color:#6B7770;margin-top:2px">${v(firma)}</div>
+        </div>
+      </div>
       <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:9px">
         ${d.ort?tag('📍 '+v(d.ort)):''}
         ${d.beschaeftigungsart?tag('🕒 '+v(d.beschaeftigungsart)):''}
@@ -12327,6 +12350,8 @@ async function submitStelle(publish){
     status
   };
   if(status === 'aktiv'){
+    // Tier-Zuordnung braucht die geladenen Kontingent-Pakete – zur Not jetzt nachladen.
+    if(!window.KONTINGENTE){ try{ await refreshKontingent(false); }catch(_){} }
     if(!d.tier){ const _tr = pickFreeTier(); if(_tr) row.tier = _tr; }
     // Slug: vor der ERSTEN Veröffentlichung immer aus dem aktuellen Titel (sonst trägt die
     // Stelle für immer den Slug eines alten Arbeitstitels); danach stabil (geteilte Links).
