@@ -5560,6 +5560,8 @@ function _renderCropper(){
   _crop.max = _crop.cover * 4;
   // Startansicht: ganzes Bild zeigen, damit der Nutzer sofort sieht, was er hochlädt.
   _crop.scale = _crop.fit;
+  setTimeout(()=>{ const same = Math.abs(_crop.fit - _crop.cover) < 0.001;
+    ['cropFitBtn','cropFillBtn'].forEach(id=>{ const b=document.getElementById(id); if(b){ b.disabled=same; b.style.opacity=same?'.45':''; b.title=same?'Bild ist bereits exakt im Rahmenformat – nutze den Zoom-Regler':''; } }); },0);
   _crop.x = (stageW - n.w*_crop.scale)/2;
   _crop.y = (stageH - n.h*_crop.scale)/2;
   const tooSmall = (n.w < (o.outW||512)*0.6) || (n.h < ((o.outW||512)/aspect)*0.6);
@@ -5696,8 +5698,9 @@ function _cropApply(){
     while(url.length > maxBytes && q > 0.4){ q -= 0.1; url = cv.toDataURL(mime, q); }
   }
   const done = o.onDone;
+  const orig = _crop.img && _crop.img.src;   // Original mitgeben: erlaubt späteres Neu-Zuschneiden
   closeImageCropper();
-  if(typeof done === 'function') done(url);
+  if(typeof done === 'function') done(url, orig);
 }
 function closeImageCropper(){
   const ov = document.getElementById('cropOverlay');
@@ -10580,7 +10583,7 @@ function quelleToSource(q){ return ({indeed:'Indeed',meta:'Meta',website:'Web',c
 function mapStelleRow(r){
   return {id:r.id, title:r.titel||'Stelle', slug:r.slug||'', branche:r.branche||'', ort:r.ort||'',
           status:r.status||'pausiert', beschreibung:r.beschreibung||'',
-          beschaeftigungsart:r.beschaeftigungsart||'', gehalt:r.gehalt||'', expMin:0, _raw:r};
+          beschaeftigungsart:r.beschaeftigungsart||'', gehalt:r.gehalt||'', tier:r.tier||null, expMin:0, _raw:r};
 }
 // Eingehender Status kann aus dem Admin-Backend stammen (eigenes Vokabular:
 // gesichtet/qualifiziert/anrufen/vorgestellt/abgesagt) ODER bereits eine OS-Stage
@@ -11219,7 +11222,40 @@ function activeJobCount(){ return jobs.filter(j => j.status === 'aktiv').length;
 // Liest die ECHTEN customers-Spalten (v6): produkt, kauftyp('einmalzahlung'|'abo'),
 // zahlungsart, laufzeit('6'|'12'), + Kontingent-Felder (v11): stellen_kontingent,
 // kontingent_frei, kontingent_bis.
+// Multi-Paket-Sicht: je gekauftem Paket (Smart/Premium/Exzellenz) ein eigener Topf.
+function kontingentPakete(){
+  const kp = (window.KONTINGENTE||[]).slice();
+  if(!kp.length) return null;
+  const order = { smart:1, premium:2, exzellenz:3 };
+  kp.sort((a,b)=>(order[a.produkt]||9)-(order[b.produkt]||9));
+  const aktive = jobs.filter(j=>j.status==='aktiv');
+  const usedByTier = {};
+  aktive.forEach(j=>{ const tr = j.tier || kp[0].produkt; usedByTier[tr]=(usedByTier[tr]||0)+1; });
+  return kp.map(k=>({ produkt:k.produkt, label: PRODUKT_LABEL[k.produkt] || (k.produkt.charAt(0).toUpperCase()+k.produkt.slice(1)),
+    anzahl:k.anzahl, used: Math.min(usedByTier[k.produkt]||0, k.anzahl),
+    frei:k.frei, bis:k.bis, expired: !!(k.bis && new Date(k.bis).getTime() < Date.now()) }));
+}
+// Freies Paket für die nächste Veröffentlichung (kleinstes zuerst: smart -> premium -> exzellenz)
+function pickFreeTier(){
+  const p = kontingentPakete(); if(!p) return null;
+  const f = p.find(x=>x.frei && !x.expired && x.used < x.anzahl);
+  return f ? f.produkt : null;
+}
 function jobContingent(){
+  const P = kontingentPakete();
+  if(P){
+    const total = P.reduce((s,x)=>s+x.anzahl,0);
+    const used  = P.reduce((s,x)=>s+x.used,0);
+    const frei  = P.some(x=>x.frei);
+    const expired = P.every(x=>x.expired);
+    const bisArr = P.map(x=>x.bis).filter(Boolean).sort();
+    const best = P[P.length-1];
+    return { hasData:true, tier:best.produkt, tierLabel:best.label, kauftyp:(GC_CUSTOMER&&/abo/.test(GC_CUSTOMER.kauftyp||''))?'abo':'einmal',
+             term:'', total, used, free: Math.max(0,total-used), frei, expired, bis: bisArr[bisArr.length-1]||null };
+  }
+  return _jobContingentLegacy();
+}
+function _jobContingentLegacy(){
   const c = GC_CUSTOMER || {};
   const tier = c.produkt || '';
   const total = Number(c.stellen_kontingent != null ? c.stellen_kontingent : NaN);
@@ -11258,6 +11294,9 @@ function canPublishJob(){
 async function publishStelle(id){
   const gate = canPublishJob();
   if(!gate.ok){ showKontingentBlock(gate); return; }
+  // Paket zuweisen: kleinstes freies zuerst (Smart vor Premium vor Exzellenz)
+  const tr = pickFreeTier();
+  if(tr){ try{ await sbAuth.from('stellenanzeigen').update({tier:tr}).eq('id', id); }catch(_){} }
   await setStelleStatus(id, 'aktiv');
 }
 // Kontingent-Banner über der Stellen-Liste: „X von Y genutzt" + Tier + Laufzeit/Freischalt-Status.
@@ -11279,9 +11318,24 @@ function kontingentBannerHtml(){
   const isUnlimited = !Number.isFinite(k.total);
   const total = isUnlimited ? '∞' : k.total;
   const free  = isUnlimited ? '∞' : k.free;
-  const pct = (!isUnlimited && k.total>0) ? Math.min(100, Math.round(k.used/k.total*100)) : 8;
-  const tierBadge = { 'smart':'Basis', 'premium':'Empfohlen', 'exzellenz':'Top-Platzierung' }[k.tier] || '';
-  const tierDesc  = { 'smart':'Standard-Reichweite', 'premium':'erhöhte Sichtbarkeit, Logo', 'exzellenz':'Premium-Reichweite, Top-Platzierung' }[k.tier] || '';
+  const P = kontingentPakete();
+  const karten = P || [{ produkt:k.tier, label:k.tierLabel||'Kontingent', anzahl:(isUnlimited?1:k.total), used:k.used, frei:k.frei, bis:k.bis, expired:k.expired }];
+  const badge = pr => ({ 'smart':'Basis', 'premium':'Empfohlen', 'exzellenz':'Top-Platzierung' }[pr] || '');
+  const desc  = pr => ({ 'smart':'Standard-Reichweite', 'premium':'erhöhte Sichtbarkeit, Logo', 'exzellenz':'Premium-Reichweite, Top-Platzierung' }[pr] || '');
+  const karteHtml = q => { const pf = q.anzahl>0 ? Math.min(100, Math.round(q.used/q.anzahl*100)) : 0; const qf = Math.max(0, q.anzahl - q.used);
+    return `<div class="panel" style="padding:17px 18px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+        <div style="display:flex;align-items:center;gap:8px"><span style="width:9px;height:9px;border-radius:50%;background:var(--green)"></span><b style="font-size:14px">${q.label}</b></div>
+        ${badge(q.produkt)?`<span style="font-size:10.5px;font-weight:800;color:var(--green-2);background:var(--soft-green);border-radius:999px;padding:3px 10px">${badge(q.produkt)}</span>`:''}
+      </div>
+      <div style="margin-top:12px;font-size:26px;font-weight:800;line-height:1">${q.used} <span style="font-size:14px;color:var(--muted);font-weight:600">/ ${q.anzahl} genutzt</span></div>
+      <div style="font-size:12px;color:var(--muted);margin-top:5px">${qf} ${qf===1?'Kontingent':'Kontingente'} frei${desc(q.produkt)?' · '+desc(q.produkt):''}</div>
+      <div style="height:7px;border-radius:100px;background:var(--line);margin-top:11px;overflow:hidden"><span style="display:block;height:100%;width:${pf}%;border-radius:100px;background:var(--green)"></span></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:13px">
+        <span style="font-size:12px;color:var(--muted)"><i data-lucide="calendar" style="width:13px;height:13px;vertical-align:-2px"></i> ${q.bis?('läuft bis '+dDE(dISO(new Date(q.bis)))):'verlängert sich automatisch'}</span>
+        <button class="mini-btn" onclick="openZahlungInfo()">Nachbuchen</button>
+      </div>
+    </div>`; };
   const freiTxt = isUnlimited ? 'unbegrenzt' : `${free} ${free===1?'Kontingent':'Kontingente'} frei`;
   return `<div style="margin-bottom:16px">
     <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:9px">
@@ -11289,18 +11343,8 @@ function kontingentBannerHtml(){
       <div style="font-size:12px;color:var(--muted)">${isUnlimited?'unbegrenzte Stellen':`${free} von ${total} Kontingenten noch frei`}</div></div>
       <button class="mini-btn" onclick="openZahlungInfo()" style="font-size:12px">Kontingent verlängern <i data-lucide="arrow-right"></i></button>
     </div>
-    <div class="panel" style="padding:17px 18px;max-width:460px">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
-        <div style="display:flex;align-items:center;gap:8px"><span style="width:9px;height:9px;border-radius:50%;background:var(--green)"></span><b style="font-size:14px">${k.tierLabel||'Kontingent'}</b></div>
-        ${tierBadge?`<span style="font-size:10.5px;font-weight:800;color:var(--green-2);background:var(--soft-green);border-radius:999px;padding:3px 10px">${tierBadge}</span>`:''}
-      </div>
-      <div style="margin-top:12px;font-size:26px;font-weight:800;line-height:1">${k.used} <span style="font-size:14px;color:var(--muted);font-weight:600">/ ${total} genutzt</span></div>
-      <div style="font-size:12px;color:var(--muted);margin-top:5px">${freiTxt}${tierDesc?' · '+tierDesc:''}</div>
-      <div style="height:7px;border-radius:100px;background:var(--line);margin-top:11px;overflow:hidden"><span style="display:block;height:100%;width:${pct}%;border-radius:100px;background:var(--green)"></span></div>
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:13px">
-        <span style="font-size:12px;color:var(--muted)"><i data-lucide="calendar" style="width:13px;height:13px;vertical-align:-2px"></i> ${bisTxt}${lz?' · '+lz:''}</span>
-        <button class="mini-btn" onclick="openZahlungInfo()">Nachbuchen</button>
-      </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;max-width:960px">
+      ${karten.map(karteHtml).join('')}
     </div>
   </div>`;
 }
@@ -11363,6 +11407,8 @@ async function refreshKontingent(announce){
   try{
     const { data:cust } = await sbAuth.from('customers').select('*').eq('id', GC_PROFILE.customer_id).maybeSingle();
     if(cust){ GC_CUSTOMER = cust; }
+    try{ const { data:kp } = await sbAuth.from('kontingente').select('*').eq('customer_id', GC_PROFILE.customer_id).order('created_at');
+      window.KONTINGENTE = kp || []; }catch(_){}
     if(announce){
       const k = jobContingent();
       if(k.frei && !k.expired && k.free > 0) toast('✅ Kontingent ist freigeschaltet – du kannst jetzt veröffentlichen!');
@@ -11506,6 +11552,7 @@ function setStellenSearch(v){ stellenFilter.q = (v||'').trim().toLowerCase(); co
 function setStellenStatusFilter(s){ stellenFilter.status = s; setView('stellen'); }
 function stelleCard(j){
   const sm = STATUS_META[j.status] || STATUS_META.pausiert;
+  const tierBadge = j.tier ? `<span style="font-size:10px;font-weight:800;color:var(--green-2);background:var(--soft-green);border-radius:999px;padding:2px 9px;margin-left:7px;vertical-align:2px">${(PRODUKT_LABEL[j.tier]||j.tier)}</span>` : '';
   const n = bewCountForJob(j.id), neu = bewNeuForJob(j.id);
   const st = j.status;
   const meta = [
@@ -11546,7 +11593,7 @@ function stelleCard(j){
     </div>
     <div class="stelle-card__in">
       <div class="stelle-card__t">
-        <h3>${escapeHtml(j.title)}</h3>
+        <h3>${escapeHtml(j.title)}${tierBadge}</h3>
         ${meta ? `<div class="stelle-card__meta">${meta}</div>` : ''}
       </div>
       ${note}
@@ -11783,18 +11830,18 @@ function openImageEditMenu(kind, idx){
 }
 function editExistingImage(kind, idx){
   if(kind==='logo'){
-    openImageCropper({ src:(settings.company&&settings.company.logo), aspect:1, round:false, outW:512, mime:'image/png',
+    openImageCropper({ src:(window._logoOrig||(settings.company&&settings.company.logo)), aspect:1, round:false, outW:512, mime:'image/png',
       title:'Logo anpassen', hint:'Quadratisch (1:1) · zoomen & verschieben',
-      onDone:(url)=>{ settings.company.logo=url; saveSettings(); applyBranding(); renderStelleBranding(); savePortalProfile(); toast('Logo angepasst'); } });
+      onDone:(url, orig)=>{ settings.company.logo=url; window._logoOrig=orig||window._logoOrig; saveSettings(); applyBranding(); renderStelleBranding(); savePortalProfile(); toast('Logo angepasst'); } });
   } else if(kind==='titelbild'){
-    openImageCropper({ src:(settings.portal&&settings.portal.titelbild), aspect:16/6, round:false, outW:1600, mime:'image/jpeg', maxKB:420,
+    openImageCropper({ src:(window._titelOrig||(settings.portal&&settings.portal.titelbild)), aspect:16/6, round:false, outW:1600, mime:'image/jpeg', maxKB:420,
       title:'Titelbild anpassen', hint:'Querformat · zoomen & verschieben',
-      onDone:(url)=>{ settings.portal.titelbild=url; saveSettings(); renderStelleBranding(); savePortalProfile(); toast('Titelbild angepasst'); } });
+      onDone:(url, orig)=>{ settings.portal.titelbild=url; window._titelOrig=orig||window._titelOrig; saveSettings(); renderStelleBranding(); savePortalProfile(); toast('Titelbild angepasst'); } });
   } else {
-    const src = stelleDraft.bilder[idx];
+    const src = (stelleDraft._origs && stelleDraft._origs[idx]) || stelleDraft.bilder[idx];
     openImageCropper({ src, aspect:4/3, round:false, outW:1200, mime:'image/jpeg', maxKB:STELLE_IMG_MAX_KB,
       title:'Bild anpassen', hint:'Querformat (4:3) · zoomen & verschieben',
-      onDone:(url)=>{ stelleDraft.bilder[idx]=url; renderStelleBilderPrev(); if(typeof stelleWizChanged==='function') stelleWizChanged(); toast('Bild angepasst'); } });
+      onDone:(url, orig)=>{ stelleDraft.bilder[idx]=url; stelleDraft._origs = stelleDraft._origs||{}; stelleDraft._origs[idx]=orig||src; renderStelleBilderPrev(); if(typeof stelleWizChanged==='function') stelleWizChanged(); toast('Bild angepasst'); } });
   }
 }
 function triggerImageUpload(kind, idx){
@@ -11824,7 +11871,7 @@ function stelleCoLogoPick(input){
     file:f, aspect:1, round:false, outW:512, mime:'image/png', maxUploadKB:6000,
     title:'Logo zuschneiden', hint:'Quadratisch (1:1) · PNG mit Transparenz möglich',
     recoText:'Dein Logo wird <b>quadratisch</b> auf jeder Stellenanzeige (und im Cockpit) angezeigt. Lade am besten ein quadratisches Logo hoch – ist es breiter als hoch, schneide den passenden Bereich zu. Empfohlen: 512×512 px, PNG mit transparentem Hintergrund.',
-    onDone:(url)=>{ settings.company = settings.company||{}; settings.company.logo = url; saveSettings(); applyBranding(); renderStelleBranding(); savePortalProfile(); }
+    onDone:(url, orig)=>{ settings.company = settings.company||{}; settings.company.logo = url; window._logoOrig=orig; saveSettings(); applyBranding(); renderStelleBranding(); savePortalProfile(); }
   });
 }
 function stelleCoTitelPick(input){
@@ -11833,7 +11880,7 @@ function stelleCoTitelPick(input){
     file:f, aspect:16/6, round:false, outW:1600, mime:'image/jpeg', maxKB:420, maxUploadKB:12000,
     title:'Titelbild zuschneiden', hint:'Banner ganz oben auf deiner Firmenseite · Querformat',
     recoText:'Auf dem <b>Desktop</b> wird das ganze Bild als breiter Banner gezeigt, auf dem <b>Handy</b> nur der <b>mittlere Ausschnitt</b>. Halte Logo, Team oder das Wichtigste deshalb in der <b>Bildmitte</b>. Empfohlen: mind. 1600×600 px.',
-    onDone:(url)=>{ settings.portal = settings.portal||{}; settings.portal.titelbild = url; saveSettings(); renderStelleBranding(); savePortalProfile(); }
+    onDone:(url, orig)=>{ settings.portal = settings.portal||{}; settings.portal.titelbild = url; window._titelOrig=orig; saveSettings(); renderStelleBranding(); savePortalProfile(); }
   });
 }
 // Veröffentlichen ohne Logo/Titelbild -> freundlicher Hinweis statt stiller, unvollständiger Anzeige.
@@ -11900,11 +11947,11 @@ function stPreviewCardHtml(){
   const L=stLists();
   const cov = (d.bilder && d.bilder[0]) || (settings.portal && settings.portal.titelbild) || '';
   const firma = (settings.company && settings.company.name) || 'Dein Betrieb';
-  const gehaltTag = d.gehalt ? `<span style="display:inline-block;background:#E8F6EE;color:#0E7A43;border-radius:100px;padding:4px 10px;font-size:11.5px;font-weight:700">💶 ${v(d.gehalt)}</span>` : '';
+  const gehaltTag = d.gehalt ? `<span style="display:inline-block;background:#E8F6EE;color:#0E7A43;border-radius:100px;padding:4px 10px;font-size:11.5px;font-weight:700">💶 ${v(formatGehaltDisplay(d.gehalt)||d.gehalt)}</span>` : '';
   const tag = s => `<span style="display:inline-block;background:#F1F3F0;color:#3A4540;border-radius:100px;padding:4px 10px;font-size:11.5px;font-weight:600">${s}</span>`;
   const aufg = L.aufgaben.filter(Boolean).slice(0,3).map(a=>`<div style="display:flex;gap:7px;font-size:12px;margin-top:5px;color:#3A4540"><span style="color:var(--green)">✓</span><span>${escapeHtml(a)}</span></div>`).join('');
   return `<div style="border:1px solid var(--line);border-radius:16px;overflow:hidden;background:#fff;box-shadow:0 2px 10px rgba(20,30,25,.06)">
-    <div style="position:relative;height:120px;background:#1B2420;display:grid;place-items:center;color:#fff;font-weight:800;font-size:22px">
+    <div style="position:relative;height:170px;background:#1B2420;display:grid;place-items:center;color:#fff;font-weight:800;font-size:22px">
       ${cov?`<img src="${cov}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">`:escapeHtml(initials(firma))}
       <span style="position:absolute;top:9px;right:9px;background:rgba(0,0,0,.55);color:#fff;border-radius:100px;padding:3px 9px;font-size:10px;font-weight:700">heute</span>
       ${(settings.company&&settings.company.logo)?`<img src="${settings.company.logo}" alt="" style="position:absolute;left:12px;bottom:-14px;width:38px;height:38px;border-radius:50%;object-fit:cover;border:2.5px solid #fff;background:#fff">`:''}
@@ -12120,7 +12167,7 @@ function stelleBilderAdd(input){
       file:f, aspect:4/3, round:false, outW:1200, mime:'image/jpeg', maxKB:STELLE_IMG_MAX_KB, maxUploadKB:12000,
       title:'Bild zuschneiden', hint:'Querformat (4:3) – wie eine Galerie',
       recoText:'Stellen-Bilder werden im <b>Querformat</b> gezeigt (z. B. Team, Baustelle, Fuhrpark). Schneide den schönsten Ausschnitt zu. Empfohlen: Querformat, mind. 1200×900 px.',
-      onDone:(url)=>{ stelleDraft.bilder = stelleDraft.bilder||[]; stelleDraft.bilder.push(url); renderStelleBilderPrev(); setTimeout(next, 120); }
+      onDone:(url, orig)=>{ stelleDraft.bilder = stelleDraft.bilder||[]; stelleDraft.bilder.push(url); stelleDraft._origs = stelleDraft._origs||{}; stelleDraft._origs[stelleDraft.bilder.length-1] = orig || url; renderStelleBilderPrev(); if(typeof stelleWizChanged==='function') stelleWizChanged(); setTimeout(next, 120); }
     });
   };
   next();
@@ -12181,6 +12228,7 @@ async function submitStelle(publish){
     status
   };
   if(status === 'aktiv'){
+    if(!d.tier){ const _tr = pickFreeTier(); if(_tr) row.tier = _tr; }
     // Slug: vor der ERSTEN Veröffentlichung immer aus dem aktuellen Titel (sonst trägt die
     // Stelle für immer den Slug eines alten Arbeitstitels); danach stabil (geteilte Links).
     row.slug = (d._neverPublished !== false) ? genSlug(d.titel) : (d.slug || genSlug(d.titel));
