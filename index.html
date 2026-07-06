@@ -5712,7 +5712,20 @@ function _cropApply(){
   const ctx = cv.getContext('2d');
   ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
   const mime = o.mime || 'image/jpeg';
-  if(mime !== 'image/png'){ ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,outW,outH); } // JPEG: weißer Grund statt schwarz
+  if(mime !== 'image/png'){
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,outW,outH);   // JPEG: weißer Grund statt schwarz
+    // „Ganzes Bild übernehmen" lässt Ränder frei (Letterbox). Weiße Balken würden ins
+    // JPEG eingebrannt und wirken im Portal (Karten = object-fit:cover) wie ein
+    // Passepartout. Deshalb: Ränder mit dem GEBLURTEN, formatfüllenden Bild füllen.
+    const iw = _crop.img.naturalWidth || _crop.img.width, ih = _crop.img.naturalHeight || _crop.img.height;
+    if(sx < -0.5 || sy < -0.5 || (sx+sW) > iw+0.5 || (sy+sH) > ih+0.5){
+      const cover = Math.max(outW/iw, outH/ih), bw = iw*cover, bh = ih*cover;
+      ctx.save(); try{ ctx.filter = 'blur(22px)'; }catch(_){}
+      ctx.drawImage(_crop.img, (outW-bw)/2, (outH-bh)/2, bw, bh);
+      ctx.restore();
+      ctx.fillStyle = 'rgba(0,0,0,.12)'; ctx.fillRect(0,0,outW,outH);
+    }
+  }
   ctx.drawImage(_crop.img, sx, sy, sW, sH, 0, 0, outW, outH);
   // Qualität so wählen, dass die Ziel-KB eingehalten werden (nur JPEG/WebP)
   let url;
