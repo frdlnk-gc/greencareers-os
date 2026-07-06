@@ -162,6 +162,13 @@
   .auth__row{ display:flex; align-items:center; justify-content:space-between; gap:14px; margin:2px 0 18px; font-size:12.5px; color:var(--muted); }
   .auth__chk{ display:flex; align-items:center; gap:7px; min-width:0; }
   .auth a{ color:var(--green-2); text-decoration:none; font-weight:600; cursor:pointer; }
+  .feldmic{ position:absolute; top:7px; right:7px; width:27px; height:27px; border-radius:8px; border:1px solid var(--line);
+    background:#fff; color:var(--muted); display:grid; place-items:center; cursor:pointer; z-index:3; padding:0; }
+  .feldmic i{ width:15px; height:15px; }
+  .feldmic:hover{ color:var(--green-2); border-color:var(--green); }
+  .feldmic.rec{ background:#E11D48; border-color:#E11D48; color:#fff; animation:efMicPulse 1s infinite; }
+  .feldmic.busy i{ animation:spin 1s linear infinite; }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
   .btn{
     display:inline-flex;
     align-items:center;
@@ -6165,6 +6172,7 @@ function setView(view){
   renderNav();
   document.getElementById('viewTitle').innerHTML = `<i data-lucide="${item.icon}"></i><span>${item.label}</span>`;
   document.getElementById('view').innerHTML = VIEWS[view]();
+  try{ document.querySelectorAll('#view textarea').forEach(feldMicAttach); }catch(_){}
   document.getElementById('view').scrollTop = 0;
   toggleMobile(false);
   icons();
@@ -10659,6 +10667,66 @@ function friendlyDbError(err){
   if(s.includes('payload') || s.includes('too large')) return 'Die Datei/Daten sind zu groß.';
   return 'Das hat leider nicht geklappt – bitte erneut versuchen.';
 }
+/* ===== FELD-MIKROFON: jede Textarea bekommt ein Diktier-Icon (Tipp an/aus) =====
+   1. Tipp = zuhören (rot pulsierend) · 2. Tipp = verarbeiten (Spinner) -> bereinigter
+   Text (ohne Ähs/Füllwörter, Satzanfang groß, Endpunkt) wird eingefügt/angehängt. */
+// Füllwörter entfernen: \b versagt bei Umlauten -> explizite Grenzen (Anfang/Leerraum/Satzzeichen).
+function feldMicClean(s){
+  let x = ' '+String(s||'').trim()+' ';
+  const fuell = ['ähmm','ähm','ähh','äh','mhm','hmm','halt','quasi','sozusagen','sag ich mal','ich sag mal','gell','ne'];
+  fuell.forEach(w=>{ x = x.replace(new RegExp('(^|[\\s,.!?])'+w+'(?=[\\s,.!?])','gi'), '$1'); });
+  x = x.replace(/(^|\s)([a-zäöüß]+)(\s+\2)+(?=[\s,.!?]|$)/gi, '$1$2');   // "ein ein" -> "ein"
+  x = x.replace(/\s+([,.!?])/g,'$1').replace(/\s{2,}/g,' ').trim();
+  if(x){ x = x.charAt(0).toUpperCase()+x.slice(1); if(!/[.!?…]$/.test(x)) x += '.'; }
+  return x;
+}
+let _fmRec=null, _fmTa=null, _fmFinal='';
+function feldMicToggle(btn){
+  const ta = btn._ta; if(!ta) return;
+  if(_fmRec && _fmTa===ta){ // Stopp -> verarbeiten
+    const r=_fmRec; _fmRec=null; try{ r.onend=null; r.stop(); }catch(_){}
+    btn.classList.remove('rec'); btn.classList.add('busy'); btn.innerHTML='<i data-lucide="loader-2"></i>'; icons();
+    setTimeout(()=>{
+      const clean = feldMicClean(_fmFinal); _fmFinal='';
+      if(clean){ ta.value = (ta.value.trim() ? ta.value.replace(/\s+$/,'')+' ' : '') + clean;
+        ta.dispatchEvent(new Event('input', {bubbles:true})); }
+      btn.classList.remove('busy'); btn.innerHTML='<i data-lucide="mic"></i>'; icons();
+      if(!clean) toast('Nichts verstanden – Mikro antippen, sprechen, erneut antippen.');
+      _fmTa=null;
+    }, 350);
+    return;
+  }
+  if(_fmRec){ try{ _fmRec.onend=null; _fmRec.stop(); }catch(_){} _fmRec=null; }  // anderes Feld aktiv
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR){ toast('Diktieren wird von diesem Browser nicht unterstützt.'); return; }
+  _fmTa=ta; _fmFinal='';
+  _fmRec = new SR(); _fmRec.lang='de-DE'; _fmRec.continuous=true; _fmRec.interimResults=true; _fmRec.maxAlternatives=3;
+  _fmRec.onresult = e=>{ for(let i=e.resultIndex;i<e.results.length;i++){ if(e.results[i].isFinal) _fmFinal += e.results[i][0].transcript+' '; } };
+  _fmRec.onerror = e=>{ if(e && e.error==='not-allowed'){ toast('Mikrofon-Zugriff blockiert – bitte im Browser erlauben.'); btn.classList.remove('rec'); _fmRec=null; _fmTa=null; } };
+  _fmRec.onend = ()=>{ if(_fmRec && _fmTa===ta){ try{ _fmRec.start(); }catch(_){} } };   // Sprechpausen überbrücken
+  try{ _fmRec.start(); btn.classList.add('rec'); }catch(_){}
+}
+function feldMicAttach(ta){
+  if(!ta || ta._hasMic || ta.dataset.nomic!=null || ta.readOnly || ta.disabled) return;
+  if(ta.closest('#auth')) return;                       // Login/Passwort-Bereich aussparen
+  ta._hasMic = true;
+  const wrap = ta.parentElement; if(!wrap) return;
+  if(getComputedStyle(wrap).position === 'static') wrap.style.position = 'relative';
+  const b = document.createElement('button');
+  b.type='button'; b.className='feldmic'; b.title='Diktieren: antippen, sprechen, erneut antippen';
+  b.innerHTML='<i data-lucide="mic"></i>'; b._ta=ta;
+  b.addEventListener('click', ev=>{ ev.preventDefault(); ev.stopPropagation(); feldMicToggle(b); });
+  wrap.appendChild(b); icons();
+  ta.style.paddingRight = '38px';
+}
+new MutationObserver(muts=>{
+  muts.forEach(m=>m.addedNodes.forEach(nd=>{
+    if(nd.nodeType!==1) return;
+    if(nd.tagName==='TEXTAREA') feldMicAttach(nd);
+    else if(nd.querySelectorAll) nd.querySelectorAll('textarea').forEach(feldMicAttach);
+  }));
+}).observe(document.documentElement, {childList:true, subtree:true});
+document.addEventListener('DOMContentLoaded', ()=>document.querySelectorAll('textarea').forEach(feldMicAttach));
 function osConnected(){ return !!(sbAuth && GC_PROFILE && GC_PROFILE.customer_id); }
 // FAIL-LOUD: Eingeloggt, aber kein Betrieb verknüpft -> Eingaben würden NUR lokal landen.
 // Das darf nie wieder still passieren (Launch-Test 04.07.: "Mitarbeiter nicht gespeichert").
@@ -11903,6 +11971,33 @@ function stelleForcePublish(){ if(stelleDraft){ stelleDraft._brandOk = true; sub
    Aufgaben/Profil/Benefits sind ECHTE Listen (je Zeile ein Input, + hinzufügen, × entfernen);
    intern gesynct in die \n-Textfelder, damit submitStelle/public_jobs unverändert bleiben.
    Auto-Save: Entwürfe werden debounced in stellenanzeigen gespeichert (nie Live-Stellen). */
+// Orts-Autocomplete mit PLZ (openplzapi.org, kostenlos/ohne Key). Prefix-Treffer zuerst.
+let _ortT=null;
+function ortSuggest(inp){
+  clearTimeout(_ortT);
+  const q=(inp.value||'').trim();
+  const box=document.getElementById('ortSuggestBox');
+  if(q.length<2 || /^\d/.test(q)){ if(box) box.style.display='none'; return; }
+  _ortT=setTimeout(async ()=>{
+    try{
+      const r=await fetch('https://openplzapi.org/de/Localities?name='+encodeURIComponent(q)+'&page=1&pageSize=20');
+      let rows=await r.json(); if(!Array.isArray(rows)) rows=[];
+      const ql=q.toLowerCase();
+      rows.sort((a,b)=>{ const ap=a.name.toLowerCase().startsWith(ql)?0:1, bp=b.name.toLowerCase().startsWith(ql)?0:1;
+        return ap-bp || a.name.localeCompare(b.name) || a.postalCode.localeCompare(b.postalCode); });
+      rows=rows.slice(0,8);
+      if(!rows.length || !box){ if(box) box.style.display='none'; return; }
+      box.innerHTML=rows.map(x=>`<div onmousedown="ortPick('${x.postalCode} ${x.name.replace(/'/g,'&#39;')}')" style="padding:9px 13px;cursor:pointer;font-size:13.5px;border-bottom:1px solid var(--line)" onmouseover="this.style.background='var(--soft-green)'" onmouseout="this.style.background=''"><b>${x.postalCode}</b> ${x.name}<span style="color:var(--muted);font-size:11.5px"> · ${(x.federalState&&x.federalState.name)||''}</span></div>`).join('');
+      box.style.display='block';
+    }catch(_){ if(box) box.style.display='none'; }
+  }, 280);
+}
+function ortPick(val){
+  const inp=document.getElementById('stOrtInp');
+  if(inp){ inp.value=val; stelleDraft.ort=val; stelleWizChanged(); }
+  ortSuggestHide();
+}
+function ortSuggestHide(){ const b=document.getElementById('ortSuggestBox'); if(b) b.style.display='none'; }
 const ST_STEPS = ['Eckdaten','Beschreibung','Medien','Ansprechpartner','Vorschau'];
 function stLists(){
   const d = stelleDraft;
@@ -12031,7 +12126,11 @@ function renderStelleForm(){
       <div class="field"><label>Pensum / Arbeitszeit</label>${stKacheln('beschaeftigungsart',BESCHAEFT_OPTS.map(o=>({v:o,sub:o==='Vollzeit'?'Festanstellung':o==='Teilzeit'?'flexibel nach Absprache':o==='Ausbildung'?'3-jährige Lehre':o==='Minijob'?'geringfügig':'befristete Spitzenlast'})))}</div>
       <div class="field"><label>Vertragsart</label>${stKacheln('vertragsart',VERTRAG_OPTS.map(o=>({v:o,sub:o==='Unbefristet'?'Festanstellung':'mit Option auf Übernahme'})))}</div>
       <div class="fieldrow">
-        <div class="field"><label>Einsatzort</label><input value="${v(d.ort)}" placeholder="z. B. 65719 Hofheim am Taunus" oninput="stelleDraft.ort=this.value;stelleWizChanged()"></div>
+        <div class="field" style="position:relative"><label>Einsatzort</label>
+          <input id="stOrtInp" value="${v(d.ort)}" placeholder="z. B. 65719 Hofheim am Taunus" autocomplete="off"
+            oninput="stelleDraft.ort=this.value;stelleWizChanged();ortSuggest(this)" onblur="setTimeout(ortSuggestHide,180)">
+          <div id="ortSuggestBox" style="display:none;position:absolute;left:0;right:0;top:100%;z-index:60;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 24px rgba(18,33,29,.12);max-height:220px;overflow:auto"></div>
+        </div>
         <div class="field"><label>Verfügbar ab</label>
           <select id="eintrittMode" onchange="stelleEintrittMode(this);stelleWizChanged()">${[...EINTRITT_PRESETS.map(o=>`<option value="${o}" ${eintrittMode(d.eintritt)===o?'selected':''}>${o}</option>`), `<option value="datum" ${eintrittMode(d.eintritt)==='datum'?'selected':''}>zu einem bestimmten Datum</option>`].join('')}</select>
           <div id="eintrittDateWrap" style="margin-top:8px" ${eintrittMode(d.eintritt)==='datum'?'':'hidden'}><input type="date" id="eintrittDate" value="${eintrittDateVal(d.eintritt)}" onchange="stelleEintrittDate(this);stelleWizChanged()"></div>
@@ -15793,6 +15892,7 @@ function openMessage(id){
 let _sheetGuard = false;   // true = Formular mit Eingaben: Backdrop/Escape fragen erst nach
 function openSheet(html, opts){
   document.getElementById('sheet').innerHTML = html;
+  try{ document.querySelectorAll('#sheet textarea').forEach(feldMicAttach); }catch(_){}
   const modal = document.getElementById('modal');
   modal.classList.toggle('as-drawer', !!(opts && opts.drawer));
   document.getElementById('sheet').classList.toggle('wide', !!(opts && opts.wide));
