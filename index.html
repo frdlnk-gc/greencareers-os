@@ -4761,6 +4761,15 @@ async function afterAuth(session){
     setTimeout(()=>toast('Tipp: Dein Betrieb heißt noch „Mein Betrieb" – gib ihm in der Einrichtung deinen echten Firmennamen.'), 1500);
   }
   loadPortalData();   // echte Stellen + Bewerber des Betriebs aus Supabase ziehen
+  // ZAHLUNGS-SELBSTHEILUNG beim Login: Hängt noch eine bezahlte, aber nicht verbuchte
+  // Stripe-Session im localStorage (Tab nach Zahlung zu früh geschlossen)? -> jetzt idempotent
+  // nachbestätigen. Serverseitig fängt das zusätzlich der 15-Min-Reconcile-Cron ab; das hier
+  // macht die Freischaltung beim nächsten Öffnen des OS sofort sichtbar.
+  try{
+    if(GC_PROFILE && GC_PROFILE.customer_id && typeof storedCheckoutSession==='function' && storedCheckoutSession()){
+      (async ()=>{ try{ const r = await confirmCheckout(); if(r && r.ok){ await refreshKontingent(false); if(typeof rerenderCurrent==='function') rerenderCurrent(); } }catch(_){ } })();
+    }
+  }catch(_){ }
   // FINALER Hash-Restore: einzelne Boot-Schritte können die View zurücksetzen –
   // was in der URL steht (#stellen …), gewinnt am Ende (Live-Befund 05.07.).
   try{
