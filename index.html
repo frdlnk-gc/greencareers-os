@@ -3591,10 +3591,10 @@ function persistSettingsDb(){
   }, 600);
 }
 async function loadSettingsDb(){
-  if(!osConnected()) return;
+  if(!osConnected()) return false;
   try{
     const { data, error } = await sbAuth.rpc('my_settings');
-    if(error){ console.warn('my_settings:', error.message || error); return; }
+    if(error){ console.warn('my_settings:', error.message || error); return false; }   // FEHLER -> nicht als hydratisiert werten
     if(data && typeof data === 'object' && Object.keys(data).length){
       const raw = Object.assign(JSON.parse(JSON.stringify(settings)), data);
       // Pipeline-Spalten + Vorlagen aus dem Blob zurück in die Modul-Variablen holen.
@@ -3618,7 +3618,28 @@ async function loadSettingsDb(){
         if(settings._layout && settings._layout.main) moduleLayout = { main:settings._layout.main.slice(), rail:(settings._layout.rail||[]).slice() };
       }catch(_){}
     }
-  }catch(e){ console.warn('my_settings:', e); }
+    return true;   // Erfolg – auch bei leerem Blob (neuer Betrieb ohne gespeicherte Settings)
+  }catch(e){ console.warn('my_settings:', e); return false; }
+}
+// Nachlade-Versuch für das Profil nach transientem Boot-Fehler: aktualisiert Profil/Rolle/
+// Betrieb ohne die App neu zu betreten (kein Doppel-Boot). Fail-soft, plant bei erneutem
+// Fehler nichts weiter (der nächste Reload/Interaktion deckt es ab).
+async function retryLoadProfile(session){
+  if(!(session && session.user && sbAuth)) return;
+  try{
+    const { data:prof, error } = await sbAuth.from('profiles').select('*').eq('id',session.user.id).maybeSingle();
+    if(error || !prof) return;
+    GC_PROFILE = prof;
+    { const R=['admin','buero','buchhaltung','mitarbeiter','kolonnenfuehrer'];
+      viewRole = R.includes(prof.role) ? prof.role : 'admin'; }
+    const _cid = prof.customer_id || null;
+    if(settings.cid !== _cid){ gcResetTenantState(); settings.cid = _cid; saveSettings(); }
+    if(prof.customer_id){ try{ await refetchCustomer(); }catch(_){ } if(!_settingsHydrated){ const ok=await loadSettingsDb(); if(ok) _settingsHydrated=true; } }
+    try{ if(typeof applyRole==='function') applyRole(); }catch(_){ }
+    try{ updateBetriebBanner(); }catch(_){ }
+    try{ loadPortalData(); }catch(_){ }
+    try{ if(typeof rerenderCurrent==='function') rerenderCurrent(); }catch(_){ }
+  }catch(_){ }
 }
 function saveSettings(){ try{ localStorage.setItem('gcos_settings_v2', JSON.stringify(settings)); }catch(e){} persistSettingsDb(); }
 
@@ -3755,7 +3776,7 @@ function closeWelcome(mode){
    Preis wird hier nur ZUR ANZEIGE gerechnet – verbindlich rechnet die Edge
    Function (dynamic-responder = create-checkout.ts) server-seitig neu. */
 const CO_PKG_EINMAL = { smart:{name:'Smart',price:2190,days:60}, premium:{name:'Premium',price:3190,days:60}, exzellenz:{name:'Exzellenz',price:5490,days:90} };
-const CO_PKG_ABO    = { smart:{name:'Smart',price:399}, premium:{name:'Premium',price:599}, exzellenz:{name:'Exzellenz',price:799} };
+const CO_PKG_ABO    = { smart:{name:'Smart',price:399}, premium:{name:'Premium',price:599}, exzellenz:{name:'Exzellenz',price:899} };
 const CO_QTY_DISC   = { 1:0, 2:10, 3:20, 4:30 };
 const CO_TERM_DISC  = { '6m':0, '12m':20 };
 const CO_TERM_MONTHS= { '6m':6, '12m':12 };
@@ -3768,15 +3789,18 @@ const CO_PM_SVG = {
   amex: '<svg width="20" height="12" viewBox="0 0 40 24" role="img" aria-label="American Express"><rect width="40" height="24" rx="3" fill="#006FCF"/><text x="20" y="10.5" font-family="Arial,Helvetica,sans-serif" font-weight="700" font-size="6" fill="#fff" text-anchor="middle">AMERICAN</text><text x="20" y="18.5" font-family="Arial,Helvetica,sans-serif" font-weight="700" font-size="6" fill="#fff" text-anchor="middle">EXPRESS</text></svg>',
   paypal:'<svg width="42" height="12" viewBox="0 0 58 16" role="img" aria-label="PayPal"><text x="0" y="13" font-family="Arial,Helvetica,sans-serif" font-style="italic" font-weight="800" font-size="15" letter-spacing="-0.5"><tspan fill="#003087">Pay</tspan><tspan fill="#009CDE">Pal</tspan></text></svg>',
 };
+// SEPA-Lastschrift bewusst NICHT anbieten: Stripe verbucht Lastschriften verzögert
+// (payment_status='unpaid' beim Redirect), unser confirm-checkout schaltet aber nur bei
+// bezahlter Session frei -> ohne Webhook für async_payment_succeeded bliebe der Kunde ewig
+// unfreigeschaltet trotz Abbuchung. Bis der Webhook steht: nur Sofort-Methoden + Rechnung.
 const CO_METHODS = [
   { key:'card',     icon:'credit-card', label:'Kreditkarte', sub:'Sofort freigeschaltet', logos: CO_PM_SVG.visa + CO_PM_SVG.mc + CO_PM_SVG.amex },
   { key:'paypal',   icon:'wallet',      label:'PayPal',      sub:'Sofort freigeschaltet', logos: CO_PM_SVG.paypal },
-  { key:'sepa',     icon:'banknote',    label:'SEPA-Lastschrift', sub:'Sofort freigeschaltet' },
   { key:'rechnung', icon:'file-text',   label:'Kauf auf Rechnung', sub:'Freigabe nach Zahlungseingang' },
 ];
 let coState = { method:'card', agb:false, firma:'', name:'', tel:'', vat:'' };
 // Verfügbare Zahlarten je Modus. Abo = nur automatisch eingezogene Methoden
-// (Karte/PayPal/Lastschrift) – „Kauf auf Rechnung" gibt es NUR beim Einmalkauf,
+// (Karte/PayPal) – „Kauf auf Rechnung" gibt es NUR beim Einmalkauf,
 // weil wir sonst jeden Abo-Zyklus aktiv eine Rechnung schreiben + auf Überweisung hoffen müssten.
 function coMethods(c){
   const isAbo = c && c.mode === 'abo';
@@ -3794,29 +3818,36 @@ function coParseCodePct(raw){
 function buyFlowPending(){ const e = gcEntry(); return e.flow==='buy' && !e.paid && !!e.pkg; }
 // Rückkehr von Stripe: success_url = os.green-careers.de/?paid=1&session_id=…
 function coStripeReturn(){ try{ return new URLSearchParams(window.location.search).get('paid')==='1'; }catch(_){ return false; } }
+// Stripe-Session der letzten Zahlung (persistiert, damit „Zahlung jetzt prüfen" den
+// confirm-Aufruf später erneut – idempotent – auslösen kann, falls der erste Versuch scheitert).
+function storedCheckoutSession(){ try{ return gcEntry().checkoutSession || ''; }catch(_){ return ''; } }
+// Zahlung server-seitig bestätigen (confirm-checkout ist idempotent via bestellungen.applied_at).
+// WICHTIG: verify_jwt ist aktiv -> Authorization-Bearer mitschicken. Gibt {ok} zurück.
+async function confirmCheckout(sid){
+  sid = sid || storedCheckoutSession();
+  if(!sid) return { ok:false, none:true };
+  try{
+    const r = await fetch(SB_URL+'/functions/v1/confirm-checkout', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'apikey':SB_ANON, 'Authorization':'Bearer '+SB_ANON },
+      body: JSON.stringify({ session_id: sid })
+    });
+    const out = await r.json().catch(()=>({}));
+    if(r.ok && out && out.ok){ const e=gcEntry(); delete e.checkoutSession; saveEntry(e); return { ok:true, out }; }
+    return { ok:false, out, status:r.status };
+  }catch(e){ return { ok:false, error:String(e&&e.message||e) }; }
+}
 function openCheckoutSuccess(){
-  // SELF-HEALING: Zahlung direkt bei Stripe bestätigen (confirm-checkout holt die
-  // Session server-seitig, legt die Bestellung an und schaltet das Kontingent frei) –
-  // funktioniert auch, wenn der Stripe-Webhook nicht/zu spät feuert.
-  (async ()=>{
-    try{
-      const sid = new URLSearchParams(window.location.search).get('session_id') || '';
-      if(sid){
-        await fetch(SB_URL+'/functions/v1/confirm-checkout', {
-          method:'POST', headers:{ 'Content-Type':'application/json', 'apikey':SB_ANON },
-          body: JSON.stringify({ session_id: sid })
-        });
-      }
-    }catch(_){ }
-    try{ refreshKontingent(false); }catch(_){ }
-  })();
-  setTimeout(()=>{ try{ refreshKontingent(false); }catch(_){} }, 6000);
-  const e = gcEntry(); e.paid = true; saveEntry(e);
+  const sid = new URLSearchParams(window.location.search).get('session_id') || '';
+  const e = gcEntry(); e.paid = true; if(sid) e.checkoutSession = sid; saveEntry(e);   // session_id für Retry sichern
   coState.firma = (settings.company && settings.company.name) || coState.firma || '';
   try{ history.replaceState(null,'',window.location.pathname); }catch(_){}   // ?paid=1 aus URL entfernen
   document.getElementById('checkout').classList.remove('hidden');
   coDone(false);
-  pollContingentAfterPaid();   // Webhook schaltet Kontingent server-seitig frei -> kurz pollen + UI auffrischen
+  // SELF-HEALING: Zahlung bestätigen; bei Fehlschlag bleibt die session_id gespeichert und
+  // pollContingentAfterPaid + „Zahlung prüfen" versuchen es idempotent erneut (kein stiller Verlust).
+  (async ()=>{ try{ await confirmCheckout(sid); }catch(_){} try{ refreshKontingent(false); }catch(_){} })();
+  pollContingentAfterPaid();   // pollt Freischaltung + wiederholt confirm, bis Kontingent aktiv ist
 }
 // Frische customers-Zeile aus der DB ziehen (Kontingent-Quelle aktualisieren).
 async function refetchCustomer(){
@@ -3827,7 +3858,7 @@ async function refetchCustomer(){
     return cust || null;
   }catch(_){ return null; }
 }
-// Nach Karten-/PayPal-/Lastschrift-Zahlung schaltet der Stripe-Webhook das Kontingent server-seitig
+// Nach Karten-/PayPal-Zahlung schaltet der Stripe-Webhook das Kontingent server-seitig
 // frei (apply_purchase_contingent). Das kann ein paar Sekunden dauern -> kurz pollen, damit die
 // Stellen-Ansicht das frische Kontingent sofort zeigt. Fail-soft: timeoutet still, blockiert nie.
 async function pollContingentAfterPaid(){
@@ -3838,8 +3869,10 @@ async function pollContingentAfterPaid(){
     try{ icons(); }catch(_){}
   };
   for(let i=0;i<10;i++){
+    // Freischaltung läuft über confirm-checkout (idempotent). Solange nicht frei, in jeder
+    // Runde erneut anstoßen -> heilt einen fehlgeschlagenen ersten Versuch selbstständig.
+    try{ await confirmCheckout(); }catch(_){ }
     const c = await refetchCustomer();
-    // Freigeschaltet = Webhook hat apply_purchase_contingent ausgeführt (Produkt + frei-Flag gesetzt).
     if(c && c.kontingent_frei === true && (c.produkt || c.stellen_kontingent != null)){
       const k = jobContingent();
       const menge = Number.isFinite(k.total) ? `${k.total} ${k.total===1?'Stelle':'Stellen'}` : 'unbegrenzt Stellen';
@@ -3850,10 +3883,30 @@ async function pollContingentAfterPaid(){
     }
     await new Promise(r=>setTimeout(r, 2500));
   }
-  // Timeout (Webhook hängt kurz): nicht blockieren, ehrlich erklären.
-  setBox('clock', '#A66400',
-    'Deine Zahlung ist bei uns – die Freischaltung wird in wenigen Augenblicken automatisch aktiv. Lade die Stellen-Ansicht gleich einmal neu, falls sie noch nicht erscheint.');
+  // Timeout: NICHT „passiert automatisch" versprechen (es gibt keinen Webhook). Ehrlich +
+  // echter Wiederhol-Knopf, der confirm-checkout erneut auslöst (session_id ist gespeichert).
+  const box = document.getElementById('coContingentBox');
+  if(box){
+    box.innerHTML = `<i data-lucide="clock" style="width:19px;height:19px;color:#A66400;flex:0 0 auto"></i>`+
+      `<span>Deine Zahlung ist bei uns – die Freischaltung hat gerade etwas länger gedauert. `+
+      `<button class="mini-btn" onclick="retryFreischaltung(this)"><i data-lucide=\"refresh-cw\"></i> Jetzt freischalten</button></span>`;
+    try{ icons(); }catch(_){}
+  }
   return false;
+}
+// Manueller Wiederhol-Knopf: confirm-checkout erneut auslösen + Kontingent frisch laden.
+async function retryFreischaltung(btn){
+  if(btn){ btn.disabled=true; btn.innerHTML='<i data-lucide="loader" class="co-spin"></i> Wird geprüft…'; try{icons();}catch(_){ } }
+  const r = await confirmCheckout();
+  await refreshKontingent(false);
+  const k = jobContingent();
+  const box = document.getElementById('coContingentBox');
+  if(k.frei && !k.expired){
+    if(box){ box.innerHTML = `<i data-lucide="check-circle-2" style="width:19px;height:19px;color:var(--green)"></i><span><b>Kontingent freigeschaltet</b> – du kannst jetzt veröffentlichen.</span>`; try{icons();}catch(_){ } }
+    try{ if(typeof rerenderCurrent==='function') rerenderCurrent(); }catch(_){ }
+  } else {
+    if(box){ box.innerHTML = `<i data-lucide="clock" style="width:19px;height:19px;color:#A66400"></i><span>Noch nicht verbucht. Falls es gleich nicht erscheint, melde dich kurz – wir schalten manuell frei. <button class="mini-btn" onclick="retryFreischaltung(this)"><i data-lucide="refresh-cw"></i> Nochmal</button></span>`; try{icons();}catch(_){ } }
+  }
 }
 function coEur(n){ return n.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' €'; }
 
@@ -3991,7 +4044,7 @@ async function coSubmit(){
         p_name: coState.firma, p_branchen: settings.branchen||[],
         p_theme: settings.theme||'galabau', p_ort: settings.company?.ort||null, p_telefon: coState.tel||null
       });
-      if(!error && data){ GC_PROFILE = GC_PROFILE||{}; GC_PROFILE.customer_id = data; }
+      if(!error && data){ GC_PROFILE = GC_PROFILE||{}; GC_PROFILE.customer_id = data; settings.cid = data; saveSettings(); try{ updateBetriebBanner(); }catch(_){ } }
       else if(error){ console.warn('create_my_company:', error.message); }
     }catch(err){ console.warn('create_my_company exception:', err); }
   }
@@ -4624,24 +4677,35 @@ async function afterAuth(session){
   if(!session||!session.user) return;
   _settingsHydrated = false;   // bis DB-Settings geladen sind: NICHT zurückschreiben
   GC_USER = session.user;
-  // Profil (role + customer_id) laden; existiert via Trigger handle_new_user
+  // Profil (role + customer_id) laden; existiert via Trigger handle_new_user.
+  // WICHTIG: Netz-/Serverfehler (error gesetzt) vom echten „kein Profil" unterscheiden –
+  // ein transienter Fehler darf NICHT als „kein Betrieb" gewertet werden (sonst Mandanten-
+  // Cache-Wipe + jede Rolle als Admin). supabase-js wirft NICHT, sondern liefert {data,error}.
+  let _profErr = null;
   try{
-    const { data:prof } = await sbAuth.from('profiles').select('*').eq('id',GC_USER.id).maybeSingle();
-    GC_PROFILE = prof||null;
-  }catch(e){ GC_PROFILE=null; }
+    const { data:prof, error } = await sbAuth.from('profiles').select('*').eq('id',GC_USER.id).maybeSingle();
+    if(error) _profErr = error; else GC_PROFILE = prof||null;
+  }catch(e){ _profErr = e; }
+  if(_profErr){
+    console.warn('profiles:', _profErr.message || _profErr);
+    toast('Verbindung schwankt – dein Profil wird gleich neu geladen…');
+    setTimeout(()=>{ try{ retryLoadProfile(session); }catch(_){ } }, 3500);
+  }
   // Echte Rolle aus dem Profil übernehmen (kein Demo-Default mehr). Unbekannt/leer -> Inhaber.
   { const R=['admin','buero','buchhaltung','mitarbeiter','kolonnenfuehrer'];
     viewRole = (GC_PROFILE && R.includes(GC_PROFILE.role)) ? GC_PROFILE.role : 'admin'; }
   // MANDANTEN-ISOLATION: Gehört der lokale Cache zu einem ANDEREN Account (oder noch
-  // gar keinem)? Dann komplett leeren, bevor irgendetwas gerendert wird. So sieht ein
-  // frisch registrierter Betrieb NIE Logo/Titelbild/Daten eines Vorgängers.
-  { const _cid = (GC_PROFILE && GC_PROFILE.customer_id) || null;
+  // gar keinem)? Dann komplett leeren, bevor irgendetwas gerendert wird. NUR wenn das Profil
+  // ZUVERLÄSSIG geladen wurde – bei _profErr den letzten bekannten Stand behalten.
+  if(!_profErr){ const _cid = (GC_PROFILE && GC_PROFILE.customer_id) || null;
     if(settings.cid !== _cid){ gcResetTenantState(); settings.cid = _cid; saveSettings(); } }
   // Betriebseinstellungen (Rechte-Matrix, Urlaubsregeln, clockMode, Rüstzeit, Geo,
-  // Startmodul, Module, Rechnungs-/Bankdaten ...) SERVER-SEITIG laden. Danach erst
-  // freigeben, dass Änderungen wieder in die DB zurückgeschrieben werden.
-  await loadSettingsDb();
-  _settingsHydrated = true;
+  // Startmodul, Module, Rechnungs-/Bankdaten ...) SERVER-SEITIG laden. Rückschreiben ERST
+  // freigeben, wenn der Load ERFOLGREICH war – sonst würden Default-Settings bei einem
+  // transienten Fehler den Betriebs-Blob überschreiben (stiller Datenverlust).
+  const _hydOk = await loadSettingsDb();
+  _settingsHydrated = _hydOk;
+  if(!_hydOk){ setTimeout(async ()=>{ if(!_settingsHydrated){ const ok = await loadSettingsDb(); if(ok){ _settingsHydrated = true; try{ if(typeof rerenderCurrent==='function') rerenderCurrent(); }catch(_){ } } } }, 4000); }
   // Firmenstammdaten aus Supabase ziehen, falls schon ein Betrieb verknüpft ist
   if(GC_PROFILE && GC_PROFILE.customer_id){
     try{
@@ -6017,10 +6081,11 @@ async function finishOnboarding(){
         p_ort: settings.company.ort || null,
         p_telefon: settings.company.telefon || null
       });
-      if(!error && data){ GC_PROFILE = GC_PROFILE||{}; GC_PROFILE.customer_id = data; }
+      if(!error && data){ GC_PROFILE = GC_PROFILE||{}; GC_PROFILE.customer_id = data; settings.cid = data; saveSettings(); }
       else { linkFailed = true; console.warn('create_my_company:', error&&error.message); }
     }catch(e){ linkFailed = true; console.warn('create_my_company exception:', e); }
   }
+  try{ updateBetriebBanner(); }catch(_){ }   // nach erfolgreicher Verknüpfung roten Banner sofort entfernen
   // Stammdaten + White-Label-Branding in die App übernehmen
   applyBranding();
   closeSheet();
@@ -7442,7 +7507,7 @@ function renderConsentGate(){
         </label>`).join('')}
       <div class="consent-audit">
         <i data-lucide="shield-check"></i>
-        <span>Dokumentierter Nachweis: <strong>${settings.company?.name || 'Müller GaLaBau'}</strong> · ${settings.company?.email || 'georg@mueller-galabau.de'} · Version ${CONSENT_VERSION} · ${stamp}. Diese Bestätigung wird revisionssicher gespeichert.</span>
+        <span>Dokumentierter Nachweis: <strong>${escapeHtml(settings.company?.name || (GC_USER&&GC_USER.email) || 'Dein Betrieb')}</strong> · ${escapeHtml((GC_USER&&GC_USER.email) || settings.company?.email || '')} · Version ${CONSENT_VERSION} · ${stamp}. Diese Bestätigung wird revisionssicher gespeichert.</span>
       </div>
       <button class="btn full ${ready?'':'is-disabled'}" ${ready?'':'disabled'} onclick="acceptConsent()">
         <i data-lucide="lock-open"></i> ${ready ? 'Bestätigen &amp; Einrichtung starten' : 'Bitte alle Punkte bestätigen'}
@@ -7452,11 +7517,16 @@ function renderConsentGate(){
 }
 function acceptConsent(){
   if(!consentAllChecked()) return;
+  // Nachweis mit der ECHTEN eingeloggten Identität dokumentieren (kein Demo-Fallback -> sonst
+  // wäre der AVV-/DSGVO-Nachweis rechtlich wertlos). settings.consent wird über save_settings
+  // in betrieb_einstellungen (Supabase) persistiert, sobald ein Betrieb verknüpft ist.
   settings.consent = {
     version: CONSENT_VERSION,
     acceptedAt: new Date().toISOString(),
-    by: settings.company?.email || 'georg@mueller-galabau.de',
-    company: settings.company?.name || 'Müller GaLaBau',
+    by: (GC_USER && GC_USER.email) || settings.company?.email || '',
+    userId: (GC_USER && GC_USER.id) || null,
+    company: settings.company?.name || null,
+    customerId: (GC_PROFILE && GC_PROFILE.customer_id) || null,
     items: Object.assign({}, consentState),
   };
   saveSettings();
@@ -10773,12 +10843,16 @@ function betriebFehltWarn(){
   return true;
 }
 function updateBetriebBanner(){
-  const need = !!(GC_USER && _enteredApp && !(GC_PROFILE && GC_PROFILE.customer_id) && !(GC_PROFILE && GC_PROFILE.role === 'gc_admin'));
+  // Während das Consent-/Einrichtungs-Gate offen ist (Zahlung erfolgreich, Betrieb wird gerade
+  // verknüpft) NICHT warnen – sonst „Eingaben werden nicht gespeichert" im ersten Moment nach Kauf.
+  const gateOpen = (()=>{ const g=document.getElementById('gate'); return !!(g && !g.classList.contains('hidden')); })();
+  const need = !!(GC_USER && _enteredApp && !gateOpen && !(GC_PROFILE && GC_PROFILE.customer_id) && !(GC_PROFILE && GC_PROFILE.role === 'gc_admin'));
   let b = document.getElementById('noBizBanner');
   if(!need){ if(b) b.remove(); return; }
   if(b) return;
   b = document.createElement('div'); b.id = 'noBizBanner';
-  b.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:9999;background:#B91C1C;color:#fff;padding:11px 16px;font-size:14px;font-weight:600;display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap;box-shadow:0 -4px 16px rgba(0,0,0,.25)';
+  // z-index UNTER dem Consent-Gate (500), damit der Banner nie über einem Modal-Gate liegt.
+  b.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:480;background:#B91C1C;color:#fff;padding:11px 16px;font-size:14px;font-weight:600;display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap;box-shadow:0 -4px 16px rgba(0,0,0,.25)';
   b.innerHTML = '<span>⚠️ Dein Betrieb ist noch nicht verbunden – Eingaben werden aktuell NICHT gespeichert.</span><button onclick="retryLinkBetrieb()" style="background:#fff;color:#B91C1C;border:none;border-radius:8px;padding:7px 14px;font-weight:800;cursor:pointer">Jetzt verbinden</button>';
   document.body.appendChild(b);
 }
@@ -11309,7 +11383,7 @@ function bewNeuForJob(jobId){ return applicants.filter(a => a.jobId === jobId &&
    - Tier-abhängig: Smart-Kontingent -> Smart-Stelle, Premium -> Premium, Exzellenz -> Exzellenz.
      Der Betrieb hat genau EIN Produkt-Tier; jede Stelle läuft automatisch auf diesem Tier
      (man kann keine Premium-Stelle aus einem Smart-Kontingent schalten).
-   - Freischaltung zahlart-abhängig: Kreditkarte/PayPal/Lastschrift = automatisch bezahlt ->
+   - Freischaltung zahlart-abhängig: Kreditkarte/PayPal = automatisch bezahlt ->
      Kontingent sofort frei. Rechnung (nur Einmalkauf) = erst frei, wenn GC den Zahlungs-
      eingang manuell bestätigt (kontingent_frei=true).
    - Laufzeit: Einmalkauf = 3 Monate fix (techn. 2 Mon. + 30 Tage Garantie), egal welches Tier.
@@ -11330,9 +11404,19 @@ function kontingentPakete(){
   const aktive = jobs.filter(j=>j.status==='aktiv');
   const usedByTier = {};
   aktive.forEach(j=>{ const tr = j.tier || kp[0].produkt; usedByTier[tr]=(usedByTier[tr]||0)+1; });
-  return kp.map(k=>({ produkt:k.produkt, label: PRODUKT_LABEL[k.produkt] || (k.produkt.charAt(0).toUpperCase()+k.produkt.slice(1)),
-    anzahl:k.anzahl, used: Math.min(usedByTier[k.produkt]||0, k.anzahl),
-    frei:k.frei, bis:k.bis, expired: !!(k.bis && new Date(k.bis).getTime() < Date.now()) }));
+  // Nutzung eines Tiers über dessen Pakete VERTEILEN (Zeile für Zeile auffüllen), statt jede
+  // Zeile mit der vollen Tier-Nutzung zu clampen. Sonst zählt EINE aktive Smart-Stelle in
+  // JEDER Smart-Paketzeile als genutzt -> ein nachgekauftes zweites Smart-Paket erscheint
+  // sofort ausgeschöpft und die bezahlte Stelle lässt sich nicht veröffentlichen.
+  const remainByTier = Object.assign({}, usedByTier);
+  return kp.map(k=>{
+    const rem = remainByTier[k.produkt] || 0;
+    const used = Math.min(rem, k.anzahl);
+    remainByTier[k.produkt] = rem - used;
+    return { produkt:k.produkt, label: PRODUKT_LABEL[k.produkt] || (k.produkt.charAt(0).toUpperCase()+k.produkt.slice(1)),
+      anzahl:k.anzahl, used,
+      frei:k.frei, bis:k.bis, expired: !!(k.bis && new Date(k.bis).getTime() < Date.now()) };
+  });
 }
 // Freies Paket für die nächste Veröffentlichung (kleinstes zuerst: smart -> premium -> exzellenz)
 function pickFreeTier(){
@@ -11343,14 +11427,19 @@ function pickFreeTier(){
 function jobContingent(){
   const P = kontingentPakete();
   if(P){
-    const total = P.reduce((s,x)=>s+x.anzahl,0);
-    const used  = P.reduce((s,x)=>s+x.used,0);
-    const frei  = P.some(x=>x.frei);
-    const expired = P.every(x=>x.expired);
+    // Nur GÜLTIGE Pakete (freigeschaltet UND nicht abgelaufen) zählen fürs Gesamt-/Rest-Kontingent –
+    // ein abgelaufenes Einmal-Paket darf keine „freien" Slots mehr vortäuschen (sonst divergiert
+    // die Client-Anzeige vom DB-Trigger und man könnte über das gültige Kontingent hinaus schalten).
+    const valid = P.filter(x=>x.frei && !x.expired);
+    const total = valid.reduce((s,x)=>s+x.anzahl,0);
+    const used  = valid.reduce((s,x)=>s+x.used,0);
+    const free  = valid.reduce((s,x)=>s+Math.max(0,x.anzahl-x.used),0);
+    const frei  = valid.length>0;
+    const expired = P.length>0 && valid.length===0 && P.some(x=>x.expired);
     const bisArr = P.map(x=>x.bis).filter(Boolean).sort();
     const best = P[P.length-1];
     return { hasData:true, tier:best.produkt, tierLabel:best.label, kauftyp:(GC_CUSTOMER&&/abo/.test(GC_CUSTOMER.kauftyp||''))?'abo':'einmal',
-             term:'', total, used, free: Math.max(0,total-used), frei, expired, bis: bisArr[bisArr.length-1]||null };
+             term:'', total, used, free, frei, expired, bis: bisArr[bisArr.length-1]||null };
   }
   return _jobContingentLegacy();
 }
@@ -11382,7 +11471,7 @@ function canPublishJob(){
   // FAIL-CLOSED: Ohne Freischaltung NIE veröffentlichen. Das spiegelt nur den DB-Trigger
   // (enforce_stelle_kontingent) – die echte Sperre liegt auf der Datenbank, nicht hier.
   if(!k.frei)    return { ok:false, reason:'locked',
-    msg:'Dein Kontingent wird freigeschaltet, sobald deine Zahlung bei uns eingegangen ist. Bei Kreditkarte, PayPal oder Lastschrift passiert das automatisch – bei Kauf auf Rechnung, sobald wir deine Überweisung sehen.' };
+    msg:'Dein Kontingent wird freigeschaltet, sobald deine Zahlung bei uns eingegangen ist. Bei Kreditkarte oder PayPal passiert das automatisch – bei Kauf auf Rechnung, sobald wir deine Überweisung sehen.' };
   if(k.expired)  return { ok:false, reason:'expired',
     msg:`Die Laufzeit deines ${k.tierLabel?k.tierLabel+'-':''}Kontingents ist abgelaufen${k.bis?` (seit ${dDE(dISO(new Date(k.bis)))})`:''}. Bitte verlängere dein Paket, um wieder Stellen zu veröffentlichen.` };
   if(k.free<=0)  return { ok:false, reason:'exhausted',
@@ -11411,7 +11500,7 @@ function kontingentBannerHtml(){
   if(!k.frei){
     return `<div class="panel" style="display:flex;gap:12px;align-items:center;padding:14px 16px;margin-bottom:14px;border-color:#F0C36D;background:#FFF8EC;flex-wrap:wrap">
       <i data-lucide="clock" style="width:20px;height:20px;color:#A66400;flex:0 0 auto"></i>
-      <div style="font-size:13px;line-height:1.45;flex:1;min-width:220px"><b>${k.tierLabel?k.tierLabel+'-':''}Kontingent reserviert</b> – wird freigeschaltet, sobald deine Zahlung bei uns eingeht. Bei Kreditkarte/PayPal/Lastschrift automatisch, bei Rechnung nach Zahlungseingang.</div>
+      <div style="font-size:13px;line-height:1.45;flex:1;min-width:220px"><b>${k.tierLabel?k.tierLabel+'-':''}Kontingent reserviert</b> – wird freigeschaltet, sobald deine Zahlung bei uns eingeht. Bei Kreditkarte/PayPal automatisch, bei Rechnung nach Zahlungseingang.</div>
       <button class="mini-btn" onclick="refreshKontingent(true)"><i data-lucide="refresh-cw"></i> Zahlung jetzt prüfen</button>
     </div>`;
   }
@@ -11521,7 +11610,7 @@ function showKontingentBlock(gate){
   if(gate.reason === 'locked'){
     cpopShow({
       icon:'clock', iconClass:'warn', title:'Kontingent wird gerade freigeschaltet',
-      body:'Deine Stelle ist gespeichert. Sie geht <b>automatisch live</b>, sobald deine Zahlung bei uns eingegangen ist.<br><br>Bei <b>Kreditkarte, PayPal oder Lastschrift</b> passiert das in der Regel sofort – bei <b>Kauf auf Rechnung</b>, sobald wir deine Überweisung sehen.',
+      body:'Deine Stelle ist gespeichert. Sie geht <b>automatisch live</b>, sobald deine Zahlung bei uns eingegangen ist.<br><br>Bei <b>Kreditkarte oder PayPal</b> passiert das in der Regel sofort – bei <b>Kauf auf Rechnung</b>, sobald wir deine Überweisung sehen.',
       actions:[
         { label:'Zahlung jetzt prüfen', icon:'refresh-cw', onclick:'cpopClose();refreshKontingent(true)' },
         { label:'Zahlung & Rechnung ansehen', variant:'ghost', icon:'receipt', onclick:'cpopClose();openZahlungInfo()' },
@@ -12413,7 +12502,10 @@ async function persistBewerberStatus(localId, status){
     const r = await sbAuth.rpc('set_my_bewerber_status', { p_bewerber_id: a._uuid, p_status: status });
     if(r && r.error) throw r.error;
   }catch(e){
-    try{ await sbAuth.from('bewerber').update({status}).eq('id', a._uuid); }catch(_){}
+    // RPC-Fehler -> Fallback versuchen; scheitert AUCH der, NICHT still schlucken (sonst
+    // sieht der Nutzer die Statusänderung, die nach Reload wieder weg ist).
+    try{ const { error } = await sbAuth.from('bewerber').update({status}).eq('id', a._uuid); if(error) throw error; }
+    catch(e2){ toast('Status konnte nicht gespeichert werden: '+friendlyDbError(e2||e)); }
   }
 }
 async function persistBewerberJob(localId, jobId){
@@ -12424,7 +12516,8 @@ async function persistBewerberJob(localId, jobId){
     const r = await sbAuth.rpc('set_my_bewerber_job', { p_bewerber_id: a._uuid, p_job_id: jobId || null });
     if(r && r.error) throw r.error;
   }catch(e){
-    try{ await sbAuth.from('bewerber').update({stellenanzeige_id: jobId || null}).eq('id', a._uuid); }catch(_){}
+    try{ const { error } = await sbAuth.from('bewerber').update({stellenanzeige_id: jobId || null}).eq('id', a._uuid); if(error) throw error; }
+    catch(e2){ toast('Zuordnung konnte nicht gespeichert werden: '+friendlyDbError(e2||e)); }
   }
 }
 // Betrieb-PRIVATE Notizen (Vorstellungsgespräche + interne Kommentare) je Zuordnung

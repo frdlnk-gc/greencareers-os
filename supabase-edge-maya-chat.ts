@@ -25,9 +25,13 @@ const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY")!;
 const MODEL = "claude-sonnet-4-6";
 
 // --- CORS (Portal-Domains; "*" zur Not, aber lieber eng) ---
+// Beide Marken-Portale rufen Maya auf (Grey = Tiefbau, Green = GaLaBau) -> beide Origins
+// zulassen, sonst blockiert der Browser die GaLaBau-Anfrage (Fallback-Origin != Absender).
 const ALLOW_ORIGINS = [
   "https://strassen-tiefbau.green-careers.de",
-  "http://localhost:4338", // lokale Vorschau
+  "https://galabau.green-careers.de",
+  "http://localhost:4338", // lokale Vorschau Tiefbau
+  "http://localhost:4342", // lokale Vorschau GaLaBau
 ];
 function corsHeaders(origin: string | null) {
   const allow = origin && ALLOW_ORIGINS.includes(origin) ? origin : ALLOW_ORIGINS[0];
