@@ -1430,6 +1430,9 @@
   .field__err{ display:flex; align-items:center; gap:5px; color:#e11d48; font-size:11.5px; font-weight:600; margin-top:6px; }
   /* WICHTIG: sonst überschreibt display:flex das native [hidden] -> Fehler bliebe IMMER sichtbar. */
   .field__err[hidden]{ display:none; }
+  .reg-agb{ display:flex; gap:9px; align-items:flex-start; font-size:12.5px; line-height:1.45; color:var(--muted); margin:2px 0 12px; cursor:pointer; }
+  .reg-agb input{ margin-top:2px; width:16px; height:16px; flex:none; accent-color:var(--green); cursor:pointer; }
+  .reg-agb a{ color:var(--green-2); font-weight:600; text-decoration:underline; }
   .field__err i{ width:13px; height:13px; }
 
   /* ===== Mitarbeiter-App-Onboarding ===== */
@@ -3152,6 +3155,7 @@
       <div class="field"><label for="regEmail">E-Mail</label><input id="regEmail" type="email" placeholder="name@firma.de" autocomplete="email" /></div>
       <div class="field"><label for="regPassword">Passwort</label><div class="pw-wrap"><input id="regPassword" type="password" placeholder="Mind. 8 Zeichen" autocomplete="new-password" /><button type="button" class="pw-eye" aria-label="Passwort anzeigen" onclick="togglePw('regPassword',this)"><i data-lucide="eye"></i></button></div></div>
       <div class="field"><label for="regPassword2">Passwort wiederholen</label><div class="pw-wrap"><input id="regPassword2" type="password" placeholder="Passwort erneut" autocomplete="new-password" onkeydown="if(event.key==='Enter')doRegister()" /><button type="button" class="pw-eye" aria-label="Passwort anzeigen" onclick="togglePw('regPassword2',this)"><i data-lucide="eye"></i></button></div></div>
+      <label class="reg-agb" id="regAgbRow"><input type="checkbox" id="regAgb"><span>Ich akzeptiere die <a href="https://os.green-careers.de" onclick="event.preventDefault();viewDoc('agb')">AGB</a> und die <a href="https://os.green-careers.de" onclick="event.preventDefault();viewDoc('datenschutz')">Datenschutzerklärung</a>.</span></label>
       <div class="auth__err" style="display:none"></div>
       <button class="btn full" id="regBtn" onclick="doRegister()">Konto erstellen</button>
       <div class="auth__foot"><span>Schon registriert?</span><a onclick="showAuth('login')">Zum Login</a></div>
@@ -4495,11 +4499,14 @@ async function doRegister(){
   if(!email||!/.+@.+\..+/.test(email)){ authErr('Bitte eine gültige E-Mail eingeben.'); return; }
   if(pw.length<8){ authErr('Das Passwort muss mindestens 8 Zeichen haben.'); return; }
   if(pw!==pw2){ authErr('Die Passwörter stimmen nicht überein.'); return; }
+  if(!((document.getElementById('regAgb')||{}).checked)){ authErr('Bitte akzeptiere die AGB und Datenschutzerklärung.'); const r=document.getElementById('regAgbRow'); if(r) r.style.color='#C24141'; return; }
   if(!sbAuth){ authErr('Auth-Dienst nicht geladen. Seite neu laden.'); return; }
   authBusy(true,'regBtn');
   const { data, error } = await sbAuth.auth.signUp({
     email, password:pw,
-    options:{ data:{ name }, emailRedirectTo: window.location.origin + window.location.pathname + entryQueryString() }
+    // AGB-Bestaetigung am Registrierungszeitpunkt festhalten (Signup-Metadaten); afterAuth traegt
+    // daraus revisionssicher einen app_consents-Nachweis nach, sobald es eine Session gibt.
+    options:{ data:{ name, agb_accepted:true, agb_version:CONSENT_VERSION, agb_at:new Date().toISOString() }, emailRedirectTo: window.location.origin + window.location.pathname + entryQueryString() }
   });
   authBusy(false,'regBtn');
   if(error){
@@ -4776,6 +4783,11 @@ async function afterAuth(session){
         window.KONTINGENTE = kp || []; }catch(_){}
     }catch(e){}
   }
+  // Consents (AGB/AVV/Art.9) laden, damit die kontextuellen Gates wissen, was bereits bestätigt ist.
+  await loadConsents();
+  // AGB wurde bei der Registrierung akzeptiert (Signup-Metadaten), aber noch kein DB-Nachweis? -> nachtragen.
+  try{ const meta = (GC_USER && GC_USER.user_metadata) || {};
+    if(meta.agb_accepted && !hasConsent('agb')){ await recordConsent('agb'); } }catch(_){}
   // Eingeloggter Mitarbeiter/Büro: eigene Personalakte-Zeile laden + lokalen
   // Self-Datensatz synthetisieren, damit die Mitarbeiter-Ansicht (Zeit/Urlaub) funktioniert.
   if(GC_PROFILE && (GC_PROFILE.role==='mitarbeiter' || GC_PROFILE.role==='buero' || GC_PROFILE.role==='kolonnenfuehrer')){
@@ -4852,10 +4864,9 @@ function enterApp(){
   // (AVV/Einrichtung/Tour gehört dem Betriebsinhaber). Sie sind direkt drin.
   const isEmployee = GC_PROFILE && (GC_PROFILE.role==='mitarbeiter' || GC_PROFILE.role==='buero');
   if(isEmployee){ settings.onboarded = true; return; }
-  // Erstnutzung: 1) AVV/DSGVO  2) Einrichtung  3) Tour. Danach direkt ins Cockpit.
-  // AVV/DSGVO-Gate auch für vorab verknüpfte Accounts (Testkunden!) erzwingen, solange
-  // noch keine (aktuelle) Einwilligung vorliegt – sonst gibt es keinen Consent-Nachweis.
-  if(!settings.onboarded || !(GC_PROFILE&&GC_PROFILE.customer_id) || !settings.consent || settings.consent.version !== CONSENT_VERSION) openConsentGate();
+  // Erstnutzung: Einrichtung -> Tour. KEIN Upfront-Consent mehr (AGB bei Registrierung, AVV vor
+  // erstem Veroeffentlichen, Art.9 vor erster Abwesenheiten-Nutzung – jeweils kontextuell gegated).
+  if(!settings.onboarded || !(GC_PROFILE&&GC_PROFILE.customer_id)) maybeOnboard();
 }
 
 // Erkennt, ob die Seite gerade über einen Auth-Mail-Link (E-Mail-Bestätigung / Reset) geöffnet wurde.
@@ -7507,84 +7518,98 @@ function shade(hex, amt){ // amt negativ = dunkler
   r=Math.max(0,Math.min(255,r)); g=Math.max(0,Math.min(255,g)); b=Math.max(0,Math.min(255,b));
   return '#'+((1<<24)+(r<<16)+(g<<8)+b).toString(16).slice(1); }
 
-/* ===================== CONSENT-GATE (AVV / DSGVO Self-Checkout) ===================== */
-const CONSENT_ITEMS = [
-  {key:'avv', doc:'avv', label:'Auftragsverarbeitungsvertrag (AVV)',
-   sub:'Wir verarbeiten Daten nur in deinem Auftrag (Art. 28 DSGVO).', required:true},
-  {key:'datenschutz', doc:'datenschutz', label:'Datenschutz &amp; Gesundheitsdaten (Art. 9)',
-   sub:'Krank- und Urlaubsdaten bleiben in deinem System.', required:true},
-  {key:'agb', doc:'agb', label:'Allgemeine Geschäftsbedingungen',
-   sub:'Nutzungsbedingungen für GreenCareers OS.', required:true},
-  {key:'vollmacht', doc:null, label:'Ich bin berechtigt, dies für den Betrieb zu bestätigen',
-   sub:'Inhaber oder bevollmächtigt.', required:true},
-];
-let consentState = { avv:false, datenschutz:false, agb:false, vollmacht:false };
-
-function openConsentGate(){
-  // Wenn bereits in aktueller Version eingewilligt: Gate überspringen (im echten Produkt)
-  if(settings.consent && settings.consent.version === CONSENT_VERSION){ maybeOnboard(); return; }
-  consentState = { avv:false, datenschutz:false, agb:false, vollmacht:false };
-  const gate = document.getElementById('gate');
-  gate.classList.remove('hidden');
-  renderConsentGate();
+/* ===================== CONSENT (kontextuell, DB-getrackt in app_consents) =====================
+   Kein Upfront-Wall mehr. Jede Bestaetigung genau dann, wenn der naechste Schritt sie braucht:
+     • AGB   -> bei der Registrierung (Software-Nutzungsvertrag).
+     • AVV   -> vor dem ERSTEN Stellen-Veroeffentlichen (ab dann verarbeiten wir Bewerberdaten
+                im Auftrag, Art. 28 DSGVO). Enthaelt die Vollmacht-Bestaetigung.
+     • Art.9 -> vor der ERSTEN Nutzung von Abwesenheiten/Personalakte (Gesundheitsdaten).
+   record_consent() schreibt revisionssicher (wer/wann/Version) nach Supabase; ohne Haken bleibt
+   das jeweilige Feature gesperrt (Voraussetzung). */
+let GC_CONSENTS = {};   // { agb:true, avv:true, art9:true }
+async function loadConsents(){
+  GC_CONSENTS = {};
+  if(!(sbAuth && GC_USER)) return;
+  try{
+    const { data } = await sbAuth.rpc('my_consents');
+    (data||[]).forEach(r=>{ if(!r||!r.kind) return;
+      // AGB: jede Bestaetigung zaehlt (versionsunabhaengig). AVV/Art9: aktuelle Version.
+      if(r.kind==='agb' || r.version===CONSENT_VERSION) GC_CONSENTS[r.kind]=true; });
+  }catch(_){}
 }
-function consentAllChecked(){ return CONSENT_ITEMS.every(i => consentState[i.key]); }
-function toggleConsent(key){ consentState[key] = !consentState[key]; renderConsentGate(); }
-// Ein Häkchen bestätigt gebündelt alle Pflicht-Dokumente (jedes bleibt verlinkt + wird
-// einzeln in settings.consent.items protokolliert -> revisionssicher, aber dezente UX).
-function toggleConsentAll(){
-  const v = !consentAllChecked();
-  CONSENT_ITEMS.forEach(it => { consentState[it.key] = v; });
-  renderConsentGate();
+function hasConsent(kind){ return !!GC_CONSENTS[kind]; }
+async function recordConsent(kind){
+  if(!(sbAuth && GC_USER)) return false;
+  try{
+    const { error } = await sbAuth.rpc('record_consent', { p_kind:kind, p_version:CONSENT_VERSION, p_ua:(navigator.userAgent||'').slice(0,240) });
+    if(!error){ GC_CONSENTS[kind]=true; return true; }
+    console.warn('record_consent', error.message||error);
+  }catch(e){ console.warn('record_consent', e); }
+  return false;
 }
-function renderConsentGate(){
-  const card = document.getElementById('gateCard');
+const CONSENT_DEFS = {
+  avv: {
+    title: 'Kurz bestätigen: Bewerberdaten verarbeiten',
+    intro: 'Bevor deine Stelle online geht und Bewerbungen eingehen, brauchen wir einmalig den Auftragsverarbeitungsvertrag. Damit verarbeiten wir Bewerberdaten ausschließlich in deinem Auftrag (Art. 28 DSGVO).',
+    line: (docLink)=>`Ich schließe den ${docLink('avv','Auftragsverarbeitungsvertrag (AVV)')} mit der GreenCareers GmbH und bin berechtigt, das für meinen Betrieb zu bestätigen.`,
+    cta: 'Bestätigen &amp; veröffentlichen',
+  },
+  art9: {
+    title: 'Kurz bestätigen: Abwesenheiten & Gesundheitsdaten',
+    intro: 'Für Krankmeldungen und Abwesenheiten verarbeitest du besondere Kategorien personenbezogener Daten (Gesundheitsdaten, Art. 9 DSGVO). Bestätige das einmalig, dann ist der Bereich freigeschaltet.',
+    line: (docLink)=>`Ich verarbeite Gesundheitsdaten (z. B. Krankmeldungen) im Rahmen der ${docLink('datenschutz','Datenschutzvereinbarung (Art. 9)')} und bin dazu berechtigt.`,
+    cta: 'Bestätigen &amp; freischalten',
+  },
+};
+let _consentPending = null; let _consentChecked = false;
+// Ruft cb() nur, wenn die noetige Bestaetigung vorliegt. Sonst kompaktes Modal, nach Accept +
+// DB-Track -> cb(). Ohne verknuepften Betrieb kann nicht revisionssicher getrackt werden.
+function requireConsent(kind, cb){
+  if(hasConsent(kind)){ cb && cb(); return; }
+  if(!(sbAuth && GC_USER && GC_PROFILE && GC_PROFILE.customer_id)){
+    toast('Bitte zuerst den Betrieb einrichten – danach steht dieser Bereich bereit.'); return;
+  }
+  _consentPending = { kind, cb }; _consentChecked = false;
+  renderConsentModal(kind);
+}
+function renderConsentModal(kind){
+  const def = CONSENT_DEFS[kind]; if(!def) return;
+  const gate = document.getElementById('gate'); const card = document.getElementById('gateCard');
+  if(!gate || !card) return;
   const now = new Date();
   const stamp = now.toLocaleDateString('de-DE',{day:'2-digit',month:'long',year:'numeric'}) + ', ' + now.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}) + ' Uhr';
-  const ready = consentAllChecked();
+  const on = !!_consentChecked;
   const docLink = (doc,label) => `<a class="consent-inline" onclick="event.stopPropagation(); viewDoc('${doc}')">${label}</a>`;
   card.innerHTML = `
-    <div class="gate__top">
-      <span class="gate__paid"><i data-lucide="badge-check"></i> Zahlung erfolgreich</span>
-    </div>
-    <div class="gate__h">Kurz bestätigen – dann geht's los</div>
-    <div class="gate__sub">Damit wir Bewerberdaten in deinem Auftrag verarbeiten dürfen, brauchen wir einmalig deine Bestätigung. Danach richtest du deinen Betrieb ein.</div>
+    <div class="gate__top"><span class="gate__paid"><i data-lucide="shield-check"></i> Datenschutz</span></div>
+    <div class="gate__h">${def.title}</div>
+    <div class="gate__sub">${def.intro}</div>
     <div class="gate__body">
-      <label class="consent-row consent-row--slim ${ready?'on':''}" onclick="toggleConsentAll()">
-        <span class="consent-box">${ready?'<i data-lucide="check"></i>':''}</span>
-        <span class="consent-txt">
-          <span class="consent-line">Ich akzeptiere den ${docLink('avv','AVV')}, die ${docLink('datenschutz','Datenschutzvereinbarung (Art. 9)')} und die ${docLink('agb','AGB')} und bin berechtigt, das für den Betrieb zu bestätigen.</span>
-        </span>
+      <label class="consent-row consent-row--slim ${on?'on':''}" onclick="consentModalToggle()">
+        <span class="consent-box">${on?'<i data-lucide="check"></i>':''}</span>
+        <span class="consent-txt"><span class="consent-line">${def.line(docLink)}</span></span>
       </label>
-      <div class="consent-audit consent-audit--slim">
-        <i data-lucide="shield-check"></i>
-        <span>Nachweis: ${escapeHtml(settings.company?.name || (GC_USER&&GC_USER.email) || 'Dein Betrieb')} · Version ${CONSENT_VERSION} · ${stamp} · revisionssicher gespeichert.</span>
-      </div>
-      <button class="btn full ${ready?'':'is-disabled'}" ${ready?'':'disabled'} onclick="acceptConsent()">
-        <i data-lucide="arrow-right"></i> ${ready ? 'Bestätigen &amp; einrichten' : 'Bitte Häkchen setzen'}
-      </button>
+      <div class="consent-audit consent-audit--slim"><i data-lucide="shield-check"></i>
+        <span>Nachweis: ${escapeHtml((settings.company&&settings.company.name) || (GC_USER&&GC_USER.email) || 'Dein Betrieb')} · Version ${CONSENT_VERSION} · ${stamp} · revisionssicher in Supabase gespeichert.</span></div>
+      <button class="btn full ${on?'':'is-disabled'}" ${on?'':'disabled'} onclick="consentModalAccept()"><i data-lucide="arrow-right"></i> ${on?def.cta:'Bitte Häkchen setzen'}</button>
+      <button class="btn ghost full" style="margin-top:8px" onclick="consentModalCancel()">Abbrechen</button>
     </div>`;
-  icons();
+  gate.classList.remove('hidden'); icons();
 }
-function acceptConsent(){
-  if(!consentAllChecked()) return;
-  // Nachweis mit der ECHTEN eingeloggten Identität dokumentieren (kein Demo-Fallback -> sonst
-  // wäre der AVV-/DSGVO-Nachweis rechtlich wertlos). settings.consent wird über save_settings
-  // in betrieb_einstellungen (Supabase) persistiert, sobald ein Betrieb verknüpft ist.
-  settings.consent = {
-    version: CONSENT_VERSION,
-    acceptedAt: new Date().toISOString(),
-    by: (GC_USER && GC_USER.email) || settings.company?.email || '',
-    userId: (GC_USER && GC_USER.id) || null,
-    company: settings.company?.name || null,
-    customerId: (GC_PROFILE && GC_PROFILE.customer_id) || null,
-    items: Object.assign({}, consentState),
-  };
-  saveSettings();
-  document.getElementById('gate').classList.add('hidden');
-  toast('Einwilligung dokumentiert – Nachweis gespeichert');
-  setTimeout(maybeOnboard, 220);
+function consentModalToggle(){ _consentChecked = !_consentChecked; if(_consentPending) renderConsentModal(_consentPending.kind); }
+function consentModalCancel(){ _consentChecked=false; _consentPending=null; const g=document.getElementById('gate'); if(g) g.classList.add('hidden'); }
+async function consentModalAccept(){
+  if(!_consentChecked || !_consentPending) return;
+  const { kind, cb } = _consentPending;
+  const ok = await recordConsent(kind);
+  if(!ok){ toast('Bestätigung konnte nicht gespeichert werden – bitte erneut versuchen.'); return; }
+  _consentChecked=false; _consentPending=null;
+  const g=document.getElementById('gate'); if(g) g.classList.add('hidden');
+  toast('Bestätigung dokumentiert.');
+  if(cb) cb();
 }
+// Frueher der Upfront-Wall nach dem Kauf. Jetzt KEIN Upfront-Consent mehr -> direkt zur Einrichtung.
+function openConsentGate(){ maybeOnboard(); }
 // Vertrag lesen: Öffnet den Vertrag als eigene, voll lesbare Seite in einem NEUEN TAB.
 // Wichtig: Das Consent-Gate liegt auf z-index 500 – ein normales openSheet (220) öffnet
 // SICH HINTER dem Gate und ist nicht lesbar. Deshalb ein echter neuer Tab. Fällt der
@@ -10218,6 +10243,11 @@ function afterAbsChange(){ renderUrlaub(); refreshUrlaubBadge(); }
 function viewAu(id){ const url = auImages[id]; if(!url) return; openSheet(`<div class="sheet__head"><div><div class="sheet__title">AU-Bescheinigung</div><div class="sheet__sub">Foto vom Mitarbeiter hochgeladen</div></div><button class="iconbtn sheet__close" onclick="openAbsence(${id})" aria-label="Zurück"><i data-lucide="x"></i></button></div><div class="sheet__body"><img src="${url}" alt="AU" style="width:100%;border-radius:10px;border:1px solid var(--line)"></div>`); }
 
 function openAbsenceForm(preEmp, preFrom, preTo, preType, preNote, editId, preHalf){
+  // Art.9-Gate (Gesundheitsdaten wie Krankmeldungen): einmalig bestätigen, bevor Abwesenheiten
+  // genutzt werden. Nur verwaltende Rollen bestätigen für den Betrieb; Mitarbeiter beantragen nur.
+  if((viewRole==='admin'||viewRole==='buero') && !hasConsent('art9')){
+    requireConsent('art9', ()=>openAbsenceForm(preEmp, preFrom, preTo, preType, preNote, editId, preHalf)); return;
+  }
   afAuData = null;
   afEditId = editId || null;
   // Mitarbeiter-Ansicht: nur eigener Antrag möglich
@@ -11561,6 +11591,8 @@ function canPublishJob(){
 }
 // Self-Service-Veröffentlichung: Kontingent prüfen -> direkt live (status 'aktiv'), kein GC-Gate.
 async function publishStelle(id){
+  // AVV-Gate: erst mit gültigem AVV dürfen Bewerberdaten in unserem Auftrag verarbeitet werden.
+  if(!hasConsent('avv')){ requireConsent('avv', ()=>publishStelle(id)); return; }
   if(!window.KONTINGENTE){ try{ await refreshKontingent(false); }catch(_){} }
   const gate = canPublishJob();
   if(!gate.ok){ showKontingentBlock(gate); return; }
@@ -12520,6 +12552,8 @@ async function submitStelle(publish){
   const d = stelleDraft; if(!d) return;
   if(!d.titel.trim()){ toast('Bitte einen Stellentitel eingeben'); return; }
   if(!sbAuth || !(GC_PROFILE && GC_PROFILE.customer_id)){ toast('Betrieb nicht verbunden.'); return; }
+  // AVV-Gate: bevor die erste Stelle live geht (= Bewerberdaten-Verarbeitung startet), einmalig AVV bestätigen.
+  if(publish && !hasConsent('avv')){ requireConsent('avv', ()=>submitStelle(publish)); return; }
   // Branding-Gate: Veröffentlichen ohne Logo/Titelbild -> erst freundlich nachfragen (einmal).
   if(publish && !d._brandOk){
     const miss = brandingMissing();
