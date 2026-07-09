@@ -4035,11 +4035,8 @@ function renderCheckout(){
           </label>`).join('')}
       </div>
 
-      <label class="consent-row ${coState.agb?'on':''}" style="margin-top:12px" onclick="coToggleAgb()">
-        <span class="consent-box"><i data-lucide="check"></i></span>
-        <span class="consent-txt"><strong>AGB &amp; Datenschutz akzeptieren</strong><span>Ich stimme den AGB und der Datenschutzerklärung der GreenCareers GmbH zu.</span></span>
-      </label>
-
+      <!-- AGB werden EINMAL bei der Registrierung bestätigt (revisionssicher in app_consents) –
+           hier NICHT erneut abfragen (kein Doppel-Haken je Step). -->
       <div class="co-err" id="coErr"></div>
 
       <button class="btn full" style="margin-top:13px" id="coSubmitBtn" onclick="coSubmit()">
@@ -4054,7 +4051,7 @@ async function coSubmit(){
   coErr('');
   if(!coState.firma){ coErr('Bitte gib deinen Firmennamen ein.'); return; }
   if(!coState.name){ coErr('Bitte gib einen Ansprechpartner an.'); return; }
-  if(!coState.agb){ coErr('Bitte bestätige AGB und Datenschutz.'); return; }
+  // AGB-Bestätigung erfolgt EINMAL bei der Registrierung – hier kein erneuter Gate.
   const c = coCalc(); if(!c){ coErr('Paket nicht erkannt. Bitte erneut über das Portal starten.'); return; }
 
   const btn = document.getElementById('coSubmitBtn');
