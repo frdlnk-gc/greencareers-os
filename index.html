@@ -2660,6 +2660,11 @@
   .consent-view{ font-size:11.5px; font-weight:700; color:var(--green-2); margin-top:5px; display:inline-flex; align-items:center; gap:4px; }
   .consent-audit{ display:flex; align-items:flex-start; gap:8px; font-size:11.5px; color:var(--muted-2); background:var(--canvas); border-radius:10px; padding:10px 12px; margin:4px 0 14px; line-height:1.5; }
   .consent-audit .lucide{ width:14px; height:14px; flex-shrink:0; margin-top:1px; }
+  /* Kompaktes, dezentes Consent: eine Zeile statt vier Karten */
+  .consent-row--slim{ padding:11px 13px; align-items:center; margin-bottom:7px; }
+  .consent-line{ display:block; font-size:12.5px; line-height:1.5; color:var(--ink-2); }
+  .consent-inline{ color:var(--green-2); font-weight:700; text-decoration:underline; cursor:pointer; }
+  .consent-audit--slim{ font-size:11px; padding:8px 11px; margin:2px 0 12px; }
   .doc{ font-size:12.5px; line-height:1.6; color:var(--ink-2); }
   .doc h4{ font-size:13px; margin:14px 0 5px; color:var(--ink); }
   .doc p{ margin-bottom:9px; }
@@ -2685,6 +2690,7 @@
   @media(max-width:460px){ .co-field--row{ grid-template-columns:1fr; } }
   .co-lbl{ font-size:11.5px; font-weight:800; color:var(--muted-2); text-transform:uppercase; letter-spacing:.04em; margin:14px 0 8px; }
   .co-methods{ display:grid; grid-template-columns:1fr 1fr; gap:9px; margin-bottom:6px; }
+  .co-m--wide{ grid-column:1 / -1; }
   @media(max-width:460px){ .co-methods{ grid-template-columns:1fr; } }
   .co-m{ display:flex; align-items:center; gap:9px; padding:11px 12px; border:1px solid var(--line); border-radius:11px; cursor:pointer; font-size:13px; font-weight:600; transition:border-color .14s, background .14s; }
   .co-m:hover{ border-color:var(--line-2); }
@@ -3868,7 +3874,7 @@ async function pollContingentAfterPaid(){
     box.innerHTML = `<i data-lucide="${icon}" style="width:19px;height:19px;color:${color};flex:0 0 auto"${icon==='loader'?' class="co-spin"':''}></i><span>${html}</span>`;
     try{ icons(); }catch(_){}
   };
-  for(let i=0;i<10;i++){
+  for(let i=0;i<12;i++){
     // Freischaltung läuft über confirm-checkout (idempotent). Solange nicht frei, in jeder
     // Runde erneut anstoßen -> heilt einen fehlgeschlagenen ersten Versuch selbstständig.
     try{ await confirmCheckout(); }catch(_){ }
@@ -3878,18 +3884,22 @@ async function pollContingentAfterPaid(){
       const menge = Number.isFinite(k.total) ? `${k.total} ${k.total===1?'Stelle':'Stellen'}` : 'unbegrenzt Stellen';
       setBox('check-circle-2', 'var(--green)',
         `<b>Kontingent freigeschaltet:</b> Du kannst jetzt ${menge} veröffentlichen${k.tierLabel?` (${k.tierLabel})`:''}.`);
+      // Erfolgs-Button klarer: der Nutzer soll direkt spüren, dass es jetzt losgeht.
+      const btn = document.getElementById('coPrimaryBtn');
+      if(btn){ btn.innerHTML = `<i data-lucide="arrow-right"></i> Jetzt einrichten & Stelle anlegen`; try{ icons(); }catch(_){} }
       try{ if(typeof rerenderCurrent==='function') rerenderCurrent(); }catch(_){}
       return true;
     }
-    await new Promise(r=>setTimeout(r, 2500));
+    await new Promise(r=>setTimeout(r, 1500));
   }
-  // Timeout: NICHT „passiert automatisch" versprechen (es gibt keinen Webhook). Ehrlich +
-  // echter Wiederhol-Knopf, der confirm-checkout erneut auslöst (session_id ist gespeichert).
+  // Timeout (jetzt seltener Ausnahmefall): Zahlung ist sicher da, die Freischaltung läuft
+  // server-seitig automatisch weiter (Reconcile-Cron alle 15 Min). Beruhigend formulieren,
+  // KEIN alarmierender „hat länger gedauert" – nur ein dezenter, optionaler Sofort-Knopf.
   const box = document.getElementById('coContingentBox');
   if(box){
-    box.innerHTML = `<i data-lucide="clock" style="width:19px;height:19px;color:#A66400;flex:0 0 auto"></i>`+
-      `<span>Deine Zahlung ist bei uns – die Freischaltung hat gerade etwas länger gedauert. `+
-      `<button class="mini-btn" onclick="retryFreischaltung(this)"><i data-lucide=\"refresh-cw\"></i> Jetzt freischalten</button></span>`;
+    box.innerHTML = `<i data-lucide="check-circle-2" style="width:19px;height:19px;color:var(--green);flex:0 0 auto"></i>`+
+      `<span>Deine Zahlung ist bei uns – du kannst schon loslegen. Die Freischaltung schließt sich in Kürze automatisch ab. `+
+      `<button class="mini-btn" onclick="retryFreischaltung(this)"><i data-lucide=\"refresh-cw\"></i> Sofort prüfen</button></span>`;
     try{ icons(); }catch(_){}
   }
   return false;
@@ -4000,7 +4010,7 @@ function renderCheckout(){
       <div class="co-lbl">Zahlungsart</div>
       <div class="co-methods">
         ${coMethods(c).map(m=>`
-          <label class="co-m ${coState.method===m.key?'on':''}" onclick="coSetMethod('${m.key}')">
+          <label class="co-m ${coState.method===m.key?'on':''} ${m.key==='rechnung'?'co-m--wide':''}" onclick="coSetMethod('${m.key}')">
             ${m.logos ? `<span class="pmlogos">${m.logos}</span>` : `<i data-lucide="${m.icon}"></i>`}
             <span><span>${m.label}</span><small>${m.sub}</small></span>
           </label>`).join('')}
@@ -4127,7 +4137,7 @@ function coDone(isInvoice){
           <span>Kontingent wird freigeschaltet … das dauert nur wenige Sekunden.</span>
         </div>
         <p>Richte jetzt <b>${firma}</b> ein – dann kannst du direkt deine erste Stelle veröffentlichen.</p>
-        <button class="btn full" style="margin-top:16px" onclick="coFinish()"><i data-lucide="arrow-right"></i> Weiter zur Einrichtung</button>
+        <button id="coPrimaryBtn" class="btn full" style="margin-top:16px" onclick="coFinish()"><i data-lucide="arrow-right"></i> Weiter zur Einrichtung</button>
       </div>`;
   }
   icons();
@@ -5931,7 +5941,10 @@ function maybeOnboard(){
 }
 function skipOnboarding(){ settings.onboarded = true; applyTheme(settings.theme); saveSettings(); closeSheet(); setTimeout(startTour, 360); }
 function startOnboarding(){ obStep = 0; OB_DRAFT.company = Object.assign({}, settings.company); OB_DRAFT.ruestzeit = settings.ruestzeit; OB_DRAFT.geo = settings.geo; OB_DRAFT.clockMode = settings.clockMode || 'self'; OB_DRAFT.branchen = (settings.branchen||[]).slice(); OB_DRAFT.theme = settings.theme || 'galabau'; renderOnboard(); }
-const OB_STEPS = ['branche','betrieb','zeit','rechte','fertig'];
+// Schlankes Onboarding: nur was für den Stellenkauf zählt (Branche/Farbe + Betriebsdaten).
+// Zeiterfassung + Rechte-Matrix sind Team-Themen und bewusst NACHGELAGERT – sie erscheinen
+// erst, wenn der Inhaber das Team-/Zeit-Modul öffnet (Defaults gelten bis dahin).
+const OB_STEPS = ['branche','betrieb','fertig'];
 function renderOnboard(){
   const step = OB_STEPS[obStep];
   const dots = OB_STEPS.map((_,i) => `<span class="obdot ${i===obStep?'on':''} ${i<obStep?'done':''}"></span>`).join('');
@@ -5939,7 +5952,7 @@ function renderOnboard(){
   if(step === 'branche'){
     const primary = OB_DRAFT.branchen[0];
     body = `
-      <div class="obhead"><span class="obnum">1 / 4</span><h3>In welcher Branche bist du?</h3><p>Mehrfachauswahl möglich – such alles aus, was auf deinen Betrieb zutrifft. Die <strong>erste Auswahl</strong> bestimmt dein Farbschema.</p></div>
+      <div class="obhead"><span class="obnum">1 / 2</span><h3>In welcher Branche bist du?</h3><p>Mehrfachauswahl möglich – such alles aus, was auf deinen Betrieb zutrifft. Die <strong>erste Auswahl</strong> bestimmt dein Farbschema.</p></div>
       <div class="branchewrap">
         ${BRANCHEN_CATALOG.map(fam => `
           <div class="branchefam">
@@ -5960,7 +5973,7 @@ function renderOnboard(){
     const _logo = OB_DRAFT.company.logo || '';
     const _col = OB_DRAFT.company.color || '';
     body = `
-      <div class="obhead"><span class="obnum">2 / 4</span><h3>Dein Betrieb</h3><p>Name, Logo &amp; Farbe – so wird die Software <strong>deine</strong>.</p></div>
+      <div class="obhead"><span class="obnum">2 / 2</span><h3>Dein Betrieb</h3><p>Name, Logo &amp; Farbe – so wird die Software <strong>deine</strong>.</p></div>
       <div class="ob-osprev"><span class="ob-osprev__lbl">So heißt dein Cockpit:</span><span class="ob-osprev__name" id="obOsPreview">${escapeHtml(_osBase)} OS</span></div>
       <div class="field"><label>Firmenname</label><input id="obName" oninput="obNamePreview()" value="${OB_DRAFT.company.name.replace(/"/g,'&quot;')}"></div>
       <div class="field"><label>Inhaber</label><input id="obOwner" value="${OB_DRAFT.company.owner.replace(/"/g,'&quot;')}"></div>
@@ -7493,33 +7506,38 @@ function openConsentGate(){
 }
 function consentAllChecked(){ return CONSENT_ITEMS.every(i => consentState[i.key]); }
 function toggleConsent(key){ consentState[key] = !consentState[key]; renderConsentGate(); }
+// Ein Häkchen bestätigt gebündelt alle Pflicht-Dokumente (jedes bleibt verlinkt + wird
+// einzeln in settings.consent.items protokolliert -> revisionssicher, aber dezente UX).
+function toggleConsentAll(){
+  const v = !consentAllChecked();
+  CONSENT_ITEMS.forEach(it => { consentState[it.key] = v; });
+  renderConsentGate();
+}
 function renderConsentGate(){
   const card = document.getElementById('gateCard');
   const now = new Date();
   const stamp = now.toLocaleDateString('de-DE',{day:'2-digit',month:'long',year:'numeric'}) + ', ' + now.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}) + ' Uhr';
   const ready = consentAllChecked();
+  const docLink = (doc,label) => `<a class="consent-inline" onclick="event.stopPropagation(); viewDoc('${doc}')">${label}</a>`;
   card.innerHTML = `
     <div class="gate__top">
-      <span class="gate__paid"><i data-lucide="badge-check"></i> Zahlung erfolgreich · Tarif „Betrieb" aktiv</span>
+      <span class="gate__paid"><i data-lucide="badge-check"></i> Zahlung erfolgreich</span>
     </div>
-    <div class="gate__h">Nur noch ein Schritt: Einrichtung freischalten</div>
-    <div class="gate__sub">Fast fertig! Bestätige kurz diese Punkte, dann ist dein System startklar.</div>
+    <div class="gate__h">Kurz bestätigen – dann geht's los</div>
+    <div class="gate__sub">Damit wir Bewerberdaten in deinem Auftrag verarbeiten dürfen, brauchen wir einmalig deine Bestätigung. Danach richtest du deinen Betrieb ein.</div>
     <div class="gate__body">
-      ${CONSENT_ITEMS.map(it => `
-        <label class="consent-row ${consentState[it.key]?'on':''}" onclick="toggleConsent('${it.key}')">
-          <span class="consent-box">${consentState[it.key]?'<i data-lucide="check"></i>':''}</span>
-          <span class="consent-txt">
-            <strong>${it.label}</strong>
-            <span>${it.sub}</span>
-            ${it.doc ? `<a class="consent-view" onclick="event.stopPropagation(); viewDoc('${it.doc}')"><i data-lucide="file-text"></i> Vertrag lesen</a>` : ''}
-          </span>
-        </label>`).join('')}
-      <div class="consent-audit">
+      <label class="consent-row consent-row--slim ${ready?'on':''}" onclick="toggleConsentAll()">
+        <span class="consent-box">${ready?'<i data-lucide="check"></i>':''}</span>
+        <span class="consent-txt">
+          <span class="consent-line">Ich akzeptiere den ${docLink('avv','AVV')}, die ${docLink('datenschutz','Datenschutzvereinbarung (Art. 9)')} und die ${docLink('agb','AGB')} und bin berechtigt, das für den Betrieb zu bestätigen.</span>
+        </span>
+      </label>
+      <div class="consent-audit consent-audit--slim">
         <i data-lucide="shield-check"></i>
-        <span>Dokumentierter Nachweis: <strong>${escapeHtml(settings.company?.name || (GC_USER&&GC_USER.email) || 'Dein Betrieb')}</strong> · ${escapeHtml((GC_USER&&GC_USER.email) || settings.company?.email || '')} · Version ${CONSENT_VERSION} · ${stamp}. Diese Bestätigung wird revisionssicher gespeichert.</span>
+        <span>Nachweis: ${escapeHtml(settings.company?.name || (GC_USER&&GC_USER.email) || 'Dein Betrieb')} · Version ${CONSENT_VERSION} · ${stamp} · revisionssicher gespeichert.</span>
       </div>
       <button class="btn full ${ready?'':'is-disabled'}" ${ready?'':'disabled'} onclick="acceptConsent()">
-        <i data-lucide="lock-open"></i> ${ready ? 'Bestätigen &amp; Einrichtung starten' : 'Bitte alle Punkte bestätigen'}
+        <i data-lucide="arrow-right"></i> ${ready ? 'Bestätigen &amp; einrichten' : 'Bitte Häkchen setzen'}
       </button>
     </div>`;
   icons();
@@ -10851,6 +10869,7 @@ function betriebFehltWarn(){
   updateBetriebBanner();
   return true;
 }
+let _autoLinkAttempted = false;
 function updateBetriebBanner(){
   // Während das Consent-/Einrichtungs-Gate offen ist (Zahlung erfolgreich, Betrieb wird gerade
   // verknüpft) NICHT warnen – sonst „Eingaben werden nicht gespeichert" im ersten Moment nach Kauf.
@@ -10858,11 +10877,27 @@ function updateBetriebBanner(){
   const need = !!(GC_USER && _enteredApp && !gateOpen && !(GC_PROFILE && GC_PROFILE.customer_id) && !(GC_PROFILE && GC_PROFILE.role === 'gc_admin'));
   let b = document.getElementById('noBizBanner');
   if(!need){ if(b) b.remove(); return; }
+  // Bevor überhaupt gewarnt wird: EINMAL still versuchen, den Betrieb zu verbinden (heilt den
+  // kurzen Übergang nach Kauf, ohne dass der Nutzer klicken muss). create_my_company ist idempotent.
+  if(!_autoLinkAttempted && sbAuth && GC_USER && settings.company && settings.company.name){
+    _autoLinkAttempted = true;
+    (async()=>{
+      try{
+        const { data, error } = await sbAuth.rpc('create_my_company', {
+          p_name: settings.company.name, p_branchen: settings.branchen||[], p_theme: settings.theme||'galabau',
+          p_ort:(settings.company&&settings.company.ort)||null, p_telefon:(settings.company&&settings.company.telefon)||null });
+        if(!error && data){ GC_PROFILE = GC_PROFILE||{}; GC_PROFILE.customer_id = data; updateBetriebBanner(); try{ loadPortalData(); }catch(_){} }
+      }catch(_){}
+    })();
+    return; // Banner in dieser Runde noch nicht zeigen – erst das stille Verbinden abwarten.
+  }
   if(b) return;
   b = document.createElement('div'); b.id = 'noBizBanner';
   // z-index UNTER dem Consent-Gate (500), damit der Banner nie über einem Modal-Gate liegt.
-  b.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:480;background:#B91C1C;color:#fff;padding:11px 16px;font-size:14px;font-weight:600;display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap;box-shadow:0 -4px 16px rgba(0,0,0,.25)';
-  b.innerHTML = '<span>⚠️ Dein Betrieb ist noch nicht verbunden – Eingaben werden aktuell NICHT gespeichert.</span><button onclick="retryLinkBetrieb()" style="background:#fff;color:#B91C1C;border:none;border-radius:8px;padding:7px 14px;font-weight:800;cursor:pointer">Jetzt verbinden</button>';
+  // Ruhiger Amber-Ton statt Alarm-Rot: seit dem Auto-Connect beim Kauf ist das nur noch ein
+  // seltener Sicherheitsnetz-Hinweis, kein Fehlerzustand.
+  b.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:480;background:#B45309;color:#fff;padding:10px 16px;font-size:13px;font-weight:600;display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap;box-shadow:0 -3px 14px rgba(0,0,0,.16)';
+  b.innerHTML = '<span>Dein Betrieb wird noch verbunden – gleich fertig.</span><button onclick="retryLinkBetrieb()" style="background:#fff;color:#B45309;border:none;border-radius:8px;padding:6px 13px;font-weight:800;cursor:pointer">Jetzt verbinden</button>';
   document.body.appendChild(b);
 }
 // Selbstheilung: Betrieb nachträglich anlegen/verknüpfen (create_my_company ist idempotent
