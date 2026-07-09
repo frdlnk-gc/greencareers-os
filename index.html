@@ -523,7 +523,7 @@
   .stellen-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:14px; }
   .stelle-card{ background:#fff; border:1px solid var(--line); border-radius:12px; padding:0; display:flex; flex-direction:column; gap:0; box-shadow:0 1px 2px rgba(20,25,29,.04); }
   .stelle-card__in{ padding:28px 16px 14px; display:flex; flex-direction:column; gap:12px; }
-  .stelle-cover{ position:relative; height:92px; border-radius:12px 12px 0 0; background:linear-gradient(135deg,var(--green),var(--green-2)); background-size:cover; background-position:center; }
+  .stelle-cover{ position:relative; height:132px; border-radius:12px 12px 0 0; background:linear-gradient(135deg,var(--green),var(--green-2)); background-size:cover; background-position:center; }
   .stelle-cover__logo{ position:absolute; left:14px; bottom:-18px; width:52px; height:52px; border-radius:12px; background:#fff; border:1px solid var(--line); box-shadow:0 2px 7px rgba(20,25,29,.16); display:flex; align-items:center; justify-content:center; overflow:hidden; }
   .stelle-cover__logo img{ width:100%; height:100%; object-fit:contain; }
   .stelle-cover__logo span{ font-weight:800; color:var(--green-2); font-size:20px; }
@@ -1428,6 +1428,8 @@
   .field--err input, .field--err select, .field--err textarea{ border-color:#e11d48 !important; background:#fff5f6 !important; }
   .field--err input:focus, .field--err select:focus, .field--err textarea:focus{ box-shadow:0 0 0 3px rgba(225,29,72,.15) !important; }
   .field__err{ display:flex; align-items:center; gap:5px; color:#e11d48; font-size:11.5px; font-weight:600; margin-top:6px; }
+  /* WICHTIG: sonst überschreibt display:flex das native [hidden] -> Fehler bliebe IMMER sichtbar. */
+  .field__err[hidden]{ display:none; }
   .field__err i{ width:13px; height:13px; }
 
   /* ===== Mitarbeiter-App-Onboarding ===== */
@@ -1960,8 +1962,8 @@
   .ob-osprev__lbl{ font-size:12px; font-weight:600; color:var(--green-3); }
   .ob-osprev__name{ font-size:17px; font-weight:800; color:var(--green-2); letter-spacing:-.01em; }
   .ob-logo{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
-  .ob-logo__prev{ width:46px; height:46px; border-radius:11px; border:1px solid var(--line); background:var(--canvas); display:grid; place-items:center; overflow:hidden; flex-shrink:0; }
-  .ob-logo__prev img{ width:100%; height:100%; object-fit:cover; }
+  .ob-logo__prev{ width:46px; height:46px; border-radius:11px; border:1px solid var(--line); background:#fff; display:grid; place-items:center; overflow:hidden; flex-shrink:0; }
+  .ob-logo__prev img{ width:100%; height:100%; object-fit:contain; padding:4px; box-sizing:border-box; }
   .ob-logo__prev .lucide{ width:20px; height:20px; color:var(--muted); }
   .ob-color{ display:flex; align-items:center; gap:11px; flex-wrap:wrap; }
   .ob-color input[type=color]{ width:46px; height:46px; padding:0; border:1px solid var(--line); border-radius:11px; background:none; cursor:pointer; }
@@ -2703,8 +2705,9 @@
   .co-err{ display:none; font-size:12px; font-weight:600; color:#DC2626; background:#FEF2F2; border:1px solid #FECACA; border-radius:9px; padding:9px 11px; margin:6px 0 0; }
   .co-err.show{ display:block; }
   .co-skip{ display:block; text-align:center; font-size:11.5px; font-weight:600; color:var(--muted); margin-top:11px; cursor:pointer; }
-  .co-check{ width:64px; height:64px; border-radius:999px; background:var(--mint); display:grid; place-items:center; margin:6px auto 14px; animation:coPop .4s cubic-bezier(.2,.8,.3,1.3); }
-  .co-check .lucide{ width:34px; height:34px; color:var(--green); }
+  /* Erfolg = IMMER Grün (Signalfarbe), auch im Grey/Orange-Theme – Haken muss „geklappt" sagen. */
+  .co-check{ width:64px; height:64px; border-radius:999px; background:#E7F6EC; display:grid; place-items:center; margin:6px auto 14px; animation:coPop .4s cubic-bezier(.2,.8,.3,1.3); }
+  .co-check .lucide{ width:34px; height:34px; color:#16A34A; }
   @keyframes coPop{ 0%{ transform:scale(.4); opacity:0; } 100%{ transform:scale(1); opacity:1; } }
   .co-done{ text-align:center; }
   .co-done h3{ font-size:19px; font-weight:800; letter-spacing:-.01em; margin:0 0 7px; }
@@ -3578,6 +3581,8 @@ function settingsForDb(){
   const s = JSON.parse(JSON.stringify(settings));
   delete s.portal;      // customers ist die Wahrheit fürs öffentliche Profil
   delete s.geoConsent;  // geo_consent-Tabelle ist autoritativ (pro Person, auch Mitarbeiter-Schreibrecht)
+  delete s._uid;        // reine Client-Cache-Owner-Markierung – gehört nicht in den DB-Blob
+  delete s._brandDirty; // reines Client-Sync-Flag
   s._stages    = stages;                                            // Bewerber-Pipeline-Spalten (pro Betrieb einstellbar)
   s._templates = (typeof TEMPLATES !== 'undefined') ? TEMPLATES : undefined;  // WhatsApp/E-Mail-Vorlagen
   return s;
@@ -3647,7 +3652,7 @@ async function retryLoadProfile(session){
     try{ if(typeof rerenderCurrent==='function') rerenderCurrent(); }catch(_){ }
   }catch(_){ }
 }
-function saveSettings(){ try{ localStorage.setItem('gcos_settings_v2', JSON.stringify(settings)); }catch(e){} persistSettingsDb(); }
+function saveSettings(){ try{ if(typeof GC_USER!=='undefined' && GC_USER && GC_USER.id) settings._uid = GC_USER.id; localStorage.setItem('gcos_settings_v2', JSON.stringify(settings)); }catch(e){} persistSettingsDb(); }
 
 /* ===================== MANDANTEN-ISOLATION =====================
    Alle account-gebundenen Local-Caches leeren. Verhindert, dass Daten eines
@@ -3882,7 +3887,7 @@ async function pollContingentAfterPaid(){
     if(c && c.kontingent_frei === true && (c.produkt || c.stellen_kontingent != null)){
       const k = jobContingent();
       const menge = Number.isFinite(k.total) ? `${k.total} ${k.total===1?'Stelle':'Stellen'}` : 'unbegrenzt Stellen';
-      setBox('check-circle-2', 'var(--green)',
+      setBox('check-circle-2', '#16A34A',
         `<b>Kontingent freigeschaltet:</b> Du kannst jetzt ${menge} veröffentlichen${k.tierLabel?` (${k.tierLabel})`:''}.`);
       // Erfolgs-Button klarer: der Nutzer soll direkt spüren, dass es jetzt losgeht.
       const btn = document.getElementById('coPrimaryBtn');
@@ -3897,7 +3902,7 @@ async function pollContingentAfterPaid(){
   // KEIN alarmierender „hat länger gedauert" – nur ein dezenter, optionaler Sofort-Knopf.
   const box = document.getElementById('coContingentBox');
   if(box){
-    box.innerHTML = `<i data-lucide="check-circle-2" style="width:19px;height:19px;color:var(--green);flex:0 0 auto"></i>`+
+    box.innerHTML = `<i data-lucide="check-circle-2" style="width:19px;height:19px;color:#16A34A;flex:0 0 auto"></i>`+
       `<span>Deine Zahlung ist bei uns – du kannst schon loslegen. Die Freischaltung schließt sich in Kürze automatisch ab. `+
       `<button class="mini-btn" onclick="retryFreischaltung(this)"><i data-lucide=\"refresh-cw\"></i> Sofort prüfen</button></span>`;
     try{ icons(); }catch(_){}
@@ -3912,7 +3917,7 @@ async function retryFreischaltung(btn){
   const k = jobContingent();
   const box = document.getElementById('coContingentBox');
   if(k.frei && !k.expired){
-    if(box){ box.innerHTML = `<i data-lucide="check-circle-2" style="width:19px;height:19px;color:var(--green)"></i><span><b>Kontingent freigeschaltet</b> – du kannst jetzt veröffentlichen.</span>`; try{icons();}catch(_){ } }
+    if(box){ box.innerHTML = `<i data-lucide="check-circle-2" style="width:19px;height:19px;color:#16A34A"></i><span><b>Kontingent freigeschaltet</b> – du kannst jetzt veröffentlichen.</span>`; try{icons();}catch(_){ } }
     try{ if(typeof rerenderCurrent==='function') rerenderCurrent(); }catch(_){ }
   } else {
     if(box){ box.innerHTML = `<i data-lucide="clock" style="width:19px;height:19px;color:#A66400"></i><span>Noch nicht verbucht. Falls es gleich nicht erscheint, melde dich kurz – wir schalten manuell frei. <button class="mini-btn" onclick="retryFreischaltung(this)"><i data-lucide="refresh-cw"></i> Nochmal</button></span>`; try{icons();}catch(_){ } }
@@ -4132,8 +4137,8 @@ function coDone(isInvoice){
         <div class="co-check"><i data-lucide="check"></i></div>
         <h3>Das hat geklappt!</h3>
         <p>Deine Zahlung ist eingegangen. Wir schalten dein Kontingent jetzt frei.</p>
-        <div id="coContingentBox" class="co-cont-box" style="margin:14px 0;padding:13px 15px;border:1px solid var(--line);border-radius:12px;display:flex;gap:11px;align-items:center;font-size:13px;line-height:1.45;background:var(--soft-green)">
-          <i data-lucide="loader" style="width:19px;height:19px;color:var(--green);flex:0 0 auto" class="co-spin"></i>
+        <div id="coContingentBox" class="co-cont-box" style="margin:14px 0;padding:13px 15px;border:1px solid #CDEBD8;border-radius:12px;display:flex;gap:11px;align-items:center;font-size:13px;line-height:1.45;background:#E7F6EC">
+          <i data-lucide="loader" style="width:19px;height:19px;color:#16A34A;flex:0 0 auto" class="co-spin"></i>
           <span>Kontingent wird freigeschaltet … das dauert nur wenige Sekunden.</span>
         </div>
         <p>Richte jetzt <b>${firma}</b> ein – dann kannst du direkt deine erste Stelle veröffentlichen.</p>
@@ -4708,7 +4713,12 @@ async function afterAuth(session){
   // gar keinem)? Dann komplett leeren, bevor irgendetwas gerendert wird. NUR wenn das Profil
   // ZUVERLÄSSIG geladen wurde – bei _profErr den letzten bekannten Stand behalten.
   if(!_profErr){ const _cid = (GC_PROFILE && GC_PROFILE.customer_id) || null;
-    if(settings.cid !== _cid){ gcResetTenantState(); settings.cid = _cid; saveSettings(); } }
+    // Fremder Cache = ANDERER User (auch ohne Betrieb erkennbar) ODER anderer Betrieb -> hart leeren.
+    // Der User-ID-Check fängt den Fall ab, in dem ein alter Account nie verbunden wurde (cid blieb
+    // null) und sein Logo/Branding sonst in einen neuen Account (cid ebenfalls kurz null) durchblutet.
+    const _foreignUser = !!(settings._uid && settings._uid !== GC_USER.id);
+    if(_foreignUser || settings.cid !== _cid){ gcResetTenantState(); settings.cid = _cid; }
+    settings._uid = GC_USER.id; saveSettings(); }
   // Betriebseinstellungen (Rechte-Matrix, Urlaubsregeln, clockMode, Rüstzeit, Geo,
   // Startmodul, Module, Rechnungs-/Bankdaten ...) SERVER-SEITIG laden. Rückschreiben ERST
   // freigeben, wenn der Load ERFOLGREICH war – sonst würden Default-Settings bei einem
@@ -4727,9 +4737,16 @@ async function afterAuth(session){
         // übernehmen und gleich nach dem Boot in customers hochschieben. Sonst würde
         // das autoritative DB-NULL die lokalen Bilder unwiederbringlich löschen.
         { let _heal = false;
-          const _lLogo  = settings.company && settings.company.logo;
-          const _lTitel = settings.portal  && settings.portal.titelbild;
-          const _lBilder = (settings.portal && Array.isArray(settings.portal.bilder)) ? settings.portal.bilder : [];
+          // NUR heilen, wenn der lokale Cache BEWIESEN diesem User gehört – sonst würde ein
+          // Branding-Rest aus einem anderen Account (z. B. nie verbundener Vorgänger) in die DB
+          // dieses Kunden geschrieben. Fremd -> gar nicht anfassen (kein Cross-Tenant-Leak).
+          // Heilen NUR wenn (a) der Cache diesem User gehört UND (b) ein Branding-Write zuvor
+          // wirklich fehlschlug (_brandDirty). Ein bloß geerbter localStorage-Rest hat kein
+          // _brandDirty -> wird NIE in die DB geschrieben. DB bleibt autoritativ.
+          const _own    = !!(settings._brandDirty && settings._uid && GC_USER && settings._uid === GC_USER.id);
+          const _lLogo  = _own && settings.company && settings.company.logo;
+          const _lTitel = _own && settings.portal  && settings.portal.titelbild;
+          const _lBilder = (_own && settings.portal && Array.isArray(settings.portal.bilder)) ? settings.portal.bilder : [];
           if(!cust.logo_url  && _lLogo){  cust.logo_url  = _lLogo;  _heal = true; }
           if(!cust.titelbild && _lTitel){ cust.titelbild = _lTitel; _heal = true; }
           if(!(Array.isArray(cust.unternehmensbilder) && cust.unternehmensbilder.length) && _lBilder.length){ cust.unternehmensbilder = _lBilder.slice(); _heal = true; }
@@ -5614,7 +5631,7 @@ function applyBranding(){
   const logo = gcAuthed() ? (co.logo || '') : '';
   document.querySelectorAll('#sideBrandmark, .auth__brand .brandmark').forEach(mark=>{
     if(!mark) return;
-    if(logo){ mark.innerHTML = `<img src="${logo}" alt="Logo" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">`; mark.style.background='transparent'; }
+    if(logo){ mark.innerHTML = `<img src="${logo}" alt="Logo" style="width:100%;height:100%;object-fit:contain;padding:3px;box-sizing:border-box;border-radius:inherit">`; mark.style.background='#fff'; }
     else { mark.innerHTML = '<i data-lucide="leaf"></i>'; mark.style.background=''; }
   });
   applyBrandColor();
@@ -5883,6 +5900,7 @@ async function savePortalProfile(){
   // Lokal ist alles schon gespeichert (localStorage). Jetzt an die DB (customers) pushen,
   // damit die Portal-Firmenseite die Daten zeigt. Fail-soft, wenn nicht eingeloggt / RPC fehlt.
   if(!(sbAuth && GC_USER && GC_PROFILE && GC_PROFILE.customer_id)){
+    settings._brandDirty = true; saveSettings();   // noch nicht synchronisiert -> beim nächsten Boot heilen
     toast('Lokal gespeichert. Live ans Portal: nach dem Einloggen mit verknüpftem Betrieb.');
     return;
   }
@@ -5902,9 +5920,11 @@ async function savePortalProfile(){
     });
     if(error) throw error;
     if(GC_CUSTOMER){ GC_CUSTOMER.titelbild=pp.titelbild; GC_CUSTOMER.ueber_uns=pp.ueberUns; GC_CUSTOMER.unternehmensbilder=pp.bilder; GC_CUSTOMER.logo_url=settings.company.logo; }
+    settings._brandDirty = false; saveSettings();   // erfolgreich synchronisiert -> DB ist autoritativ, keine Heilung nötig
     toast('Unternehmensprofil ist jetzt live im Portal.');
   }catch(e){
     console.warn('savePortalProfile', e);
+    settings._brandDirty = true; saveSettings();     // Write fehlgeschlagen -> beim nächsten Boot aus lokalem Cache heilen
     const miss = (e && (e.code==='PGRST202' || /update_my_company_profile/.test(e.message||'')));
     toast(miss ? 'Lokal gespeichert. (Portal-Sync wird nach DB-Update aktiv.)' : 'Konnte nicht ans Portal senden – lokal gespeichert.');
   }finally{
@@ -5915,7 +5935,11 @@ async function savePortalProfile(){
 function maybeOnboard(){
   // Schon eingerichtet? Dann den Assistenten NIE wieder zeigen – kein Nag bei jedem Login.
   // (Der Welcome-/Assistent-Dialog ist eine Einmal-Sache; danach geht der Nutzer direkt ins Cockpit.)
-  if(settings.onboarded){ applyRole(); return; }
+  if(settings.onboarded){ applyRole();
+    // Frisch gekauft, aber Onboarding übersprungen (z. B. schon eingerichtet)? Trotzdem direkt zu
+    // „Stellen" – dort wartet „Erste Stelle anlegen". Der Käufer will als Nächstes die Stelle schalten.
+    try{ const e=gcEntry(); if(e.flow==='buy' && e.paid){ setView('stellen'); } }catch(_){}
+    return; }
   // Hat der Nutzer die Entscheidung schon im Welcome-Empfang getroffen? Dann nicht erneut fragen.
   if(settings.welcomeChoice){
     const choice = settings.welcomeChoice;
@@ -10813,15 +10837,28 @@ function feldMicToggle(btn){
   const ta = btn._ta; if(!ta) return;
   if(_fmRec && _fmTa===ta){ // Stopp -> verarbeiten
     const r=_fmRec; _fmRec=null; try{ r.onend=null; r.stop(); }catch(_){}
+    const raw = _fmFinal; _fmFinal='';
     btn.classList.remove('rec'); btn.classList.add('busy'); btn.innerHTML='<i data-lucide="loader-2"></i>'; icons();
-    setTimeout(()=>{
-      const clean = feldMicClean(_fmFinal); _fmFinal='';
+    (async ()=>{
+      const base = feldMicClean(raw);       // Regex-Basis (offline-Fallback)
+      let clean = '';
+      // KI-Bereinigung: loest Selbstkorrekturen auf ("die gute Stelle fuer den" -> gemeinter Text).
+      // Rohes Diktat schicken, damit die KI die Korrektur sieht. Fail-soft -> Regex-Basis.
+      if(raw && raw.trim() && osConnected() && sbAuth && sbAuth.functions){
+        try{
+          const lbl = (ta.closest('.field') && ta.closest('.field').querySelector('label'));
+          const ctx = ((lbl && lbl.textContent) || '').replace(/\s+/g,' ').trim().slice(0,80);
+          const { data, error } = await sbAuth.functions.invoke('clean-dictation', { body:{ text: raw, context: ctx } });
+          if(!error && data && data.text) clean = String(data.text).trim();
+        }catch(_){}
+      }
+      if(!clean) clean = base;
       if(clean){ ta.value = (ta.value.trim() ? ta.value.replace(/\s+$/,'')+' ' : '') + clean;
         ta.dispatchEvent(new Event('input', {bubbles:true})); }
       btn.classList.remove('busy'); btn.innerHTML='<i data-lucide="mic"></i>'; icons();
       if(!clean) toast('Nichts verstanden – Mikro antippen, sprechen, erneut antippen.');
       _fmTa=null;
-    }, 350);
+    })();
     return;
   }
   if(_fmRec){ try{ _fmRec.onend=null; _fmRec.stop(); }catch(_){} _fmRec=null; }  // anderes Feld aktiv
@@ -12142,14 +12179,22 @@ function ortSuggest(inp){
   clearTimeout(_ortT);
   const q=(inp.value||'').trim();
   const box=document.getElementById('ortSuggestBox');
-  if(q.length<2 || /^\d/.test(q)){ if(box) box.style.display='none'; return; }
+  // PLZ (beginnt mit Ziffer) über postalCode suchen, Ortsnamen über name. Beides ab 2 Zeichen.
+  const isPlz = /^\d/.test(q);
+  if(q.length<2){ if(box) box.style.display='none'; return; }
   _ortT=setTimeout(async ()=>{
     try{
-      const r=await fetch('https://openplzapi.org/de/Localities?name='+encodeURIComponent(q)+'&page=1&pageSize=20');
+      const url = isPlz
+        ? 'https://openplzapi.org/de/Localities?postalCode='+encodeURIComponent(q)+'&page=1&pageSize=20'
+        : 'https://openplzapi.org/de/Localities?name='+encodeURIComponent(q)+'&page=1&pageSize=20';
+      const r=await fetch(url);
       let rows=await r.json(); if(!Array.isArray(rows)) rows=[];
       const ql=q.toLowerCase();
-      rows.sort((a,b)=>{ const ap=a.name.toLowerCase().startsWith(ql)?0:1, bp=b.name.toLowerCase().startsWith(ql)?0:1;
-        return ap-bp || a.name.localeCompare(b.name) || a.postalCode.localeCompare(b.postalCode); });
+      rows.sort((a,b)=>{
+        if(isPlz){ const ap=(a.postalCode||'').startsWith(q)?0:1, bp=(b.postalCode||'').startsWith(q)?0:1;
+          return ap-bp || (a.postalCode||'').localeCompare(b.postalCode||'') || a.name.localeCompare(b.name); }
+        const ap=a.name.toLowerCase().startsWith(ql)?0:1, bp=b.name.toLowerCase().startsWith(ql)?0:1;
+        return ap-bp || a.name.localeCompare(b.name) || (a.postalCode||'').localeCompare(b.postalCode||''); });
       rows=rows.slice(0,8);
       if(!rows.length || !box){ if(box) box.style.display='none'; return; }
       box.innerHTML=rows.map(x=>`<div onmousedown="ortPick('${x.postalCode} ${x.name.replace(/'/g,'&#39;')}')" style="padding:9px 13px;cursor:pointer;font-size:13.5px;border-bottom:1px solid var(--line)" onmouseover="this.style.background='var(--soft-green)'" onmouseout="this.style.background=''"><b>${x.postalCode}</b> ${x.name}<span style="color:var(--muted);font-size:11.5px"> · ${(x.federalState&&x.federalState.name)||''}</span></div>`).join('');
@@ -12211,8 +12256,8 @@ function stPreviewCardHtml(){
   const tag = s => `<span style="display:inline-block;background:#F1F3F0;color:#3A4540;border-radius:100px;padding:4px 10px;font-size:11.5px;font-weight:600">${s}</span>`;
   const aufg = L.aufgaben.filter(Boolean).slice(0,3).map(a=>`<div style="display:flex;gap:7px;font-size:12px;margin-top:5px;color:#3A4540"><span style="color:var(--green)">✓</span><span>${escapeHtml(a)}</span></div>`).join('');
   return `<div style="border:1px solid var(--line);border-radius:16px;overflow:hidden;background:#fff;box-shadow:0 2px 10px rgba(20,30,25,.06)">
-    <div style="position:relative;height:170px;background:#1B2420;display:grid;place-items:center;color:#fff;font-weight:800;font-size:22px">
-      ${cov?`<img src="${cov}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">`:escapeHtml(initials(firma))}
+    <div style="position:relative;height:190px;background:#1B2420;display:grid;place-items:center;color:#fff;font-weight:800;font-size:22px;overflow:hidden">
+      ${cov?`<img src="${cov}" alt="" aria-hidden="true" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:blur(16px) brightness(.82);transform:scale(1.12)"><img src="${cov}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;z-index:1">`:escapeHtml(initials(firma))}
       <span style="position:absolute;top:9px;right:9px;background:rgba(0,0,0,.55);color:#fff;border-radius:100px;padding:3px 9px;font-size:10px;font-weight:700">heute</span>
     </div>
     <div style="padding:13px 15px">
@@ -12413,7 +12458,9 @@ function renderStelleBilderHtml(){
   if(!arr.length) return '<div style="font-size:12px;color:var(--muted)">Noch keine Bilder.</div>';
   return arr.map((src,i)=>`<div class="pthumb" style="position:relative;cursor:pointer" title="Zum Bearbeiten tippen" onclick="openImageEditMenu('bild',${i})">
       <img src="${escapeHtml(src)}" alt="Bild ${i+1}">
-      ${i===0?`<span style="position:absolute;left:5px;top:5px;background:var(--green);color:#fff;border-radius:100px;padding:2px 8px;font-size:9.5px;font-weight:800">Titelbild</span>`:''}
+      ${i===0
+        ? `<span style="position:absolute;left:5px;top:5px;background:var(--green);color:#fff;border-radius:100px;padding:2px 8px;font-size:9.5px;font-weight:800">Titelbild</span>`
+        : `<button type="button" title="Dieses Bild als Titelbild setzen" onclick="event.stopPropagation();stelleBildMakeCover(${i})" style="position:absolute;left:5px;top:5px;background:rgba(17,24,20,.62);color:#fff;border:none;border-radius:100px;padding:3px 9px;font-size:9.5px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:3px;backdrop-filter:blur(2px)"><i data-lucide="star" style="width:11px;height:11px"></i> Titelbild</button>`}
       <button type="button" onclick="event.stopPropagation();stelleBildDel(${i})"><i data-lucide="x"></i></button>
     </div>`).join('');
 }
@@ -12440,10 +12487,32 @@ function stelleBilderAdd(input){
   };
   next();
 }
+// Beim Umsortieren/Löschen die Original-Zuschnitt-Map (_origs, index-basiert) parallel mitführen,
+// damit „Bild anpassen" später weiter das richtige Original öffnet.
+function _stelleReindexOrigs(origArr){
+  stelleDraft._origs = {}; origArr.forEach((o,ix)=>{ if(o!=null) stelleDraft._origs[ix]=o; });
+}
 function stelleBildDel(i){
   if(!stelleDraft || !stelleDraft.bilder) return;
-  stelleDraft.bilder.splice(i,1); renderStelleBilderPrev();
+  const origs = stelleDraft._origs || {};
+  const origArr = stelleDraft.bilder.map((_,ix)=>origs[ix]);
+  stelleDraft.bilder.splice(i,1); origArr.splice(i,1);
+  _stelleReindexOrigs(origArr);
+  renderStelleBilderPrev();
   if(typeof stelleWizChanged==='function') stelleWizChanged();
+}
+// Gewähltes Bild zum Titelbild machen = an Position 0 verschieben (erscheint als Cover in
+// Übersicht UND Detailseite im Portal – konsistent, siehe coverUrl).
+function stelleBildMakeCover(i){
+  if(!stelleDraft || !stelleDraft.bilder || i<=0 || i>=stelleDraft.bilder.length) return;
+  const arr = stelleDraft.bilder, origs = stelleDraft._origs || {};
+  const origArr = arr.map((_,ix)=>origs[ix]);
+  const [img] = arr.splice(i,1); const [org] = origArr.splice(i,1);
+  arr.unshift(img); origArr.unshift(org);
+  _stelleReindexOrigs(origArr);
+  renderStelleBilderPrev();
+  if(typeof stelleWizChanged==='function') stelleWizChanged();
+  toast('Als Titelbild gesetzt');
 }
 let _stelleSaving = false;   // Re-Entry-Guard gegen Doppel-/Dreifach-Klick (async-Insert)
 async function submitStelle(publish){
