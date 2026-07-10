@@ -186,11 +186,13 @@ body{
 .chip.multi{position:relative}
 .chip.multi.sel::after{content:"✓";position:absolute;top:7px;right:9px;font-size:12px;color:var(--green-600);font-weight:800}
 
-/* ---------- Bedingte Zusatzfrage (Weiche „wenn Nein") ---------- */
-.followup{margin-top:14px;background:#fdf6ec;border:1.5px solid #f0ddb8;border-radius:15px;padding:15px 15px 16px;display:none;animation:fade .3s ease both}
-.followup.show{display:block}
-.followup .fu-title{font-size:15px;font-weight:700;margin-bottom:10px}
-.followup .chips{grid-template-columns:1fr 1fr}
+/* ---------- Benefit-Tags (viele Optionen, kompakt in Gruppen) ---------- */
+.bgroup-h{font-size:12px;font-weight:800;color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;margin:16px 0 8px}
+.tags{display:flex;flex-wrap:wrap;gap:8px}
+.tag{cursor:pointer;background:var(--card);border:1.5px solid var(--line);border-radius:999px;padding:9px 13px;font-family:inherit;font-size:13.5px;font-weight:600;color:var(--ink);transition:all .12s}
+.tag:hover{border-color:var(--green-400);background:#f6fcf7}
+.tag.sel{border-color:var(--green-500);background:#edfaf0;color:var(--green-800);box-shadow:0 0 0 2px rgba(34,163,93,.12)}
+.tag.sel::before{content:"✓ ";font-weight:800;color:var(--green-600)}
 
 /* ---------- Standort (PLZ/Ort + Autocomplete) ---------- */
 .loc-box{position:relative}
@@ -418,38 +420,37 @@ input[type=range]::-moz-range-thumb{width:26px;height:26px;border-radius:50%;bac
       <button class="chip" onclick="setAusbildung(true,this)">Ja</button>
       <button class="chip" onclick="setAusbildung(false,this)">Nein</button>
     </div>
-    <div class="followup" id="qualiFollow">
-      <div class="fu-title" id="qualiFollowTitle">Hast du mind. 5 Jahre Berufserfahrung in der Branche?</div>
-      <div class="chips">
-        <button class="chip" onclick="setErf5(true,this)">Ja</button>
-        <button class="chip" onclick="setErf5(false,this)">Nein</button>
-      </div>
-    </div>
+    <div class="backlink"><button class="btn btn-ghost" onclick="go('s-rolle')">← Zurück</button></div>
+  </section>
+
+  <!-- ============ Q: BERUFSERFAHRUNG (Regler, mehrfach genutzt) ============
+       Kontexte: nach "Ausbildung: Nein" (Basis), Leitungs-Positionen (Basis),
+       Zusatzfrage (wenn in der Basis noch nicht beantwortet) -->
+  <section class="screen" id="s-exp">
+    <div class="q-step" id="expStep"></div>
+    <div class="q-title" id="expTitle">Wie viele Jahre Berufserfahrung hast du?</div>
+    <div class="q-sub">Schieb den Regler – grob reicht völlig.</div>
+    <div class="slider-val"><span id="expVal">5 Jahre</span></div>
+    <div class="slider-cap">Berufserfahrung</div>
+    <input type="range" id="expRange" min="0" max="30" step="1" value="5" oninput="expInput(this.value)">
+    <div class="range-ends"><span>Einsteiger</span><span>30+ Jahre</span></div>
     <div style="margin-top:20px">
-      <button class="btn btn-primary" id="qualiBtn" onclick="go('s-standort')" disabled>Weiter <span class="arrow">→</span></button>
+      <button class="btn btn-primary" onclick="expNext(false)">Weiter <span class="arrow">→</span></button>
     </div>
-    <div class="backlink"><button class="btn btn-ghost" onclick="go('s-rolle')">← Zurück</button></div>
+    <div class="backlink" id="expSkipRow" style="display:none;margin-top:2px"><button class="btn btn-ghost" onclick="expNext(true)">Frage überspringen</button></div>
+    <div class="backlink"><button class="btn btn-ghost" onclick="expBackBtn()">← Zurück</button></div>
   </section>
 
-  <!-- ============ Q: BAULEITER FREITEXT 1 ============ -->
-  <section class="screen" id="s-bl1">
-    <div class="q-step" data-qstep></div>
-    <div class="q-title" id="bl1Title">Wie viele Jahre Berufserfahrung hast du als Bauleiter?</div>
-    <div class="q-sub">Antippen reicht – Details klären wir im Erstgespräch.</div>
-    <div class="chips" id="blErfChips"></div>
-    <div class="backlink"><button class="btn btn-ghost" onclick="go('s-rolle')">← Zurück</button></div>
-  </section>
-
-  <!-- ============ Q: BAULEITER FREITEXT 2 ============ -->
+  <!-- ============ Q: QUALIFIKATION (Leitungs-Positionen) ============ -->
   <section class="screen" id="s-bl2">
-    <div class="q-step" data-qstep></div>
+    <div class="q-step">Deine Qualifikation</div>
     <div class="q-title">Welche Qualifikation bringst du mit?</div>
     <div class="q-sub">Mehrfachauswahl möglich.</div>
     <div class="chips" id="blQualiChips"></div>
     <div style="margin-top:20px">
       <button class="btn btn-primary" id="bl2Btn" onclick="go('s-standort')" disabled>Weiter <span class="arrow">→</span></button>
     </div>
-    <div class="backlink"><button class="btn btn-ghost" onclick="go('s-bl1')">← Zurück</button></div>
+    <div class="backlink"><button class="btn btn-ghost" onclick="showExp('bl')">← Zurück</button></div>
   </section>
 
   <!-- ============ Q: STANDORT ============ -->
@@ -493,32 +494,23 @@ input[type=range]::-moz-range-thumb{width:26px;height:26px;border-radius:50%;bac
   <!-- ============ ZUSATZ: BENEFITS ============ -->
   <section class="screen" id="s-benefits">
     <div class="q-step" data-qstep></div>
-    <div class="q-title">Welche Benefits sind dir am wichtigsten?</div>
-    <div class="q-sub">Mehrfachauswahl – wir schlagen dich Betrieben vor, die das bieten.</div>
-    <div class="chips" id="benefitsChips"></div>
+    <div class="q-title">Was muss dir dein neuer Betrieb bieten?</div>
+    <div class="q-sub">Tippe alles an, was dir wichtig ist – wir schlagen dich Betrieben vor, die das bieten.</div>
+    <div id="benefitsGroups"></div>
     <div style="margin-top:20px">
-      <button class="btn btn-primary" id="benefitsBtn" onclick="deepNext('s-benefits')" disabled>Weiter <span class="arrow">→</span></button>
+      <button class="btn btn-primary" id="benefitsBtn" onclick="deepNext('s-benefits')">Weiter <span class="arrow">→</span></button>
     </div>
     <div class="backlink"><button class="btn btn-ghost" onclick="deepBack('s-benefits')">← Zurück</button></div>
-  </section>
-
-  <!-- ============ ZUSATZ: BERUFSERFAHRUNG ============ -->
-  <section class="screen" id="s-exp">
-    <div class="q-step" data-qstep></div>
-    <div class="q-title" id="expTitle">Wie viel Berufserfahrung hast du?</div>
-    <div class="q-sub">In deinem Bereich – grob reicht.</div>
-    <div class="chips" id="expChips"></div>
-    <div class="backlink"><button class="btn btn-ghost" onclick="deepBack('s-exp')">← Zurück</button></div>
   </section>
 
   <!-- ============ ZUSATZ: FÜHRERSCHEINE & SCHEINE ============ -->
   <section class="screen" id="s-scheine">
     <div class="q-step" data-qstep></div>
     <div class="q-title">Welche Führerscheine / Scheine hast du?</div>
-    <div class="q-sub">Mehrfachauswahl möglich.</div>
+    <div class="q-sub">Mehrfachauswahl möglich – nichts auswählen = überspringen.</div>
     <div class="chips" id="scheineChips"></div>
     <div style="margin-top:20px">
-      <button class="btn btn-primary" id="scheineBtn" onclick="deepNext('s-scheine')" disabled>Weiter <span class="arrow">→</span></button>
+      <button class="btn btn-primary" id="scheineBtn" onclick="deepNext('s-scheine')">Weiter <span class="arrow">→</span></button>
     </div>
     <div class="backlink"><button class="btn btn-ghost" onclick="deepBack('s-scheine')">← Zurück</button></div>
   </section>
@@ -529,17 +521,18 @@ input[type=range]::-moz-range-thumb{width:26px;height:26px;border-radius:50%;bac
     <div class="q-title">Hast du schon eine Kolonne / ein Team geführt?</div>
     <div class="q-sub">Wichtig für Vorarbeiter-Stellen.</div>
     <div class="chips one" id="kolonneChips"></div>
-    <div class="backlink"><button class="btn btn-ghost" onclick="deepBack('s-kolonne')">← Zurück</button></div>
+    <div class="backlink" style="margin-top:16px"><button class="btn btn-ghost" onclick="skipQuestion('s-kolonne')">Frage überspringen</button></div>
+    <div class="backlink" style="margin-top:2px"><button class="btn btn-ghost" onclick="deepBack('s-kolonne')">← Zurück</button></div>
   </section>
 
   <!-- ============ ZUSATZ: SCHWERPUNKT (nur Bauleiter) ============ -->
   <section class="screen" id="s-schwerpunkt">
     <div class="q-step" data-qstep></div>
     <div class="q-title">Wo liegt dein Tätigkeitsschwerpunkt?</div>
-    <div class="q-sub">Mehrfachauswahl möglich.</div>
+    <div class="q-sub">Mehrfachauswahl möglich – nichts auswählen = überspringen.</div>
     <div class="chips" id="schwerpunktChips"></div>
     <div style="margin-top:20px">
-      <button class="btn btn-primary" id="schwerpunktBtn" onclick="deepNext('s-schwerpunkt')" disabled>Weiter <span class="arrow">→</span></button>
+      <button class="btn btn-primary" id="schwerpunktBtn" onclick="deepNext('s-schwerpunkt')">Weiter <span class="arrow">→</span></button>
     </div>
     <div class="backlink"><button class="btn btn-ghost" onclick="deepBack('s-schwerpunkt')">← Zurück</button></div>
   </section>
@@ -566,7 +559,8 @@ input[type=range]::-moz-range-thumb{width:26px;height:26px;border-radius:50%;bac
     <div class="q-title">Wann könntest du starten?</div>
     <div class="q-sub">Unverbindlich – hilft den Betrieben bei der Planung.</div>
     <div class="chips one" id="startChips"></div>
-    <div class="backlink"><button class="btn btn-ghost" onclick="deepBack('s-start')">← Zurück</button></div>
+    <div class="backlink" style="margin-top:16px"><button class="btn btn-ghost" onclick="skipQuestion('s-start')">Frage überspringen</button></div>
+    <div class="backlink" style="margin-top:2px"><button class="btn btn-ghost" onclick="deepBack('s-start')">← Zurück</button></div>
   </section>
 
   <!-- ============ KONTAKT ============ -->
@@ -685,11 +679,11 @@ const CONSENT_SHARE_TEXT = 'Ja, GreenCareers darf meine Angaben an passende Part
 
 /* ---------- Branchen ---------- */
 const BRANCHEN = {
-  galabau:{label:'Garten- & Landschaftsbau', icon:'🌿', sub:'Neubau, Pflasterung, Erdbau', short:'GaLaBau',   inPhrase:'im GaLaBau (oder artverwandt)'},
-  pflege: {label:'Garten- & Grünpflege',     icon:'🌱', sub:'Pflege, Begrünung, Außenanlagen', short:'Grünpflege', inPhrase:'in der Grünpflege (oder artverwandt)'},
-  baum:   {label:'Baumpflege / Baumklettern',icon:'🌳', sub:'Seilklettertechnik, Fällung', short:'Baumpflege', inPhrase:'in der Baumpflege (oder artverwandt)'},
-  forst:  {label:'Forst & Wald',             icon:'🪵', sub:'Forstwirtschaft, Holzernte', short:'Forst',      inPhrase:'im Forst (oder artverwandt)'},
-  tiefbau:{label:'Straßen- & Tiefbau',       icon:'🚧', sub:'Straßenbau, Kanalbau, Pflaster', short:'Tiefbau', inPhrase:'im Straßen-/Tiefbau (oder artverwandt)'},
+  galabau:{label:'Garten- & Landschaftsbau', icon:'🌿', sub:'Neubau, Pflasterung, Erdbau', short:'GaLaBau',   inPhrase:'im GaLaBau (oder artverwandt)',          inShort:'im GaLaBau'},
+  pflege: {label:'Garten- & Grünpflege',     icon:'🌱', sub:'Pflege, Begrünung, Außenanlagen', short:'Grünpflege', inPhrase:'in der Grünpflege (oder artverwandt)', inShort:'in der Grünpflege'},
+  baum:   {label:'Baumpflege / Baumklettern',icon:'🌳', sub:'Seilklettertechnik, Fällung', short:'Baumpflege', inPhrase:'in der Baumpflege (oder artverwandt)',   inShort:'in der Baumpflege'},
+  forst:  {label:'Forst & Wald',             icon:'🪵', sub:'Forstwirtschaft, Holzernte', short:'Forst',      inPhrase:'im Forst (oder artverwandt)',            inShort:'im Forst'},
+  tiefbau:{label:'Straßen- & Tiefbau',       icon:'🚧', sub:'Straßenbau, Kanalbau, Pflaster', short:'Tiefbau', inPhrase:'im Straßen-/Tiefbau (oder artverwandt)', inShort:'im Straßen-/Tiefbau'},
 };
 
 /* ---------- Positionen je Branche (Stellenbezeichnungen wie im Gehalts-Check) ----------
@@ -753,13 +747,6 @@ const POSITIONEN = {
 function posByKey(branche,key){ return (POSITIONEN[branche]||[]).find(p=>p.key===key)||null; }
 
 /* ---------- Zusatzfragen-Optionen ---------- */
-const EXP = {
-  quer: {label:'Quereinsteiger'},
-  u1:   {label:'Unter 1 Jahr'},
-  j1_3: {label:'1–3 Jahre'},
-  j3_5: {label:'3–5 Jahre'},
-  ue5:  {label:'Über 5 Jahre'},
-};
 /* Scheine je Branche (Mehrfachauswahl, "Keinen" exklusiv) */
 const SCHEINE = {
   none:     {label:'Keinen', isNone:true},
@@ -778,14 +765,7 @@ const SCHEINE_BY_BRANCHE = {
   forst:  ['none','b','be','ce','motorsaege','forstmasch'],
   tiefbau:['none','b','be','ce','bagger'],
 };
-/* Bauleiter: Erfahrung + Qualifikation als Auswahl (kein Freitext – mobil tippt keiner) */
-const BL_ERFAHRUNG = {
-  einstieg:{label:'Noch keine – will einsteigen'},
-  u2:      {label:'Unter 2 Jahre'},
-  j2_5:    {label:'2–5 Jahre'},
-  j5_10:   {label:'5–10 Jahre'},
-  ue10:    {label:'Über 10 Jahre'},
-};
+/* Leitungs-Positionen: Qualifikation als Auswahl (kein Freitext – mobil tippt keiner) */
 const BL_QUALI = {
   meister:  {label:'Meister'},
   techniker:{label:'Techniker'},
@@ -804,16 +784,48 @@ const SCHWERPUNKT = {
   oeffentlich:{label:'Öffentliche Aufträge'},
   gemischt:{label:'Gemischt / egal'},
 };
-const BENEFITS = {
-  gehalt13:    {label:'Urlaubs- & Weihnachtsgeld'},
-  ueberstunden:{label:'Überstunden bezahlt / Zeitkonto'},
-  firmenwagen: {label:'Firmenfahrzeug'},
-  tage4:       {label:'4-Tage-Woche / flexible Zeiten'},
-  weiterbildung:{label:'Weiterbildung & Scheine bezahlt'},
-  technik:     {label:'Moderne Maschinen & Technik'},
-  winter:      {label:'Sichere Winterbeschäftigung'},
-  team:        {label:'Gutes Team & Wertschätzung'},
-};
+/* Benefits: viele Optionen, aber in Gruppen schnell durchklickbar */
+const BENEFIT_GROUPS = [
+  {group:'💶 Geld & Extras', items:{
+    gehalt13:'Urlaubs- & Weihnachtsgeld',
+    ueberstunden:'Überstunden bezahlt',
+    zeitkonto:'Zeitkonto / Freizeitausgleich',
+    praemie:'Prämien & Boni',
+    bav:'Betriebliche Altersvorsorge',
+    sachbezug:'Tank- / Einkaufsgutschein',
+    vwl:'Vermögenswirksame Leistungen',
+  }},
+  {group:'⏰ Arbeitszeit', items:{
+    tage4:'4-Tage-Woche',
+    flexibel:'Flexible Arbeitszeiten',
+    wenigueberstunden:'Wenig / keine Überstunden',
+    freitag:'Freitags früher Feierabend',
+    winter:'Sichere Winterbeschäftigung',
+    urlaub30:'30+ Urlaubstage',
+  }},
+  {group:'🚗 Mobilität', items:{
+    firmenwagen:'Firmenwagen (auch privat)',
+    arbeitsweg:'Firmenfahrzeug für den Arbeitsweg',
+    jobrad:'JobRad / E-Bike',
+    fahrtkosten:'Fahrtkostenzuschuss',
+  }},
+  {group:'📈 Entwicklung', items:{
+    weiterbildung:'Weiterbildungen & Scheine bezahlt',
+    aufstieg:'Aufstiegschancen (Vorarbeiter / Meister)',
+    meisterfoerderung:'Meister- / Technikerförderung',
+    fuehrerschein:'Führerscheine bezahlt (z. B. C/CE)',
+  }},
+  {group:'👷 Team & Ausstattung', items:{
+    technik:'Moderne Maschinen & Technik',
+    kleidung:'Hochwertige Arbeitskleidung',
+    klima:'Gutes Betriebsklima',
+    events:'Team-Events',
+    kolonnefest:'Feste Kolonne / festes Team',
+    regional:'Regionale Baustellen (kurze Anfahrt)',
+  }},
+];
+const BENEFIT_LABELS = {};
+BENEFIT_GROUPS.forEach(g=>{ for(const k in g.items) BENEFIT_LABELS[k]=g.items[k]; });
 const START = {
   sofort:{label:'Ab sofort', icon:'⚡'},
   m1_3:  {label:'In 1–3 Monaten', icon:'🗓️'},
@@ -833,10 +845,11 @@ const RADIUS = {
 const S = {
   variant:null,
   branche:null, rolle:null, rolleClass:null, rolleLabel:null,
-  ausbildung:null, erfahrung5:null,          // Basis-Quali (Ja/Nein + Weiche)
-  blErfahrung:null, blQuali:[],               // Leitungs-Positionen (Erfahrung + Qualifikation)
+  ausbildung:null, expYears:null,             // Basis-Quali (Ja/Nein + Erfahrungs-Regler)
+  blErfahrung:null, blQuali:[],               // Leitungs-Positionen (Jahre + Qualifikation)
   plz:'', ort:null, kreis:null, region:null, radius:null,
-  exp:null, scheine:[], kolonne:null, schwerpunkt:[], benefits:[], wunschgehalt:3200, gehaltSkipped:false, gehaltAnswered:false, start:null,
+  scheine:[], kolonne:null, schwerpunkt:[], benefits:[], wunschgehalt:3200, gehaltAnswered:false, start:null,
+  skipped:[],                                 // übersprungene Zusatzfragen (Screen-IDs)
   deepDone:false, submitted:false, enrichMode:false,
   firstName:'', lastName:'', phone:'', email:'', channel:'whatsapp', consentShare:false,
 };
@@ -890,7 +903,7 @@ fetch('plz.json').then(r=>r.json()).then(d=>{
 
 /* ---------- Navigation + Fortschritt ---------- */
 const PROGRESS = {
-  's-branche':12, 's-rolle':25, 's-quali':40, 's-bl1':35, 's-bl2':45,
+  's-branche':12, 's-rolle':25, 's-quali':38, 's-bl2':48,
   's-standort':55, 's-upsell':65,
   's-gehalt':70, 's-benefits':76, 's-exp':81, 's-scheine':86, 's-kolonne':90, 's-schwerpunkt':86, 's-start':93,
   's-gate':96, 's-done':100, 's-done2':100,
@@ -914,8 +927,6 @@ function renumberBasics(){
   if(!(S.variant&&S.branche)) setStep('s-branche','Frage '+(n++)+' von '+total);
   if(S.variant!=='bauleiter') setStep('s-rolle','Frage '+(n++)+' von '+total);
   setStep('s-quali','Frage '+n+' von '+total);
-  setStep('s-bl1','Frage 1 von 2');
-  setStep('s-bl2','Frage 2 von 2');
   setStep('s-standort','Standort');
 }
 
@@ -931,6 +942,7 @@ function goBackFromRolle(){ (S.variant&&S.branche) ? go('s-hero') : go('s-branch
 function goBackFromStandort(){
   if(S.rolleClass==='bauleiter'){ go('s-bl2'); }
   else if(S.rolleClass==='azubi'){ go('s-rolle'); }
+  else if(S.ausbildung===false){ showExp('quali'); }
   else { go('s-quali'); }
 }
 function goBackFromGate(){ S.deepDone ? go('s-start') : go('s-upsell'); }
@@ -974,11 +986,10 @@ function buildRolle(){
     box.appendChild(btn);
   });
 }
-/* Weiche nach Position: Leitung -> 2 Auswahl-Fragen, Azubi -> direkt Standort, sonst Ausbildungs-Frage */
+/* Weiche nach Position: Leitung -> Erfahrungs-Regler + Qualifikation, Azubi -> direkt Standort, sonst Ausbildungs-Frage */
 function afterRolle(){
   if(S.rolleClass==='bauleiter'){
-    document.getElementById('bl1Title').textContent='Wie viele Jahre Berufserfahrung hast du als '+S.rolleLabel+'?';
-    go('s-bl1');
+    showExp('bl');
   } else if(S.rolleClass==='azubi'){
     go('s-standort');
   } else {
@@ -987,49 +998,72 @@ function afterRolle(){
   }
 }
 
-/* ---------- Q: Ausbildung + bedingte Erfahrungs-Frage ---------- */
+/* ---------- Q: Ausbildung (Ja -> Standort, Nein -> Erfahrungs-Regler) ---------- */
 function setAusbildung(val,btn){
   S.ausbildung=val;
   document.querySelectorAll('#qualiChips .chip').forEach(c=>c.classList.remove('sel'));
   btn.classList.add('sel');
-  const follow=document.getElementById('qualiFollow');
-  if(val){
-    S.erfahrung5=null;
-    follow.classList.remove('show');
-    document.getElementById('qualiBtn').disabled=false;
-    track('q_ausbildung',{ausbildung:'ja'});
-    setTimeout(()=>go('s-standort'),220);
-  } else {
-    document.getElementById('qualiFollowTitle').textContent='Hast du mind. 5 Jahre Berufserfahrung '+(S.branche==='tiefbau'?'im Tief-/Straßenbau':'in der grünen Branche')+'?';
-    follow.classList.add('show');
-    document.getElementById('qualiBtn').disabled = S.erfahrung5===null;
-    track('q_ausbildung',{ausbildung:'nein'});
-  }
-}
-function setErf5(val,btn){
-  S.erfahrung5=val;
-  document.querySelectorAll('#qualiFollow .chip').forEach(c=>c.classList.remove('sel'));
-  btn.classList.add('sel');
-  document.getElementById('qualiBtn').disabled=false;
-  track('q_erfahrung5',{erfahrung5:val?'ja':'nein'});
-  setTimeout(()=>go('s-standort'),220);
+  track('q_ausbildung',{ausbildung:val?'ja':'nein'});
+  setTimeout(()=>{ val ? go('s-standort') : showExp('quali'); },220);
 }
 
-/* ---------- Q: Bauleiter-Freitexte ---------- */
-(function buildBlErfahrung(){
-  const box=document.getElementById('blErfChips');
-  for(const key in BL_ERFAHRUNG){
-    const btn=document.createElement('button');
-    btn.className='chip'; btn.textContent=BL_ERFAHRUNG[key].label;
-    btn.onclick=()=>{
-      box.querySelectorAll('.chip').forEach(c=>c.classList.remove('sel'));
-      btn.classList.add('sel'); S.blErfahrung=key;
-      track('q_bl_erfahrung',{erfahrung:key});
-      setTimeout(()=>go('s-bl2'),220);
-    };
-    box.appendChild(btn);
+/* ---------- Q: Berufserfahrung (Regler, 3 Kontexte) ----------
+   'quali' = Basis nach "Ausbildung: Nein" (Pflicht, kein Skip)
+   'bl'    = Basis für Leitungs-Positionen (Pflicht, kein Skip)
+   'deep'  = Zusatzfrage, wenn Erfahrung noch unbekannt (skipbar) */
+let expContext='deep';
+function fmtYears(y){ return y<=0 ? 'Unter 1 Jahr' : (y>=30 ? '30+ Jahre' : y+' '+(y===1?'Jahr':'Jahre')); }
+function showExp(ctx){
+  expContext=ctx;
+  const inBranche = S.branche ? ' '+BRANCHEN[S.branche].inShort : '';
+  document.getElementById('expTitle').textContent = ctx==='bl'
+    ? 'Wie viele Jahre Berufserfahrung hast du als '+S.rolleLabel+'?'
+    : 'Wie viele Jahre Berufserfahrung hast du'+inBranche+'?';
+  document.getElementById('expStep').textContent = ctx==='deep'
+    ? (document.getElementById('expStep').dataset.deepLabel||'Zusatzfrage')
+    : 'Deine Berufserfahrung';
+  document.getElementById('expSkipRow').style.display = ctx==='deep' ? 'flex' : 'none';
+  const cur = ctx==='bl' ? S.blErfahrung : S.expYears;
+  const val = cur===null||cur===undefined ? 5 : cur;
+  document.getElementById('expRange').value=val;
+  document.getElementById('expVal').textContent=fmtYears(val);
+  PROGRESS['s-exp'] = ctx==='deep' ? 81 : 44;
+  go('s-exp');
+}
+function expInput(v){ document.getElementById('expVal').textContent=fmtYears(+v); }
+function expNext(skipped){
+  const v=+document.getElementById('expRange').value;
+  if(expContext==='bl'){
+    S.blErfahrung=v;
+    track('q_bl_erfahrung',{jahre:v});
+    go('s-bl2');
+  } else if(expContext==='quali'){
+    S.expYears=v; unskip('s-exp');
+    track('q_erfahrung',{jahre:v, kontext:'basis'});
+    go('s-standort');
+  } else {
+    if(skipped){ S.expYears=null; markSkipped('s-exp'); }
+    else { S.expYears=v; unskip('s-exp'); }
+    track('q_erfahrung',{jahre:skipped?null:v, kontext:'zusatz', uebersprungen:!!skipped});
+    deepNext('s-exp');
   }
-})();
+}
+function expBackBtn(){
+  if(expContext==='bl'){ (S.variant==='bauleiter') ? go('s-hero') : go('s-rolle'); }
+  else if(expContext==='quali'){ go('s-quali'); }
+  else { deepBack('s-exp'); }
+}
+
+/* ---------- Überspringen (nur Zusatzfragen) ---------- */
+function markSkipped(id){ if(!S.skipped.includes(id)) S.skipped.push(id); }
+function unskip(id){ S.skipped=S.skipped.filter(x=>x!==id); }
+function skipQuestion(id){
+  markSkipped(id);
+  if(id==='s-kolonne') S.kolonne=null;
+  if(id==='s-start') S.start=null;
+  track('q_uebersprungen',{frage:id});
+  deepNext(id);
+}
 (function buildBlQuali(){
   const box=document.getElementById('blQualiChips');
   for(const key in BL_QUALI){
@@ -1153,7 +1187,9 @@ function deepPath(){
     return p;
   }
   if(cls==='azubi') return ['s-benefits','s-scheine','s-start'];
-  const p=['s-gehalt','s-benefits','s-exp','s-scheine'];
+  const p=['s-gehalt','s-benefits'];
+  if(S.expYears===null) p.push('s-exp');  // nur fragen, wenn in der Basis noch nicht beantwortet
+  p.push('s-scheine');
   if(cls==='vorarbeiter') p.push('s-kolonne');
   p.push('s-start');
   return p;
@@ -1175,42 +1211,37 @@ function startDeep(enrich){
   document.getElementById('gehaltVal').textContent=def.toLocaleString('de-DE');
   buildDeepScreens();
   DEEP.forEach((id,i)=>{
+    const label='Zusatzfrage '+(i+1)+' von '+DEEP.length;
+    if(id==='s-exp'){ document.getElementById('expStep').dataset.deepLabel=label; return; }
     const el=document.querySelector('#'+id+' [data-qstep]');
-    if(el) el.textContent='Zusatzfrage '+(i+1)+' von '+DEEP.length;
+    if(el) el.textContent=label;
   });
-  go(DEEP[0]);
+  deepGo(DEEP[0]);
 }
+/* Navigation innerhalb der Zusatzfragen (s-exp braucht seinen Kontext) */
+function deepGo(id){ id==='s-exp' ? showExp('deep') : go(id); }
 function skipDeep(){ track('deep_skipped',{}); buildGateSummary(); go('s-gate'); }
+/* Multi-Select-Fragen: leer weiterklicken = übersprungen */
+function markMultiSkips(cur){
+  if(cur==='s-benefits'){ S.benefits.length ? unskip(cur) : markSkipped(cur); }
+  if(cur==='s-scheine'){ S.scheine.length ? unskip(cur) : markSkipped(cur); }
+  if(cur==='s-schwerpunkt'){ S.schwerpunkt.length ? unskip(cur) : markSkipped(cur); }
+}
 function deepNext(cur){
+  markMultiSkips(cur);
   const i=DEEP.indexOf(cur);
-  if(i<DEEP.length-1){ go(DEEP[i+1]); return; }
+  if(i<DEEP.length-1){ deepGo(DEEP[i+1]); return; }
   S.deepDone=true;
   if(S.enrichMode){ sendLead('lead_enriched'); go('s-done2'); }
   else { buildGateSummary(); go('s-gate'); }
 }
 function deepBack(cur){
   const i=DEEP.indexOf(cur);
-  if(i>0){ go(DEEP[i-1]); return; }
+  if(i>0){ deepGo(DEEP[i-1]); return; }
   S.enrichMode ? go('s-done') : go('s-upsell');
 }
 
 function buildDeepScreens(){
-  /* Berufserfahrung */
-  const expBox=document.getElementById('expChips');
-  document.getElementById('expTitle').textContent='Wie viel Berufserfahrung hast du '+(S.branche?({galabau:'im GaLaBau',pflege:'in der Grünpflege',baum:'in der Baumpflege',forst:'im Forst',tiefbau:'im Straßen-/Tiefbau'}[S.branche]):'in der Branche')+'?';
-  expBox.innerHTML='';
-  for(const key in EXP){
-    const btn=document.createElement('button');
-    btn.className='chip'; btn.textContent=EXP[key].label;
-    if(S.exp===key) btn.classList.add('sel');
-    btn.onclick=()=>{
-      expBox.querySelectorAll('.chip').forEach(c=>c.classList.remove('sel'));
-      btn.classList.add('sel'); S.exp=key;
-      track('q_exp',{exp:key});
-      setTimeout(()=>deepNext('s-exp'),220);
-    };
-    expBox.appendChild(btn);
-  }
   /* Scheine (multi) */
   const schBox=document.getElementById('scheineChips');
   schBox.innerHTML='';
@@ -1233,27 +1264,31 @@ function buildDeepScreens(){
         if(btn.classList.contains('sel')) S.scheine.push(key);
         else S.scheine=S.scheine.filter(k=>k!==key);
       }
-      document.getElementById('scheineBtn').disabled=!S.scheine.length;
     };
     schBox.appendChild(btn);
   });
-  document.getElementById('scheineBtn').disabled=!S.scheine.length;
-  /* Benefits (multi) */
-  const benBox=document.getElementById('benefitsChips');
+  /* Benefits (viele Optionen, gruppierte Tag-Wolke) */
+  const benBox=document.getElementById('benefitsGroups');
   benBox.innerHTML='';
-  for(const key in BENEFITS){
-    const btn=document.createElement('button');
-    btn.className='chip multi'; btn.textContent=BENEFITS[key].label;
-    if(S.benefits.includes(key)) btn.classList.add('sel');
-    btn.onclick=()=>{
-      btn.classList.toggle('sel');
-      if(btn.classList.contains('sel')) S.benefits.push(key);
-      else S.benefits=S.benefits.filter(k=>k!==key);
-      document.getElementById('benefitsBtn').disabled=!S.benefits.length;
-    };
-    benBox.appendChild(btn);
-  }
-  document.getElementById('benefitsBtn').disabled=!S.benefits.length;
+  BENEFIT_GROUPS.forEach(g=>{
+    const h=document.createElement('div');
+    h.className='bgroup-h'; h.textContent=g.group;
+    benBox.appendChild(h);
+    const wrap=document.createElement('div');
+    wrap.className='tags';
+    for(const key in g.items){
+      const btn=document.createElement('button');
+      btn.className='tag'; btn.type='button'; btn.textContent=g.items[key];
+      if(S.benefits.includes(key)) btn.classList.add('sel');
+      btn.onclick=()=>{
+        btn.classList.toggle('sel');
+        if(btn.classList.contains('sel')) S.benefits.push(key);
+        else S.benefits=S.benefits.filter(k=>k!==key);
+      };
+      wrap.appendChild(btn);
+    }
+    benBox.appendChild(wrap);
+  });
   /* Kolonne */
   const kolBox=document.getElementById('kolonneChips');
   kolBox.innerHTML='';
@@ -1263,7 +1298,7 @@ function buildDeepScreens(){
     if(S.kolonne===key) btn.classList.add('sel');
     btn.onclick=()=>{
       kolBox.querySelectorAll('.chip').forEach(c=>c.classList.remove('sel'));
-      btn.classList.add('sel'); S.kolonne=key;
+      btn.classList.add('sel'); S.kolonne=key; unskip('s-kolonne');
       track('q_kolonne',{kolonne:key});
       setTimeout(()=>deepNext('s-kolonne'),220);
     };
@@ -1294,7 +1329,7 @@ function buildDeepScreens(){
     if(S.start===key) btn.classList.add('sel');
     btn.onclick=()=>{
       stBox.querySelectorAll('.chip').forEach(c=>c.classList.remove('sel'));
-      btn.classList.add('sel'); S.start=key;
+      btn.classList.add('sel'); S.start=key; unskip('s-start');
       track('q_start',{start:key});
       setTimeout(()=>deepNext('s-start'),220);
     };
@@ -1304,12 +1339,12 @@ function buildDeepScreens(){
 
 /* Wunschgehalt */
 function gehaltInput(v){
-  S.wunschgehalt=+v; S.gehaltSkipped=false;
+  S.wunschgehalt=+v;
   document.getElementById('gehaltVal').textContent=(+v).toLocaleString('de-DE');
 }
 function gehaltNext(skipped){
-  S.gehaltSkipped=!!skipped;
   S.gehaltAnswered=!skipped;
+  if(skipped) markSkipped('s-gehalt'); else unskip('s-gehalt');
   track('q_gehalt',{skipped:!!skipped, wunschgehalt:skipped?null:S.wunschgehalt});
   deepNext('s-gehalt');
 }
@@ -1326,8 +1361,8 @@ function buildGateSummary(){
   if(S.branche) tags.push(BRANCHEN[S.branche].icon+' '+BRANCHEN[S.branche].short);
   if(S.rolleLabel) tags.push(S.rolleLabel);
   if(S.ort) tags.push('📍 '+S.ort+' · '+(S.radius?RADIUS[S.radius].label:''));
-  if(S.blErfahrung) tags.push(BL_ERFAHRUNG[S.blErfahrung].label+' Bauleitung');
-  if(S.exp) tags.push(EXP[S.exp].label);
+  if(S.blErfahrung!==null) tags.push(fmtYears(S.blErfahrung)+' als '+S.rolleLabel);
+  if(S.expYears!==null) tags.push(fmtYears(S.expYears)+' Erfahrung');
   if(S.gehaltAnswered) tags.push('💶 '+S.wunschgehalt.toLocaleString('de-DE')+' €');
   box.innerHTML=tags.map(t=>'<span>'+t+'</span>').join('');
 }
@@ -1362,6 +1397,9 @@ function toE164(raw){
   return p;
 }
 const META_EVENT_MAP = { lead_captured:'Lead', lead_enriched:'CompleteRegistration' };
+/* Sheet-freundliche Label: übersprungene Frage -> 'Frage übersprungen' statt leer */
+const SKIP_LABELS = {'s-gehalt':'Wunschgehalt','s-benefits':'Benefits','s-exp':'Berufserfahrung','s-scheine':'Führerscheine/Scheine','s-kolonne':'Kolonnenführung','s-start':'Verfügbarkeit'};
+function lbl(id,val){ return S.skipped.includes(id) ? 'Frage übersprungen' : val; }
 function sendLead(event){
   const metaEvent = META_EVENT_MAP[event] || event;
   const eventId = track(metaEvent, {
@@ -1385,20 +1423,21 @@ function sendLead(event){
     branche:S.branche, branche_label:S.branche?BRANCHEN[S.branche].label:null,
     rolle:S.rolle, rolle_label:S.rolleLabel, rolle_klasse:S.rolleClass,
     ausbildung:S.ausbildung,
-    erfahrung_5_jahre:S.erfahrung5,
-    bauleiter_erfahrung:S.blErfahrung, bauleiter_erfahrung_label:S.blErfahrung?BL_ERFAHRUNG[S.blErfahrung].label:null,
+    erfahrung_jahre:S.expYears, erfahrung_label:lbl('s-exp', S.expYears===null?null:fmtYears(S.expYears)),
+    bauleiter_erfahrung_jahre:S.blErfahrung, bauleiter_erfahrung_label:S.blErfahrung===null?null:fmtYears(S.blErfahrung),
     bauleiter_qualifikation:S.blQuali, bauleiter_qualifikation_labels:S.blQuali.map(k=>BL_QUALI[k]?BL_QUALI[k].label:k),
     plz:S.plz, ort:S.ort, kreis:S.kreis, region:S.region,
     radius:S.radius, radius_label:S.radius?RADIUS[S.radius].label:null,
-    /* --- Zusatzfragen (null = nicht beantwortet) --- */
+    /* --- Zusatzfragen (null = nicht gestellt, 'Frage übersprungen' = übersprungen) --- */
     deep_completed:S.deepDone,
-    erfahrung:S.exp, erfahrung_label:S.exp?EXP[S.exp].label:null,
-    scheine:S.scheine, scheine_labels:S.scheine.map(k=>SCHEINE[k]?SCHEINE[k].label:k),
-    kolonne:S.kolonne, kolonne_label:S.kolonne?KOLONNE[S.kolonne].label:null,
-    schwerpunkt:S.schwerpunkt, schwerpunkt_labels:S.schwerpunkt.map(k=>SCHWERPUNKT[k]?SCHWERPUNKT[k].label:k),
-    benefits:S.benefits, benefits_labels:S.benefits.map(k=>BENEFITS[k]?BENEFITS[k].label:k),
+    scheine:S.scheine, scheine_labels:lbl('s-scheine', S.scheine.map(k=>SCHEINE[k]?SCHEINE[k].label:k)),
+    kolonne:S.kolonne, kolonne_label:lbl('s-kolonne', S.kolonne?KOLONNE[S.kolonne].label:null),
+    schwerpunkt:S.schwerpunkt, schwerpunkt_labels:lbl('s-schwerpunkt', S.schwerpunkt.map(k=>SCHWERPUNKT[k]?SCHWERPUNKT[k].label:k)),
+    benefits:S.benefits, benefits_labels:lbl('s-benefits', S.benefits.map(k=>BENEFIT_LABELS[k]||k)),
     wunschgehalt:S.gehaltAnswered?S.wunschgehalt:null,
-    verfuegbarkeit:S.start, verfuegbarkeit_label:S.start?START[S.start].label:null,
+    wunschgehalt_label:lbl('s-gehalt', S.gehaltAnswered?S.wunschgehalt.toLocaleString('de-DE')+' € / Monat':null),
+    verfuegbarkeit:S.start, verfuegbarkeit_label:lbl('s-start', S.start?START[S.start].label:null),
+    uebersprungene_fragen:S.skipped.map(id=>SKIP_LABELS[id]||id),
     /* --- Herkunft + Consent (revisionssicher) --- */
     source:'bewerbungsfunnel',
     consent_version:CONSENT_VERSION,
