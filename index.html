@@ -233,7 +233,7 @@
   }
   .sidebrand .brandmark{ width:38px; height:38px; border-radius:8px; box-shadow:none; flex-shrink:0; }
   .sidebrand__text{ min-width:0; line-height:1.2; white-space:nowrap; overflow:hidden; }
-  .sidebrand__text b{ color:#fff; font-size:14px; }
+  .sidebrand__text b{ color:#fff; font-size:14px; display:block; overflow:hidden; text-overflow:ellipsis; }
   .sidebrand__text span{ display:block; color:#7E8F83; font-size:10.5px; margin-top:2px; }
   .app.collapsed .sidebrand__text{ display:none; }
   .nav{ display:flex; flex-direction:column; gap:4px; padding-top:18px; }
@@ -3162,6 +3162,7 @@
       <h1>Konto erstellen</h1>
       <p class="sub" id="regSubLine">Starte mit deinem Betrieb in GreenCareers OS. Du bekommst gleich eine Bestätigungs-Mail.</p>
       <div class="field"><label for="regName">Dein Name</label><input id="regName" type="text" placeholder="Vor- und Nachname" autocomplete="name" /></div>
+      <div class="field"><label for="regFirma">Firma</label><input id="regFirma" type="text" placeholder="z. B. Müller GaLaBau GmbH" autocomplete="organization" /></div>
       <div class="field"><label for="regEmail">E-Mail</label><input id="regEmail" type="email" placeholder="name@firma.de" autocomplete="email" /></div>
       <div class="field"><label for="regPassword">Passwort</label><div class="pw-wrap"><input id="regPassword" type="password" placeholder="Mind. 8 Zeichen" autocomplete="new-password" /><button type="button" class="pw-eye" aria-label="Passwort anzeigen" onclick="togglePw('regPassword',this)"><i data-lucide="eye"></i></button></div></div>
       <div class="field"><label for="regPassword2">Passwort wiederholen</label><div class="pw-wrap"><input id="regPassword2" type="password" placeholder="Passwort erneut" autocomplete="new-password" onkeydown="if(event.key==='Enter')doRegister()" /><button type="button" class="pw-eye" aria-label="Passwort anzeigen" onclick="togglePw('regPassword2',this)"><i data-lucide="eye"></i></button></div></div>
@@ -3696,7 +3697,7 @@ const ENTRY_BRANDS = {
   green: { name:'GreenCareers', theme:'galabau' },
   grey:  { name:'GreyCareers',  theme:'tiefbau'  },
 };
-const ENTRY_KEYS = ['flow','pkg','mode','qty','term','ref','code','welcome'];
+const ENTRY_KEYS = ['flow','pkg','mode','qty','term','ref','code','welcome','method'];
 function gcEntry(){ try{ return JSON.parse(localStorage.getItem('gcos_entry')||'{}')||{}; }catch(e){ return {}; } }
 function saveEntry(e){ try{ localStorage.setItem('gcos_entry', JSON.stringify(e||{})); }catch(_){} }
 function entryBrand(){ const e=gcEntry(); return ENTRY_BRANDS[e.brand]||null; }
@@ -3969,9 +3970,12 @@ function coCalc(){
 }
 
 function openCheckout(){
-  // Firmenname nur vorbelegen, wenn dieser Account schon einen Betrieb hat
-  // (Neukäufer tippen ihn selbst – kein alter Name aus localStorage).
-  coState.firma = (GC_PROFILE && GC_PROFILE.customer_id && settings.company && settings.company.name) || '';
+  // Zahlungsweg kommt vom Portal (?method=direct|rechnung) – hier KEINE Neuauswahl der Pakete.
+  const _e = gcEntry();
+  coState.method = (_e.method==='rechnung') ? 'rechnung' : 'direct';
+  // Firma aus der Registrierung (user_metadata.firma); Bestandskonten: verknüpfter Betriebsname.
+  coState.firma = ((GC_USER && GC_USER.user_metadata && GC_USER.user_metadata.firma) ||
+                   (GC_PROFILE && GC_PROFILE.customer_id && settings.company && settings.company.name) || '').trim();
   coState.name  = (GC_USER && GC_USER.user_metadata && GC_USER.user_metadata.name) || coState.name || '';
   coEnforceBrand();
   document.getElementById('checkout').classList.remove('hidden');
@@ -3994,14 +3998,11 @@ async function coRefreshRabatt(){
     }
   }catch(_){}
 }
-function coSetMethod(k){ coCaptureFields(); coState.method = k; renderCheckout(); }
-function coToggleAgb(){ coCaptureFields(); coState.agb = !coState.agb; renderCheckout(); }
-function coCaptureFields(){
-  const g = id => (document.getElementById(id)||{}).value || '';
-  coState.firma = g('coFirma').trim();
-  coState.name  = g('coName').trim();
-  coState.tel   = g('coTel').trim();
-  coState.vat   = g('coVat').trim();
+// Zahlungsweg umschalten (direct <-> rechnung). Fallback-Firmenfeld vorher sichern.
+function coSetMethod(k){
+  const f = document.getElementById('coFirma'); if(f && f.value.trim()) coState.firma = f.value.trim();
+  coState.method = (k==='rechnung') ? 'rechnung' : 'direct';
+  renderCheckout();
 }
 function coErr(msg){ const e=document.getElementById('coErr'); if(e){ e.textContent=msg||''; e.classList.toggle('show', !!msg); } }
 
@@ -4013,73 +4014,62 @@ function renderCheckout(){
     try{ openConsentGate(); }catch(e){}
     return;
   }
-  // Im Abo gibt es kein „Rechnung" -> auf eine erlaubte Methode zurückfallen.
-  if(!coMethods(c).some(m => m.key === coState.method)){ coState.method = 'card'; }
-  const priceLine = c.mode==='abo'
-    ? `<b>${coEur(c.grossUnit)}</b><small>pro Monat · ${c.months} Monate${c.qty>1?` · ${c.qty} Stellen`:''}</small>`
-    : `<b>${coEur(c.grossUnit)}</b><small>einmalig · ${c.days} Tage${c.qty>1?` · ${c.qty} Stellen`:''}</small>`;
-  const rabatt = (c.qtyPct||c.salesPct)
-    ? `<span>Inkl. ${[c.qtyPct?`${c.qtyPct}% Mengenrabatt`:'', c.salesPct?`${c.salesPct}% Rabatt`:''].filter(Boolean).join(' + ')} · alle Preise inkl. 19% USt.</span>`
-    : `<span>Alle Preise inkl. 19% USt.</span>`;
-  const subLabel = c.mode==='abo' ? 'Recruiting-Abo' : 'Stellen-Kontingent';
+  // Im Abo gibt es keinen Kauf auf Rechnung.
+  if(c.mode==='abo' && coState.method==='rechnung') coState.method = 'direct';
+  const inv = coState.method==='rechnung';
+  // Netto/USt/Brutto getrennt (wie altes GreenCareers / Stripe-Anzeige).
+  const netto = c.finalNet, ust = netto*CO_VAT, brutto = netto+ust;
+  const firmaKnown = !!(coState.firma||'').trim();
+  const row = (l,v,green)=>`<div style="padding:9px 0;display:flex;justify-content:space-between;gap:12px;font-size:14px;${green?'color:#1B6B33;font-weight:650':'color:var(--ink,#0F1B14)'}"><span>${l}</span><b style="font-weight:740">${v}</b></div>`;
 
+  // READ-ONLY Bestellübersicht: Paket & Anzahl wurden auf der Arbeitgeber-Seite gewählt –
+  // hier keine Neuauswahl (Warenkorb-Prinzip). AGB nur bei der Registrierung.
   card.innerHTML = `
     <div style="padding:20px 20px 22px">
-      <div class="gate__top" style="display:flex;align-items:center;justify-content:space-between;gap:12px"><span class="gate__paid" style="background:rgba(var(--brand-rgb),.10); color:var(--green-2); border-color:rgba(var(--brand-rgb),.22)"><i data-lucide="lock"></i> Sichere Zahlung · Schritt 2 von 2</span><button class="iconbtn" onclick="coCancel()" aria-label="Schließen" title="Später – zum Cockpit"><i data-lucide="x"></i></button></div>
+      <div class="gate__top" style="display:flex;align-items:center;justify-content:space-between;gap:12px"><span class="gate__paid" style="background:rgba(var(--brand-rgb),.10); color:var(--green-2); border-color:rgba(var(--brand-rgb),.22)"><i data-lucide="shopping-cart"></i> Bestellübersicht</span><button class="iconbtn" onclick="coCancel()" aria-label="Schließen" title="Später – zum Cockpit"><i data-lucide="x"></i></button></div>
       <div class="gate__h">Bestellung abschließen</div>
-      <div class="gate__sub">Dein Konto ist erstellt. Jetzt nur noch Betrieb &amp; Zahlart angeben – dann ist dein Kontingent freigeschaltet.</div>
+      <div class="gate__sub">${inv?'Prüfe kurz deine Bestellung – mit „Zahlungspflichtig bestellen" erhältst du deine Rechnung per E-Mail.':'Prüfe kurz deine Bestellung – die Zahlung läuft im nächsten Schritt sicher über Karte oder PayPal.'}</div>
 
-      <div class="co-sum">
-        <div class="co-sum__l"><strong>${c.pkgName} · ${subLabel}</strong>${rabatt}</div>
-        <div class="co-sum__p">${priceLine}</div>
+      <div style="border:1px solid var(--line);border-radius:14px;padding:5px 16px;margin:14px 0 4px">
+        ${row(`<b style="font-weight:780">${c.pkgName}</b> · ${c.mode==='abo'?'Recruiting-Abo':'Stellen-Kontingent'}${c.days?` · ${c.days} Tage`:''}`, `${c.qty}× `)}
+        ${c.qtyPct?row(`Mengenrabatt`, `−${c.qtyPct} %`, 1):''}
+        ${c.salesPct?row(`Rabatt`, `−${c.salesPct} %`, 1):''}
+        <div style="height:1px;background:var(--line);margin:3px 0"></div>
+        ${row(c.mode==='abo'?'Netto / Monat':'Gesamt (netto)', coEur(netto))}
+        ${row('USt. (19 %)', coEur(ust))}
+        ${row(c.mode==='abo'?'<b>Brutto / Monat</b>':'<b>Gesamt (brutto)</b>', `<span style="font-size:17px">${coEur(brutto)}</span>`)}
       </div>
+      ${firmaKnown
+        ? `<p class="sheet-note" style="margin:10px 2px 0"><i data-lucide="building-2"></i> Betrieb: <b>${escapeHtml(coState.firma)}</b></p>`
+        : `<div class="co-field" style="margin-top:12px"><label>Firmenname</label><input id="coFirma" type="text" placeholder="z. B. Müller Tiefbau GmbH" value=""></div>`}
+      ${inv?'':'<p class="sheet-note" style="margin:8px 2px 0"><i data-lucide="lock"></i> Rechnungsadresse &amp; USt-IdNr. gibst du im nächsten Schritt bei der sicheren Zahlung an.</p>'}
 
-      <div class="co-field">
-        <label>Firmenname</label>
-        <input id="coFirma" type="text" placeholder="z. B. Müller Tiefbau GmbH" value="${escapeHtml(coState.firma)}">
-      </div>
-      <div class="co-field--row">
-        <div class="co-field"><label>Ansprechpartner</label><input id="coName" type="text" placeholder="Vor- und Nachname" value="${escapeHtml(coState.name)}"></div>
-        <div class="co-field"><label>Telefon <span style="font-weight:500;color:var(--muted)">(optional)</span></label><input id="coTel" type="tel" placeholder="" value="${escapeHtml(coState.tel)}"></div>
-      </div>
-      <div class="co-field">
-        <label>USt-IdNr. <span style="font-weight:500;color:var(--muted)">(optional)</span></label>
-        <input id="coVat" type="text" placeholder="DE…" value="${escapeHtml(coState.vat)}">
-      </div>
-
-      <div class="co-lbl">Zahlungsart</div>
-      <div class="co-methods">
-        ${coMethods(c).map(m=>`
-          <label class="co-m ${coState.method===m.key?'on':''} ${m.key==='rechnung'?'co-m--wide':''}" onclick="coSetMethod('${m.key}')">
-            ${m.logos ? `<span class="pmlogos">${m.logos}</span>` : `<i data-lucide="${m.icon}"></i>`}
-            <span><span>${m.label}</span><small>${m.sub}</small></span>
-          </label>`).join('')}
-      </div>
-
-      <!-- AGB werden EINMAL bei der Registrierung bestätigt (revisionssicher in app_consents) –
-           hier NICHT erneut abfragen (kein Doppel-Haken je Step). -->
       <div class="co-err" id="coErr"></div>
 
-      <button class="btn full" style="margin-top:13px" id="coSubmitBtn" onclick="coSubmit()">
-        <i data-lucide="${coState.method==='rechnung'?'file-check':'lock'}"></i> ${coState.method==='rechnung'?'Zahlungspflichtig bestellen':'Weiter zur Zahlung'}
+      <button class="btn full" style="margin-top:14px" id="coSubmitBtn" onclick="coSubmit()">
+        <i data-lucide="${inv?'file-check':'lock'}"></i> ${inv?'Zahlungspflichtig bestellen':'Weiter zur sicheren Zahlung – Karte / PayPal'}
       </button>
+      ${c.mode==='abo'?'':`<button class="btn ghost full" style="margin-top:8px" onclick="coSetMethod('${inv?'direct':'rechnung'}')">${inv?'Lieber direkt zahlen (Karte / PayPal)':'Lieber auf Rechnung zahlen'}</button>`}
+      ${inv?'<p class="sheet-note" style="margin-top:10px"><i data-lucide="info"></i> Freischaltung nach Zahlungseingang – überweist du heute, geht es morgen los.</p>':''}
     </div>`;
   icons();
 }
 
 async function coSubmit(){
-  coCaptureFields();
   coErr('');
-  if(!coState.firma){ coErr('Bitte gib deinen Firmennamen ein.'); return; }
-  if(!coState.name){ coErr('Bitte gib einen Ansprechpartner an.'); return; }
-  // AGB-Bestätigung erfolgt EINMAL bei der Registrierung – hier kein erneuter Gate.
   const c = coCalc(); if(!c){ coErr('Paket nicht erkannt. Bitte erneut über das Portal starten.'); return; }
+  // Firma kommt aus der Registrierung (user_metadata.firma). Das Eingabefeld erscheint nur
+  // als Fallback für Bestandskonten ohne Firmen-Metadatum. AGB: EINMAL bei der Registrierung.
+  const fEl = document.getElementById('coFirma');
+  if(fEl && fEl.value.trim()) coState.firma = fEl.value.trim();
+  if(!(coState.firma||'').trim()){ coErr('Bitte gib deinen Firmennamen ein.'); return; }
+  coState.name = ((GC_USER && GC_USER.user_metadata && GC_USER.user_metadata.name) || coState.name || coState.firma).trim();
 
   const btn = document.getElementById('coSubmitBtn');
   if(btn){ btn.disabled=true; btn.dataset._t=btn.innerHTML; btn.innerHTML='Bitte warten…'; }
 
   // Firmenname sofort übernehmen -> OS heißt ab jetzt „[Firmenname] OS"
-  settings.company = Object.assign({}, settings.company, { name:coState.firma, telefon:coState.tel||settings.company?.telefon });
+  settings.company = Object.assign({}, settings.company, { name:coState.firma });
   saveSettings();
   try{ applyBranding(); }catch(e){}
 
@@ -4089,7 +4079,7 @@ async function coSubmit(){
       const e = gcEntry();
       const { data, error } = await sbAuth.rpc('create_my_company', {
         p_name: coState.firma, p_branchen: settings.branchen||[],
-        p_theme: settings.theme||'galabau', p_ort: settings.company?.ort||null, p_telefon: coState.tel||null
+        p_theme: settings.theme||'galabau', p_ort: settings.company?.ort||null, p_telefon: null
       });
       if(!error && data){ GC_PROFILE = GC_PROFILE||{}; GC_PROFILE.customer_id = data; settings.cid = data; saveSettings(); try{ updateBetriebBanner(); }catch(_){ } }
       else if(error){ console.warn('create_my_company:', error.message); }
@@ -4099,12 +4089,12 @@ async function coSubmit(){
   // Edge Function ruft Preis-/Stripe-Logik (rechnet server-seitig neu)
   const e = gcEntry();
   const payload = {
-    mode: c.mode, pkg: c.pkgKey, qty: String(c.qty), method: coState.method,
+    mode: c.mode, pkg: c.pkgKey, qty: String(c.qty), method: coState.method==='rechnung'?'rechnung':'direct',
     term: e.term||'', ref: e.ref||'', codeRaw: e.code||'',
     brand: e.brand||'grey',                                        // Eintritts-Marke (Grey/Green) -> marken-richtige Mails
     customerId: (GC_PROFILE && GC_PROFILE.customer_id) || null,   // Bestellung↔Account verknüpfen
     authUserId: (GC_USER && GC_USER.id) || null,
-    customer: { name: coState.name, firma: coState.firma, email: (GC_USER&&GC_USER.email)||'', tel: coState.tel||'', vat: coState.vat||'' }
+    customer: { name: coState.name, firma: coState.firma, email: (GC_USER&&GC_USER.email)||'', tel:'', vat:'' }
   };
   try{
     const res = await fetch(SB_URL+'/functions/v1/dynamic-responder', {
@@ -4167,11 +4157,11 @@ function coDone(isInvoice){
     card.innerHTML = `
       <div class="co-done" style="padding:30px 24px 26px">
         <div class="co-check"><i data-lucide="check"></i></div>
-        <h3>Das hat geklappt!</h3>
-        <p>Deine Zahlung ist eingegangen. Wir schalten dein Kontingent jetzt frei.</p>
+        <h3>Zahlung erfolgreich!</h3>
+        <p>Deine Bestellung wird verarbeitet – du erhältst eine Bestellbestätigung per E-Mail.</p>
         <div id="coContingentBox" class="co-cont-box" style="margin:14px 0;padding:13px 15px;border:1px solid #CDEBD8;border-radius:12px;display:flex;gap:11px;align-items:center;font-size:13px;line-height:1.45;background:#E7F6EC">
           <i data-lucide="loader" style="width:19px;height:19px;color:#16A34A;flex:0 0 auto" class="co-spin"></i>
-          <span>Kontingent wird freigeschaltet … das dauert nur wenige Sekunden.</span>
+          <span><b>Bestellung wird verarbeitet</b> – das dauert bis zu 15 Sekunden, dein Kontingent wird automatisch freigeschaltet.</span>
         </div>
         <p>Richte jetzt <b>${firma}</b> ein – dann kannst du direkt deine erste Stelle veröffentlichen.</p>
         <button id="coPrimaryBtn" class="btn full" style="margin-top:16px" onclick="coFinish()"><i data-lucide="arrow-right"></i> Weiter zur Einrichtung</button>
@@ -4524,6 +4514,9 @@ async function doRegister(){
   const pw=(document.getElementById('regPassword')||{}).value||'';
   const pw2=(document.getElementById('regPassword2')||{}).value||'';
   const name=(document.getElementById('regName')||{}).value?.trim()||'';
+  const firma=(document.getElementById('regFirma')||{}).value?.trim()||'';
+  if(!name){ authErr('Bitte gib deinen Namen ein.'); return; }
+  if(!firma){ authErr('Bitte gib deinen Firmennamen ein.'); return; }
   if(!email||!/.+@.+\..+/.test(email)){ authErr('Bitte eine gültige E-Mail eingeben.'); return; }
   if(pw.length<8){ authErr('Das Passwort muss mindestens 8 Zeichen haben.'); return; }
   if(pw!==pw2){ authErr('Die Passwörter stimmen nicht überein.'); return; }
@@ -4534,7 +4527,7 @@ async function doRegister(){
     email, password:pw,
     // AGB-Bestaetigung am Registrierungszeitpunkt festhalten (Signup-Metadaten); afterAuth traegt
     // daraus revisionssicher einen app_consents-Nachweis nach, sobald es eine Session gibt.
-    options:{ data:{ name, agb_accepted:true, agb_version:CONSENT_VERSION, agb_at:new Date().toISOString() }, emailRedirectTo: window.location.origin + window.location.pathname + entryQueryString() }
+    options:{ data:{ name, firma, agb_accepted:true, agb_version:CONSENT_VERSION, agb_at:new Date().toISOString() }, emailRedirectTo: window.location.origin + window.location.pathname + entryQueryString() }
   });
   authBusy(false,'regBtn');
   if(error){
@@ -5665,7 +5658,7 @@ function applyBranding(){
   const rsl = document.getElementById('regSubLine'); if(rsl) rsl.textContent = `Starte mit deinem Betrieb in ${osName()}. Du bekommst gleich eine Bestätigungs-Mail.`;
   const pos = document.getElementById('poweredOs'); if(pos) pos.textContent = osName();
   // Sidebar Name
-  const sb = document.querySelector('.sidebrand__text b'); if(sb) sb.textContent = co.name || base;
+  const sb = document.querySelector('.sidebrand__text b'); if(sb){ sb.textContent = co.name || base; sb.title = co.name || base; }
   // Logo (Sidebar + Login-Brandmark) – pre-login neutrales Blatt statt fremdem Firmenlogo
   const logo = gcAuthed() ? (co.logo || '') : '';
   document.querySelectorAll('#sideBrandmark, .auth__brand .brandmark').forEach(mark=>{
