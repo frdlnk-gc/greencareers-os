@@ -3332,7 +3332,22 @@ function srcMeta(s){ return SOURCES[s] || SOURCES['manuell']; }
 // „Heute" = der echte aktuelle Tag. Die kuratierten Demo-Daten sind ursprünglich auf den
 // 2026-06-03 verankert und werden um genau diese Differenz mitverschoben, damit der Prototyp
 // immer „live" und in sich stimmig wirkt – egal wann er geöffnet wird.
-const TODAY = dISO(new Date());
+// „Heute" LIVE bei jeder Verwendung (Getter wie NOW): PWA-Tabs leben tagelang – eine
+// eingefrorene const würde Stempel nach Mitternacht aufs falsche Datum schreiben.
+Object.defineProperty(window, 'TODAY', { configurable:true, get(){ return dISO(new Date()); } });
+// Datumswechsel erkennen: beim Zurückkehren in den Tab Tagesdaten neu laden.
+let _lastSeenDay = dISO(new Date());
+document.addEventListener('visibilitychange', () => {
+  if(document.visibilityState !== 'visible') return;
+  const d = dISO(new Date());
+  const dayChanged = d !== _lastSeenDay;
+  if(dayChanged) _lastSeenDay = d;
+  // Auffrischen: bei Datumswechsel immer – sonst, wenn gerade die Zeiterfassung offen ist
+  // (Chef kehrt in den Tab zurück und will den echten Live-Stand sehen).
+  const zeitOpen = (typeof currentView!=='undefined' && currentView==='team' && typeof activeTeamTab!=='undefined' && activeTeamTab==='zeit');
+  if(!(dayChanged || zeitOpen)) return;
+  try{ if(typeof loadTimeEntries==='function' && window.sbAuth){ loadTimeEntries().then(()=>{ try{ rerenderCurrent(); }catch(_){} }); } }catch(_){}
+});
 const DEMO_ANCHOR = '2026-06-03';
 const DEMO_SHIFT = Math.round((dParse(TODAY) - dParse(DEMO_ANCHOR)) / 864e5);
 function shiftISO(iso){ return iso ? addDays(iso, DEMO_SHIFT) : iso; }
@@ -3494,6 +3509,7 @@ const ROLES = {
   buero:       {label:'Personalverwaltung', short:'Personal', icon:'user-cog', sub:'Personal, Kolonnen & Kunden'},
   buchhaltung: {label:'Buchhaltung', short:'Buchhaltung', icon:'calculator', sub:'Rechnungen, Angebote & Kunden – keine Personaldaten'},
   mitarbeiter: {label:'Mitarbeiter', short:'Mitarbeiter', icon:'hard-hat', sub:'Sieht nur das Eigene'},
+  kolonnenfuehrer: {label:'Kolonnenführer', short:'Kolonnenführer', icon:'hard-hat', sub:'Stempelt & sieht seine Kolonne'},
 };
 // ---- Kolonnen-Helfer (Single Source of Truth: crews + employee.crewId) ----
 function crewById(id){ return crews.find(c => c.id === id) || null; }
@@ -4229,7 +4245,7 @@ function openComingSoon(id){
     <div class="sheet__body">
       <div style="text-align:center;padding:8px 0 4px">
         <div style="font-size:34px;line-height:1;margin-bottom:10px">🚀</div>
-        <div style="font-size:18px;font-weight:800;color:var(--ink)">Wir sind gerade in der Entwicklungsphase –<br>und das wird richtig geil.</div>
+        <div style="font-size:18px;font-weight:800;color:var(--ink)">Dieses Modul ist in Arbeit –<br>wir schalten es in Kürze für dich frei.</div>
       </div>
       <p class="cs-lead" style="margin-top:14px">${m.text}</p>
       <ul class="cs-list">${m.points.map(p => `<li><i data-lucide="check"></i> ${p}</li>`).join('')}</ul>
@@ -4883,7 +4899,7 @@ function enterApp(){
   if(welcomePending()){ openWelcome(); return; }
   // Eingeloggte Mitarbeiter/Büro durchlaufen NICHT das Inhaber-Onboarding
   // (AVV/Einrichtung/Tour gehört dem Betriebsinhaber). Sie sind direkt drin.
-  const isEmployee = GC_PROFILE && (GC_PROFILE.role==='mitarbeiter' || GC_PROFILE.role==='buero');
+  const isEmployee = GC_PROFILE && (GC_PROFILE.role==='mitarbeiter' || GC_PROFILE.role==='buero' || GC_PROFILE.role==='kolonnenfuehrer' || GC_PROFILE.role==='buchhaltung');
   if(isEmployee){ settings.onboarded = true; return; }
   // Erstnutzung: Einrichtung -> Tour. KEIN Upfront-Consent mehr (AGB bei Registrierung, AVV vor
   // erstem Veroeffentlichen, Art.9 vor erster Abwesenheiten-Nutzung – jeweils kontextuell gegated).
@@ -5034,7 +5050,8 @@ function renderNav(){
 }
 // Rolle anwenden: Sidebar-User, Rollen-Pill, Preview-Bar, Nav & Default-View
 function applyRole(){
-  const r = ROLES[viewRole];
+  // Defensiv: unbekannte Rolle darf NIE die App crashen (leere Hülle) – Fallback Mitarbeiter.
+  const r = ROLES[viewRole] || ROLES.mitarbeiter;
   const ownerName = (settings.company && settings.company.owner && settings.company.owner.trim())
     || (typeof GC_USER!=='undefined' && GC_USER && GC_USER.user_metadata && GC_USER.user_metadata.name)
     || 'Inhaber';
@@ -5043,9 +5060,17 @@ function applyRole(){
   document.getElementById('sideUserName').textContent = name;
   document.getElementById('sideUserRole').textContent = r.label;
   document.getElementById('sideAvatar').textContent = initials(name);
-  // Preview-Bar bleibt im echten Produkt immer leer/versteckt (Demo-Vorschau entfernt).
+  // Vorschau-Leiste: sichtbar NUR während einer aktiven "So sieht dein Mitarbeiter die App"-Vorschau –
+  // mit klarem Rückweg. (Der Inhaber lädt sein Team sonst blind ein.)
   const pv = document.getElementById('previewBar');
-  if(pv){ pv.classList.add('hidden'); pv.innerHTML=''; }
+  if(pv){
+    if(_previewFrom){
+      const who = (viewRole==='mitarbeiter'||viewRole==='kolonnenfuehrer') ? ((selfEmp()&&selfEmp().name)||'Mitarbeiter') : r.label;
+      pv.classList.remove('hidden');
+      pv.innerHTML = `<i data-lucide="eye"></i> <span>Vorschau: Du siehst die App gerade als <b>${escapeHtml(who)}</b>. Aktionen sind hier deaktiviert.</span> <button onclick="endRolePreview()"><i data-lucide="arrow-left"></i> Zurück zu deiner Ansicht</button>`;
+      try{ icons(); }catch(_){}
+    } else { pv.classList.add('hidden'); pv.innerHTML=''; }
+  }
   // Nav neu, View ggf. zurücksetzen wenn aktueller View für Rolle gesperrt
   const allowed = navForRole().map(n => n.id);
   const free = allowed.filter(id => !isLocked(id));
@@ -5063,25 +5088,40 @@ function setRole(role, empId){
   if(role === 'mitarbeiter' && empId) viewEmpId = empId;
   closeSheet();
   applyRole();
-  toast(role === 'admin' ? 'Admin-Ansicht' : 'Vorschau: ' + (role === 'mitarbeiter' ? selfEmp().name : 'Personalverwaltung'));
+  toast(role === 'admin' ? 'Deine Ansicht' : 'Vorschau: ' + (role === 'mitarbeiter' ? ((selfEmp()&&selfEmp().name)||'Mitarbeiter') : (ROLES[role]||{}).label || role));
+}
+// View-as: Inhaber prüft, was sein Team sieht – BEVOR er einlädt. Aktionen (Stempeln,
+// Anträge) sind in der Vorschau deaktiviert, damit keine echten Daten entstehen.
+let _previewFrom = null;
+function inRolePreview(){ return !!_previewFrom; }
+function startRolePreview(role, empId){
+  if(_previewFrom === null) _previewFrom = viewRole;
+  setRole(role, empId);
+}
+function endRolePreview(){
+  const back = _previewFrom || 'admin';
+  _previewFrom = null;
+  setRole(back);
 }
 function openRoleSwitch(){
-  const staff = employees.filter(e => e.account !== 'none');
-  const opt = (role, sel) => { const r = ROLES[role]; return `<button class="roleopt ${sel?'on':''}" onclick="setRole('${role}')">
+  // Vorschau-Auswahl: ALLE Mitarbeiter anbieten (auch ohne Zugang – genau dann will man ja
+  // vorab sehen, was sie nach der Einladung erwartet).
+  const staff = employees.length ? employees : [];
+  const opt = (role, sel) => { const r = ROLES[role]; return `<button class="roleopt ${sel?'on':''}" onclick="startRolePreview('${role}')">
       <span class="roleopt__ico"><i data-lucide="${r.icon}"></i></span>
       <span class="roleopt__txt"><b>${r.label}</b><small>${r.sub}</small></span>${sel?'<i data-lucide="check" class="roleopt__chk"></i>':''}</button>`; };
-  const maOptions = staff.map(e => `<button class="roleopt sub ${viewRole==='mitarbeiter'&&viewEmpId===e.id?'on':''}" onclick="setRole('mitarbeiter',${e.id})">
+  const maOptions = staff.map(e => `<button class="roleopt sub ${viewRole==='mitarbeiter'&&viewEmpId===e.id?'on':''}" onclick="startRolePreview('mitarbeiter',${e.id})">
       <span class="avatar sm">${initials(e.name)}</span>
-      <span class="roleopt__txt"><b>${e.name}</b><small>${e.role}</small></span>${viewRole==='mitarbeiter'&&viewEmpId===e.id?'<i data-lucide="check" class="roleopt__chk"></i>':''}</button>`).join('');
+      <span class="roleopt__txt"><b>${e.name}</b><small>${e.role}</small></span>${viewRole==='mitarbeiter'&&viewEmpId===e.id?'<i data-lucide="check" class="roleopt__chk"></i>':''}</button>`).join('')
+    || `<p class="sheet-note"><i data-lucide="info"></i> Lege zuerst einen Mitarbeiter an (Team → Mitarbeiter anlegen) – dann kannst du hier seine Ansicht prüfen.</p>`;
   openSheet(`
     <div class="sheet__head">
       <span class="avatar" style="width:50px;height:50px;font-size:17px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="eye" style="width:22px;height:22px"></i></span>
-      <div><div class="sheet__title">Demo-Ansicht wechseln</div><div class="sheet__sub">Nur in dieser Vorschau – im echten Produkt nicht sichtbar</div></div>
+      <div><div class="sheet__title">So sehen andere die App</div><div class="sheet__sub">Prüfe vor dem Einladen, was dein Team sieht</div></div>
       <button class="iconbtn sheet__close" onclick="closeSheet()" aria-label="Schließen"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body">
-      <p class="sheet-note"><i data-lucide="info"></i> <b>Reiner Demo-Schalter:</b> Hier kannst du ausprobieren, wie Inhaber, Personalverwaltung, Buchhaltung &amp; Mitarbeiter die App jeweils sehen. Im fertigen Produkt ist dieser Platz in der Topbar frei – jeder meldet sich einfach mit seiner eigenen Rolle an.</p>
-      ${opt('admin', viewRole==='admin')}
+      <p class="sheet-note"><i data-lucide="info"></i> <span>Du wechselst nur die <b>Ansicht</b> – oben erscheint eine Leiste mit dem Rückweg. Aktionen wie Stempeln oder Anträge sind in der Vorschau deaktiviert.</span></p>
       ${opt('buero', viewRole==='buero')}
       ${opt('buchhaltung', viewRole==='buchhaltung')}
       <div class="roleopt__label"><i data-lucide="hard-hat"></i> Als Mitarbeiter ansehen</div>
@@ -5306,7 +5346,7 @@ function setTabKonto(s, c){
   return `
       <div class="setsec">Deine Daten</div>
       <div class="data-vault">
-        <div class="data-vault__head"><i data-lucide="database-backup"></i> <b>Alles automatisch gesichert</b><span class="data-vault__badge"><i data-lucide="check"></i> Letztes Backup heute, 06:00</span></div>
+        <div class="data-vault__head"><i data-lucide="database-backup"></i> <b>Alles automatisch gesichert</b><span class="data-vault__badge"><i data-lucide="check"></i> täglich automatisch gesichert</span></div>
         <div class="data-vault__grid">
           <div class="data-vault__stat"><b>${customers.length}</b><small>Kunden</small></div>
           <div class="data-vault__stat"><b>${employees.length}</b><small>Mitarbeiter</small></div>
@@ -7201,6 +7241,7 @@ function mitarbeiterAppView(){
       <p>Jeder Mitarbeiter hat seinen eigenen Zugang und sieht nur seinen Bereich: Stempeln, Stunden, Urlaub, Krankmeldung. Kein Zettelchaos.</p>
       <div class="apphero__acts">
         ${invBtn}
+        <button class="mini-btn primary" style="margin-top:10px" onclick="openRoleSwitch()"><i data-lucide="eye"></i> So sieht dein Mitarbeiter die App</button>
         <button class="mini-btn" style="margin-top:10px" onclick="appCopyLink()"><i data-lucide="smartphone"></i> App-Adresse kopieren</button>
       </div>
       <div class="apphero__note" style="margin-top:10px;display:flex;gap:7px;align-items:flex-start;font-size:12.5px;color:var(--muted)"><i data-lucide="key-round" style="width:14px;height:14px;flex:none;margin-top:2px"></i><span>Der Zugang kommt über den <b>persönlichen Einladungs-Link</b> (per WhatsApp oder E-Mail) – die App-Adresse allein reicht nicht.</span></div>
@@ -7279,7 +7320,14 @@ function teamTab(tab){
   document.getElementById('teamBody').innerHTML = TEAM[tab]();
   icons();
   if(tab === 'urlaub') initCalDrag();
+  // Zeiterfassung IMMER DB-frisch (max. alle 15 s): sonst bleibt „Live im Einsatz" den ganzen
+  // Tag auf dem Boot-Stand eingefroren, während die Leute draußen längst stempeln.
+  if(tab === 'zeit' && typeof loadTimeEntries==='function' && window.sbAuth && Date.now()-_zeitLastFetch > 15000){
+    _zeitLastFetch = Date.now();
+    loadTimeEntries().then(()=>{ if(currentView==='team' && activeTeamTab==='zeit') teamTab('zeit'); }).catch(()=>{});
+  }
 }
+let _zeitLastFetch = 0;
 
 const TEAM = {
   mitarbeiter: () => `
@@ -8197,8 +8245,8 @@ const FIN = {
            ondrop="handleBelegDrop(event)">
         <div class="dropzone__inner">
           <span class="dropzone__ic"><i data-lucide="upload-cloud"></i></span>
-          <div><strong>Beleg hierher ziehen</strong><span>PDF, JPG oder PNG – wird automatisch ausgelesen & einer Zahlung zugeordnet</span></div>
-          <button class="btn" onclick="simulateBelegUpload()"><i data-lucide="file-plus"></i> Beleg hochladen</button>
+          <div><strong>Beleg erfassen</strong><span>Lieferant, Betrag &amp; Kategorie kurz eintragen – automatisches Auslesen von PDFs folgt später</span></div>
+          <button class="btn" onclick="openBelegManual(null)"><i data-lucide="file-plus"></i> Beleg erfassen</button>
         </div>
       </div>
       <div class="panel">
@@ -8222,8 +8270,8 @@ const FIN = {
         <div class="panel connect-hero">
           <span class="connect-hero__ic"><i data-lucide="landmark"></i></span>
           <h3>Bankkonto verbinden</h3>
-          <p>Synchronisiere dein Geschäftskonto sicher per PSD2 (FinAPI/Tink). Umsätze werden automatisch geholt und deinen Rechnungen & Belegen zugeordnet.</p>
-          <button class="btn primary" onclick="toggleIntegration('bank')"><i data-lucide="plug"></i> Konto verbinden</button>
+          <p>Die Bank-Anbindung (PSD2, read-only) kommt in Kürze: Umsätze werden dann automatisch geholt und deinen Rechnungen &amp; Belegen zugeordnet.</p>
+          <span class="pill" style="display:inline-block">Bald verfügbar</span>
           <p class="muted sm" style="margin-top:10px"><i data-lucide="shield-check" style="width:13px;height:13px"></i> Read-only-Zugriff · keine Überweisungen möglich</p>
         </div>`;
     }
@@ -8234,7 +8282,7 @@ const FIN = {
       <div class="bank-head">
         <div class="bank-acct">
           <span class="bank-acct__ic"><i data-lucide="landmark"></i></span>
-          <div><strong>Müller GaLaBau · Geschäftskonto</strong><span class="muted sm">DE89 3704 0044 0532 0130 00 · synchronisiert vor 4 Min.</span></div>
+          <div><strong>Geschäftskonto</strong><span class="muted sm">Demo-Daten zur Vorschau</span></div>
         </div>
         <div class="bank-saldo"><span class="muted sm">Saldo (Demo)</span><div class="num">${eur(saldo)}</div></div>
       </div>
@@ -8267,9 +8315,7 @@ const FIN = {
                 <strong>${it.name}</strong>
                 <span>${it.desc}</span>
               </div>
-              <button class="btn sm ${intConnected(it.key)?'ghost':'primary'}" onclick="toggleIntegration('${it.key}')">
-                ${intConnected(it.key)?'<i data-lucide="check"></i> Verbunden':'<i data-lucide="plug"></i> Verbinden'}
-              </button>
+              <span class="pill" style="align-self:center;white-space:nowrap">Bald verfügbar</span>
             </div>`).join('')}
         </div>
       </div>`).join('');
@@ -8589,7 +8635,7 @@ function kalkVoiceToggle(){
     const ta=document.getElementById('kvText'); if(ta) ta.value = kalkVoiceText;
     kvPreview();
   };
-  kalkVoiceRec.onerror = () => { if(btn) btn.classList.remove('on'); kalkVoiceRec=null; toast('Aufnahme pausiert'); };
+  kalkVoiceRec.onerror = (e) => { if(btn) btn.classList.remove('on'); kalkVoiceRec=null; const m=voiceErrMsg(e&&e.error); if(m) toast(m); };
   kalkVoiceRec.onend = () => { if(btn) btn.classList.remove('on'); kalkVoiceRec=null; };
   try{ kalkVoiceRec.start(); toast('Sprich jetzt … (zum Pausieren erneut tippen)'); }catch(e){ kalkVoiceRec=null; if(btn) btn.classList.remove('on'); }
 }
@@ -8805,14 +8851,14 @@ function invMail(id){
   openSheet(`
     <div class="sheet__head">
       <span class="avatar" style="width:44px;height:44px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="mail" style="width:20px;height:20px"></i></span>
-      <div><div class="sheet__title">${isAng?'Angebot':'Rechnung'} versenden</div><div class="sheet__sub">${inv.no} · PDF wird automatisch angehängt</div></div>
+      <div><div class="sheet__title">${isAng?'Angebot':'Rechnung'} versenden</div><div class="sheet__sub">${inv.no} · öffnet deine E-Mail-App mit fertigem Text</div></div>
       <button class="sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
     </div>
     <div class="sheet__body">
       <div class="field"><label>An</label><input id="mailTo" value="${escapeHtml(c?.email||'')}" placeholder="kunde@example.de"></div>
       <div class="field"><label>Betreff</label><input id="mailSubj" value="${escapeHtml(subj)}"></div>
       <div class="field"><label>Nachricht</label><textarea id="mailBody" rows="7" style="resize:vertical">${escapeHtml(body)}</textarea></div>
-      <div class="mail-attach"><i data-lucide="paperclip"></i> ${inv.no}.pdf <span class="muted sm">automatisch angehängt</span></div>
+      <div class="mail-attach"><i data-lucide="paperclip"></i> <span class="muted sm">Tipp: Erst über „Drucken / PDF" die ${inv.no}.pdf speichern und in der Mail anhängen.</span></div>
       <div class="sheet-actions">
         <button class="btn" style="flex:1" onclick="invMailSend('${inv.id}')"><i data-lucide="send"></i> Senden</button>
         <button class="btn ghost" onclick="closeSheet()">Abbrechen</button>
@@ -8821,12 +8867,16 @@ function invMail(id){
 }
 function invMailSend(id){
   const inv = invoices.find(i=>i.id===id); if(!inv) return;
-  const to = (document.getElementById('mailTo')||{}).value || '';
+  const g = x => (document.getElementById(x)||{}).value || '';
+  const to = g('mailTo').trim(), subj = g('mailSubj'), body = g('mailBody');
   if(inv.kind==='angebot' && inv.status==='entwurf') inv.status='versendet';
   if(inv.kind==='rechnung' && inv.status==='entwurf') inv.status='offen';
   closeSheet();
   const ov = document.getElementById('printOverlay'); if(ov) ov.remove();
-  toast(`${inv.kind==='angebot'?'Angebot':'Rechnung'} an ${to||'Kunde'} versendet`);
+  // EHRLICH: Es gibt (noch) keinen Server-Versand – wir öffnen die E-Mail-App mit fertigem
+  // Entwurf (wie bei Bewerber-Mails) statt fälschlich "versendet" zu behaupten.
+  try{ window.location.href = 'mailto:'+encodeURIComponent(to)+'?subject='+encodeURIComponent(subj)+'&body='+encodeURIComponent(body); }catch(_){}
+  toast('E-Mail-Entwurf geöffnet – Status auf '+(inv.kind==='angebot'?'„versendet"':'„offen"')+' gesetzt');
   if(currentView==='finanzen') finTab(activeFinTab);
 }
 function openInvoice(id){
@@ -8932,27 +8982,47 @@ function handleBelegDrop(ev){
   ev.preventDefault();
   const dz = document.getElementById('belegDrop'); if(dz) dz.classList.remove('over');
   const f = ev.dataTransfer && ev.dataTransfer.files && ev.dataTransfer.files[0];
-  ingestBeleg(f ? f.name : null);
+  openBelegManual(f ? f.name : null);
 }
-function simulateBelegUpload(){ ingestBeleg(null); }
-function ingestBeleg(fname){
-  // OCR-Simulation: neuer Beleg „erkannt", versucht passende offene Bankbuchung zu finden
-  const samples = [
-    {vendor:'Bauhaus Fachcentrum', cat:'Material',  amount:-642.80, txn:null},
-    {vendor:'DEKRA Prüfstelle',    cat:'Fahrzeuge', amount:-129.00, txn:null},
-    {vendor:'Stadtwerke Nord',     cat:'Büro',      amount:-86.50,  txn:null},
-  ];
-  const s = samples[Math.floor(Math.random()*samples.length)];
+function simulateBelegUpload(){ openBelegManual(null); }   // Alt-Aufrufe -> ehrliches Formular
+// EHRLICH statt OCR-Attrappe: Der Nutzer erfasst den Beleg selbst (kein erfundener
+// Zufalls-Beleg mehr). Automatisches Auslesen kommt erst, wenn es echt existiert.
+function openBelegManual(fname){
+  const cats = ['Material','Fahrzeuge','Büro','Werkzeug','Entsorgung','Sonstiges'];
+  openSheet(`
+    <div class="sheet__head">
+      <span class="avatar" style="width:46px;height:46px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="receipt" style="width:20px;height:20px"></i></span>
+      <div><div class="sheet__title">Beleg erfassen</div><div class="sheet__sub">Kurz eintragen – fertig</div></div>
+      <button class="sheet__close" onclick="closeSheet()"><i data-lucide="x"></i></button>
+    </div>
+    <div class="sheet__body">
+      ${fname?`<p class="sheet-note"><i data-lucide="paperclip"></i> <span>Datei <b>${escapeHtml(fname)}</b> erkannt. Die Datei-Ablage folgt – trage Lieferant &amp; Betrag bitte kurz selbst ein.</span></p>`:''}
+      <div class="field"><label>Lieferant / Händler</label><input id="bmVendor" placeholder="z. B. Bauhaus"></div>
+      <div class="fieldrow">
+        <div class="field"><label>Betrag (€)</label><input id="bmAmount" inputmode="decimal" placeholder="z. B. 149,90"></div>
+        <div class="field"><label>Datum</label><input id="bmDate" type="date" value="${TODAY}"></div>
+      </div>
+      <div class="field"><label>Kategorie</label><select id="bmCat">${cats.map(c=>`<option>${c}</option>`).join('')}</select></div>
+      <div class="sheet-actions">
+        <button class="btn" style="flex:1" onclick="saveBelegManual(${fname?`'${String(fname).replace(/['\\\\]/g,'')}'`:'null'})"><i data-lucide="check"></i> Beleg speichern</button>
+        <button class="btn ghost" onclick="closeSheet()">Abbrechen</button>
+      </div>
+    </div>`);
+}
+function saveBelegManual(fname){
+  const g = id => (document.getElementById(id)||{}).value||'';
+  const vendor = g('bmVendor').trim();
+  const amt = parseFloat(String(g('bmAmount')).replace(/\./g,'').replace(',','.'));
+  if(!vendor){ toast('Bitte Lieferant angeben.'); return; }
+  if(!isFinite(amt) || amt<=0){ toast('Bitte einen gültigen Betrag angeben.'); return; }
   belegSeq++;
-  const e = {id:'b'+belegSeq, vendor:s.vendor, cat:s.cat, date:dISO(new Date()),
-    amount:s.amount, status:'zu_pruefen', file:(fname||s.vendor.toLowerCase().replace(/\s+/g,'_')+'.pdf'), matched:null};
-  // passende offene Bankbuchung (gleicher Betrag) suchen
-  const m = bankTxns.find(t=>!t.matched && Math.abs(t.amount - s.amount) < 0.01);
+  const e = {id:'b'+belegSeq, vendor, cat:g('bmCat')||'Sonstiges', date:g('bmDate')||TODAY,
+    amount:-Math.abs(amt), status:'geprueft', file:fname||null, matched:null};
+  const m = bankTxns.find(t=>!t.matched && Math.abs(t.amount - e.amount) < 0.01);
   if(m) e.matched = m.id;
   expenses.unshift(e);
-  toast('Beleg erkannt – bitte prüfen');
+  closeSheet(); toast('Beleg erfasst');
   if(currentView==='finanzen'){ activeFinTab='ausgaben'; finTab('ausgaben'); }
-  setTimeout(()=>openBeleg(e.id), 320);
 }
 
 /* ===== Bank-Umsätze zuordnen ===== */
@@ -9143,23 +9213,9 @@ function brainInvoiceHelp(id){
 
 /* ===================== MARKT (Community + Marktplatz) ===================== */
 let marktSeq = 200;
-const marktPosts = [
-  {id:'m1', type:'frage', who:'Stefan Brück', firm:'Brück Garten- & Landschaftsbau', city:'Lüneburg', color:'#16A34A', when:'vor 2 Std.',
-   text:'Wie kalkuliert ihr aktuell den lfm Naturstein-Mauer? Komme bei den Materialpreisen kaum noch hin. Steine + Mörtel + Fundament – was nehmt ihr pro lfm?',
-   tags:['Kalkulation','Naturstein'], likes:12, comments:8},
-  {id:'m2', type:'markt', who:'Andrea Voss', firm:'Voss GaLaBau', city:'Buchholz', color:'#7C3AED', when:'vor 4 Std.',
-   text:'Wir steigen auf größere Maschinen um – Radlader abzugeben.', sale:{item:'Radlader Kramer 5055', price:'18.900 € VB', cond:'Bj. 2019, 2.400 Bh, top gepflegt, Schaufel + Palettengabel', img:'radlader'},
-   tags:['Maschine','Radlader'], likes:5, comments:3},
-  {id:'m3', type:'tipp', who:'Georg Müller', firm:'Müller GaLaBau', city:'Hamburg', color:'#0E7A43', when:'vor 1 Tag', me:true,
-   text:'Kleiner Tipp gegen Personalmangel: Wir nehmen seit 3 Monaten Bewerber über den BewerberBot vorqualifiziert rein – Quote hat sich verdoppelt. Frag mich gern, wie wir das aufgesetzt haben.',
-   tags:['Recruiting','Erfahrung'], likes:23, comments:14},
-  {id:'m4', type:'frage', who:'Mehmet Yıldız', firm:'Yıldız Außenanlagen', city:'Norderstedt', color:'#B7791F', when:'vor 1 Tag',
-   text:'Hat jemand Erfahrung mit dem neuen Mähroboter-Service als Zusatzgeschäft im Winter? Lohnt sich das oder ist das nur Aufwand?',
-   tags:['Geschäftsmodell','Wartung'], likes:9, comments:11},
-  {id:'m5', type:'markt', who:'Klaus Reimer', firm:'Reimer Gartengestaltung', city:'Pinneberg', color:'#2563EB', when:'vor 2 Tagen',
-   text:'Restposten abzugeben – muss Platz im Lager machen.', sale:{item:'Granit-Pflaster grau 8/11', price:'12 €/m² (Restposten)', cond:'ca. 140 m² vorhanden, neuwertig, Selbstabholung Pinneberg', img:'pflaster'},
-   tags:['Material','Pflaster'], likes:7, comments:4},
-];
+// KEINE erfundenen Betriebe/Posts mehr (Fake-Community zerstört Vertrauen). Der Markt
+// startet leer und füllt sich mit echten Beiträgen, sobald markt_posts in Supabase live ist.
+const marktPosts = [];
 function marktTabList(){
   return [ {id:'feed', label:'Feed', count:''},
            {id:'marktplatz', label:'Marktplatz', count:marktPosts.filter(p=>p.type==='markt').length},
@@ -9173,7 +9229,7 @@ function marktTab(tab){
   icons();
 }
 const MARKT = {
-  feed: () => marktComposer() + `<div class="feed">${marktPosts.map(postCard).join('')}</div>`,
+  feed: () => marktComposer() + `<div class="feed">${marktPosts.map(postCard).join('') || '<p class="empty">Noch keine Beiträge aus deiner Region – starte den ersten.</p>'}</div>`,
   marktplatz: () => marktComposer('markt') + `<div class="feed">${marktPosts.filter(p=>p.type==='markt').map(postCard).join('') || '<p class="empty">Noch keine Anzeigen.</p>'}</div>`,
   fragen: () => marktComposer('frage') + `<div class="feed">${marktPosts.filter(p=>p.type==='frage').map(postCard).join('') || '<p class="empty">Noch keine Fragen.</p>'}</div>`,
 };
@@ -9209,14 +9265,11 @@ function postCard(p){
         <strong>${p.sale.item}</strong>
         <span class="post__price">${p.sale.price}</span>
         <span class="post__cond">${p.sale.cond}</span>
-        <button class="btn sm" onclick="toast('Nachricht an ${p.firm} – Chat folgt')"><i data-lucide="message-circle"></i> Anfragen</button>
       </div>
     </div>` : ''}
     <div class="post__tags">${p.tags.map(t=>`<span class="post__tag">#${t}</span>`).join('')}</div>
     <div class="post__foot">
       <button class="post__act" onclick="marktLike('${p.id}')"><i data-lucide="thumbs-up"></i> ${p.likes}</button>
-      <button class="post__act" onclick="toast('Kommentare folgen')"><i data-lucide="message-square"></i> ${p.comments}</button>
-      <button class="post__act" onclick="toast('Geteilt im Netzwerk')"><i data-lucide="share-2"></i> Teilen</button>
     </div>
   </div>`;
 }
@@ -9273,7 +9326,7 @@ function submitMarkt(){
     tags: d.tags.split(',').map(s=>s.trim()).filter(Boolean) };
   if(d.type==='markt') post.sale = { item:d.sale.item.trim(), price:d.sale.price.trim()||'VB', cond:d.sale.cond.trim(), img:'' };
   marktPosts.unshift(post); marktDraft=null; closeSheet();
-  toast('Im Netzwerk gepostet');
+  toast('Beitrag gespeichert (Beta) – aktuell nur für dich sichtbar');
   if(currentView==='markt') marktTab(activeMarktTab);
 }
 
@@ -9308,7 +9361,7 @@ function renderBrain(){
       <div class="brain-input">
         <button class="brain-mic" id="brainMic" title="Antippen und sprechen – erneut antippen zum Senden"
           onclick="brainMicToggle(event)"><i data-lucide="mic"></i></button>
-        <input type="text" id="brainText" placeholder="Frag dein Assistent…" onkeydown="if(event.key==='Enter'){brainSend(this.value); this.value='';}">
+        <input type="text" id="brainText" placeholder="Frag deinen Assistenten …" onkeydown="if(event.key==='Enter'){brainSend(this.value); this.value='';}">
         <button class="brain-send" onclick="const t=document.getElementById('brainText'); brainSend(t.value); t.value='';"><i data-lucide="arrow-up"></i></button>
       </div>
     </div>`);
@@ -9473,8 +9526,18 @@ function brainMicDown(ev){
     _brainHeard = (_fin+intr).trim();
     if(input) input.value = _brainHeard;
   };
-  brainRec.onerror = (e)=>{ if(e && e.error==='not-allowed') toast('Mikrofon-Zugriff blockiert – bitte im Browser erlauben.'); };
-  brainRec.onend = ()=>{ if(_brainPTT && brainRec){ try{ brainRec.start(); }catch(e){} } else if(mic) mic.classList.remove('rec'); };
+  let _restarts = 0;   // Schutz vor Endlos-Restart (rot blinkt, nimmt aber nie auf)
+  brainRec.onerror = (e)=>{
+    const err = e && e.error;
+    if(voiceFatalErr(err)){ _brainPTT=false; if(mic) mic.classList.remove('rec'); const r=brainRec; brainRec=null; try{ r.onend=null; }catch(_){} const m=voiceErrMsg(err); if(m) toast(m); }
+  };
+  brainRec.onend = ()=>{
+    if(_brainPTT && brainRec){
+      _restarts++;
+      if(_restarts > 8){ brainMicUp(null); return; }   // nach ~8 stillen Neustarts sauber beenden
+      try{ brainRec.start(); }catch(e){ _brainPTT=false; if(mic) mic.classList.remove('rec'); brainRec=null; }
+    } else if(mic) mic.classList.remove('rec');
+  };
   try{ brainRec.start(); }catch(e){}
 }
 function brainMicUp(ev){
@@ -9515,10 +9578,20 @@ function voiceFabStart(){
     _voiceHeard = (_voiceFinal + intr).trim();
     const tx = document.getElementById('voiceHudTxt'); if(tx && _voiceHeard) tx.textContent = _voiceHeard;
   };
-  gVoiceRec.onerror = (e)=>{ if(e && e.error==='not-allowed'){ _voiceOn=false; hideVoiceHud(); if(btn) btn.classList.remove('rec'); toast('Mikrofon-Zugriff wurde blockiert – bitte in den Browser-Einstellungen erlauben.'); } };
+  let _vrestarts = 0;   // Schutz vor Endlos-Restart-Loop (P0: blinkt rot, nimmt nie auf)
+  gVoiceRec.onerror = (e)=>{
+    const err = e && e.error;
+    if(voiceFatalErr(err)){ _voiceOn=false; hideVoiceHud(); if(btn) btn.classList.remove('rec'); const r=gVoiceRec; gVoiceRec=null; try{ r.onend=null; }catch(_){} const m=voiceErrMsg(err); if(m) toast(m); }
+  };
   // Chrome stoppt die Erkennung nach kurzer Stille: solange der Nutzer nicht selbst beendet
-  // hat, einfach weiter zuhören (gesammelter Text bleibt erhalten).
-  gVoiceRec.onend = ()=>{ if(_voiceOn && gVoiceRec){ try{ gVoiceRec.start(); }catch(e){} } };
+  // hat, weiter zuhören – aber begrenzt, sonst blinkt es ewig ohne Aufnahme.
+  gVoiceRec.onend = ()=>{
+    if(_voiceOn && gVoiceRec){
+      _vrestarts++;
+      if(_vrestarts > 8){ voiceFabStop(); return; }
+      try{ gVoiceRec.start(); }catch(e){ voiceFabStop(); }
+    }
+  };
   try{ gVoiceRec.start(); }catch(e){}
 }
 function voiceFabStop(){
@@ -9753,7 +9826,7 @@ function reSpeakEmployee(btn){
   if(btn){ btn.classList.add('on'); btn.innerHTML='<i data-lucide="square"></i> Stopp'; if(window.lucide) lucide.createIcons(); }
   const heardEl=document.getElementById('vcHeard'); if(heardEl) heardEl.textContent='Sprich jetzt …';
   _reRec.onresult=(e)=>{ let fin='',intr=''; for(let i=0;i<e.results.length;i++){ const r=e.results[i]; if(r.isFinal) fin+=r[0].transcript; else intr+=r[0].transcript; } _reHeard=(fin||intr).trim(); if(heardEl&&_reHeard) heardEl.textContent='„'+_reHeard+'"'; };
-  _reRec.onerror=(e)=>{ if(e&&e.error!=='aborted'&&e.error!=='no-speech') toast('Spracheingabe abgebrochen'); };
+  _reRec.onerror=(e)=>{ const m=voiceErrMsg(e&&e.error); if(m) toast(m); };
   _reRec.onend=()=>{ _reRec=null; const b=document.getElementById('vcReBtn'); if(b){ b.classList.remove('on'); b.innerHTML='<i data-lucide="mic"></i> Nochmal einsprechen'; if(window.lucide) lucide.createIcons(); } const t=(_reHeard||'').trim(); _reHeard=''; if(t) mergeEmployeeSpeech(t); else toast('Nichts verstanden – nochmal versuchen'); };
   try{_reRec.start();}catch(e){ _reRec=null; }
 }
@@ -10339,6 +10412,7 @@ function afterAbsChange(){ renderUrlaub(); refreshUrlaubBadge(); }
 function viewAu(id){ const url = auImages[id]; if(!url) return; openSheet(`<div class="sheet__head"><div><div class="sheet__title">AU-Bescheinigung</div><div class="sheet__sub">Foto vom Mitarbeiter hochgeladen</div></div><button class="iconbtn sheet__close" onclick="openAbsence(${id})" aria-label="Zurück"><i data-lucide="x"></i></button></div><div class="sheet__body"><img src="${url}" alt="AU" style="width:100%;border-radius:10px;border:1px solid var(--line)"></div>`); }
 
 function openAbsenceForm(preEmp, preFrom, preTo, preType, preNote, editId, preHalf){
+  if(inRolePreview()){ toast('Vorschau-Modus: Anträge sind hier deaktiviert.'); return; }
   // Art.9-Gate (Gesundheitsdaten wie Krankmeldungen): einmalig bestätigen, bevor Abwesenheiten
   // genutzt werden. Nur verwaltende Rollen bestätigen für den Betrieb; Mitarbeiter beantragen nur.
   if((viewRole==='admin'||viewRole==='buero') && !hasConsent('art9')){
@@ -10846,6 +10920,26 @@ const STATUS_META = {
   geschlossen:    {label:'Geschlossen',  cls:'st-closed', dot:'#9AA59B'},
 };
 let OS_DATA_LOADED = false;
+let OS_LOAD_ERROR = false;
+// Sichtbarer Fehlerbalken mit Retry: Ladefehler (Funkloch etc.) sah bisher aus wie ein
+// leerer Account („Noch keine Bewerber") – der schlimmste mögliche Kundenmoment.
+function showLoadErrorBanner(){
+  if(document.getElementById('loadErrBar')) return;
+  const bar = document.createElement('div');
+  bar.id = 'loadErrBar';
+  bar.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:600;background:#FEF3F2;border-bottom:1px solid #FDA29B;color:#B42318;font-size:13px;font-weight:600;padding:9px 14px;display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap';
+  bar.innerHTML = '<span>Deine Daten konnten nicht geladen werden – die Anzeige ist eventuell unvollständig.</span>'+
+    '<button style="border:1px solid #FDA29B;background:#fff;border-radius:8px;padding:5px 12px;font-weight:700;cursor:pointer;color:#B42318;font-family:inherit" onclick="retryLoadData(this)">Erneut laden</button>';
+  document.body.appendChild(bar);
+}
+async function retryLoadData(btn){
+  if(btn){ btn.disabled = true; btn.textContent = 'Lädt …'; }
+  OS_LOAD_ERROR = false;
+  try{ await loadPortalData(); }catch(_){}
+  const bar = document.getElementById('loadErrBar');
+  if(!OS_LOAD_ERROR){ if(bar) bar.remove(); }
+  else if(btn){ btn.disabled = false; btn.textContent = 'Erneut laden'; }
+}
 function portalJobUrl(slug){ return portalBase() + '/?job=' + encodeURIComponent(slug||''); }
 // Erfolgs-Popup nach dem Veröffentlichen: bestätigt „live" + Direkt-Link zum Ansehen im Portal.
 function showPublishedSuccess(slug, titel){
@@ -10923,9 +11017,18 @@ async function loadPortalData(){
     await loadPlantafel();    // Plantafel (plantafel-Tabelle) – NACH loadCrews + loadKunden (crew/kunde-Mapping)
     await loadTimeEntries();  // heutige Stempel-Einträge (zeit_eintraege) – NACH loadTeam (employee._uuid-Mapping)
     OS_DATA_LOADED = true;
-    if(_enteredApp && ['stellen','recruiting','heute'].includes(currentView)) setView(currentView);
+    OS_LOAD_ERROR = false;
+    const _leb = document.getElementById('loadErrBar'); if(_leb) _leb.remove();
+    // JEDE offene View nach dem Hydrate neu rendern – sonst zeigt z. B. #team nach Reload
+    // dauerhaft „0 Mitarbeiter", obwohl die Daten längst da sind (wirkt wie Totalverlust).
+    if(_enteredApp){ try{ rerenderCurrent(); }catch(_){ try{ setView(currentView); }catch(__){} } }
     refreshBell();
-  }catch(e){ console.warn('Portal-Daten konnten nicht geladen werden', e); }
+  }catch(e){
+    console.warn('Portal-Daten konnten nicht geladen werden', e);
+    // FAIL LOUD: Ladefehler darf NICHT wie ein leerer Account aussehen.
+    OS_LOAD_ERROR = true;
+    showLoadErrorBanner();
+  }
 }
 
 // ===================== TEAM/PERSONALAKTE · DB-PERSISTENZ (mitarbeiter-Tabelle, Schema v9) =====================
@@ -10945,6 +11048,33 @@ function friendlyDbError(err){
   if(s.includes('payload') || s.includes('too large')) return 'Die Datei/Daten sind zu groß.';
   return 'Das hat leider nicht geklappt – bitte erneut versuchen.';
 }
+/* ===== ZENTRALER VOICE-LAYER: einheitliche Fehler + Not-Aus ===== */
+// Verständliche Meldung je Fehlerart (statt still nichts / irreführendem "abgebrochen").
+function voiceErrMsg(err){
+  switch(err){
+    case 'not-allowed': case 'service-not-allowed': return 'Mikrofon-Zugriff blockiert – bitte im Browser erlauben (Schloss-Symbol neben der Adresse).';
+    case 'audio-capture': return 'Kein Mikrofon gefunden – bitte Mikrofon/Headset prüfen.';
+    case 'network': return 'Spracherkennung gerade nicht erreichbar – bitte tippen oder später erneut versuchen.';
+    default: return '';
+  }
+}
+function voiceFatalErr(err){ return err==='not-allowed'||err==='service-not-allowed'||err==='audio-capture'||err==='network'; }
+// Not-Aus: stoppt JEDE laufende Aufnahme. Wird u. a. beim Schließen von Sheets gerufen –
+// sonst läuft das Mikro unsichtbar weiter (Datenschutz) und der nächste Tipp wirkt "tot".
+function stopAllVoice(){
+  const kill = (r)=>{ if(!r) return; try{ r.onend=null; r.onresult=null; r.onerror=null; r.stop(); }catch(_){} };
+  try{ if(brainRec){ kill(brainRec); brainRec=null; _brainPTT=false; const m=document.getElementById('brainMic'); if(m) m.classList.remove('rec'); } }catch(_){}
+  try{ if(gVoiceRec){ kill(gVoiceRec); gVoiceRec=null; _voiceOn=false; const b=document.getElementById('voiceFab'); if(b) b.classList.remove('rec'); hideVoiceHud(); } }catch(_){}
+  try{ if(voiceRec){ kill(voiceRec); voiceRec=null; } }catch(_){}
+  try{ if(kalkVoiceRec){ kill(kalkVoiceRec); kalkVoiceRec=null; } }catch(_){}
+  try{ if(_reRec){ kill(_reRec); _reRec=null; } }catch(_){}
+  try{ if(_dictRec){ kill(_dictRec); _dictRec=null; _dictTa=null; } }catch(_){}
+  try{ if(_invVoiceRec){ kill(_invVoiceRec); _invVoiceRec=null; } }catch(_){}
+  try{ if(_fmRec){ kill(_fmRec); _fmRec=null; _fmTa=null; } }catch(_){}
+  document.querySelectorAll('.feldmic.rec,.feldmic.busy').forEach(b=>{ b.classList.remove('rec','busy'); b.innerHTML='<i data-lucide="mic"></i>'; });
+  try{ icons(); }catch(_){}
+}
+
 /* ===== FELD-MIKROFON: jede Textarea bekommt ein Diktier-Icon (Tipp an/aus) =====
    1. Tipp = zuhören (rot pulsierend) · 2. Tipp = verarbeiten (Spinner) -> bereinigter
    Text (ohne Ähs/Füllwörter, Satzanfang groß, Endpunkt) wird eingefügt/angehängt. */
@@ -10958,13 +11088,14 @@ function feldMicClean(s){
   if(x){ x = x.charAt(0).toUpperCase()+x.slice(1); if(!/[.!?…]$/.test(x)) x += '.'; }
   return x;
 }
-let _fmRec=null, _fmTa=null, _fmFinal='';
+let _fmRec=null, _fmTa=null, _fmFinal='', _fmIntr='', _fmRestarts=0;
 function feldMicToggle(btn){
   const ta = btn._ta; if(!ta) return;
-  if(_fmRec && _fmTa===ta){ // Stopp -> verarbeiten
+  if(_fmRec && _fmTa===ta){ // Stopp -> kurz nachlaufen lassen (letzte Finals/Interims!) -> verarbeiten
     const r=_fmRec; _fmRec=null; try{ r.onend=null; r.stop(); }catch(_){}
-    const raw = _fmFinal; _fmFinal='';
     btn.classList.remove('rec'); btn.classList.add('busy'); btn.innerHTML='<i data-lucide="loader-2"></i>'; icons();
+    setTimeout(()=>{
+    const raw = (_fmFinal+' '+_fmIntr).trim(); _fmFinal=''; _fmIntr='';
     (async ()=>{
       const base = feldMicClean(raw);       // Regex-Basis (offline-Fallback)
       let clean = '';
@@ -10985,6 +11116,7 @@ function feldMicToggle(btn){
       if(!clean) toast('Nichts verstanden – Mikro antippen, sprechen, erneut antippen.');
       _fmTa=null;
     })();
+    }, 350);
     return;
   }
   if(_fmRec){ try{ _fmRec.onend=null; _fmRec.stop(); }catch(_){} _fmRec=null; }  // anderes Feld aktiv
@@ -10992,9 +11124,10 @@ function feldMicToggle(btn){
   if(!SR){ toast('Diktieren wird von diesem Browser nicht unterstützt.'); return; }
   _fmTa=ta; _fmFinal='';
   _fmRec = new SR(); _fmRec.lang='de-DE'; _fmRec.continuous=true; _fmRec.interimResults=true; _fmRec.maxAlternatives=3;
-  _fmRec.onresult = e=>{ for(let i=e.resultIndex;i<e.results.length;i++){ if(e.results[i].isFinal) _fmFinal += e.results[i][0].transcript+' '; } };
-  _fmRec.onerror = e=>{ if(e && e.error==='not-allowed'){ toast('Mikrofon-Zugriff blockiert – bitte im Browser erlauben.'); btn.classList.remove('rec'); _fmRec=null; _fmTa=null; } };
-  _fmRec.onend = ()=>{ if(_fmRec && _fmTa===ta){ try{ _fmRec.start(); }catch(_){} } };   // Sprechpausen überbrücken
+  _fmRestarts = 0;
+  _fmRec.onresult = e=>{ let intr=''; for(let i=e.resultIndex;i<e.results.length;i++){ const r=e.results[i]; if(r.isFinal){ _fmFinal += r[0].transcript+' '; _fmIntr=''; } else intr += r[0].transcript; } if(intr) _fmIntr = intr; _fmRestarts = 0; };
+  _fmRec.onerror = e=>{ const err=e&&e.error; if(voiceFatalErr(err)){ const m=voiceErrMsg(err); if(m) toast(m); btn.classList.remove('rec'); if(_fmRec){ try{ _fmRec.onend=null; }catch(_){} } _fmRec=null; _fmTa=null; } };
+  _fmRec.onend = ()=>{ if(_fmRec && _fmTa===ta){ _fmRestarts++; if(_fmRestarts>8){ btn.classList.remove('rec'); _fmRec=null; _fmTa=null; toast('Keine Sprache erkannt – Aufnahme beendet.'); return; } try{ _fmRec.start(); }catch(_){ btn.classList.remove('rec'); _fmRec=null; _fmTa=null; } } };   // Sprechpausen überbrücken, aber begrenzt
   try{ _fmRec.start(); btn.classList.add('rec'); }catch(_){}
 }
 function feldMicAttach(ta){
@@ -11925,7 +12058,7 @@ function stellenViewHtml(){
     <div style="display:flex;align-items:center;gap:8px;margin:16px 0 10px"><span style="width:8px;height:8px;border-radius:50%;background:${color}"></span><b style="font-size:13px">${label}</b><span style="font-size:11.5px;color:var(--muted);background:var(--line);border-radius:999px;padding:1px 8px">${arr.length}</span></div>
     <div class="stellen-grid">${arr.map(stelleCard).join('')}</div>` : '';
   return `<div class="pagehead">
-      <div><h2>Ihre Stellenanzeigen</h2><p>${belegt} ${belegt===1?'belegtes Kontingent':'belegte Kontingente'} · ${aktiv.length} ${aktiv.length===1?'aktives Inserat':'aktive Inserate'} · ${freiN} frei · Stand ${dDE(TODAY)}</p></div>
+      <div><h2>Deine Stellenanzeigen</h2><p>${belegt} ${belegt===1?'belegtes Kontingent':'belegte Kontingente'} · ${aktiv.length} ${aktiv.length===1?'aktives Inserat':'aktive Inserate'} · ${freiN} frei · Stand ${dDE(TODAY)}</p></div>
       <button class="mini-btn primary" onclick="openStelleForm()"><i data-lucide="plus"></i> Stelle anlegen</button>
     </div>
     ${firstJobNudgeHtml()}
@@ -13516,6 +13649,7 @@ function moveJob(fromCrew, fromDay, index, toCrew, toDay){
   const job = plan[fromCrew][fromDay].splice(index,1)[0];
   if(!job) return;
   plan[toCrew][toDay].push(job);
+  try{ persistPlanJob(job, toCrew, toDay); }catch(_){}   // auch Touch-Drag (Handy) in Supabase sichern
   setView('planung');
   toast(`${job.t} verschoben`);
 }
@@ -13631,8 +13765,13 @@ function ivVoiceToggle(){
   if(btn) btn.classList.add('on');
   const ta = document.getElementById('ivSaid'); const base = ta ? ta.value : '';
   voiceRec.onresult = ev => { let txt=''; for(let i=0;i<ev.results.length;i++) txt += ev.results[i][0].transcript; if(ta) ta.value = (base?base+' ':'') + txt; };
-  voiceRec.onerror = () => { if(btn) btn.classList.remove('on'); voiceRec = null; toast('Spracheingabe abgebrochen'); };
-  voiceRec.onend = () => { if(btn) btn.classList.remove('on'); voiceRec = null; };
+  const _vtInst = voiceRec; let _vtRestarts = 0;
+  voiceRec.onerror = (e) => { const err=e&&e.error; if(voiceFatalErr(err)){ if(btn) btn.classList.remove('on'); if(voiceRec===_vtInst) voiceRec = null; const m=voiceErrMsg(err); if(m) toast(m); } };
+  // Sprechpause beendet die Erkennung (v. a. mobil): weiterlaufen lassen, solange nicht selbst gestoppt.
+  voiceRec.onend = () => {
+    if(voiceRec===_vtInst){ _vtRestarts++; if(_vtRestarts<=8){ try{ _vtInst.start(); return; }catch(_){} } voiceRec = null; }
+    if(btn) btn.classList.remove('on');
+  };
   try{ voiceRec.start(); toast('Sprich jetzt …'); }catch(e){ voiceRec = null; if(btn) btn.classList.remove('on'); }
 }
 function ivRatingMeta(v){ return IV_RATING.find(r=>r.v===v) || IV_RATING[1]; }
@@ -14050,7 +14189,7 @@ function openWaBot(){
     <div class="sheet__body">
       <div style="text-align:center;padding:8px 0 4px">
         <div style="font-size:34px;line-height:1;margin-bottom:10px">🤖</div>
-        <div style="font-size:18px;font-weight:800;color:var(--ink)">Wir sind gerade in der Entwicklungsphase –<br>und das wird richtig geil.</div>
+        <div style="font-size:18px;font-weight:800;color:var(--ink)">Dieses Modul ist in Arbeit –<br>wir schalten es in Kürze für dich frei.</div>
       </div>
       <p class="cs-lead" style="margin-top:14px">Der Bot schreibt neue Bewerber automatisch per WhatsApp an, stellt deine Fragen und sammelt die Antworten – du bekommst nur noch die passenden Kandidaten.</p>
       <div class="addon-feat"><i data-lucide="check-circle-2"></i> <span>Automatische Erstansprache &amp; Rückfragen (Gehalt, Führerschein, Startdatum …)</span></div>
@@ -14626,7 +14765,10 @@ function clockOtherDo(siteId){
 /* ---- Kolonnenführer stempelt seine ganze Kolonne auf einmal ---- */
 // Der Lead steht mit dem Trupp vor Ort → ein Standort-Nachweis (sein Gerät) gilt für die ganze Kolonne.
 function leadCrewMembers(){ const me = selfEmp(); return me.crewId ? crewMembers(me.crewId).filter(e => empStatus(e.id)[0] === 'Aktiv') : []; }
-function leadRunningFor(empId){ return timeEntries.find(t => t.empId === empId && !t.out); }
+// Identitäts-sicher: nach Reload mappt loadTimeEntries den EIGENEN Eintrag des Kolonnenführers
+// auf 'self' – ohne diesen Helper wirkt der Lead „aus", wird doppelt gestempelt und nie geschlossen.
+function leadIsMe(empId){ const me = selfEmp(); return empId==='self' || (me && empId===me.id); }
+function leadRunningFor(empId){ return timeEntries.find(t => (t.empId === empId || (leadIsMe(empId) && leadIsMe(t.empId))) && !t.out); }
 function leadClockCard(){
   const me = selfEmp();
   if(!me.crewId){
@@ -14672,6 +14814,7 @@ function openLeadClockIn(){
     </div>`);
 }
 async function leadClockDo(siteId){
+  if(inRolePreview()){ toast('Vorschau-Modus: Stempeln ist hier deaktiviert.'); closeSheet(); return; }
   if(!ensureGeoConsent(() => leadClockDo(siteId))) return;   // Kolonnenführer bestätigt Standorterfassung
   const btn = document.querySelector('.sitepicks');   // visuelles Feedback ist optional
   const g = geoMayCapture() ? await geoStamp(siteId) : null;   // ein Stempel für die ganze Kolonne
@@ -14790,6 +14933,15 @@ function clockConfirm(siteId){
     </div>`);
 }
 async function doClockIn(siteId){
+  if(inRolePreview()){ toast('Vorschau-Modus: Stempeln ist hier deaktiviert.'); closeSheet(); return; }
+  // Guards (auch für FAB/Sprachbefehl, die die Stempeluhr-Karte umgehen): kein Doppel-Stempeln,
+  // Selbst-Stempeln nur wenn Betriebsmodus + Recht es erlauben.
+  if(myEntry && !myEntry.out){ toast('Du bist bereits eingestempelt.'); closeSheet(); try{ renderZeit(); }catch(_){} return; }
+  if(viewRole==='mitarbeiter' && clockMode()!=='self'){
+    toast(clockMode()==='lead' ? 'In deinem Betrieb stempelt der Kolonnenführer die ganze Kolonne.' : 'In deinem Betrieb stempelt das Büro für dich.');
+    closeSheet(); return;
+  }
+  if(viewRole==='mitarbeiter' && !can('clockSelf')){ toast('Selbst-Stempeln ist in deinem Betrieb nicht freigeschaltet.'); closeSheet(); return; }
   if(!ensureGeoConsent(() => doClockIn(siteId))) return;   // erst Standort-Einwilligung, dann stempeln
   const ruest = settings.ruestzeit;     // Rüstzeit ist eine Betriebs-Einstellung, nicht pro Auftrag
   const btn = document.querySelector('.sheet-actions .btn');
@@ -15154,8 +15306,13 @@ function voiceToggle(){
     for(let i = 0; i < ev.results.length; i++) txt += ev.results[i][0].transcript;
     if(ta) ta.value = (base ? base + ' ' : '') + txt;
   };
-  voiceRec.onerror = () => { if(btn) btn.classList.remove('on'); voiceRec = null; toast('Spracheingabe abgebrochen'); };
-  voiceRec.onend = () => { if(btn) btn.classList.remove('on'); voiceRec = null; };
+  const _vtInst = voiceRec; let _vtRestarts = 0;
+  voiceRec.onerror = (e) => { const err=e&&e.error; if(voiceFatalErr(err)){ if(btn) btn.classList.remove('on'); if(voiceRec===_vtInst) voiceRec = null; const m=voiceErrMsg(err); if(m) toast(m); } };
+  // Sprechpause beendet die Erkennung (v. a. mobil): weiterlaufen lassen, solange nicht selbst gestoppt.
+  voiceRec.onend = () => {
+    if(voiceRec===_vtInst){ _vtRestarts++; if(_vtRestarts<=8){ try{ _vtInst.start(); return; }catch(_){} } voiceRec = null; }
+    if(btn) btn.classList.remove('on');
+  };
   try{ voiceRec.start(); toast('Sprich jetzt …'); }catch(e){ voiceRec = null; if(btn) btn.classList.remove('on'); }
 }
 // Generische Diktier-Hilfe: hängt Gesprochenes an ein beliebiges Textfeld an (Kommentare, Notizen …).
@@ -15169,8 +15326,12 @@ function dictateInto(taId, btn){
   if(btn) btn.classList.add('on');
   const base = ta.value;
   _dictRec.onresult = ev => { let txt = ''; for(let i = 0; i < ev.results.length; i++) txt += ev.results[i][0].transcript; ta.value = (base ? base + ' ' : '') + txt; };
-  _dictRec.onerror = () => { if(btn) btn.classList.remove('on'); _dictRec = null; _dictTa = null; toast('Spracheingabe abgebrochen'); };
-  _dictRec.onend = () => { if(btn) btn.classList.remove('on'); _dictRec = null; _dictTa = null; };
+  const _diInst = _dictRec; let _diRestarts = 0;
+  _dictRec.onerror = (e) => { const err=e&&e.error; if(voiceFatalErr(err)){ if(btn) btn.classList.remove('on'); if(_dictRec===_diInst){ _dictRec = null; _dictTa = null; } const m=voiceErrMsg(err); if(m) toast(m); } };
+  _dictRec.onend = () => {
+    if(_dictRec===_diInst){ _diRestarts++; if(_diRestarts<=8){ try{ _diInst.start(); return; }catch(_){} } _dictRec = null; _dictTa = null; }
+    if(btn) btn.classList.remove('on');
+  };
   try{ _dictRec.start(); toast('Sprich jetzt …'); }catch(e){ _dictRec = null; _dictTa = null; if(btn) btn.classList.remove('on'); }
 }
 function protoPicsAdd(input){
@@ -15649,8 +15810,13 @@ function gespVoiceToggle(){
   if(btn) btn.classList.add('on');
   const ta = document.getElementById('gespText'); const base = ta ? ta.value : '';
   voiceRec.onresult = ev => { let txt=''; for(let i=0;i<ev.results.length;i++) txt += ev.results[i][0].transcript; if(ta) ta.value = (base?base+' ':'') + txt; };
-  voiceRec.onerror = () => { if(btn) btn.classList.remove('on'); voiceRec = null; toast('Spracheingabe abgebrochen'); };
-  voiceRec.onend = () => { if(btn) btn.classList.remove('on'); voiceRec = null; };
+  const _vtInst = voiceRec; let _vtRestarts = 0;
+  voiceRec.onerror = (e) => { const err=e&&e.error; if(voiceFatalErr(err)){ if(btn) btn.classList.remove('on'); if(voiceRec===_vtInst) voiceRec = null; const m=voiceErrMsg(err); if(m) toast(m); } };
+  // Sprechpause beendet die Erkennung (v. a. mobil): weiterlaufen lassen, solange nicht selbst gestoppt.
+  voiceRec.onend = () => {
+    if(voiceRec===_vtInst){ _vtRestarts++; if(_vtRestarts<=8){ try{ _vtInst.start(); return; }catch(_){} } voiceRec = null; }
+    if(btn) btn.classList.remove('on');
+  };
   try{ voiceRec.start(); toast('Sprich jetzt …'); }catch(e){ voiceRec = null; if(btn) btn.classList.remove('on'); }
 }
 function addGespraech(id){
@@ -16279,6 +16445,7 @@ function openSheet(html, opts){
   icons();
 }
 function closeSheet(){
+  try{ stopAllVoice(); }catch(_){}   // nie ein Ghost-Mikro nach Sheet-Schließen
   const modal = document.getElementById('modal');
   modal.classList.add('hidden');
   modal.classList.remove('as-drawer');
