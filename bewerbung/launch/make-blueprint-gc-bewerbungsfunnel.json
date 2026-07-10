@@ -1,0 +1,117 @@
+{
+  "name": "GC Bewerbungsfunnel → Google Sheet",
+  "flow": [
+    {
+      "id": 1,
+      "module": "gateway:CustomWebHook",
+      "version": 1,
+      "parameters": {
+        "hook": 0,
+        "maxResults": 1
+      },
+      "mapper": {},
+      "metadata": {
+        "designer": { "x": 0, "y": 0 },
+        "restore": {
+          "parameters": {
+            "hook": { "label": "GC Bewerbungsfunnel" }
+          }
+        },
+        "parameters": [
+          { "name": "hook", "type": "hook:gateway-webhook", "label": "Webhook", "required": true },
+          { "name": "maxResults", "type": "number", "label": "Maximum number of results" }
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "module": "google-sheets:addRow",
+      "version": 2,
+      "parameters": {
+        "__IMTCONN__": 0
+      },
+      "mapper": {
+        "mode": "select",
+        "insertDataOption": "INSERT_ROWS",
+        "valueInputOption": "USER_ENTERED",
+        "includesHeaders": true,
+        "from": "drive",
+        "spreadsheetId": "/1ib0KvMezVycxhrQSQq7dosYN21N9OG94r4DrSSH4p48",
+        "sheetId": "Tabellenblatt 5",
+        "values": {
+          "0": "{{1.ts}}",
+          "1": "{{1.event}}",
+          "2": "{{1.variant}}",
+          "3": "{{1.first_name}}",
+          "4": "{{1.last_name}}",
+          "5": "{{1.phone}}",
+          "6": "{{1.phone_e164}}",
+          "7": "{{1.email}}",
+          "8": "{{1.preferred_channel}}",
+          "9": "{{1.branche_label}}",
+          "10": "{{1.rolle_label}}",
+          "11": "{{1.rolle_klasse}}",
+          "12": "{{if(1.ausbildung = null; emptystring; if(1.ausbildung; \"Ja\"; \"Nein\"))}}",
+          "13": "{{1.erfahrung_jahre}}",
+          "14": "{{1.erfahrung_label}}",
+          "15": "{{1.quereinsteiger_herkunft_label}}",
+          "16": "{{1.deutschkenntnisse_label}}",
+          "17": "{{1.bauleiter_erfahrung_jahre}}",
+          "18": "{{1.bauleiter_qualifikation_labels}}",
+          "19": "{{1.plz}}",
+          "20": "{{1.ort}}",
+          "21": "{{1.kreis}}",
+          "22": "{{1.region}}",
+          "23": "{{1.radius_label}}",
+          "24": "{{1.wunschgehalt}}",
+          "25": "{{1.benefits_labels}}",
+          "26": "{{1.scheine_labels}}",
+          "27": "{{1.kolonne_label}}",
+          "28": "{{1.verfuegbarkeit_label}}",
+          "29": "{{if(1.deep_completed; \"Ja\"; \"Nein\")}}",
+          "30": "{{1.uebersprungene_fragen}}",
+          "31": "{{1.bemerkung}}",
+          "32": "{{1.bewerber_nachricht}}",
+          "33": "{{if(1.consent_share; \"Ja\"; \"Nein\")}}",
+          "34": "{{1.consent_version}}",
+          "35": "{{1.event_id}}"
+        }
+      },
+      "metadata": {
+        "designer": { "x": 300, "y": 0 },
+        "restore": {
+          "parameters": {
+            "__IMTCONN__": { "label": "Google-Verbindung wählen" }
+          },
+          "expect": {
+            "mode": { "label": "Select from the list" },
+            "insertDataOption": { "label": "Insert rows" },
+            "valueInputOption": { "label": "User entered" },
+            "from": { "label": "My Drive" },
+            "spreadsheetId": { "label": "GC-Bewerber" },
+            "sheetId": { "label": "Tabellenblatt 5" }
+          }
+        },
+        "parameters": [
+          { "name": "__IMTCONN__", "type": "account:google", "label": "Connection", "required": true }
+        ]
+      }
+    }
+  ],
+  "metadata": {
+    "instant": true,
+    "version": 1,
+    "scenario": {
+      "roundtrips": 1,
+      "maxErrors": 3,
+      "autoCommit": true,
+      "autoCommitTriggerLast": true,
+      "sequential": false,
+      "confidential": false,
+      "dataloss": false,
+      "dlq": false,
+      "freshVariables": false
+    },
+    "designer": { "orphans": [] }
+  }
+}
