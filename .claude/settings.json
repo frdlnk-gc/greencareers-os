@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__github",
+      "mcp__fb29e723-2a07-41a0-9f75-eb7908c2f22a",
+      "mcp__dc30d649-ffd1-46ba-8ab7-a0fe1f4c606f",
+      "mcp__bf7c680d-5fdc-5ef4-b4a0-abadb619bf0a"
+    ]
+  }
+}
