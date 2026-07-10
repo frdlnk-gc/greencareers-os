@@ -126,7 +126,7 @@
     display:grid; place-items:center;
     background:linear-gradient(135deg,var(--green),var(--green-2));
     color:#fff;
-    box-shadow:0 10px 24px rgba(22,163,74,.26);
+    box-shadow:0 10px 24px rgba(var(--brand-rgb),.26);
   }
   .brandmark .lucide{ width:22px; height:22px; }
   .brandname{ font-size:18px; font-weight:700; letter-spacing:-.02em; line-height:1.1; }
@@ -158,7 +158,7 @@
   .field textarea:hover{ border-color:#C7D3CB; }
   .field input:focus,
   .field select:focus,
-  .field textarea:focus{ border-color:var(--green); background:#fff; box-shadow:0 0 0 3px rgba(22,163,74,.12); }
+  .field textarea:focus{ border-color:var(--green); background:#fff; box-shadow:0 0 0 3px rgba(var(--brand-rgb),.12); }
   .field textarea{ resize:vertical; min-height:86px; line-height:1.55; }
   .field select{
     cursor:pointer;
@@ -195,10 +195,10 @@
     color:#fff !important;
     font-weight:600;
     font-size:14px;
-    box-shadow:0 12px 24px rgba(22,163,74,.22);
+    box-shadow:0 12px 24px rgba(var(--brand-rgb),.22);
     transition:transform .16s, box-shadow .16s, border-color .16s, background .16s;
   }
-  .btn:hover{ transform:translateY(-1px); box-shadow:0 16px 30px rgba(22,163,74,.30); }
+  .btn:hover{ transform:translateY(-1px); box-shadow:0 16px 30px rgba(var(--brand-rgb),.30); }
   .btn.full{ width:100%; }
   .btn.ghost{ color:var(--ink) !important; background-color:#fff; background-image:none; border:1px solid var(--line); box-shadow:none; }
   .auth__back{ display:inline-flex; align-items:center; gap:7px; color:var(--muted); font-size:12.5px; font-weight:600; margin-bottom:16px; cursor:pointer; }
@@ -394,7 +394,7 @@
     overflow:auto;
     padding:22px;
     background:
-      radial-gradient(820px 340px at 100% -10%, rgba(22,163,74,.10), transparent 58%),
+      radial-gradient(820px 340px at 100% -10%, rgba(var(--brand-rgb),.10), transparent 58%),
       linear-gradient(180deg,var(--canvas),var(--canvas-2));
   }
   .mobile-nav{ display:none; }
@@ -406,7 +406,7 @@
   .hello h2 em{ color:var(--green-2); font-style:italic; }
   .hello p{ margin-top:6px; color:var(--muted); font-size:13px; }
   .hello__actions{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
-  .voice-pill{ display:inline-flex; align-items:center; gap:7px; padding:8px 14px; border-radius:999px; border:none; cursor:pointer; font-size:12.5px; font-weight:700; color:#fff; background:linear-gradient(135deg,var(--green),var(--green-2)); box-shadow:0 2px 8px rgba(22,163,74,.28); }
+  .voice-pill{ display:inline-flex; align-items:center; gap:7px; padding:8px 14px; border-radius:999px; border:none; cursor:pointer; font-size:12.5px; font-weight:700; color:#fff; background:linear-gradient(135deg,var(--green),var(--green-2)); box-shadow:0 2px 8px rgba(var(--brand-rgb),.28); }
   .voice-pill .lucide{ width:15px; height:15px; }
   .voice-pill:hover{ filter:brightness(1.04); }
     display:flex;
@@ -679,7 +679,7 @@
     padding:15px;
     color:#EAF4EA;
     background:
-      linear-gradient(135deg,rgba(22,163,74,.22),rgba(37,99,235,.08)),
+      linear-gradient(135deg,rgba(var(--brand-rgb),.22),rgba(37,99,235,.08)),
       linear-gradient(160deg,#14251B,#0B140D);
     border-color:#203426;
   }
@@ -959,7 +959,7 @@
     background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%235A685D' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
     background-repeat:no-repeat; background-position:right 12px center; transition:border-color .16s, box-shadow .16s; }
   .bfilter:hover{ border-color:#C7D3CB; }
-  .bfilter:focus{ outline:none; border-color:var(--green); box-shadow:0 0 0 3px rgba(22,163,74,.12); }
+  .bfilter:focus{ outline:none; border-color:var(--green); box-shadow:0 0 0 3px rgba(var(--brand-rgb),.12); }
 
   /* Bewerber-Detail: Vorqual-Status & Felder */
   .pq-statusbar{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 12px; background:#F7FAF6; border:1px solid var(--line); border-radius:10px; margin-bottom:14px; }
@@ -989,7 +989,7 @@
   .wa-foot .pqbadge{ flex:1; }
   .wa-foot--input{ gap:8px; }
   .wa-input{ flex:1; min-width:0; border:1px solid var(--line); border-radius:12px; padding:12px 14px; background:#FBFDFB; outline:none; font-size:13px; transition:border-color .15s, box-shadow .15s; }
-  .wa-input:focus{ border-color:var(--green); background:#fff; box-shadow:0 0 0 3px rgba(22,163,74,.13); }
+  .wa-input:focus{ border-color:var(--green); background:#fff; box-shadow:0 0 0 3px rgba(var(--brand-rgb),.13); }
   .wa-foot--input .brain-send{ width:42px; height:42px; }
   .wa-typing{ display:inline-flex; align-items:center; gap:7px; flex:1; font-size:12px; font-weight:600; color:var(--muted); }
   .wa-typing .lucide{ width:14px; height:14px; color:var(--green); animation:spin 1.4s linear infinite; }
@@ -1187,7 +1187,7 @@
   .cmt__actions button:hover{ color:var(--green-2); }
   .cmt__actions button.del:hover{ color:#C24141; }
   .cmt--edit textarea, .cmt-new textarea{ width:100%; resize:vertical; border:1px solid var(--line); border-radius:9px; padding:9px 11px; font:inherit; font-size:13px; background:#fff; }
-  .cmt--edit textarea:focus, .cmt-new textarea:focus{ outline:none; border-color:var(--green); box-shadow:0 0 0 3px rgba(22,163,74,.13); }
+  .cmt--edit textarea:focus, .cmt-new textarea:focus{ outline:none; border-color:var(--green); box-shadow:0 0 0 3px rgba(var(--brand-rgb),.13); }
   .cmt__editrow{ display:flex; gap:8px; margin-top:8px; }
   .cmt-empty{ font-size:12.5px; color:var(--muted); padding:10px 2px; }
   .cmt-new{ display:flex; flex-direction:column; gap:8px; align-items:flex-end; }
@@ -1200,7 +1200,7 @@
   .stagerow__dot{ width:11px; height:11px; border-radius:50%; flex-shrink:0; }
   .stagerow__in{ flex:1; border:1px solid transparent; background:transparent; border-radius:7px; padding:6px 8px; font:inherit; font-size:13.5px; font-weight:600; color:var(--ink); }
   .stagerow__in:hover{ border-color:var(--line); background:#fff; }
-  .stagerow__in:focus{ outline:none; border-color:var(--green); background:#fff; box-shadow:0 0 0 3px rgba(22,163,74,.12); }
+  .stagerow__in:focus{ outline:none; border-color:var(--green); background:#fff; box-shadow:0 0 0 3px rgba(var(--brand-rgb),.12); }
   .stagerow__del{ background:none; border:none; cursor:pointer; color:var(--muted); padding:5px; border-radius:7px; display:grid; place-items:center; }
   .stagerow__del:hover{ color:#C24141; background:#FBECEC; }
   .stagerow__del i{ width:15px; height:15px; }
@@ -1406,7 +1406,7 @@
   .crop-fitbtns button{ flex:1; font-size:12px; font-weight:600; padding:8px 8px; border:1px solid var(--line);
     background:#fff; color:var(--ink,#0f172a); border-radius:9px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; }
   .crop-fitbtns button:hover{ border-color:#C7D3CB; }
-  .crop-fitbtns button.on{ border-color:var(--green); color:var(--green); background:rgba(22,163,74,.06); }
+  .crop-fitbtns button.on{ border-color:var(--green); color:var(--green); background:rgba(var(--brand-rgb),.06); }
   .crop-fitbtns button i{ width:14px; height:14px; }
   .crop-hint{ display:flex; gap:7px; align-items:flex-start; font-size:11.5px; color:var(--muted);
     background:var(--surface-2,#f4f7fa); border-radius:9px; padding:8px 10px; margin-top:10px; }
@@ -1416,7 +1416,7 @@
   .crop-modes{ display:flex; gap:6px; margin:12px 0 0; }
   .crop-modes button{ flex:1; font-size:11.5px; font-weight:600; padding:6px 8px; border:1px solid var(--line);
     background:#fff; color:var(--muted); border-radius:8px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:5px; }
-  .crop-modes button.on{ border-color:var(--green); color:var(--green); background:rgba(22,163,74,.06); }
+  .crop-modes button.on{ border-color:var(--green); color:var(--green); background:rgba(var(--brand-rgb),.06); }
   .crop-modes button i{ width:13px; height:13px; }
 
   /* ----- Info-Tooltip (i) an Formular-Labels ----- */
@@ -1450,11 +1450,11 @@
 
   /* ===== Mitarbeiter-App-Onboarding ===== */
   .apphero{ display:grid; grid-template-columns:1fr 300px; gap:28px; align-items:center;
-    background:linear-gradient(135deg, rgba(22,163,74,.10), rgba(22,163,74,.02));
+    background:linear-gradient(135deg, rgba(var(--brand-rgb),.10), rgba(var(--brand-rgb),.02));
     border:1px solid var(--line); border-radius:18px; padding:26px 26px; margin-bottom:16px; }
   .apphero__eyebrow{ display:inline-flex; align-items:center; gap:6px; font-size:11.5px; font-weight:700;
-    text-transform:uppercase; letter-spacing:.05em; color:var(--green); background:rgba(22,163,74,.10);
-    border:1px solid rgba(22,163,74,.22); border-radius:999px; padding:5px 11px; }
+    text-transform:uppercase; letter-spacing:.05em; color:var(--green); background:rgba(var(--brand-rgb),.10);
+    border:1px solid rgba(var(--brand-rgb),.22); border-radius:999px; padding:5px 11px; }
   .apphero__eyebrow i{ width:14px; height:14px; }
   .apphero__txt h3{ margin:12px 0 8px; font-size:22px; line-height:1.25; color:var(--ink); }
   .apphero__txt p{ margin:0; font-size:13.5px; line-height:1.55; color:var(--muted); max-width:52ch; }
@@ -1486,7 +1486,7 @@
   .appdo__grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
   .appdo{ display:flex; gap:12px; align-items:flex-start; background:var(--canvas); border:1px solid var(--line);
     border-radius:12px; padding:14px; }
-  .appdo__ic{ flex:0 0 38px; width:38px; height:38px; border-radius:10px; background:rgba(22,163,74,.10);
+  .appdo__ic{ flex:0 0 38px; width:38px; height:38px; border-radius:10px; background:rgba(var(--brand-rgb),.10);
     display:flex; align-items:center; justify-content:center; color:var(--green); }
   .appdo__ic i{ width:19px; height:19px; }
   .appdo b{ display:block; font-size:13px; color:var(--ink); margin-bottom:3px; }
@@ -1497,8 +1497,8 @@
     .appdo__grid{ grid-template-columns:1fr; }
   }
   .app-bridge{ display:flex; align-items:center; gap:12px; width:100%; text-align:left; cursor:pointer;
-    background:linear-gradient(135deg, rgba(22,163,74,.10), rgba(22,163,74,.02));
-    border:1px solid rgba(22,163,74,.22); border-radius:12px; padding:12px 14px; margin:0 0 12px; }
+    background:linear-gradient(135deg, rgba(var(--brand-rgb),.10), rgba(var(--brand-rgb),.02));
+    border:1px solid rgba(var(--brand-rgb),.22); border-radius:12px; padding:12px 14px; margin:0 0 12px; }
   .app-bridge:hover{ border-color:var(--green); }
   .app-bridge__ic{ flex:0 0 38px; width:38px; height:38px; border-radius:10px; background:var(--green); color:#fff;
     display:flex; align-items:center; justify-content:center; }
@@ -1523,7 +1523,7 @@
   .cpop-ic i{ width:27px; height:27px; }
   .cpop-ic.lock{ background:rgba(234,88,12,.12); color:#EA580C; }
   .cpop-ic.warn{ background:rgba(217,119,6,.12); color:#D97706; }
-  .cpop-ic.ok{ background:rgba(22,163,74,.12); color:#16A34A; }
+  .cpop-ic.ok{ background:rgba(var(--brand-rgb),.12); color:#16A34A; }
   .cpop-body{ padding:16px 24px 8px; }
   .cpop-body h3{ font-size:17px; font-weight:750; letter-spacing:-.01em; }
   .cpop-body p{ font-size:13px; color:var(--muted); margin-top:8px; line-height:1.5; }
@@ -1602,7 +1602,7 @@
   .fs-pick b{ font-size:14px; font-weight:800; color:var(--ink); line-height:1.1; }
   .fs-pick small{ font-size:11px; color:var(--muted); line-height:1.25; }
   .fs-pick:hover{ border-color:#CFE9D8; background:#FAFCFB; }
-  .fs-pick.on{ border-color:var(--green); background:var(--soft-green); box-shadow:0 0 0 3px rgba(22,163,74,.10); }
+  .fs-pick.on{ border-color:var(--green); background:var(--soft-green); box-shadow:0 0 0 3px rgba(var(--brand-rgb),.10); }
   .fs-pick.on b{ color:var(--green-2); }
   .cert-suggest{ display:flex; flex-wrap:wrap; gap:7px; }
   .cert-sug{ font-size:12px; font-weight:600; color:var(--muted-2); background:#fff; border:1px solid var(--line); border-radius:99px; padding:6px 11px; cursor:pointer; transition:all .14s ease; }
@@ -1879,7 +1879,7 @@
   .up-cards{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
   .pkg{ position:relative; border:1.5px solid var(--line); border-radius:16px; background:#fff; padding:18px 18px 16px; cursor:pointer; transition:all .16s; }
   .pkg:hover{ border-color:#BFE6CD; box-shadow:var(--shadow-soft); }
-  .pkg.sel{ border-color:var(--green); box-shadow:0 0 0 3px rgba(22,163,74,.12); }
+  .pkg.sel{ border-color:var(--green); box-shadow:0 0 0 3px rgba(var(--brand-rgb),.12); }
   .pkg.dep{ border-style:dashed; }
   .pkg__check{ position:absolute; top:16px; right:16px; width:22px; height:22px; border-radius:6px; border:1.5px solid var(--line); display:grid; place-items:center; background:#fff; color:#fff; transition:all .16s; }
   .pkg.sel .pkg__check{ background:var(--green); border-color:var(--green); }
@@ -2190,7 +2190,7 @@
   .cal-h.today b{ color:var(--green-3); }
   .cal-c{ position:relative; height:38px; border-bottom:1px solid var(--line); border-right:1px solid var(--line); }
   .cal-c.we{ background:#F7F9F6; }
-  .cal-c.today{ background:rgba(22,163,74,.06); }
+  .cal-c.today{ background:rgba(var(--brand-rgb),.06); }
   .cal-fill{ position:absolute; top:7px; bottom:7px; left:0; right:0; color:var(--green); background:currentColor; cursor:pointer; }
   .cal-fill.urlaub{ color:var(--green); }
   .cal-fill.krank{ color:#C24141; }
@@ -2284,7 +2284,7 @@
   .pcal-day{ position:relative; min-height:62px; border:1px solid var(--line); border-radius:9px; padding:6px 7px; background:#fff; }
   .pcal-day--pad{ border:none; background:transparent; }
   .pcal-day.we{ background:#F7F9F6; }
-  .pcal-day.today{ border-color:var(--green); box-shadow:0 0 0 2px rgba(22,163,74,.16); }
+  .pcal-day.today{ border-color:var(--green); box-shadow:0 0 0 2px rgba(var(--brand-rgb),.16); }
   .pcal-day__n{ font-size:12.5px; font-weight:600; color:var(--ink-2); }
   .pcal-day.today .pcal-day__n{ color:var(--green-3); }
   .pcal-day__tag{ position:absolute; left:5px; right:5px; bottom:5px; font-size:10px; font-weight:600; color:#fff; padding:3px 5px; border-radius:6px; line-height:1.25; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -2395,7 +2395,7 @@
   .trow__right{ text-align:right; flex-shrink:0; display:flex; flex-direction:column; gap:1px; }
   .trow__right b{ font-size:15px; font-variant-numeric:tabular-nums; }
   .trow__right small{ font-size:11px; color:var(--muted); }
-  .dotlive{ width:8px; height:8px; border-radius:50%; background:var(--green); box-shadow:0 0 0 3px rgba(22,163,74,.18); }
+  .dotlive{ width:8px; height:8px; border-radius:50%; background:var(--green); box-shadow:0 0 0 3px rgba(var(--brand-rgb),.18); }
   .dsgvo{ display:flex; align-items:flex-start; gap:9px; margin-top:16px; padding:12px 14px; background:#F3F8F4; border:1px solid var(--line); border-radius:11px; font-size:12px; color:var(--muted); line-height:1.5; }
   .dsgvo b{ color:var(--ink-2); }
   .dsgvo .lucide{ width:17px; height:17px; color:var(--green-2); flex-shrink:0; margin-top:1px; }
@@ -2602,7 +2602,7 @@
   .micbtn{ position:absolute; right:8px; bottom:8px; width:34px; height:34px; border-radius:9px; border:none; background:var(--mint); color:var(--green-3); display:grid; place-items:center; cursor:pointer; }
   .micbtn .lucide{ width:18px; height:18px; }
   .micbtn.on{ background:var(--green); color:#fff; animation:micpulse 1.1s infinite; }
-  @keyframes micpulse{ 0%,100%{ box-shadow:0 0 0 0 rgba(22,163,74,.4);} 50%{ box-shadow:0 0 0 7px rgba(22,163,74,0);} }
+  @keyframes micpulse{ 0%,100%{ box-shadow:0 0 0 0 rgba(var(--brand-rgb),.4);} 50%{ box-shadow:0 0 0 7px rgba(var(--brand-rgb),0);} }
   .voicehint{ display:flex; align-items:center; gap:6px; margin-top:6px; font-size:11.5px; color:var(--muted); }
   .voicehint .lucide{ width:13px; height:13px; color:var(--green-2); }
   .protogrid{ display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
@@ -2659,7 +2659,7 @@
 
   /* ===== Consent-Gate (AVV/DSGVO) ===== */
   .gate{ position:fixed; inset:0; z-index:500; display:grid; place-items:center; padding:18px;
-    background:radial-gradient(700px 420px at 50% -10%, rgba(22,163,74,.18), transparent 60%), rgba(10,20,13,.62); backdrop-filter:blur(3px); }
+    background:radial-gradient(700px 420px at 50% -10%, rgba(var(--brand-rgb),.18), transparent 60%), rgba(10,20,13,.62); backdrop-filter:blur(3px); }
   /* Checkout ist ein verbindlicher Zahl-Schritt: OS darf NICHT durchscheinen
      und es gibt keinen Weg ins Cockpit ohne Zahlung -> deckender Hintergrund. */
   #checkout{ background:radial-gradient(760px 460px at 50% -8%, rgba(var(--brand-rgb),.30), transparent 62%), #0B130E; backdrop-filter:none; }
@@ -2868,7 +2868,7 @@
   .kv-mic__pulse{ position:absolute; top:14px; width:60px; height:60px; border-radius:50%; background:var(--mint); }
   .kv-mic.on{ background:var(--mint); }
   .kv-mic.on .lucide{ color:var(--green); }
-  .kv-mic.on .kv-mic__pulse{ background:rgba(22,163,74,.18); animation:kvpulse 1.3s ease-out infinite; }
+  .kv-mic.on .kv-mic__pulse{ background:rgba(var(--brand-rgb),.18); animation:kvpulse 1.3s ease-out infinite; }
   @keyframes kvpulse{ 0%{ transform:scale(.8); opacity:.8; } 100%{ transform:scale(1.7); opacity:0; } }
   .kv-preview{ border:1px solid var(--line); border-radius:12px; padding:11px; margin-bottom:14px; background:#fff; }
   .kv-preview__head{ display:flex; align-items:center; gap:7px; font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.03em; color:var(--green-2); margin-bottom:9px; }
@@ -2921,13 +2921,13 @@
   .kalk-slider.one{ gap:0; }
   .anfahrt-row .kalk-anfahrt{ display:inline-flex; align-items:center; gap:5px; }
   .anfahrt-row .kalk-anfahrt input{ width:74px; text-align:right; border:1px solid var(--line); border-radius:8px; padding:5px 8px; font-size:13px; outline:none; font-variant-numeric:tabular-nums; }
-  .anfahrt-row .kalk-anfahrt input:focus{ border-color:var(--green); box-shadow:0 0 0 3px rgba(22,163,74,.1); }
+  .anfahrt-row .kalk-anfahrt input:focus{ border-color:var(--green); box-shadow:0 0 0 3px rgba(var(--brand-rgb),.1); }
   .anfahrt-row .kalk-anfahrt span{ font-size:12px; color:var(--muted); }
   .anfahrt-row > span{ display:inline-flex; align-items:center; gap:6px; }
   .kalk-meta{ display:flex; flex-direction:column; gap:10px; justify-content:center; }
   .kalk-meta label{ display:flex; flex-direction:column; gap:4px; font-size:12px; font-weight:600; color:var(--muted); }
   .kalk-meta input, .kalk-meta select{ border:1px solid var(--line); border-radius:10px; padding:9px 11px; font-size:13.5px; background:#fff; outline:none; color:var(--text); }
-  .kalk-meta input:focus, .kalk-meta select:focus{ border-color:var(--green); box-shadow:0 0 0 3px rgba(22,163,74,.1); }
+  .kalk-meta input:focus, .kalk-meta select:focus{ border-color:var(--green); box-shadow:0 0 0 3px rgba(var(--brand-rgb),.1); }
   .kalk-grid{ display:grid; grid-template-columns:1.5fr 1fr; gap:16px; align-items:start; }
   @media(max-width:980px){ .kalk-grid{ grid-template-columns:1fr; } }
   .kalk-table td{ vertical-align:top; }
@@ -2938,7 +2938,7 @@
   .kalk-chip.vat7{ background:var(--mint); border-color:#86EFAC; color:var(--green-2); }
   .kalk-menge{ display:inline-flex; align-items:center; gap:5px; }
   .kalk-menge input{ width:64px; text-align:right; border:1px solid var(--line); border-radius:8px; padding:6px 8px; font-size:13px; outline:none; font-variant-numeric:tabular-nums; }
-  .kalk-menge input:focus{ border-color:var(--green); box-shadow:0 0 0 3px rgba(22,163,74,.1); }
+  .kalk-menge input:focus{ border-color:var(--green); box-shadow:0 0 0 3px rgba(var(--brand-rgb),.1); }
   .kalk-menge span{ font-size:11px; color:var(--muted); min-width:46px; text-align:left; }
   .iconbtn{ width:30px; height:30px; border-radius:8px; display:grid; place-items:center; color:var(--muted-2); border:0; background:transparent; cursor:pointer; }
   .iconbtn:hover{ background:var(--red-soft); color:var(--red); }
@@ -2969,7 +2969,7 @@
   .inv-item{ display:grid; grid-template-columns:1fr 56px 60px 84px 30px; gap:7px; align-items:center; padding:9px; border-bottom:1px solid var(--line); }
   .inv-item:last-child{ border-bottom:0; }
   .inv-item input{ width:100%; border:1px solid var(--line); border-radius:8px; padding:8px 9px; background:#FBFDFB; font-size:12.5px; outline:none; }
-  .inv-item input:focus{ border-color:var(--green); background:#fff; box-shadow:0 0 0 3px rgba(22,163,74,.1); }
+  .inv-item input:focus{ border-color:var(--green); background:#fff; box-shadow:0 0 0 3px rgba(var(--brand-rgb),.1); }
   .inv-item__del{ display:grid; place-items:center; width:30px; height:30px; border-radius:8px; color:var(--muted-2); }
   .inv-item__del:hover{ background:var(--red-soft); color:var(--red); }
   .inv-itemhead{ display:grid; grid-template-columns:1fr 56px 60px 84px 30px; gap:7px; padding:0 9px 6px; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; color:var(--muted-2); }
@@ -3061,7 +3061,7 @@
   .bmsg.me .bmsg__av{ background:#0E7A43; }
   .brain-input{ display:flex; gap:8px; align-items:center; }
   .brain-input input{ flex:1; border:1px solid var(--line); border-radius:12px; padding:13px 14px; background:#FBFDFB; outline:none; font-size:13px; transition:border-color .15s,box-shadow .15s; }
-  .brain-input input:focus{ border-color:var(--green); background:#fff; box-shadow:0 0 0 3px rgba(22,163,74,.13); }
+  .brain-input input:focus{ border-color:var(--green); background:#fff; box-shadow:0 0 0 3px rgba(var(--brand-rgb),.13); }
   .brain-send{ width:44px; height:44px; border-radius:12px; display:grid; place-items:center; color:#fff; background:linear-gradient(140deg,#1BA85C,#0E7A43); box-shadow:0 5px 14px rgba(14,122,67,.32); flex-shrink:0; transition:transform .15s; }
   .brain-send:hover{ transform:translateY(-1px); }
   .brain-mic{ width:44px; height:44px; border-radius:12px; display:grid; place-items:center; color:var(--muted); background:var(--canvas); border:1px solid var(--line); flex-shrink:0; transition:all .15s; }
@@ -3096,7 +3096,7 @@
   .mail-attach{ display:flex; align-items:center; gap:8px; font-size:12.5px; font-weight:600; color:var(--text); background:var(--canvas); border:1px solid var(--line); border-radius:9px; padding:9px 11px; margin:4px 0 10px; }
   .mail-attach .lucide{ width:15px; height:15px; color:var(--muted); }
   .sheet__body textarea{ width:100%; border:1px solid var(--line); border-radius:10px; padding:10px 11px; font-size:13.5px; font-family:inherit; outline:none; color:var(--text); }
-  .sheet__body textarea:focus{ border-color:var(--green); box-shadow:0 0 0 3px rgba(22,163,74,.1); }
+  .sheet__body textarea:focus{ border-color:var(--green); box-shadow:0 0 0 3px rgba(var(--brand-rgb),.1); }
   /* ===== Druck-Vorschau (Angebot/Rechnung als PDF/Papier) ===== */
   .print-overlay{ position:fixed; inset:0; z-index:120; background:#525659; display:flex; flex-direction:column; }
   .print-bar{ display:flex; justify-content:space-between; align-items:center; gap:12px; padding:11px 16px; background:#2f3133; color:#fff; flex-shrink:0; }
@@ -3258,7 +3258,7 @@
   <aside class="sidebar">
     <div class="sidebrand">
       <span class="brandmark" id="sideBrandmark"><i data-lucide="leaf"></i></span>
-      <div class="sidebrand__text"><b>Müller GaLaBau</b><span>Garten- &amp; Landschaftsbau</span></div>
+      <div class="sidebrand__text"><b>Müller GaLaBau</b><span>Betriebssoftware</span></div>
     </div>
     <nav class="nav" id="sideNav"></nav>
     <div class="sidefoot">
@@ -3275,7 +3275,7 @@
       <button class="iconbtn" onclick="toggleSidebar()" title="Navigation"><i data-lucide="panel-left"></i></button>
       <div class="viewtitle" id="viewTitle"></div>
       <span class="topbar__spacer"></span>
-      <div class="weather-mini" id="weatherMini" onclick="openWeatherForecast()" title="16-Tage-Wetter"><span class="bubble"><i data-lucide="cloud-sun"></i></span><span><b>--°</b> · Hamburg<br />Wetter lädt …</span></div>
+      <div class="weather-mini" id="weatherMini" onclick="openWeatherForecast()" title="16-Tage-Wetter"><span class="bubble"><i data-lucide="cloud-sun"></i></span><span><b>--°</b><br />Wetter lädt …</span></div>
       <button class="brainpill" id="brainPill" onclick="openBrain()" title="Assistent"><i data-lucide="sparkles"></i><span>Assistent</span></button>
       <button class="iconbtn bell" onclick="openNotifications()" title="Benachrichtigungen"><i data-lucide="bell"></i><span class="bell__badge" id="bellBadge" style="display:none"></span></button>
     </header>
@@ -3638,9 +3638,15 @@ function persistSettingsDb(){
   _settingsSaveTimer = setTimeout(async ()=>{
     try{
       const { error } = await sbAuth.rpc('save_settings', { p_data: settingsForDb() });
-      if(error) console.warn('save_settings:', error.message || error);
-    }catch(e){ console.warn('save_settings:', e); }
+      if(error){ console.warn('save_settings:', error.message || error); settingsSaveWarn(); }
+    }catch(e){ console.warn('save_settings:', e); settingsSaveWarn(); }
   }, 600);
+}
+// FAIL LOUD (gedrosselt): Rechte-Matrix/Vorlagen/Spalten gingen sonst still verloren.
+let _setWarnAt = 0;
+function settingsSaveWarn(){
+  const n = Date.now(); if(n - _setWarnAt < 30000) return; _setWarnAt = n;
+  toast('Einstellungen konnten nicht gespeichert werden – Änderungen gelten evtl. nur auf diesem Gerät.');
 }
 async function loadSettingsDb(){
   if(!osConnected()) return false;
@@ -5392,7 +5398,7 @@ function setTabKonto(s, c){
       <p class="sheet-note" style="margin-top:10px"><i data-lucide="user-check"></i> Betroffenenrechte (Art. 15–20 DSGVO): Daten deiner Mitarbeiter/Kunden exportieren oder löschen.</p>
       <div class="fieldrow">
         <button class="btn ghost sm" style="flex:1" onclick="exportGdprData()"><i data-lucide="download"></i> Daten exportieren</button>
-        <button class="btn ghost sm danger" style="flex:1" onclick="toast('Löschung anstoßen – im Live-Produkt mit Bestätigung')"><i data-lucide="trash-2"></i> Daten löschen</button>
+        <button class="btn ghost sm danger" style="flex:1" onclick="gdprDeleteRequest()"><i data-lucide="trash-2"></i> Löschung beantragen</button>
       </div>
 
       <button class="btn ghost btn--block" style="margin-top:16px" onclick="closeSheet();startOnboarding()"><i data-lucide="wand-2"></i> Einrichtungs-Assistent erneut starten</button>
@@ -5642,6 +5648,15 @@ function osBrandLabel(theme){
   const t = theme || settings.theme || 'galabau';
   return t==='tiefbau' ? 'Tiefbau' : t==='landwirtschaft' ? 'Agrar' : 'GaLaBau';
 }
+// DSGVO-Löschanfrage (Art. 17): öffnet eine vorbereitete E-Mail an den Anbieter –
+// ehrlicher, funktionierender Weg statt Placebo-Toast.
+function gdprDeleteRequest(){
+  const firma = (settings.company && settings.company.name) || '';
+  const subject = 'Löschanfrage (Art. 17 DSGVO) – ' + firma;
+  const body = 'Hallo GreenCareers-Team,\n\nbitte löscht folgende personenbezogenen Daten aus unserem Betrieb:\n\nBetrieb: ' + firma + '\nBetroffene Person(en): \nZu löschende Daten: \n\nDanke!';
+  try{ window.location.href = 'mailto:frederik.linke@greenfield-digital.de?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body); }catch(_){}
+  toast('E-Mail-Entwurf geöffnet – wir bestätigen die Löschung schriftlich.');
+}
 function osBranchePhrase(){
   const t = settings.theme || 'galabau';
   return t==='tiefbau' ? 'den Straßen- & Tiefbau' : t==='landwirtschaft' ? 'die Landwirtschaft' : 'den GaLaBau';
@@ -5709,6 +5724,7 @@ function applyBranding(){
   const pos = document.getElementById('poweredOs'); if(pos) pos.textContent = osName();
   // Sidebar Name
   const sb = document.querySelector('.sidebrand__text b'); if(sb){ sb.textContent = co.name || base; sb.title = co.name || base; }
+  const sbs = document.querySelector('.sidebrand__text span'); if(sbs) sbs.textContent = osBranchePhrase();   // Branche statt statischem Untertitel
   // Logo (Sidebar + Login-Brandmark) – pre-login neutrales Blatt statt fremdem Firmenlogo
   const logo = gcAuthed() ? (co.logo || '') : '';
   document.querySelectorAll('#sideBrandmark, .auth__brand .brandmark').forEach(mark=>{
@@ -6904,8 +6920,16 @@ async function loadWeather(force){
   WX_STATE.status='loading';
   try{
     const c = (typeof settings!=='undefined' && settings.company) ? settings.company : {};
-    const q = ((c.city||'').trim()) || ((c.zip||'').trim()) || 'Hamburg';
-    let lat=53.5511, lon=9.9937, locName='Hamburg';
+    const q = ((c.city||'').trim()) || ((c.zip||'').trim());
+    // Ohne Betriebs-Ort KEIN stilles Hamburg-Wetter (falsche Daten wirken kaputt) –
+    // stattdessen klarer Hinweis, wo der Ort gesetzt wird.
+    if(!q){
+      WX_STATE.status = 'noloc';
+      const el = document.getElementById('weatherMini');
+      if(el){ el.innerHTML = '<span class="bubble"><i data-lucide="map-pin"></i></span><span><b>Wetter</b><br>Ort in den Einstellungen festlegen</span>'; try{ icons(); }catch(_){} }
+      return;
+    }
+    let lat=53.5511, lon=9.9937, locName=q;
     try{
       const geo = await fetch('https://geocoding-api.open-meteo.com/v1/search?count=1&language=de&country=DE&name='+encodeURIComponent(q)).then(r=>r.json());
       const g = geo && geo.results && geo.results[0];
@@ -7341,11 +7365,16 @@ function teamTab(tab){
 let _zeitLastFetch = 0;
 
 const TEAM = {
-  mitarbeiter: () => `
+  mitarbeiter: () => employees.length ? `
     <div class="listbar"><span class="listbar__c">${employees.length} Mitarbeiter · <span style="color:var(--muted);font-weight:500">Klick auf eine Zeile öffnet die Personalakte</span></span>${can('editEmployees') ? `<button class="mini-btn primary" onclick="openEmployeeForm()"><i data-lucide="user-plus"></i> Mitarbeiter anlegen</button>` : ''}</div>
     <div class="panel table-wrap"><table class="team-table"><thead><tr><th>Name</th><th>Funktion</th><th>Kolonne</th><th>Telefon</th><th>Status</th><th>Zugang</th><th>Resturlaub</th><th></th></tr></thead><tbody>
     ${employees.map(e => { const s = empStatus(e.id); const v = vacInfo(e.id); const am = accountMeta(e.account); return `<tr class="clickable" onclick="openEmployee(${e.id})"><td data-label="Name"><span class="person-cell"><span class="avatar">${initials(e.name)}</span>${e.name}</span></td><td data-label="Funktion">${e.role}</td><td data-label="Kolonne"><span class="crewtag"><span class="crewtag__dot" style="background:${e.crewId?crewColor(e.crewId):'#9AA8A0'}"></span>${crewOf(e)}</span></td><td data-label="Telefon">${e.phone}</td><td data-label="Status"><span class="pill ${s[1]}">${s[0]}</span></td><td data-label="Zugang"><span class="pill ${am[1]}"><i data-lucide="${am[2]}" style="width:11px;height:11px;vertical-align:-1px"></i> ${am[0]}</span></td><td data-label="Resturlaub"><b>${v.rest}</b> <span style="color:var(--muted)">/ ${e.annual}</span></td><td class="team-table__chev" style="text-align:right"><i data-lucide="chevron-right" style="width:16px;height:16px;color:var(--muted-2);vertical-align:-3px"></i></td></tr>`; }).join('')}
-  </tbody></table></div>`,
+  </tbody></table></div>` : `
+    <div class="empty" style="padding:44px 20px;text-align:center">
+      <i data-lucide="users"></i>
+      <div style="max-width:420px;margin:0 auto"><b>Noch keine Mitarbeiter angelegt.</b><br>Leg deinen ersten Mitarbeiter an – danach lädst du ihn mit einem Fingertipp zur Mitarbeiter-App ein und Zeiten, Urlaub &amp; Krankmeldungen laufen von selbst.</div>
+      ${can('editEmployees') ? `<button class="btn" style="margin-top:16px" onclick="openEmployeeForm()"><i data-lucide="user-plus"></i> Ersten Mitarbeiter anlegen</button>` : ''}
+    </div>`,
   kolonnen: () => kolonnenView(),
   urlaub: () => urlaubView(),
   zeit: () => zeitView(),
@@ -7813,15 +7842,13 @@ function viewDoc(doc){
 }
 
 /* ===================== FINANZEN (Angebote + Rechnungen) ===================== */
-let invSeq = 94;
-// Rechnungen & Angebote – genau EINE Beispielrechnung (Max Mustermann) als Vorlage.
-// Im Echtbetrieb schreibt der Betrieb seine Angebote & Rechnungen selbst.
-const invoices = [
-  {id:'r1', kind:'rechnung', no:'RE-2026-0001', customerId:'c1', title:'Beispielrechnung – Gartenpflege',
-   date:'2026-06-01', due:'2026-06-15', vat:19, status:'offen',
-   items:[ {name:'Rasen mähen & Pflege', qty:4, unit:'Std', price:65},
-           {name:'Grünschnitt-Entsorgung', qty:1, unit:'pausch.', price:90} ]},
-];
+// Belegnummern: Jahr dynamisch + Sequenz überlebt Reloads (localStorage) – sonst vergibt
+// jede Session dieselben Nummern erneut (§14 UStG: fortlaufend & einmalig).
+const INV_YEAR = String(new Date().getFullYear());
+let invSeq = (function(){ try{ return Math.max(0, parseInt(localStorage.getItem('gcos_invseq')||'0',10)||0); }catch(_){ return 0; } })();
+function bumpInvSeq(){ invSeq++; try{ localStorage.setItem('gcos_invseq', String(invSeq)); }catch(_){} return invSeq; }
+// Leerer Start – keine erfundene Beispielrechnung (kollidierte mit echter Nummerierung).
+const invoices = [];
 function invNet(inv){ return inv.items.reduce((s,i)=> s + i.qty*i.price, 0); }
 // MwSt je Satz – nutzt pro-Posten-Satz (it.vat) falls vorhanden, sonst den Beleg-Satz (inv.vat).
 // So werden gemischte Sätze (z. B. 7% Pflanzen + 19% Bauleistung) korrekt getrennt ausgewiesen.
@@ -8094,10 +8121,13 @@ const FIN = {
     const offen = invoices.filter(i=>i.kind==='rechnung' && (i.status==='offen'||i.status==='ueberfaellig'));
     const offenSum = offen.reduce((s,i)=> s+invGross(i), 0);
     const ueberf = invoices.filter(i=>i.status==='ueberfaellig');
-    // Einnahmen / Ausgaben (laufender Monat = Juni 2026, Demo)
-    const einMonat = invoices.filter(i=>i.kind==='rechnung' && i.status==='bezahlt' && i.date>='2026-06-01');
-    const einSum = einMonat.reduce((s,i)=> s+invGross(i), 0) + bankTxns.filter(t=>t.amount>0 && t.date>='2026-06-01').reduce((s,t)=>s+t.amount,0);
-    const ausSum = expenses.filter(e=>e.status!=='abgelehnt' && e.date>='2026-06-01').reduce((s,e)=> s+Math.abs(e.amount), 0);
+    // Einnahmen / Ausgaben: IMMER der laufende Monat (dynamisch – nie wieder hartkodierter Juni)
+    const monat1 = TODAY.slice(0,8)+'01';
+    const monatName = new Date().toLocaleDateString('de-DE',{month:'long'});
+    const vormonatName = new Date(new Date().getFullYear(), new Date().getMonth()-1, 1).toLocaleDateString('de-DE',{month:'long'});
+    const einMonat = invoices.filter(i=>i.kind==='rechnung' && i.status==='bezahlt' && i.date>=monat1);
+    const einSum = einMonat.reduce((s,i)=> s+invGross(i), 0) + bankTxns.filter(t=>t.amount>0 && t.date>=monat1).reduce((s,t)=>s+t.amount,0);
+    const ausSum = expenses.filter(e=>e.status!=='abgelehnt' && e.date>=monat1).reduce((s,e)=> s+Math.abs(e.amount), 0);
     const diff = einSum - ausSum;
     // USt-Voranmeldung (Demo-Schätzung)
     const ustEin = einMonat.reduce((s,i)=> s+invVatAmt(i), 0);
@@ -8108,9 +8138,9 @@ const FIN = {
     const txnOffen = bankTxns.filter(t=>!t.matched);
     return `
       <div class="fin-kpis">
-        <div class="fin-kpi"><span class="fin-kpi__ic"><i data-lucide="trending-up"></i></span><div class="fin-kpi__num num">${eur(einSum)}</div><div class="fin-kpi__lbl">Einnahmen · Juni</div></div>
-        <div class="fin-kpi warn"><span class="fin-kpi__ic"><i data-lucide="trending-down"></i></span><div class="fin-kpi__num num">${eur(ausSum)}</div><div class="fin-kpi__lbl">Ausgaben · Juni</div></div>
-        <div class="fin-kpi ${diff>=0?'green':'warn'}"><span class="fin-kpi__ic"><i data-lucide="${diff>=0?'piggy-bank':'alert-triangle'}"></i></span><div class="fin-kpi__num num">${eur(diff)}</div><div class="fin-kpi__lbl">Differenz · Juni</div></div>
+        <div class="fin-kpi"><span class="fin-kpi__ic"><i data-lucide="trending-up"></i></span><div class="fin-kpi__num num">${eur(einSum)}</div><div class="fin-kpi__lbl">Einnahmen · ${monatName}</div></div>
+        <div class="fin-kpi warn"><span class="fin-kpi__ic"><i data-lucide="trending-down"></i></span><div class="fin-kpi__num num">${eur(ausSum)}</div><div class="fin-kpi__lbl">Ausgaben · ${monatName}</div></div>
+        <div class="fin-kpi ${diff>=0?'green':'warn'}"><span class="fin-kpi__ic"><i data-lucide="${diff>=0?'piggy-bank':'alert-triangle'}"></i></span><div class="fin-kpi__num num">${eur(diff)}</div><div class="fin-kpi__lbl">Differenz · ${monatName}</div></div>
         <div class="fin-kpi blue"><span class="fin-kpi__ic"><i data-lucide="file-clock"></i></span><div class="fin-kpi__num num">${eur(offenSum)}</div><div class="fin-kpi__lbl">Offene Forderungen · ${offen.length} Posten</div></div>
       </div>
       <div class="fin-grid">
@@ -8124,13 +8154,13 @@ const FIN = {
           </div>
         </div>
         <div class="panel ust-panel">
-          <div class="panel__head"><h3>USt-Voranmeldung</h3><span class="pill a">Mai fällig</span></div>
+          <div class="panel__head"><h3>USt-Voranmeldung</h3><span class="pill a">${vormonatName} fällig</span></div>
           <div class="ust-body">
             <div class="ust-row"><span>Umsatzsteuer (eingenommen)</span><span class="num">${eur(ustEin)}</span></div>
             <div class="ust-row"><span>Vorsteuer (gezahlt)</span><span class="num">−${eur(ustAus)}</span></div>
             <div class="ust-row grand"><span>Zahllast ans Finanzamt</span><span class="num">${eur(ustZahl)}</span></div>
-            <p class="ust-note"><i data-lucide="calendar-clock"></i> Abgabe bis 10. des Folgemonats. DATEV/ELSTER-Export im Steuerberater-Tab.</p>
-            <button class="btn" style="width:100%" onclick="toast('ELSTER-Export folgt')"><i data-lucide="upload"></i> An ELSTER übermitteln</button>
+            <p class="ust-note"><i data-lucide="calendar-clock"></i> Abgabe bis 10. des Folgemonats – Werte hier sind eine Orientierung für dich bzw. deinen Steuerberater.</p>
+            <span class="pill" style="display:inline-block">ELSTER-Export · Bald verfügbar</span>
           </div>
         </div>
       </div>`;
@@ -8739,9 +8769,9 @@ async function kalkVoiceKI(){
 function kalkToAngebot(){
   if(!kalkLines.length){ toast('Erst Positionen kalkulieren'); return; }
   const t = kalkTotals();
-  invSeq++;
+  bumpInvSeq();
   const items = kalkLines.map(l=>{ const c=kalkLineCalc(l); return {name: c.name + (l.schwierig?' (erschwert)':''), qty:l.menge, unit:c.unit, price: c.ep, vat: lineMwst(l)}; });
-  const ang = { id:'a'+invSeq, kind:'angebot', no:`AN-2026-${String(invSeq).padStart(4,'0')}`,
+  const ang = { id:'a'+invSeq, kind:'angebot', no:`AN-${INV_YEAR}-${String(invSeq).padStart(4,'0')}`,
     customerId: kalkCustomerId || (customers[0] ? customers[0].id : ''), title: kalkTitle || 'Angebot',
     date: dISO(new Date()), due: addDays(dISO(new Date()), 21), vat: calcCfg.mwst, status:'entwurf',
     items };
@@ -8930,8 +8960,8 @@ function setInvStatus(id, status){
 }
 function convertToInvoice(id){
   const ang = invoices.find(i=>i.id===id); if(!ang) return;
-  invSeq++;
-  const re = { id:'r'+invSeq, kind:'rechnung', no:`RE-2026-${String(invSeq).padStart(4,'0')}`,
+  bumpInvSeq();
+  const re = { id:'r'+invSeq, kind:'rechnung', no:`RE-${INV_YEAR}-${String(invSeq).padStart(4,'0')}`,
     customerId:ang.customerId, title:ang.title, date:dISO(new Date()), due:addDays(dISO(new Date()),14),
     vat:ang.vat, status:'offen', items:ang.items.map(i=>Object.assign({},i)) };
   invoices.push(re); ang.status='angenommen'; closeSheet();
@@ -9201,11 +9231,11 @@ function invDelItem(idx){ invDraft.items.splice(idx,1); renderInvoiceForm(); }
 function submitInvoice(send){
   const d = invDraft; if(!d) return;
   if(!d.title.trim()){ toast('Bitte Bezeichnung eingeben'); return; }
-  invSeq++;
+  bumpInvSeq();
   const prefix = d.kind==='angebot' ? 'AN' : 'RE';
   const status = d.kind==='angebot' ? (send?'versendet':'entwurf') : (send?'offen':'entwurf');
   const inv = { id:(d.kind==='angebot'?'a':'r')+invSeq, kind:d.kind,
-    no:`${prefix}-2026-${String(invSeq).padStart(4,'0')}`, customerId:d.customerId,
+    no:`${prefix}-${INV_YEAR}-${String(invSeq).padStart(4,'0')}`, customerId:d.customerId,
     title:d.title.trim(), date:dISO(new Date()), due:d.due, vat:d.vat, status,
     items:d.items.filter(i=>i.name.trim()).map(i=>Object.assign({},i)) };
   if(!inv.items.length){ toast('Mindestens eine Position nötig'); return; }
@@ -9501,7 +9531,7 @@ function brainAnswer(q){
   if(/(angebot|kostenvoranschlag|offerte)/.test(s))
     return `Ein Angebot bindet dich erstmal nicht – aber sei genau. Pack rein: <strong>klare Leistungsbeschreibung</strong>, Einzelpreise, Netto/MwSt/Brutto, <strong>Gültigkeitsdauer</strong> (z. B. 14 Tage) und Zahlungsziel. Über „+ Angebot" legst du es an; wird es angenommen, wandelst du es mit einem Klick in eine Rechnung um – Positionen werden übernommen.`;
   if(/(bewerber|recruiting|probetag|vorstellungsgespräch|einstell|stelle|azubi.*such|personal.*find)/.test(s))
-    return `Im Bereich <strong>Bewerber</strong> läuft dein ganzes Recruiting:<br>• Neue Bewerber aus GreenCareers landen automatisch im Board, der <strong>BewerberBot</strong> qualifiziert sie per WhatsApp vor<br>• Du kontaktierst direkt aus dem Profil: <strong>Anrufen</strong>, <strong>WhatsApp</strong> oder <strong>E-Mail</strong> – mit fertigen Vorlagen<br>• Per Status (Neu → In Bearbeitung → Gespräch → Probetag → Eingestellt) behältst du die Pipeline im Blick<br><br>Für einen Probetag öffnest du den Bewerber und drückst „Probetag planen" – Termin landet direkt in deinem Kalender.`;
+    return `Im Bereich <strong>Bewerber</strong> läuft dein ganzes Recruiting:<br>• Neue Bewerber aus GreenCareers landen automatisch im Board${WABOT_ENABLED?', der <strong>BewerberBot</strong> qualifiziert sie per WhatsApp vor':''}<br>• Du kontaktierst direkt aus dem Profil: <strong>Anrufen</strong>, <strong>WhatsApp</strong> oder <strong>E-Mail</strong> – mit fertigen Vorlagen<br>• Per Status (Neu → In Bearbeitung → Gespräch → Probetag → Eingestellt) behältst du die Pipeline im Blick<br><br>Für einen Probetag öffnest du den Bewerber und drückst „Probetag planen" – Termin landet direkt in deinem Kalender.`;
   if(/(lohn|gehalt zahlen|stundenlohn|mindestlohn|verdienst|was zahl)/.test(s))
     return `Beim Lohn im GaLaBau gilt:<br>• <strong>Branchen-Mindestlohn GaLaBau</strong> liegt über dem gesetzlichen Mindestlohn – prüfe den aktuellen Tarif (gewerbliche Arbeitnehmer)<br>• Üblich sind je nach Qualifikation <strong>14–20 €/Std.</strong>, Vorarbeiter darüber<br>• Denk an <strong>Lohnnebenkosten</strong> (~20–22 % AG-Anteil) bei der Kalkulation deines Stundenverrechnungssatzes<br><br>Faustregel Verrechnungssatz = Bruttolohn × Faktor 2,2–2,8 (deckt Nebenkosten, Urlaub, Gerät, Gewinn).`;
   // --- Intelligenter Fallback: erst schwacher KB-Treffer, dann hilfreiche Vorschläge ---
@@ -10855,6 +10885,14 @@ function renderBewerberKanban(){
   closeStagePop();
   _lastPhone = isPhone();
   wrap.innerHTML = bewerberKanbanHtml();
+  // Frischer Account: leeres 5-Spalten-Board ohne Anleitung wirkt kaputt -> klarer nächster Schritt.
+  if(!applicants.length){
+    wrap.insertAdjacentHTML('afterbegin', `<div class="panel" style="display:flex;gap:12px;align-items:center;padding:14px 16px;margin-bottom:12px;flex-wrap:wrap">
+      <i data-lucide="inbox" style="width:20px;height:20px;color:var(--green-2);flex:0 0 auto"></i>
+      <div style="flex:1;min-width:220px;font-size:13.5px;line-height:1.5"><b>Noch keine Bewerbungen.</b> Sobald deine Stelle live ist, landen Bewerber automatisch hier im Board – sortiert nach Status.</div>
+      <button class="mini-btn primary" onclick="setView('stellen')">Zu deinen Stellen</button>
+    </div>`);
+  }
   icons();
   wireKanban();
 }
@@ -11181,6 +11219,7 @@ function feldMicToggle(btn){
   try{ _fmRec.start(); btn.classList.add('rec'); }catch(_){}
 }
 function feldMicAttach(ta){
+  if(!(window.SpeechRecognition || window.webkitSpeechRecognition)) return;   // Firefox & Co.: keine toten Mikro-Buttons rendern
   if(!ta || ta._hasMic || ta.dataset.nomic!=null || ta.readOnly || ta.disabled) return;
   if(ta.closest('#auth')) return;                       // Login/Passwort-Bereich aussparen
   ta._hasMic = true;
@@ -12995,7 +13034,13 @@ function persistBewerberNotiz(a){
     try{
       const r = await sbAuth.rpc('set_my_bewerber_notiz', { p_bewerber_id: uuid, p_notiz: payload });
       if(r && r.error) throw r.error;
-    }catch(e){ console.warn('Bewerber-Notiz noch nicht persistiert (Schema v18 nötig?)', e); }
+    }catch(e){
+      const m = String((e && e.message) || e || '');
+      // Nur der Spezialfall "RPC existiert nicht" bleibt leise – echte Fehler (Netz/RLS)
+      // müssen sichtbar sein, sonst sind Notizen nach dem Reload kommentarlos weg.
+      if(/set_my_bewerber_notiz|PGRST202|does not exist/i.test(m)){ console.warn('Bewerber-Notiz: RPC fehlt (Schema v18 nötig?)', e); }
+      else { console.warn('Bewerber-Notiz', e); toast('Notiz konnte nicht gespeichert werden: '+friendlyDbError(e)); }
+    }
   }, 600);
 }
 
@@ -14007,17 +14052,10 @@ function openApplicant(id){
   const tel = (a.phone||'').replace(/\s/g,'');
   const wa = waNumber(a.phone);
   const botDone = a.pqStatus === 'fertig';
-  // CV-Karte: zeigt angehängten Lebenslauf oder klaren Hinweis, dass keiner dabei ist
-  const cvCard = a.cv
-    ? `<div class="cv-card" onclick="toast('Lebenslauf-Vorschau folgt in der Live-Version')">
-         <span class="cv-card__ic"><i data-lucide="file-text"></i></span>
-         <div class="cv-card__main"><div class="cv-card__title">${escapeHtml(a.cv.name)}</div><div class="cv-card__meta">${escapeHtml(a.cv.meta||'PDF')} · angehängt</div></div>
-         <i data-lucide="download" style="width:18px;height:18px;color:var(--muted)"></i>
-       </div>`
-    : `<div class="cv-card" style="cursor:default">
-         <span class="cv-card__ic cv-card__none"><i data-lucide="file-x"></i></span>
-         <div class="cv-card__main"><div class="cv-card__title">Kein Lebenslauf angehängt</div><div class="cv-card__meta">Bewerbung kam ohne PDF</div></div>
-       </div>`;
+  // Bewusst KEINE CV-Karte: Die Portal-Bewerbung ist per Konzept „30 Sekunden, ohne Uploads"
+  // (weder DB-Spalte noch Upload existieren). Ein Dauer-Kasten „Kein Lebenslauf angehängt"
+  // wäre nur verwirrendes totes UI.
+  const cvCard = '';
   openSheet(`
     <div class="sheet__head">
       <span class="avatar" style="width:50px;height:50px;font-size:17px">${initials(a.name)}</span>
