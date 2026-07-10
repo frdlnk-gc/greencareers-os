@@ -198,6 +198,9 @@ body{
 .tag:hover{border-color:var(--green-400);background:#f6fcf7}
 .tag.sel{border-color:var(--green-500);background:#edfaf0;color:var(--green-800);box-shadow:0 0 0 2px rgba(34,163,93,.12)}
 .tag.sel::before{content:"✓ ";font-weight:800;color:var(--green-600)}
+.tag.dim{opacity:.45;pointer-events:auto}
+.ben-count{position:sticky;bottom:0;margin-top:16px;text-align:center;font-size:13px;font-weight:700;color:var(--green-700);background:rgba(243,248,243,.92);backdrop-filter:blur(4px);padding:8px 0 2px}
+.ben-count.full{color:var(--warn)}
 
 /* ---------- Standort (PLZ/Ort + Autocomplete) ---------- */
 .loc-box{position:relative}
@@ -518,8 +521,9 @@ input[type=range]::-moz-range-thumb{width:26px;height:26px;border-radius:50%;bac
   <section class="screen" id="s-benefits">
     <div class="q-step" data-qstep></div>
     <div class="q-title">Was muss dir dein neuer Betrieb bieten?</div>
-    <div class="q-sub">Tippe alles an, was dir wichtig ist – wir schlagen dich Betrieben vor, die das bieten.</div>
+    <div class="q-sub">Wähl die <b>5 wichtigsten</b> – wir schlagen dich Betrieben vor, die genau das bieten.</div>
     <div id="benefitsGroups"></div>
+    <div class="ben-count" id="benCount">0 von 5 ausgewählt</div>
     <div style="margin-top:20px">
       <button class="btn btn-primary" id="benefitsBtn" onclick="deepNext('s-benefits')">Weiter <span class="arrow">→</span></button>
     </div>
@@ -1362,9 +1366,17 @@ function buildDeepScreens(){
     };
     schBox.appendChild(btn);
   });
-  /* Benefits (viele Optionen, gruppierte Tag-Wolke) */
+  /* Benefits (viele Optionen, gruppierte Tag-Wolke, max. 5 – zeigt die echte Motivation) */
+  const BEN_MAX=5;
   const benBox=document.getElementById('benefitsGroups');
   benBox.innerHTML='';
+  function benRefresh(){
+    const full=S.benefits.length>=BEN_MAX;
+    benBox.querySelectorAll('.tag').forEach(t=>t.classList.toggle('dim', full&&!t.classList.contains('sel')));
+    const c=document.getElementById('benCount');
+    c.textContent=full ? '5 von 5 ausgewählt – Maximum erreicht' : S.benefits.length+' von 5 ausgewählt';
+    c.classList.toggle('full', full);
+  }
   BENEFIT_GROUPS.forEach(g=>{
     const h=document.createElement('div');
     h.className='bgroup-h'; h.textContent=g.group;
@@ -1376,14 +1388,17 @@ function buildDeepScreens(){
       btn.className='tag'; btn.type='button'; btn.textContent=g.items[key];
       if(S.benefits.includes(key)) btn.classList.add('sel');
       btn.onclick=()=>{
+        if(!btn.classList.contains('sel') && S.benefits.length>=BEN_MAX){ benRefresh(); return; }
         btn.classList.toggle('sel');
         if(btn.classList.contains('sel')) S.benefits.push(key);
         else S.benefits=S.benefits.filter(k=>k!==key);
+        benRefresh();
       };
       wrap.appendChild(btn);
     }
     benBox.appendChild(wrap);
   });
+  benRefresh();
   /* Kolonne */
   const kolBox=document.getElementById('kolonneChips');
   kolBox.innerHTML='';
