@@ -7,6 +7,14 @@
 <!-- Marken-Favicon: orangefarbenes „C" (statt Browser-Standard-Weltkugel). Farbe wird per JS
      an die aktive Markenfarbe angepasst (grey=orange, green=grün). -->
 <link id="favicon" rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Crect%20width='32'%20height='32'%20rx='7'%20fill='%23ffffff'/%3E%3Ctext%20x='16'%20y='24'%20font-family='Arial,sans-serif'%20font-size='24'%20font-weight='800'%20fill='%23EA580C'%20text-anchor='middle'%3EC%3C/text%3E%3C/svg%3E" />
+<!-- PWA: echte Installierbarkeit („App installieren" im Browser-Menü, Homescreen-Icon statt Screenshot) -->
+<link rel="manifest" href="manifest.json" />
+<meta name="theme-color" content="#16A34A" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="GC OS" />
+<link rel="apple-touch-icon" href="icon-192.png" />
+<script src="qrcode.min.js" defer></script>
 <script src="https://unpkg.com/lucide@0.544.0"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -3348,6 +3356,8 @@ document.addEventListener('visibilitychange', () => {
   if(!(dayChanged || zeitOpen)) return;
   try{ if(typeof loadTimeEntries==='function' && window.sbAuth){ loadTimeEntries().then(()=>{ try{ rerenderCurrent(); }catch(_){} }); } }catch(_){}
 });
+// PWA: Service Worker macht die App installierbar (bewusst ohne Caching – immer frisch).
+if('serviceWorker' in navigator){ try{ navigator.serviceWorker.register('sw.js'); }catch(_){} }
 const DEMO_ANCHOR = '2026-06-03';
 const DEMO_SHIFT = Math.round((dParse(TODAY) - dParse(DEMO_ANCHOR)) / 864e5);
 function shiftISO(iso){ return iso ? addDays(iso, DEMO_SHIFT) : iso; }
@@ -5024,7 +5034,7 @@ function navForRole(){
     return [
       Object.assign({}, NAV.find(n => n.id === 'team'), {label:'Mein Bereich', icon:'hard-hat', badge:''}),
       NAV.find(n => n.id === 'planung'),
-    ];
+    ].filter(n => n && !isLocked(n.id));   // KEIN "Demnächst"-Upsell in der Mitarbeiter-Sidebar
   }
   // Personalverwaltung: Recruiting + Personal/Planung/Kunden/Markt – ohne Finanzen (Umsätze bleiben beim Inhaber)
   if(viewRole === 'buero') return NAV.filter(n => n.id !== 'finanzen');
@@ -7210,7 +7220,7 @@ const VIEWS = {
 // Ehrlich gehalten: Die „App" ist heute die mobile Web-App (os.green-careers.de), die der
 // Mitarbeiter per Einladung öffnet und aufs Handy „installiert" (Zum Startbildschirm / PWA).
 // Eigene App-Store-/Play-Apps kommen später – hier wird nichts vorgegaukelt, was es nicht gibt.
-function appTeamLink(){ try{ return location.origin + '/'; }catch(_){ return 'https://os.green-careers.de/'; } }
+function appTeamLink(){ try{ return location.origin + location.pathname; }catch(_){ return 'https://os.green-careers.de/'; } }
 function appCopyLink(){
   const url = appTeamLink();
   const done = ()=> toast('App-Adresse kopiert. Achtung: zum Einloggen braucht der Mitarbeiter seinen persönlichen Einladungs-Link (Team → Personalakte).');
@@ -7227,7 +7237,8 @@ function appDoCard(icon, title, body){
   return `<div class="appdo"><span class="appdo__ic"><i data-lucide="${icon}"></i></span><div><b>${title}</b><p>${body}</p></div></div>`;
 }
 function mitarbeiterAppView(){
-  const withAccess = employees.filter(e => e.account === 'active' || e.account === 'invited').length;
+  const accActive = employees.filter(e => e.account === 'active').length;
+  const accInvited = employees.filter(e => e.account === 'invited').length;
   const total = employees.length;
   const canEdit = can('editEmployees');
   const invBtn = canEdit ? `<button class="mini-btn primary" style="margin-top:10px" onclick="openEmployeeForm()"><i data-lucide="user-plus"></i> Mitarbeiter anlegen &amp; einladen</button>` : '';
@@ -7245,7 +7256,7 @@ function mitarbeiterAppView(){
         <button class="mini-btn" style="margin-top:10px" onclick="appCopyLink()"><i data-lucide="smartphone"></i> App-Adresse kopieren</button>
       </div>
       <div class="apphero__note" style="margin-top:10px;display:flex;gap:7px;align-items:flex-start;font-size:12.5px;color:var(--muted)"><i data-lucide="key-round" style="width:14px;height:14px;flex:none;margin-top:2px"></i><span>Der Zugang kommt über den <b>persönlichen Einladungs-Link</b> (per WhatsApp oder E-Mail) – die App-Adresse allein reicht nicht.</span></div>
-      <div class="apphero__stat">${withAccess} von ${total} Mitarbeitern haben schon einen Zugang.</div>
+      <div class="apphero__stat">${accActive} aktiv · ${accInvited} eingeladen · ${Math.max(0, total - accActive - accInvited)} ohne Zugang.</div>
     </div>
     <div class="apphero__phone">
       <div class="appphone">
@@ -16444,12 +16455,27 @@ function openInviteLinkSheet(e, link, already, mailSent){
       ${mailLine}
       <p class="sheet-note" style="margin-top:0"><i data-lucide="info"></i> So kommt ${first} in die App: Link per WhatsApp schicken → er tippt drauf → ${already?'loggt sich mit seinem Passwort ein':'legt einmal ein Passwort fest'} → fertig. Er sieht danach nur seinen Bereich (Zeiten &amp; Urlaub).</p>
       <div class="field"><label>Persönlicher Einladungs-Link</label><input id="invLinkFld" readonly value="${link.replace(/"/g,'&quot;')}" onclick="this.select()"></div>
+      <div id="invQrWrap" style="display:flex;flex-direction:column;align-items:center;gap:7px;margin:6px 0 12px;text-align:center"></div>
       <div class="sheet-actions">
         <a class="btn" style="flex:1.4;text-decoration:none" href="${wa}" target="_blank" rel="noopener"><i data-lucide="message-circle"></i> Per WhatsApp senden</a>
         <button class="btn ghost" onclick="gcCopyText(document.getElementById('invLinkFld').value).then(()=>toast('Link kopiert'))"><i data-lucide="copy"></i> Kopieren</button>
       </div>
       <p class="sheet-note"><i data-lucide="shield-check"></i> Der Link ist persönlich und bindet ${first} fest an deinen Betrieb – bitte nicht weiterleiten.</p>
     </div>`);
+  // QR-Code: Chef zeigt den Bildschirm, der Mitarbeiter scannt mit der Handy-Kamera –
+  // der natürlichste Weg auf der Baustelle (kein Abtippen langer Links).
+  try{
+    if(typeof qrcode === 'function'){
+      const q = qrcode(0, 'M'); q.addData(link); q.make();
+      const el = document.getElementById('invQrWrap');
+      if(el){
+        el.innerHTML = q.createSvgTag({ cellSize: 4, margin: 2 }) +
+          '<small style="color:var(--muted);font-weight:600">Oder scannen: Kamera vom Handy des Mitarbeiters auf den Code halten.</small>';
+        const svg = el.querySelector('svg');
+        if(svg){ svg.style.width='170px'; svg.style.height='170px'; svg.style.borderRadius='10px'; svg.style.border='1px solid var(--line)'; svg.style.background='#fff'; svg.style.padding='4px'; }
+      }
+    }
+  }catch(_){}
 }
 async function submitEmployee(id){
   const name = document.getElementById('efName').value.trim();

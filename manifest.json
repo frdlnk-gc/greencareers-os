@@ -1,0 +1,15 @@
+{
+  "name": "GreenCareers OS",
+  "short_name": "GC OS",
+  "description": "Betriebssoftware für GaLaBau & Tiefbau: Stempeln, Urlaub, Krankmeldung, Team.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F6F5F2",
+  "theme_color": "#16A34A",
+  "lang": "de",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
