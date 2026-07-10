@@ -14687,6 +14687,126 @@ function mitdenkStrip(){
   </div>`;
 }
 
+/* ===== Zeit-Historie & Lohn-Export + Reparatur offener Einträge =====
+   Vorher sah der Betrieb ausschließlich HEUTE – Lohnabrechnung war unmöglich und
+   vergessene Ausstempelungen von gestern blieben für immer unsichtbar offen. */
+let zeitRange = 'woche';        // 'woche' | 'monat'
+let zeitHist = null;            // Auswertungs-Zeilen (roh aus my_zeit_eintraege)
+let zeitHistLoading = false;
+let zeitOffeneAlt = null;       // offene Einträge der letzten 7 Tage (ohne heute)
+function zeitRangeBounds(r){
+  const now = new Date();
+  if(r === 'monat') return { von: dISO(new Date(now.getFullYear(), now.getMonth(), 1)), bis: TODAY };
+  const d = new Date(now); const wd = (d.getDay()+6)%7; d.setDate(d.getDate()-wd);   // Montag
+  return { von: dISO(d), bis: TODAY };
+}
+async function loadZeitHistorie(){
+  if(!osConnected()){ zeitHist = []; zeitOffeneAlt = []; return; }
+  zeitHistLoading = true;
+  try{
+    const b = zeitRangeBounds(zeitRange);
+    const { data, error } = await sbAuth.rpc('my_zeit_eintraege', { p_von: b.von, p_bis: b.bis });
+    zeitHist = error ? [] : (data||[]);
+    if(error) console.warn('zeitHistorie:', error.message||error);
+    const von7 = dISO(new Date(Date.now()-7*864e5));
+    const r2 = await sbAuth.rpc('my_zeit_eintraege', { p_von: von7, p_bis: TODAY });
+    zeitOffeneAlt = ((r2 && r2.data)||[]).filter(x => !x.end_zeit && x.datum < TODAY);
+  }catch(e){ console.warn('zeitHistorie', e); zeitHist = zeitHist||[]; zeitOffeneAlt = zeitOffeneAlt||[]; }
+  zeitHistLoading = false;
+}
+function rowMin(r){
+  if(!r.start_zeit || !r.end_zeit) return 0;
+  let span = hm2min(r.end_zeit) - hm2min(r.start_zeit); if(span < 0) span += 1440;
+  return Math.max(0, span - (r.pause_min||0));
+}
+function zeitNameByUuid(u){
+  const e = employees.find(x => x._uuid === u); if(e) return e.name;
+  const me = selfEmp(); if(me && me._uuid === u) return me.name;
+  return 'Ehemaliger Mitarbeiter';
+}
+function zeitRangeSet(r){ zeitRange = r; zeitHist = null; renderZeit(); }
+function zeitAuswertungHtml(){
+  const seg = (id,lbl)=>`<button class="mini-btn ${zeitRange===id?'primary':''}" onclick="zeitRangeSet('${id}')">${lbl}</button>`;
+  let inner;
+  if(zeitHist === null){
+    inner = `<div class="empty"><i data-lucide="loader"></i><div>Auswertung wird geladen …</div></div>`;
+    if(!zeitHistLoading){ zeitHistLoading = true; loadZeitHistorie().then(()=>{ try{ renderZeit(); }catch(_){} }); }
+  } else {
+    const rows = zeitHist.filter(r => r.end_zeit);
+    const perMa = {};
+    rows.forEach(r => { const k = r.mitarbeiter_id||'?'; (perMa[k] = perMa[k]||{min:0,tage:new Set()}); perMa[k].min += rowMin(r); perMa[k].tage.add(r.datum); });
+    const list = Object.entries(perMa).map(([u,v]) => ({name:zeitNameByUuid(u), min:v.min, tage:v.tage.size})).sort((a,b)=>b.min-a.min);
+    inner = list.length
+      ? `<div class="tlist">${list.map(x=>`
+          <div style="display:flex;align-items:center;gap:11px;padding:11px 14px;background:#fff;border:1px solid var(--line);border-radius:12px;margin-bottom:8px">
+            <span class="avatar sm">${initials(x.name)}</span>
+            <div style="flex:1;min-width:0"><b>${escapeHtml(x.name)}</b><small style="display:block;color:var(--muted)">${x.tage} ${x.tage===1?'Arbeitstag':'Arbeitstage'} im Zeitraum</small></div>
+            <b style="font-size:15px;white-space:nowrap">${hoursStr(x.min)}</b>
+          </div>`).join('')}</div>`
+      : `<div class="empty"><i data-lucide="calendar-x"></i><div>Im gewählten Zeitraum sind noch keine abgeschlossenen Zeiten erfasst.</div></div>`;
+  }
+  return `
+    <div class="zsec-h" style="margin-top:18px"><b>Auswertung &amp; Lohn-Export</b><span>Summen je Mitarbeiter</span></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
+      ${seg('woche','Diese Woche')}${seg('monat','Dieser Monat')}
+      <span style="flex:1"></span>
+      <button class="mini-btn" onclick="exportZeitCsv()"><i data-lucide="download"></i> CSV fürs Lohnbüro</button>
+    </div>
+    ${inner}`;
+}
+function exportZeitCsv(){
+  const b = zeitRangeBounds(zeitRange);
+  const rows = (zeitHist||[]).slice().sort((x,y)=> ((x.datum||'')+(x.start_zeit||'')).localeCompare((y.datum||'')+(y.start_zeit||'')));
+  if(!rows.length){ toast('Keine Zeiten im gewählten Zeitraum.'); return; }
+  const q = s => '"'+String(s==null?'':s).replace(/"/g,'""')+'"';
+  const lines = [['Mitarbeiter','Datum','Start','Ende','Pause (Min)','Netto (Std)','Baustelle','Korrigiert'].join(';')];
+  rows.forEach(r => lines.push([
+    q(zeitNameByUuid(r.mitarbeiter_id)), r.datum, r.start_zeit||'', r.end_zeit||'', r.pause_min||0,
+    (rowMin(r)/60).toFixed(2).replace('.',','), q(r.site_label||r.site_customer||''), r.corrected?'ja':''
+  ].join(';')));
+  const blob = new Blob(['﻿'+lines.join('\n')], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'zeiten_'+b.von+'_bis_'+b.bis+'.csv'; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 4000);
+  toast('CSV exportiert – bereit für die Lohnabrechnung.');
+}
+function offeneAltHtml(){
+  if(!zeitOffeneAlt || !zeitOffeneAlt.length) return '';
+  return `<div class="zsec-h" style="margin-top:16px"><b>Offen von den Vortagen</b><span>Ausstempeln vergessen – Ende nachtragen</span></div>
+  <div class="tlist">${zeitOffeneAlt.map(r=>`
+    <div style="display:flex;align-items:center;gap:11px;padding:11px 14px;background:#FFF8EC;border:1px solid #F0C36D;border-radius:12px;margin-bottom:8px">
+      <span class="avatar sm">${initials(zeitNameByUuid(r.mitarbeiter_id))}</span>
+      <div style="flex:1;min-width:0"><b>${escapeHtml(zeitNameByUuid(r.mitarbeiter_id))}</b><small style="display:block;color:#8A6A1E">${dDE(r.datum)} · eingestempelt ${r.start_zeit||'–'} · kein Ende erfasst</small></div>
+      <button class="mini-btn primary" onclick="openFixEndSheet('${r.id}','${r.datum}','${escapeHtml(zeitNameByUuid(r.mitarbeiter_id)).replace(/'/g,'')}')">Ende nachtragen</button>
+    </div>`).join('')}</div>`;
+}
+function openFixEndSheet(uuid, datum, name){
+  openSheet(`
+    <div class="sheet__head">
+      <span class="avatar" style="width:46px;height:46px;background:linear-gradient(135deg,var(--green),var(--green-2))"><i data-lucide="clock" style="width:20px;height:20px"></i></span>
+      <div><div class="sheet__title">Ende nachtragen</div><div class="sheet__sub">${escapeHtml(name)} · ${dDE(datum)}</div></div>
+      <button class="iconbtn sheet__close" onclick="closeSheet()" aria-label="Schließen"><i data-lucide="x"></i></button>
+    </div>
+    <div class="sheet__body">
+      <p class="sheet-note"><i data-lucide="info"></i> Das Ausstempeln wurde vergessen. Trage das tatsächliche Arbeitsende nach – der Eintrag wird als „korrigiert" markiert.</p>
+      <div class="field" style="max-width:180px"><label>Feierabend um</label><input id="fixEndTime" type="time" value="17:00"></div>
+      <div class="sheet-actions">
+        <button class="btn" style="flex:1" onclick="saveFixEnd('${uuid}')"><i data-lucide="check"></i> Nachtragen</button>
+        <button class="btn ghost" onclick="closeSheet()">Abbrechen</button>
+      </div>
+    </div>`);
+}
+async function saveFixEnd(uuid){
+  const end = ((document.getElementById('fixEndTime')||{}).value||'').trim();
+  if(!end){ toast('Bitte eine Uhrzeit wählen.'); return; }
+  try{
+    const { error } = await sbAuth.from('zeit_eintraege').update({ end_zeit: end, corrected: true }).eq('id', uuid);
+    if(error){ toast('Konnte nicht speichern: '+friendlyDbError(error)); return; }
+    closeSheet(); toast('Ende nachgetragen.');
+    zeitHist = null; zeitOffeneAlt = null; renderZeit();
+  }catch(e){ toast('Konnte nicht speichern: '+friendlyDbError(e)); }
+}
+
 function zeitView(){
   // Kolonnenführer bekommen die Selbst-/Kolonnen-Sicht (leadClockCard), NICHT das
   // betriebsweite Zeit-Dashboard mit allen Standorten – das bleibt Admin/Büro vorbehalten.
@@ -14728,7 +14848,9 @@ function zeitViewTeam(){
   const done = timeEntries.filter(e => e.out);
   const located = running.filter(e => e.geo && e.geo.lat != null).length;
   const totalMin = timeEntries.reduce((n,e) => n + entryMin(e), 0);
-  const avg = timeEntries.length ? totalMin/timeEntries.length : 0;
+  // Ø pro KOPF (nicht pro Eintrag): wer zweimal stempelt, darf den Schnitt nicht drücken.
+  const zeitHeads = new Set(timeEntries.map(e => String(e.empId))).size;
+  const avg = zeitHeads ? totalMin/zeitHeads : 0;
   const geoKpi = settings.geo ? kpi('map-pin', String(located), 'Standort erfasst', 'beim Stempeln', false) : kpi('briefcase', String(new Set(timeEntries.map(e=>e.siteId)).size), 'Baustellen', 'heute aktiv', false);
   return `
   <div class="zeit">
@@ -14751,6 +14873,8 @@ function zeitViewTeam(){
       ${running.map(timeRow).join('') || `<div class="empty"><i data-lucide="clock"></i><div>Noch niemand eingestempelt.</div></div>`}
     </div>
     ${done.length ? `<div class="zsec-h" style="margin-top:16px"><b>Feierabend</b><span>heute fertig</span></div><div class="tlist">${done.map(timeRow).join('')}</div>` : ''}
+    ${offeneAltHtml()}
+    ${zeitAuswertungHtml()}
     ${settings.geo?`<div class="dsgvo"><i data-lucide="shield-check"></i> <span><b>Datenschutz:</b> Der Standort wird <b>nur beim Ein- &amp; Ausstempeln</b> einmalig erfasst – damit nachvollziehbar ist, wo gestempelt wurde. Keine laufende Ortung während der Arbeitszeit.</span></div>`:''}
   </div>`;
 }
