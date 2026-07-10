@@ -10375,12 +10375,22 @@ function openAbsence(id){
         <div class="detail-row"><dt>Zeitraum</dt><dd>${dDE(a.from)} – ${a.to?dDE(a.to):'offen'}</dd></div>
         <div class="detail-row"><dt>Dauer</dt><dd>${dur}</dd></div>
         ${a.note?`<div class="detail-row"><dt>Notiz</dt><dd>${escapeHtml(a.note)}</dd></div>`:''}
-        ${a.au?`<div class="detail-row"><dt>AU-Bescheinigung</dt><dd>${auImages[a.id]?`<img class="authumb" src="${auImages[a.id]}" alt="AU" onclick="viewAu(${a.id})" title="Größer ansehen">`:`<span class="aupin"><i data-lucide="paperclip"></i> ${a.au}</span>`}</dd></div>`:''}
+        ${a.au?`<div class="detail-row"><dt>AU-Bescheinigung</dt><dd id="auDd_${a.id}">${auImages[a.id]?`<img class="authumb" src="${auImages[a.id]}" alt="AU" onclick="viewAu(${a.id})" title="Größer ansehen">`:`<span class="aupin"><i data-lucide="paperclip"></i> ${escapeHtml(String(a.au).split('/').pop())}</span>`}</dd></div>`:''}
         ${a.type==='urlaub'?`<div class="detail-row"><dt>Resturlaub</dt><dd>${fmtDays(vacInfo(a.empId).rest)} Tage übrig</dd></div>`:''}
         ${warn?`<div class="detail-row"><dt>Hinweis</dt><dd style="color:var(--amber);font-weight:600"><i data-lucide="alert-triangle" style="width:14px;height:14px;vertical-align:-2px"></i> ${warn}</dd></div>`:''}
       </dl>
       ${absenceActions(a)}
     </div>`);
+  // AU-Foto aus dem Storage nachladen (a.au = Pfad): Das Chef-Gerät hat die Session-Vorschau
+  // des Mitarbeiters nicht – ohne diesen Loader bliebe nur der Dateiname sichtbar.
+  if(a.au && String(a.au).includes('/') && !auImages[a.id]){
+    akteSignedUrl(a.au).then(u => {
+      if(!u) return;
+      auImages[a.id] = u;
+      const dd = document.getElementById('auDd_'+a.id);
+      if(dd){ dd.innerHTML = `<img class="authumb" src="${u}" alt="AU" onclick="viewAu(${a.id})" title="Größer ansehen">`; }
+    });
+  }
 }
 // Aktionen je nach Rolle: Genehmiger sieht Freigabe, sonst Bearbeiten (Löschen steckt im Bearbeiten)
 function absenceActions(a){
@@ -10566,13 +10576,25 @@ function submitAbsence(){
     return;
   }
   const newId = absSeq++;
-  const au = (type === 'krank' && afAuData) ? afAuData.name : '';
-  if(type === 'krank' && afAuData) auImages[newId] = afAuData.url;
+  const auData = (type === 'krank' && afAuData) ? afAuData : null;
+  const au = auData ? auData.name : '';
+  if(auData) auImages[newId] = auData.url;
   const aNew = { id: newId, empId, type, from, to, note, status, au, half };
   absences.push(aNew);
   afAuData = null;
   saveAbsences();
   persistAbsence(aNew);
+  // AU-Foto DAUERHAFT sichern (Storage-Pfad in abwesenheiten.au) – vorher blieb nur der
+  // Dateiname übrig und das Foto erreichte den Chef nie.
+  if(auData && auData.url){
+    (async ()=>{
+      const who = emp(empId);
+      const maUuid = (who && who._uuid) || null;
+      const pth = await uploadDataUrl(auData.url, maUuid, 'au');
+      if(pth){ aNew.au = pth; saveAbsences(); persistAbsence(aNew); }
+      else if(osConnected()){ toast('AU-Foto konnte nicht dauerhaft gespeichert werden – es bleibt nur auf diesem Gerät sichtbar.'); }
+    })();
+  }
   closeSheet();
   urlaubSub = (status === 'offen') ? 'antraege' : 'kalender';
   activeTeamTab = 'urlaub'; akteEmpId = null;
@@ -11016,6 +11038,7 @@ async function loadPortalData(){
     await loadAbsencesDb();   // Abwesenheiten (abwesenheiten-Tabelle) – NACH loadTeam (braucht employee._uuid fürs Mapping)
     await loadPlantafel();    // Plantafel (plantafel-Tabelle) – NACH loadCrews + loadKunden (crew/kunde-Mapping)
     await loadTimeEntries();  // heutige Stempel-Einträge (zeit_eintraege) – NACH loadTeam (employee._uuid-Mapping)
+    try{ flushPendingZeit(); }catch(_){}   // vor dem Sync gestempelte Einträge nachpersistieren
     OS_DATA_LOADED = true;
     OS_LOAD_ERROR = false;
     const _leb = document.getElementById('loadErrBar'); if(_leb) _leb.remove();
@@ -11665,11 +11688,40 @@ function zeitRowPayload(e){
     proto: !!e.proto
   };
 }
+// dataURL -> personalakte-Storage ({customer}/{mitarbeiter}/prefix_ts.ext). Mitarbeiter dürfen
+// in den EIGENEN Ordner schreiben (personalakte_own_write) – so erreichen AU-/Protokoll-Fotos den Chef.
+async function uploadDataUrl(dataUrl, maUuid, prefix){
+  if(!dataUrl || !osConnected() || !(GC_PROFILE && GC_PROFILE.customer_id) || !maUuid) return null;
+  try{
+    const blob = await (await fetch(dataUrl)).blob();
+    const ext = String(blob.type||'').includes('png') ? 'png' : 'jpg';
+    const path = GC_PROFILE.customer_id + '/' + maUuid + '/' + prefix + '_' + Date.now() + '.' + ext;
+    const { error } = await sbAuth.storage.from('personalakte').upload(path, blob, { upsert:false, contentType: blob.type || 'image/jpeg' });
+    if(error){ console.warn('uploadDataUrl', error); return null; }
+    return path;
+  }catch(err){ console.warn('uploadDataUrl', err); return null; }
+}
+// FAIL LOUD + Selbstheilung: Einträge ohne DB-UUID werden gemerkt und nach dem nächsten
+// Team-Sync automatisch nachpersistiert (vorher: stiller Datenverlust beim Reload).
+const _pendingZeit = [];
+let _zeitWarned = false;
+function zeitSyncWarn(){
+  if(_zeitWarned) return; _zeitWarned = true;
+  toast('Achtung: Zeiten können gerade nicht dauerhaft gespeichert werden – sie werden automatisch nachgetragen, sobald die Synchronisierung steht.');
+}
+async function flushPendingZeit(){
+  const list = _pendingZeit.splice(0);
+  for(const e of list){ try{ await persistTimeEntry(e); }catch(_){} }
+}
 async function persistTimeEntry(e){
   if(!osConnected()){ betriebFehltWarn(); return; }
   if(!e) return;
   const payload = zeitRowPayload(e);
-  if(!payload) return;                             // Person (noch) nicht in der DB -> still überspringen
+  if(!payload){                                    // Person (noch) nicht in der DB -> merken + warnen
+    if(!_pendingZeit.includes(e)) _pendingZeit.push(e);
+    zeitSyncWarn();
+    return;
+  }
   try{
     if(e._uuid){
       const { error } = await sbAuth.from('zeit_eintraege').update(payload).eq('id', e._uuid);
@@ -15043,6 +15095,22 @@ function openTimeEntry(id){
   const emp_ = emp(e.empId) || (e.empId === 'self' ? (selfEmp() || {name:(currentUser().name||'Ich'), role:'', phone:''}) : {name:'—', role:'', phone:''});
   const s = site(e.siteId) || {id:e.siteId, customer:'—', label:'', addr:''}; const min = entryMin(e);
   const p = protocols.find(x => x.empId === e.empId && x.siteId === e.siteId);
+  // Protokoll aus der DB nachladen: der Chef auf SEINEM Gerät hat das Session-Array des
+  // Mitarbeiters nicht – ohne diesen Read stünde hier fälschlich „kein Protokoll".
+  if(!p && e._uuid && osConnected()){
+    setTimeout(async ()=>{
+      try{
+        const { data } = await sbAuth.from('tagesprotokolle').select('*').eq('zeit_eintrag_id', e._uuid).order('created_at',{ascending:false}).limit(1);
+        const row = data && data[0]; if(!row) return;
+        const box = document.querySelector('#modal .protobox.empty2'); if(!box) return;
+        const fotos = Array.isArray(row.fotos) ? row.fotos : [];
+        const urls = []; for(const pth of fotos){ const u = await akteSignedUrl(pth); if(u) urls.push(u); }
+        const dmgUrl = row.schaden_foto ? await akteSignedUrl(row.schaden_foto) : null;
+        box.outerHTML = `<div class="protobox"><div class="protobox__h"><i data-lucide="clipboard-check"></i> Tagesprotokoll</div><div class="protobox__txt">${escapeHtml(row.text||'—')}</div>${urls.length?`<div class="protogrid">${urls.map(u=>`<img src="${u}" alt="Baustelle">`).join('')}</div>`:''}${row.schaden_text?`<div class="protodmg"><i data-lucide="alert-octagon"></i> Schaden: ${escapeHtml(row.schaden_text)}${dmgUrl?`<img src="${dmgUrl}" alt="Schaden">`:''}</div>`:''}</div>`;
+        icons();
+      }catch(_){}
+    }, 60);
+  }
   openSheet(`
     <div class="sheet__head">
       <span class="avatar" style="width:50px;height:50px;font-size:17px">${initials(emp_.name)}</span>
@@ -15349,16 +15417,43 @@ function dmgToggle(chk){ const f = document.getElementById('dmgFields'); if(f) f
 function dmgPicAdd(input){ const f = input.files && input.files[0]; if(!f) return; const r = new FileReader(); r.onload = ev => { protoDamage = ev.target.result; const p = document.getElementById('dmgPrev'); if(p){ p.innerHTML = `<div class="pthumb"><img src="${ev.target.result}" alt="Schaden"><button type="button" onclick="dmgPicDel()"><i data-lucide="x"></i></button></div>`; icons(); } }; r.readAsDataURL(f); }
 function dmgPicDel(){ protoDamage = null; const p = document.getElementById('dmgPrev'); if(p) p.innerHTML = ''; const inp = document.getElementById('dmgPic'); if(inp) inp.value = ''; }
 function submitProtocol(siteId, empId){
-  if(voiceRec){ voiceRec.stop(); voiceRec = null; }
+  if(voiceRec){ try{ voiceRec.onend=null; voiceRec.stop(); }catch(_){} voiceRec = null; }
   const text = (document.getElementById('protoText')||{}).value || '';
   const dmgOn = (document.getElementById('dmgChk')||{}).checked;
   const damageText = dmgOn ? ((document.getElementById('dmgText')||{}).value || 'Schaden gemeldet') : '';
+  const photos = protoPhotos.slice();
+  const damagePhoto = dmgOn ? protoDamage : null;
   protocols = protocols.filter(p => !(p.empId === empId && p.siteId === siteId));
-  protocols.push({ empId, siteId, text, photos: protoPhotos.slice(), damageText, damagePhoto: dmgOn ? protoDamage : null });
-  const e = timeEntries.find(x => String(x.empId) === String(empId) && x.siteId === siteId); if(e) e.proto = true;
+  protocols.push({ empId, siteId, text, photos, damageText, damagePhoto });
+  const e = timeEntries.find(x => String(x.empId) === String(empId) && x.siteId === siteId);
+  if(e){ e.proto = true; persistTimeEntry(e); }
   protoPhotos = []; protoDamage = null;
   closeSheet(); renderZeit();
-  toast('Tagesprotokoll gespeichert' + (damageText ? ' · Schaden gemeldet' : ''));
+  // PERSISTENT nach Supabase (inkl. Fotos + Schadensmeldung als Storage-Uploads) – vorher lebte
+  // das Protokoll nur im RAM dieser Session und der Chef sah auf seinem Gerät NIE etwas davon.
+  (async ()=>{
+    try{
+      if(!osConnected() || !(GC_PROFILE && GC_PROFILE.customer_id)){ toast('Protokoll nur lokal gespeichert – keine Verbindung.'); return; }
+      const maUuid = (typeof entryMaUuid==='function') ? entryMaUuid(empId) : null;
+      const fotoPaths = [];
+      for(const src of photos){ const pth = await uploadDataUrl(src, maUuid, 'proto'); if(pth) fotoPaths.push(pth); }
+      const dmgPath = damagePhoto ? await uploadDataUrl(damagePhoto, maUuid, 'schaden') : null;
+      const s = site(siteId) || {};
+      const { error } = await sbAuth.from('tagesprotokolle').insert({
+        customer_id: GC_PROFILE.customer_id,
+        mitarbeiter_id: maUuid,
+        zeit_eintrag_id: (e && e._uuid) || null,
+        datum: TODAY,
+        site_id: String(siteId||''), site_label: [s.customer, s.label].filter(Boolean).join(' · '),
+        text: text || null,
+        fotos: fotoPaths,
+        schaden_text: damageText || null,
+        schaden_foto: dmgPath
+      });
+      if(error){ toast('Protokoll konnte nicht dauerhaft gespeichert werden: '+friendlyDbError(error)); return; }
+      toast('Tagesprotokoll gespeichert' + (damageText ? ' · Schaden gemeldet' : ''));
+    }catch(err){ toast('Protokoll konnte nicht dauerhaft gespeichert werden: '+friendlyDbError(err)); }
+  })();
 }
 
 /* ===================== PERSONALAKTE (HR-Stammdaten je Mitarbeiter) ===================== */
