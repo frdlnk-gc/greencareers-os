@@ -3947,6 +3947,10 @@ function coCalc(){
   const qty = Math.min(Math.max(parseInt(e.qty,10)||1,1),4);
   const qtyPct = CO_QTY_DISC[qty]||0;
   const codePct = coParseCodePct(e.code||'');
+  // Account-Rabatt: von Staff im Backend gesetzt (customers.rabatt_prozent). Nur Anzeige – die
+  // Edge Function rechnet serverseitig autoritativ. Ein Nachlass, nicht stapelbar: höherer gewinnt, max 50.
+  const accountPct = Math.max(0, Math.min(50, (GC_CUSTOMER && Number(GC_CUSTOMER.rabatt_prozent)) || 0));
+  const salesPct   = Math.min(50, Math.max(codePct, accountPct));
   let unitNet, months=1, termPct=0, pkgName='', days=0, term='6m';
   if(mode==='abo'){
     const pk = CO_PKG_ABO[pkgKey]; if(!pk) return null;
@@ -3959,9 +3963,9 @@ function coCalc(){
   }
   const baseNet = unitNet*qty;
   const afterQty = baseNet*(1-qtyPct/100);
-  const finalNet = afterQty*(1-codePct/100);
+  const finalNet = afterQty*(1-salesPct/100);
   const grossUnit = finalNet*(1+CO_VAT);
-  return { mode, pkgKey, pkgName, qty, qtyPct, codePct, term, months, termPct, days, finalNet, grossUnit };
+  return { mode, pkgKey, pkgName, qty, qtyPct, codePct, accountPct, salesPct, term, months, termPct, days, finalNet, grossUnit };
 }
 
 function openCheckout(){
@@ -3972,6 +3976,23 @@ function openCheckout(){
   coEnforceBrand();
   document.getElementById('checkout').classList.remove('hidden');
   renderCheckout();
+  coRefreshRabatt();   // frischen Account-Rabatt nachladen (Staff kann ihn gerade gesetzt haben) -> ggf. neu rendern
+}
+// Account-Rabatt (customers.rabatt_prozent) frisch aus der DB ziehen, damit der angezeigte Preis
+// einem gerade im Backend gesetzten Nachlass entspricht. Best-effort; die Edge Function bleibt autoritativ.
+async function coRefreshRabatt(){
+  if(!(sbAuth && GC_PROFILE && GC_PROFILE.customer_id)) return;
+  try{
+    const { data } = await sbAuth.from('customers').select('rabatt_prozent').eq('id', GC_PROFILE.customer_id).maybeSingle();
+    if(data){
+      GC_CUSTOMER = GC_CUSTOMER || {};
+      if(Number(GC_CUSTOMER.rabatt_prozent||0) !== Number(data.rabatt_prozent||0)){
+        GC_CUSTOMER.rabatt_prozent = data.rabatt_prozent;
+        const co = document.getElementById('checkout');
+        if(co && !co.classList.contains('hidden')) renderCheckout();
+      }
+    }
+  }catch(_){}
 }
 function coSetMethod(k){ coCaptureFields(); coState.method = k; renderCheckout(); }
 function coToggleAgb(){ coCaptureFields(); coState.agb = !coState.agb; renderCheckout(); }
@@ -3997,8 +4018,8 @@ function renderCheckout(){
   const priceLine = c.mode==='abo'
     ? `<b>${coEur(c.grossUnit)}</b><small>pro Monat · ${c.months} Monate${c.qty>1?` · ${c.qty} Stellen`:''}</small>`
     : `<b>${coEur(c.grossUnit)}</b><small>einmalig · ${c.days} Tage${c.qty>1?` · ${c.qty} Stellen`:''}</small>`;
-  const rabatt = (c.qtyPct||c.codePct)
-    ? `<span>Inkl. ${[c.qtyPct?`${c.qtyPct}% Mengenrabatt`:'', c.codePct?`${String(c.codePct).replace('.',',')}% Code`:''].filter(Boolean).join(' + ')} · alle Preise inkl. 19% USt.</span>`
+  const rabatt = (c.qtyPct||c.salesPct)
+    ? `<span>Inkl. ${[c.qtyPct?`${c.qtyPct}% Mengenrabatt`:'', c.salesPct?`${c.salesPct}% Rabatt`:''].filter(Boolean).join(' + ')} · alle Preise inkl. 19% USt.</span>`
     : `<span>Alle Preise inkl. 19% USt.</span>`;
   const subLabel = c.mode==='abo' ? 'Recruiting-Abo' : 'Stellen-Kontingent';
 
@@ -7617,6 +7638,81 @@ async function consentModalAccept(){
 }
 // Frueher der Upfront-Wall nach dem Kauf. Jetzt KEIN Upfront-Consent mehr -> direkt zur Einrichtung.
 function openConsentGate(){ maybeOnboard(); }
+
+/* ===================== ÜBER-UNS-GATE (vor der ERSTEN Veröffentlichung) =====================
+   Die "Über uns"-Vorstellung des Betriebs (customers.ueber_uns) füllt den Über-uns-Bereich
+   ÜBER jeder Anzeige im Portal. Sie liegt sonst nur im Settings-Tab "Unternehmensprofil" und
+   wird im Kauf->Stelle-anlegen->Veröffentlichen-Flow nie abgefragt -> Anzeige ohne "Über uns".
+   Deshalb: exakt wie das AVV-Gate einmalig vor der ersten Veröffentlichung abfragen (nutzt das
+   gleiche Overlay #gate, zerstört den offenen Wizard NICHT). Feuert nur, solange ueber_uns leer. */
+function hasUeberUns(){
+  return !!(((GC_CUSTOMER && (GC_CUSTOMER.ueber_uns||'').trim())) || (settings.portal && (settings.portal.ueberUns||'').trim()));
+}
+let _ueberUnsPending = null;
+function requireUeberUns(cb){
+  if(hasUeberUns()){ cb && cb(); return; }
+  if(!(sbAuth && GC_USER && GC_PROFILE && GC_PROFILE.customer_id)){ toast('Bitte zuerst den Betrieb einrichten – danach steht dieser Bereich bereit.'); return; }
+  _ueberUnsPending = cb;
+  renderUeberUnsGate();
+}
+function renderUeberUnsGate(){
+  const gate = document.getElementById('gate'); const card = document.getElementById('gateCard');
+  if(!gate || !card){ if(_ueberUnsPending){ const cb=_ueberUnsPending; _ueberUnsPending=null; cb(); } return; }
+  const pp = settings.portal || (settings.portal = {});
+  card.innerHTML = `
+    <div class="gate__top"><span class="gate__paid"><i data-lucide="building-2"></i> Firmenprofil</span></div>
+    <div class="gate__h">Kurz noch: Stell deinen Betrieb vor</div>
+    <div class="gate__sub">Dieser Text erscheint als „Über uns" über deiner Anzeige – nur einmal nötig, gilt dann für alle deine Stellen. 2–4 Sätze reichen und bringen spürbar mehr Bewerbungen.</div>
+    <div class="gate__body">
+      <div class="field"><textarea id="uugText" rows="5" placeholder="Wer seid ihr? Was macht euch als Arbeitgeber aus? Was bietet ihr euren Leuten?">${escapeHtml(pp.ueberUns||'')}</textarea></div>
+      <div class="fieldrow">
+        <div class="field"><label>Mitarbeiteranzahl <span class="lbl-hint">optional</span></label><input id="uugMa" value="${escapeHtml(pp.mitarbeiterAnzahl||'')}" placeholder="z. B. 12 oder 10–20"></div>
+        <div class="field" style="max-width:150px"><label>Gegründet <span class="lbl-hint">optional</span></label><input id="uugGj" value="${escapeHtml(pp.gruendungsjahr||'')}" placeholder="z. B. 2008"></div>
+      </div>
+      <button class="btn full" id="uugSave" onclick="saveUeberUnsGate()"><i data-lucide="check"></i> Speichern &amp; veröffentlichen</button>
+      <button class="btn ghost full" style="margin-top:8px" onclick="closeUeberUnsGate()">Abbrechen</button>
+    </div>`;
+  gate.classList.remove('hidden'); icons();
+  const t=document.getElementById('uugText'); if(t) t.focus();
+}
+function closeUeberUnsGate(){ _ueberUnsPending=null; const g=document.getElementById('gate'); if(g) g.classList.add('hidden'); }
+async function saveUeberUnsGate(){
+  const g = id => { const el=document.getElementById(id); return el?el.value.trim():''; };
+  const txt = g('uugText');
+  if(txt.length < 15){ toast('Bitte 2–4 Sätze zu deinem Betrieb – das erscheint als „Über uns" über deiner Anzeige.'); const t=document.getElementById('uugText'); if(t){ t.focus(); t.style.borderColor='#C24141'; } return; }
+  settings.portal = settings.portal || {};
+  settings.portal.ueberUns = txt;
+  settings.portal.mitarbeiterAnzahl = g('uugMa');
+  settings.portal.gruendungsjahr = g('uugGj');
+  saveSettings();
+  const btn = document.getElementById('uugSave'); if(btn){ btn.disabled=true; btn.innerHTML='<i data-lucide="loader"></i> Wird gespeichert…'; icons(); }
+  try{
+    const pp = settings.portal;
+    const social = Object.assign({ instagram:'', facebook:'', linkedin:'' }, pp.social||{});
+    const { error } = await sbAuth.rpc('update_my_company_profile', {
+      p_logo_url:           settings.company.logo || null,
+      p_titelbild:          pp.titelbild || '',
+      p_ueber_uns:          pp.ueberUns || '',
+      p_unternehmensbilder: pp.bilder || [],
+      p_website:            pp.website || '',
+      p_karriere_url:       pp.karriereUrl || '',
+      p_mitarbeiter_anzahl: pp.mitarbeiterAnzahl || '',
+      p_gruendungsjahr:     pp.gruendungsjahr || '',
+      p_social:             social
+    });
+    if(error) throw error;
+    if(GC_CUSTOMER){ GC_CUSTOMER.ueber_uns=pp.ueberUns; GC_CUSTOMER.mitarbeiter_anzahl=pp.mitarbeiterAnzahl; GC_CUSTOMER.gruendungsjahr=pp.gruendungsjahr; }
+    settings._brandDirty=false; saveSettings();
+  }catch(e){
+    // Fail-soft wie savePortalProfile: lokal ist gesichert (_brandDirty heilt beim naechsten Boot),
+    // wir blocken die Veröffentlichung NICHT an einem transienten RPC-Fehler.
+    console.warn('saveUeberUnsGate', e);
+    settings._brandDirty=true; saveSettings();
+  }
+  const gEl=document.getElementById('gate'); if(gEl) gEl.classList.add('hidden');
+  const cb=_ueberUnsPending; _ueberUnsPending=null;
+  if(cb) cb();
+}
 // Vertrag lesen: Öffnet den Vertrag als eigene, voll lesbare Seite in einem NEUEN TAB.
 // Wichtig: Das Consent-Gate liegt auf z-index 500 – ein normales openSheet (220) öffnet
 // SICH HINTER dem Gate und ist nicht lesbar. Deshalb ein echter neuer Tab. Fällt der
@@ -11600,6 +11696,8 @@ function canPublishJob(){
 async function publishStelle(id){
   // AVV-Gate: erst mit gültigem AVV dürfen Bewerberdaten in unserem Auftrag verarbeitet werden.
   if(!hasConsent('avv')){ requireConsent('avv', ()=>publishStelle(id)); return; }
+  // Über-uns-Gate: keine Anzeige geht ohne Firmenvorstellung live (füllt den „Über uns"-Bereich).
+  if(!hasUeberUns()){ requireUeberUns(()=>publishStelle(id)); return; }
   if(!window.KONTINGENTE){ try{ await refreshKontingent(false); }catch(_){} }
   const gate = canPublishJob();
   if(!gate.ok){ showKontingentBlock(gate); return; }
@@ -12561,6 +12659,8 @@ async function submitStelle(publish){
   if(!sbAuth || !(GC_PROFILE && GC_PROFILE.customer_id)){ toast('Betrieb nicht verbunden.'); return; }
   // AVV-Gate: bevor die erste Stelle live geht (= Bewerberdaten-Verarbeitung startet), einmalig AVV bestätigen.
   if(publish && !hasConsent('avv')){ requireConsent('avv', ()=>submitStelle(publish)); return; }
+  // Über-uns-Gate: einmalig die Firmenvorstellung sichern, damit die Anzeige einen „Über uns"-Bereich hat.
+  if(publish && !hasUeberUns()){ requireUeberUns(()=>submitStelle(publish)); return; }
   // Branding-Gate: Veröffentlichen ohne Logo/Titelbild -> erst freundlich nachfragen (einmal).
   if(publish && !d._brandOk){
     const miss = brandingMissing();
