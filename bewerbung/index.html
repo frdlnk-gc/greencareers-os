@@ -208,11 +208,6 @@ body{
 .loc-result.err{color:var(--warn)}
 .radius-label{font-size:13.5px;font-weight:700;margin:18px 0 9px;color:var(--ink)}
 
-/* ---------- Freitext ---------- */
-.freitext{width:100%;font-family:inherit;font-size:16px;font-weight:500;color:var(--ink);padding:15px 14px;border:1.5px solid var(--line);border-radius:15px;background:#fff;resize:none;min-height:96px;line-height:1.5;transition:all .15s}
-.freitext:focus{outline:none;border-color:var(--green-500);box-shadow:0 0 0 3px rgba(34,163,93,.12)}
-.freitext::placeholder{color:#9db3a3}
-
 /* ---------- Upsell / Weiche ---------- */
 .upsell-hero{text-align:center;padding:6px 0 18px}
 .upsell-hero .big{width:74px;height:74px;margin:0 auto 16px;border-radius:50%;background:linear-gradient(135deg,var(--green-500),var(--green-700));display:grid;place-items:center;font-size:36px;box-shadow:var(--shadow-lg);animation:pop .5s cubic-bezier(.2,1.4,.4,1) both}
@@ -444,11 +439,8 @@ input[type=range]::-moz-range-thumb{width:26px;height:26px;border-radius:50%;bac
   <section class="screen" id="s-bl1">
     <div class="q-step" data-qstep></div>
     <div class="q-title" id="bl1Title">Wie viele Jahre Berufserfahrung hast du als Bauleiter?</div>
-    <div class="q-sub">Kurz in eigenen Worten – Details klären wir im Erstgespräch.</div>
-    <textarea class="freitext" id="bl1Input" rows="3" placeholder="z. B. 6 Jahre Bauleitung im GaLaBau, davor 4 Jahre Vorarbeiter" oninput="blInput()"></textarea>
-    <div style="margin-top:20px">
-      <button class="btn btn-primary" id="bl1Btn" onclick="go('s-bl2')" disabled>Weiter <span class="arrow">→</span></button>
-    </div>
+    <div class="q-sub">Antippen reicht – Details klären wir im Erstgespräch.</div>
+    <div class="chips" id="blErfChips"></div>
     <div class="backlink"><button class="btn btn-ghost" onclick="go('s-rolle')">← Zurück</button></div>
   </section>
 
@@ -456,8 +448,8 @@ input[type=range]::-moz-range-thumb{width:26px;height:26px;border-radius:50%;bac
   <section class="screen" id="s-bl2">
     <div class="q-step" data-qstep></div>
     <div class="q-title">Welche Qualifikation bringst du mit?</div>
-    <div class="q-sub">z.&nbsp;B. Meister, Techniker, Ingenieur, Studium – Stichworte reichen.</div>
-    <textarea class="freitext" id="bl2Input" rows="3" placeholder="z. B. GaLaBau-Meister + 3 Jahre Bauleitung, oder B. Eng. Landschaftsbau" oninput="blInput()"></textarea>
+    <div class="q-sub">Mehrfachauswahl möglich.</div>
+    <div class="chips" id="blQualiChips"></div>
     <div style="margin-top:20px">
       <button class="btn btn-primary" id="bl2Btn" onclick="go('s-standort')" disabled>Weiter <span class="arrow">→</span></button>
     </div>
@@ -726,6 +718,21 @@ const SCHEINE_BY_BRANCHE = {
   forst:  ['none','b','be','ce','motorsaege','forstmasch'],
   tiefbau:['none','b','be','ce','bagger'],
 };
+/* Bauleiter: Erfahrung + Qualifikation als Auswahl (kein Freitext – mobil tippt keiner) */
+const BL_ERFAHRUNG = {
+  einstieg:{label:'Noch keine – will einsteigen'},
+  u2:      {label:'Unter 2 Jahre'},
+  j2_5:    {label:'2–5 Jahre'},
+  j5_10:   {label:'5–10 Jahre'},
+  ue10:    {label:'Über 10 Jahre'},
+};
+const BL_QUALI = {
+  meister:  {label:'Meister'},
+  techniker:{label:'Techniker'},
+  studium:  {label:'Studium / Ingenieur'},
+  praxis:   {label:'Aus der Praxis aufgestiegen'},
+  sonstige: {label:'Sonstige Qualifikation'},
+};
 const KOLONNE = {
   nein:{label:'Nein, noch nicht'},
   bis2:{label:'Ja, bis 2 Jahre'},
@@ -755,7 +762,7 @@ const S = {
   variant:null,
   branche:null, rolle:null,
   ausbildung:null, erfahrung5:null,          // Basis-Quali (Ja/Nein + Weiche)
-  blErfahrung:'', blQuali:'',                 // Bauleiter-Freitexte
+  blErfahrung:null, blQuali:[],               // Bauleiter-Auswahl
   plz:'', ort:null, kreis:null, region:null, radius:null,
   exp:null, scheine:[], kolonne:null, schwerpunkt:[], wunschgehalt:3200, gehaltSkipped:false, start:null,
   deepDone:false, submitted:false, enrichMode:false,
@@ -929,12 +936,35 @@ function setErf5(val,btn){
 }
 
 /* ---------- Q: Bauleiter-Freitexte ---------- */
-function blInput(){
-  S.blErfahrung=document.getElementById('bl1Input').value.trim();
-  S.blQuali=document.getElementById('bl2Input').value.trim();
-  document.getElementById('bl1Btn').disabled = S.blErfahrung.length<2;
-  document.getElementById('bl2Btn').disabled = S.blQuali.length<2;
-}
+(function buildBlErfahrung(){
+  const box=document.getElementById('blErfChips');
+  for(const key in BL_ERFAHRUNG){
+    const btn=document.createElement('button');
+    btn.className='chip'; btn.textContent=BL_ERFAHRUNG[key].label;
+    btn.onclick=()=>{
+      box.querySelectorAll('.chip').forEach(c=>c.classList.remove('sel'));
+      btn.classList.add('sel'); S.blErfahrung=key;
+      track('q_bl_erfahrung',{erfahrung:key});
+      setTimeout(()=>go('s-bl2'),220);
+    };
+    box.appendChild(btn);
+  }
+})();
+(function buildBlQuali(){
+  const box=document.getElementById('blQualiChips');
+  for(const key in BL_QUALI){
+    const btn=document.createElement('button');
+    btn.className='chip multi'; btn.textContent=BL_QUALI[key].label;
+    btn.onclick=()=>{
+      btn.classList.toggle('sel');
+      if(btn.classList.contains('sel')) S.blQuali.push(key);
+      else S.blQuali=S.blQuali.filter(k=>k!==key);
+      document.getElementById('bl2Btn').disabled=!S.blQuali.length;
+      track('q_bl_quali',{quali:S.blQuali.join(',')});
+    };
+    box.appendChild(btn);
+  }
+})();
 
 /* ---------- Q: Standort (PLZ/Ort-Autocomplete + Radius) ---------- */
 let acItems=[], acHi=-1;
@@ -1185,6 +1215,7 @@ function buildGateSummary(){
   if(S.branche) tags.push(BRANCHEN[S.branche].icon+' '+BRANCHEN[S.branche].short);
   if(S.rolle) tags.push(ROLLEN[S.rolle].label);
   if(S.ort) tags.push('📍 '+S.ort+' · '+(S.radius?RADIUS[S.radius].label:''));
+  if(S.blErfahrung) tags.push(BL_ERFAHRUNG[S.blErfahrung].label+' Bauleitung');
   if(S.exp) tags.push(EXP[S.exp].label);
   if(!S.gehaltSkipped && S.deepDone) tags.push('💶 '+S.wunschgehalt.toLocaleString('de-DE')+' €');
   box.innerHTML=tags.map(t=>'<span>'+t+'</span>').join('');
@@ -1244,8 +1275,8 @@ function sendLead(event){
     rolle:S.rolle, rolle_label:S.rolle?ROLLEN[S.rolle].label:null,
     ausbildung:S.ausbildung,
     erfahrung_5_jahre:S.erfahrung5,
-    bauleiter_erfahrung:S.blErfahrung||null,
-    bauleiter_qualifikation:S.blQuali||null,
+    bauleiter_erfahrung:S.blErfahrung, bauleiter_erfahrung_label:S.blErfahrung?BL_ERFAHRUNG[S.blErfahrung].label:null,
+    bauleiter_qualifikation:S.blQuali, bauleiter_qualifikation_labels:S.blQuali.map(k=>BL_QUALI[k]?BL_QUALI[k].label:k),
     plz:S.plz, ort:S.ort, kreis:S.kreis, region:S.region,
     radius:S.radius, radius_label:S.radius?RADIUS[S.radius].label:null,
     /* --- Zusatzfragen (null = nicht beantwortet) --- */
