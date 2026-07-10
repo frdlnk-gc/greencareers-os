@@ -186,6 +186,11 @@ body{
 .chip.multi{position:relative}
 .chip.multi.sel::after{content:"✓";position:absolute;top:7px;right:9px;font-size:12px;color:var(--green-600);font-weight:800}
 
+/* ---------- Freitext (nur optionale Ergänzung im Kontakt-Gate) ---------- */
+.freitext{width:100%;font-family:inherit;font-size:16px;font-weight:500;color:var(--ink);padding:13px 14px;border:1.5px solid var(--line);border-radius:14px;background:#fff;resize:none;min-height:72px;line-height:1.5;transition:all .15s}
+.freitext:focus{outline:none;border-color:var(--green-500);box-shadow:0 0 0 3px rgba(34,163,93,.12)}
+.freitext::placeholder{color:#9db3a3}
+
 /* ---------- Benefit-Tags (viele Optionen, kompakt in Gruppen) ---------- */
 .bgroup-h{font-size:12px;font-weight:800;color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;margin:16px 0 8px}
 .tags{display:flex;flex-wrap:wrap;gap:8px}
@@ -441,6 +446,24 @@ input[type=range]::-moz-range-thumb{width:26px;height:26px;border-radius:50%;bac
     <div class="backlink"><button class="btn btn-ghost" onclick="expBackBtn()">← Zurück</button></div>
   </section>
 
+  <!-- ============ Q: HERKUNFT (nur Quereinsteiger) ============ -->
+  <section class="screen" id="s-herkunft">
+    <div class="q-step" id="herkunftStep">Quereinstieg</div>
+    <div class="q-title">Aus welchem Bereich kommst du?</div>
+    <div class="q-sub">Damit wir wissen, was du schon mitbringst.</div>
+    <div class="options" id="herkunftOpts"></div>
+    <div class="backlink"><button class="btn btn-ghost" onclick="go('s-rolle')">← Zurück</button></div>
+  </section>
+
+  <!-- ============ Q: DEUTSCHKENNTNISSE (nur Quereinsteiger) ============ -->
+  <section class="screen" id="s-deutsch">
+    <div class="q-step" id="deutschStep">Quereinstieg</div>
+    <div class="q-title">Wie gut sprichst du Deutsch?</div>
+    <div class="q-sub">Wichtig für die Abstimmung im Team und auf der Baustelle.</div>
+    <div class="chips" id="deutschChips"></div>
+    <div class="backlink"><button class="btn btn-ghost" onclick="go('s-herkunft')">← Zurück</button></div>
+  </section>
+
   <!-- ============ Q: QUALIFIKATION (Leitungs-Positionen) ============ -->
   <section class="screen" id="s-bl2">
     <div class="q-step">Deine Qualifikation</div>
@@ -595,6 +618,11 @@ input[type=range]::-moz-range-thumb{width:26px;height:26px;border-radius:50%;bac
         <button id="tgMail" onclick="setChannel('email')">✉️ Per E-Mail</button>
       </div>
 
+      <div class="field">
+        <label for="fNote">Möchtest du uns noch etwas zu deiner Erfahrung oder deinen Wünschen mitgeben? <span style="font-weight:500;color:var(--ink-soft)">(optional)</span></label>
+        <textarea id="fNote" class="freitext" rows="2" placeholder="z. B. besondere Qualifikationen, Wünsche an den Betrieb …"></textarea>
+      </div>
+
       <label class="consent" style="background:#edfaf0;border:1.5px solid #c4ecce;border-radius:13px;padding:12px 13px;margin:0 0 10px">
         <input type="checkbox" id="c1">
         <span><b style="color:var(--green-800)">Ja, GreenCareers darf meine Angaben an passende Partnerbetriebe der grünen Branche weitergeben.</b> Diese dürfen mich zu passenden Stellenangeboten per Telefon, WhatsApp und E-Mail kontaktieren. Freiwillig, jederzeit mit Wirkung für die Zukunft widerrufbar. <a href="https://www.green-careers.de/datenschutz" target="_blank" rel="noopener">Datenschutz</a></span>
@@ -692,10 +720,10 @@ const BRANCHEN = {
      vorarbeiter         -> zusätzlich Kolonnen-Frage
      bauleiter           -> 2 Auswahl-Fragen (Erfahrung + Qualifikation) statt Ausbildung
      azubi               -> keine Ausbildungs-Frage, verkürzte Zusatzfragen */
+/* Reihenfolge: qualifizierte Positionen zuerst, Helfer & Quereinsteiger bewusst getrennt
+   und am Ende – so labelt sich niemand versehentlich als Facharbeiter (Feedback Dani). */
 const POSITIONEN = {
   galabau:[
-    {key:'helfer',    label:'Helfer / Quereinsteiger',    icon:'🔰', sub:'Auch ohne Ausbildung willkommen', cls:'helfer'},
-    {key:'azubi',     label:'Auszubildende:r',            icon:'🎓', sub:'Ausbildung Landschaftsgärtner:in', cls:'azubi'},
     {key:'geselle',   label:'Landschaftsgärtner:in',      icon:'🌱', sub:'Geselle / Facharbeiter', cls:'fach'},
     {key:'baumasch',  label:'Baumaschinenführer:in',      icon:'🚜', sub:'Bagger, Radlader & Co.', cls:'fach'},
     {key:'lkw',       label:'LKW-Fahrer:in (C/CE)',       icon:'🚚', sub:'Baustellenlogistik', cls:'fach'},
@@ -704,37 +732,41 @@ const POSITIONEN = {
     {key:'techniker', label:'Techniker:in',               icon:'📊', sub:'Staatl. geprüft', cls:'meister'},
     {key:'meister',   label:'GaLaBau-Meister:in',         icon:'🏅', sub:'Meister', cls:'meister'},
     {key:'bauleiter', label:'Bauleiter:in',               icon:'🏗️', sub:'Bau- & Projektleitung', cls:'bauleiter'},
+    {key:'azubi',     label:'Auszubildende:r',            icon:'🎓', sub:'Ausbildung Landschaftsgärtner:in', cls:'azubi'},
+    {key:'helfer',    label:'Helfer:in mit Branchenerfahrung', icon:'🔰', sub:'Schon im GaLaBau gearbeitet, ohne Ausbildung', cls:'helfer'},
+    {key:'quereinsteiger', label:'Quereinsteiger:in',     icon:'🚪', sub:'Neu in der Branche', cls:'quereinsteiger'},
   ],
   pflege:[
-    {key:'helfer',   label:'Helfer / Quereinsteiger',     icon:'🔰', sub:'Auch ohne Ausbildung willkommen', cls:'helfer'},
-    {key:'azubi',    label:'Auszubildende:r',             icon:'🎓', sub:'Ausbildung Gärtner:in', cls:'azubi'},
     {key:'gaertner', label:'Gärtner:in Grünpflege',       icon:'🌱', sub:'Geselle / Facharbeiter', cls:'fach'},
     {key:'geraete',  label:'Geräteführer:in / Fahrer:in', icon:'🚜', sub:'Maschinen & Geräte', cls:'fach'},
     {key:'kolonne',  label:'Kolonnenführer:in',           icon:'🧭', sub:'Teamführung Pflege', cls:'vorarbeiter'},
-    {key:'objekt',   label:'Objektleiter:in',             icon:'📐', sub:'Grünflächen-Management', cls:'bauleiter'},
     {key:'meister',  label:'Gärtnermeister:in',           icon:'🏅', sub:'Meister', cls:'meister'},
+    {key:'objekt',   label:'Objektleiter:in',             icon:'📐', sub:'Grünflächen-Management', cls:'bauleiter'},
+    {key:'azubi',    label:'Auszubildende:r',             icon:'🎓', sub:'Ausbildung Gärtner:in', cls:'azubi'},
+    {key:'helfer',   label:'Helfer:in mit Branchenerfahrung', icon:'🔰', sub:'Schon in der Grünpflege gearbeitet, ohne Ausbildung', cls:'helfer'},
+    {key:'quereinsteiger', label:'Quereinsteiger:in',     icon:'🚪', sub:'Neu in der Branche', cls:'quereinsteiger'},
   ],
   baum:[
-    {key:'bodenmann',  label:'Bodenmann / Helfer',            icon:'🔰', sub:'Auch ohne Ausbildung willkommen', cls:'helfer'},
-    {key:'azubi',      label:'Auszubildende:r',               icon:'🎓', sub:'Ausbildung Baumpflege', cls:'azubi'},
     {key:'kletterer',  label:'Baumkletterer:in (SKT)',        icon:'🧗', sub:'Seilklettertechnik', cls:'fach'},
     {key:'pfleger',    label:'Baumpfleger:in / Fachagrarwirt',icon:'🌳', sub:'Fachagrarwirt Baumpflege', cls:'fach'},
     {key:'kontrolleur',label:'Baumkontrolleur:in (FLL)',      icon:'🔍', sub:'Baumkontrolle', cls:'fach'},
     {key:'kolonne',    label:'Kolonnenführer:in',             icon:'🧭', sub:'Teamführung', cls:'vorarbeiter'},
     {key:'einsatz',    label:'Einsatzleiter:in',              icon:'🏗️', sub:'Baumpflege-Leitung', cls:'bauleiter'},
+    {key:'azubi',      label:'Auszubildende:r',               icon:'🎓', sub:'Ausbildung Baumpflege', cls:'azubi'},
+    {key:'bodenmann',  label:'Bodenmann mit Branchenerfahrung', icon:'🔰', sub:'Schon in der Baumpflege gearbeitet, ohne Ausbildung', cls:'helfer'},
+    {key:'quereinsteiger', label:'Quereinsteiger:in',         icon:'🚪', sub:'Neu in der Branche', cls:'quereinsteiger'},
   ],
   forst:[
-    {key:'helfer',    label:'Forsthelfer:in',                icon:'🔰', sub:'Auch ohne Ausbildung willkommen', cls:'helfer'},
-    {key:'azubi',     label:'Auszubildende:r',               icon:'🎓', sub:'Ausbildung Forstwirt:in', cls:'azubi'},
     {key:'forstwirt', label:'Forstwirt:in',                  icon:'🌲', sub:'Facharbeiter', cls:'fach'},
     {key:'maschine',  label:'Forstmaschinenführer:in',       icon:'🚜', sub:'Harvester / Forwarder', cls:'fach'},
     {key:'vorarb',    label:'Vorarbeiter:in / Rottenführer:in', icon:'🧭', sub:'Teamführung', cls:'vorarbeiter'},
     {key:'meister',   label:'Forstwirtschaftsmeister:in',    icon:'🏅', sub:'Meister', cls:'meister'},
     {key:'revier',    label:'Revierleiter:in / Förster:in',  icon:'🌲', sub:'Revierdienst', cls:'bauleiter'},
+    {key:'azubi',     label:'Auszubildende:r',               icon:'🎓', sub:'Ausbildung Forstwirt:in', cls:'azubi'},
+    {key:'helfer',    label:'Forsthelfer:in mit Branchenerfahrung', icon:'🔰', sub:'Schon im Forst gearbeitet, ohne Ausbildung', cls:'helfer'},
+    {key:'quereinsteiger', label:'Quereinsteiger:in',        icon:'🚪', sub:'Neu in der Branche', cls:'quereinsteiger'},
   ],
   tiefbau:[
-    {key:'helfer',      label:'Helfer / Quereinsteiger',     icon:'🔰', sub:'Auch ohne Ausbildung willkommen', cls:'helfer'},
-    {key:'azubi',       label:'Auszubildende:r',             icon:'🎓', sub:'Ausbildung Straßenbau / Tiefbau', cls:'azubi'},
     {key:'facharbeiter',label:'Straßenbauer:in / Tiefbaufacharbeiter:in', icon:'🚧', sub:'Geselle / Facharbeiter', cls:'fach'},
     {key:'geraete',     label:'Baugeräteführer:in',          icon:'🚜', sub:'Bagger, Walze & Co.', cls:'fach'},
     {key:'lkw',         label:'LKW-Fahrer:in (C/CE)',        icon:'🚚', sub:'Baustellenlogistik', cls:'fach'},
@@ -742,6 +774,9 @@ const POSITIONEN = {
     {key:'polier',      label:'Polier:in',                   icon:'📐', sub:'Bau- / Werkpolier', cls:'vorarbeiter'},
     {key:'meister',     label:'Meister:in / Techniker:in',   icon:'🏅', sub:'Meister, Techniker', cls:'meister'},
     {key:'bauleiter',   label:'Bauleiter:in',                icon:'🏗️', sub:'Bau- & Projektleitung', cls:'bauleiter'},
+    {key:'azubi',       label:'Auszubildende:r',             icon:'🎓', sub:'Ausbildung Straßenbau / Tiefbau', cls:'azubi'},
+    {key:'helfer',      label:'Helfer:in mit Branchenerfahrung', icon:'🔰', sub:'Schon im Tiefbau gearbeitet, ohne Ausbildung', cls:'helfer'},
+    {key:'quereinsteiger', label:'Quereinsteiger:in',        icon:'🚪', sub:'Neu in der Branche', cls:'quereinsteiger'},
   ],
 };
 function posByKey(branche,key){ return (POSITIONEN[branche]||[]).find(p=>p.key===key)||null; }
@@ -764,6 +799,19 @@ const SCHEINE_BY_BRANCHE = {
   baum:   ['none','b','be','ce','motorsaege','skt'],
   forst:  ['none','b','be','ce','motorsaege','forstmasch'],
   tiefbau:['none','b','be','ce','bagger'],
+};
+/* Quereinsteiger-Filter (Feedback Dani): Woher kommt die Person beruflich?
+   So erkennt das Backend sofort solide Quereinsteiger (Handwerk) vs. komplett fachfremd. */
+const HERKUNFT = {
+  handwerk:      {label:'Bau / anderes Handwerk',      icon:'🔨', sub:'z. B. Hochbau, Zimmerei, Metall, Elektro'},
+  landwirtschaft:{label:'Landwirtschaft / Gärtnerei',  icon:'🚜', sub:'z. B. Agrar, Gartenbau, Baumschule'},
+  fachfremd:     {label:'Ganz anderer Bereich',        icon:'💼', sub:'z. B. Büro, Handel, Pflege, Gastro'},
+};
+const DEUTSCH = {
+  muttersprache: {label:'Muttersprache'},
+  fliessend:     {label:'Fließend'},
+  gut:           {label:'Gut'},
+  grundkenntnisse:{label:'Grundkenntnisse'},
 };
 /* Leitungs-Positionen: Qualifikation als Auswahl (kein Freitext – mobil tippt keiner) */
 const BL_QUALI = {
@@ -833,7 +881,7 @@ const START = {
   schauen:{label:'Ich schaue mich erst mal um', icon:'👀'},
 };
 /* Slider-Startwert Wunschgehalt je Rollen-Klasse (brutto/Monat) */
-const GEHALT_DEFAULT = {helfer:2600, azubi:2600, fach:3200, vorarbeiter:3600, meister:4200, bauleiter:4800};
+const GEHALT_DEFAULT = {quereinsteiger:2400, helfer:2600, azubi:2600, fach:3200, vorarbeiter:3600, meister:4200, bauleiter:4800};
 const RADIUS = {
   km25:{label:'Bis 25 km'},
   km50:{label:'Bis 50 km'},
@@ -846,7 +894,9 @@ const S = {
   variant:null,
   branche:null, rolle:null, rolleClass:null, rolleLabel:null,
   ausbildung:null, expYears:null,             // Basis-Quali (Ja/Nein + Erfahrungs-Regler)
+  herkunft:null, deutsch:null,                // Quereinsteiger-Filter
   blErfahrung:null, blQuali:[],               // Leitungs-Positionen (Jahre + Qualifikation)
+  note:'',                                    // optionale Ergänzung (Kontakt-Gate)
   plz:'', ort:null, kreis:null, region:null, radius:null,
   scheine:[], kolonne:null, schwerpunkt:[], benefits:[], wunschgehalt:3200, gehaltAnswered:false, start:null,
   skipped:[],                                 // übersprungene Zusatzfragen (Screen-IDs)
@@ -903,7 +953,7 @@ fetch('plz.json').then(r=>r.json()).then(d=>{
 
 /* ---------- Navigation + Fortschritt ---------- */
 const PROGRESS = {
-  's-branche':12, 's-rolle':25, 's-quali':38, 's-bl2':48,
+  's-branche':12, 's-rolle':25, 's-quali':38, 's-herkunft':38, 's-deutsch':46, 's-bl2':48,
   's-standort':55, 's-upsell':65,
   's-gehalt':70, 's-benefits':76, 's-exp':81, 's-scheine':86, 's-kolonne':90, 's-schwerpunkt':86, 's-start':93,
   's-gate':96, 's-done':100, 's-done2':100,
@@ -942,6 +992,8 @@ function goBackFromRolle(){ (S.variant&&S.branche) ? go('s-hero') : go('s-branch
 function goBackFromStandort(){
   if(S.rolleClass==='bauleiter'){ go('s-bl2'); }
   else if(S.rolleClass==='azubi'){ go('s-rolle'); }
+  else if(S.rolleClass==='helfer'){ showExp('helfer'); }
+  else if(S.rolleClass==='quereinsteiger'){ go('s-deutsch'); }
   else if(S.ausbildung===false){ showExp('quali'); }
   else { go('s-quali'); }
 }
@@ -986,17 +1038,61 @@ function buildRolle(){
     box.appendChild(btn);
   });
 }
-/* Weiche nach Position: Leitung -> Erfahrungs-Regler + Qualifikation, Azubi -> direkt Standort, sonst Ausbildungs-Frage */
+/* Weiche nach Position:
+   Leitung        -> Erfahrungs-Regler + Qualifikation
+   Azubi          -> direkt Standort
+   Helfer         -> Erfahrungs-Regler (Branchenerfahrung, keine Ausbildungs-Frage)
+   Quereinsteiger -> Herkunft + Deutschkenntnisse (Qualitäts-Filter)
+   sonst          -> Ausbildungs-Frage (nur Ja/Nein) */
 function afterRolle(){
   if(S.rolleClass==='bauleiter'){
     showExp('bl');
   } else if(S.rolleClass==='azubi'){
     go('s-standort');
+  } else if(S.rolleClass==='helfer'){
+    showExp('helfer');
+  } else if(S.rolleClass==='quereinsteiger'){
+    const base=(S.variant&&S.branche)?1:2, total=base+2;
+    document.getElementById('herkunftStep').textContent='Frage '+(base+1)+' von '+total;
+    document.getElementById('deutschStep').textContent='Frage '+(base+2)+' von '+total;
+    go('s-herkunft');
   } else {
     document.getElementById('qualiTitle').textContent='Hast du eine abgeschlossene Ausbildung '+(S.branche?BRANCHEN[S.branche].inPhrase:'in der Branche')+'?';
     go('s-quali');
   }
 }
+
+/* ---------- Q: Quereinsteiger-Herkunft + Deutschkenntnisse ---------- */
+(function buildHerkunft(){
+  const box=document.getElementById('herkunftOpts');
+  for(const key in HERKUNFT){
+    const h=HERKUNFT[key];
+    const btn=document.createElement('button');
+    btn.className='opt';
+    btn.innerHTML='<span class="ico">'+h.icon+'</span><span class="meta">'+h.label+'<small>'+h.sub+'</small></span><span class="check">✓</span>';
+    btn.onclick=()=>{
+      box.querySelectorAll('.opt').forEach(o=>o.classList.remove('sel'));
+      btn.classList.add('sel'); S.herkunft=key;
+      track('q_herkunft',{herkunft:key});
+      setTimeout(()=>go('s-deutsch'),220);
+    };
+    box.appendChild(btn);
+  }
+})();
+(function buildDeutsch(){
+  const box=document.getElementById('deutschChips');
+  for(const key in DEUTSCH){
+    const btn=document.createElement('button');
+    btn.className='chip'; btn.textContent=DEUTSCH[key].label;
+    btn.onclick=()=>{
+      box.querySelectorAll('.chip').forEach(c=>c.classList.remove('sel'));
+      btn.classList.add('sel'); S.deutsch=key;
+      track('q_deutsch',{deutsch:key});
+      setTimeout(()=>go('s-standort'),220);
+    };
+    box.appendChild(btn);
+  }
+})();
 
 /* ---------- Q: Ausbildung (Ja -> Standort, Nein -> Erfahrungs-Regler) ---------- */
 function setAusbildung(val,btn){
@@ -1037,7 +1133,7 @@ function expNext(skipped){
     S.blErfahrung=v;
     track('q_bl_erfahrung',{jahre:v});
     go('s-bl2');
-  } else if(expContext==='quali'){
+  } else if(expContext==='quali'||expContext==='helfer'){
     S.expYears=v; unskip('s-exp');
     track('q_erfahrung',{jahre:v, kontext:'basis'});
     go('s-standort');
@@ -1050,6 +1146,7 @@ function expNext(skipped){
 }
 function expBackBtn(){
   if(expContext==='bl'){ (S.variant==='bauleiter') ? go('s-hero') : go('s-rolle'); }
+  else if(expContext==='helfer'){ go('s-rolle'); }
   else if(expContext==='quali'){ go('s-quali'); }
   else { deepBack('s-exp'); }
 }
@@ -1180,13 +1277,11 @@ function afterStandort(){ updateUpsellCount(); go('s-upsell'); }
    (Wunschgehalt, Benefits), dann seine Qualifikation, zum Schluss der Start. */
 function deepPath(){
   const cls=S.rolleClass;
-  if(cls==='bauleiter'){
-    const p=['s-gehalt','s-benefits'];
-    if(S.branche==='galabau'||S.branche==='pflege') p.push('s-schwerpunkt');
-    p.push('s-start');
-    return p;
-  }
   if(cls==='azubi') return ['s-benefits','s-scheine','s-start'];
+  /* Schwerpunkt-Frage vorerst raus (Feedback Dani: wird eh in allen Bereichen beworben,
+     kommt erst in einem späteren Meilenstein) – Screen bleibt für später im Code. */
+  if(cls==='bauleiter') return ['s-gehalt','s-benefits','s-start'];
+  if(cls==='quereinsteiger') return ['s-gehalt','s-benefits','s-scheine','s-start'];
   const p=['s-gehalt','s-benefits'];
   if(S.expYears===null) p.push('s-exp');  // nur fragen, wenn in der Basis noch nicht beantwortet
   p.push('s-scheine');
@@ -1363,6 +1458,8 @@ function buildGateSummary(){
   if(S.ort) tags.push('📍 '+S.ort+' · '+(S.radius?RADIUS[S.radius].label:''));
   if(S.blErfahrung!==null) tags.push(fmtYears(S.blErfahrung)+' als '+S.rolleLabel);
   if(S.expYears!==null) tags.push(fmtYears(S.expYears)+' Erfahrung');
+  if(S.herkunft) tags.push('Quereinstieg: '+HERKUNFT[S.herkunft].label);
+  if(S.deutsch) tags.push('Deutsch: '+DEUTSCH[S.deutsch].label);
   if(S.gehaltAnswered) tags.push('💶 '+S.wunschgehalt.toLocaleString('de-DE')+' €');
   box.innerHTML=tags.map(t=>'<span>'+t+'</span>').join('');
 }
@@ -1372,6 +1469,7 @@ function submitGate(){
   S.lastName=document.getElementById('fLast').value.trim();
   S.phone=document.getElementById('fPhone').value.trim();
   S.email=document.getElementById('fEmail').value.trim();
+  S.note=document.getElementById('fNote').value.trim();
   S.consentShare=document.getElementById('c1').checked;
   const err=document.getElementById('gateErr');
   let msg='';
@@ -1400,6 +1498,31 @@ const META_EVENT_MAP = { lead_captured:'Lead', lead_enriched:'CompleteRegistrati
 /* Sheet-freundliche Label: übersprungene Frage -> 'Frage übersprungen' statt leer */
 const SKIP_LABELS = {'s-gehalt':'Wunschgehalt','s-benefits':'Benefits','s-exp':'Berufserfahrung','s-scheine':'Führerscheine/Scheine','s-kolonne':'Kolonnenführung','s-start':'Verfügbarkeit'};
 function lbl(id,val){ return S.skipped.includes(id) ? 'Frage übersprungen' : val; }
+
+/* Alle Fragen + Antworten als fertiger Text (Feedback Jana): landet 1:1 als
+   "Nachricht des Bewerbers" im Backend – keine KI-Aufbereitung mehr nötig. */
+function buildNachricht(){
+  const L=[];
+  const add=(k,v)=>{ if(v!==null&&v!==undefined&&v!==''&&!(Array.isArray(v)&&!v.length)) L.push(k+': '+(Array.isArray(v)?v.join(', '):v)); };
+  const inShort=S.branche?BRANCHEN[S.branche].inShort:'in der Branche';
+  add('Branche', S.branche?BRANCHEN[S.branche].label:null);
+  add('Position', S.rolleLabel);
+  if(S.ausbildung!==null) add('Abgeschlossene Ausbildung '+inShort, S.ausbildung?'Ja':'Nein');
+  if(S.expYears!==null||S.skipped.includes('s-exp')) add('Berufserfahrung '+inShort, lbl('s-exp', S.expYears===null?null:fmtYears(S.expYears)));
+  if(S.blErfahrung!==null) add('Berufserfahrung als '+S.rolleLabel, fmtYears(S.blErfahrung));
+  add('Qualifikation', S.blQuali.map(k=>BL_QUALI[k]?BL_QUALI[k].label:k));
+  if(S.herkunft) add('Quereinstieg aus', HERKUNFT[S.herkunft].label);
+  if(S.deutsch) add('Deutschkenntnisse', DEUTSCH[S.deutsch].label);
+  add('Standort', S.plz?S.plz+' '+(S.ort||''):null);
+  add('Einsatzbereitschaft', S.radius?RADIUS[S.radius].label:null);
+  add('Wunschgehalt', lbl('s-gehalt', S.gehaltAnswered?S.wunschgehalt.toLocaleString('de-DE')+' € brutto / Monat':null));
+  add('Wichtige Benefits', lbl('s-benefits', S.benefits.map(k=>BENEFIT_LABELS[k]||k)));
+  add('Führerscheine / Scheine', lbl('s-scheine', S.scheine.map(k=>SCHEINE[k]?SCHEINE[k].label:k)));
+  if(S.rolleClass==='vorarbeiter') add('Kolonne / Team geführt', lbl('s-kolonne', S.kolonne?KOLONNE[S.kolonne].label:null));
+  add('Verfügbar', lbl('s-start', S.start?START[S.start].label:null));
+  add('Eigene Ergänzung', S.note||null);
+  return 'Bewerbung über den GreenCareers-Bewerbungsfunnel (Meta-Anzeige):\n\n'+L.join('\n');
+}
 function sendLead(event){
   const metaEvent = META_EVENT_MAP[event] || event;
   const eventId = track(metaEvent, {
@@ -1424,6 +1547,8 @@ function sendLead(event){
     rolle:S.rolle, rolle_label:S.rolleLabel, rolle_klasse:S.rolleClass,
     ausbildung:S.ausbildung,
     erfahrung_jahre:S.expYears, erfahrung_label:lbl('s-exp', S.expYears===null?null:fmtYears(S.expYears)),
+    quereinsteiger_herkunft:S.herkunft, quereinsteiger_herkunft_label:S.herkunft?HERKUNFT[S.herkunft].label:null,
+    deutschkenntnisse:S.deutsch, deutschkenntnisse_label:S.deutsch?DEUTSCH[S.deutsch].label:null,
     bauleiter_erfahrung_jahre:S.blErfahrung, bauleiter_erfahrung_label:S.blErfahrung===null?null:fmtYears(S.blErfahrung),
     bauleiter_qualifikation:S.blQuali, bauleiter_qualifikation_labels:S.blQuali.map(k=>BL_QUALI[k]?BL_QUALI[k].label:k),
     plz:S.plz, ort:S.ort, kreis:S.kreis, region:S.region,
@@ -1438,6 +1563,8 @@ function sendLead(event){
     wunschgehalt_label:lbl('s-gehalt', S.gehaltAnswered?S.wunschgehalt.toLocaleString('de-DE')+' € / Monat':null),
     verfuegbarkeit:S.start, verfuegbarkeit_label:lbl('s-start', S.start?START[S.start].label:null),
     uebersprungene_fragen:S.skipped.map(id=>SKIP_LABELS[id]||id),
+    bemerkung:S.note||null,
+    bewerber_nachricht:buildNachricht(),
     /* --- Herkunft + Consent (revisionssicher) --- */
     source:'bewerbungsfunnel',
     consent_version:CONSENT_VERSION,
