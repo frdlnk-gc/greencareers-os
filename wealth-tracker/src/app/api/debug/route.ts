@@ -47,8 +47,12 @@ export async function GET() {
   const tdProbes = tdSet
     ? [
         probe(
-          "td_eu_batch",
-          `https://api.twelvedata.com/quote?symbol=ASML.AS,MC.PA,NOVO_B.CO,LOTB.BR,DHL.DE&apikey=${tdKey}`,
+          "td_eu_amsterdam",
+          `https://api.twelvedata.com/quote?symbol=ASML&mic_code=XAMS&apikey=${tdKey}`,
+        ),
+        probe(
+          "td_eu_xetra",
+          `https://api.twelvedata.com/quote?symbol=DHL&mic_code=XETR&apikey=${tdKey}`,
         ),
       ]
     : [];
