@@ -321,9 +321,9 @@
     const html = $('e-html') ? $('e-html').value : (curDraft.body_html||'');
     const doc = `<!doctype html><meta charset="utf-8"><div style="font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:#f4f4f4;padding:16px">
       <div style="max-width:600px;margin:0 auto;background:#fff;border-radius:8px;padding:20px">${html
-        .replace(/{{firstName}}/g,'Max')
-        .replace(/{{cta_url}}/g,'#')
-        .replace(/{{unsubscribe_url}}/g,'#')}</div></div>`;
+        .replace(/{{\s*firstName\s*}}/g,'Max')
+        .replace(/{{\s*cta_url\s*}}/g,'#')
+        .replace(/{{\s*unsubscribe_?[uU]rl\s*}}/g,'#')}</div></div>`;
     const f = $('e-preview'); if(f) f.srcdoc = doc;
   }
 

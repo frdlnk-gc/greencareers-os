@@ -95,7 +95,7 @@ MARKENSTIMME (immer)
 STRUKTUR DES HTML-BODYS
 - Ein sauberer, e-mail-tauglicher HTML-Body (inline-styles, einspaltig, max. ~600px, System-Schriften). Keine externen CSS/Scripts, keine <html>/<head>-Tags – nur der innere Inhalt ab <div>.
 - Aufbau: kurzer Vorspann → 1 Hauptabschnitt mit echtem Nutzen → EIN klarer Call-to-Action-Button (als <a> mit inline-styles, Platzhalter-Link {{cta_url}}) → knapper Abschluss.
-- Ganz unten IMMER ein Abmelde-Hinweis mit dem Platzhalter {{unsubscribe_url}}: ein dezenter Link "Keine weiteren E-Mails erhalten". (Pflicht bei Single-Opt-in.)
+- Ganz unten IMMER ein Abmelde-Hinweis mit dem Platzhalter {{unsubscribeUrl}}: ein dezenter Link "Keine weiteren E-Mails erhalten". (Pflicht bei Single-Opt-in. Schreibe den Platzhalter exakt so – Lemlist ersetzt ihn pro Empfänger.)
 - Verwende die Akzentfarbe {{ACCENT}} für Button/Links.
 - Personalisierung: nutze {{firstName}} als Anrede-Platzhalter, wenn passend.
 

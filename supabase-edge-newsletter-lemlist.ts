@@ -49,6 +49,12 @@ const LEMLIST_API_KEY = Deno.env.get("LEMLIST_API_KEY") ?? "";
 const LEMLIST_BASE = "https://api.lemlist.com/api";
 // Lemlist-Auth: Basic-Auth, leerer Username, API-Key als Passwort.
 const LEMLIST_AUTH = "Basic " + btoa(":" + LEMLIST_API_KEY);
+// Basis der oeffentlichen Abmelde-Seite (Single-Opt-in braucht einen Opt-out).
+// Wird pro Lead als Custom-Feld {{unsubscribeUrl}} an Lemlist uebergeben, damit
+// der Abmeldelink in jeder Mail funktioniert.
+const UNSUB_BASE =
+  Deno.env.get("NL_UNSUBSCRIBE_BASE") ??
+  "https://os.green-careers.de/newsletter-unsubscribe.html";
 
 // --- CORS (Dashboard-Domains + lokale Vorschau) ---
 const ALLOW_ORIGINS = [
@@ -158,7 +164,7 @@ Deno.serve(async (req) => {
     const limit = Math.min(Math.max(parseInt(payload?.limit ?? "200", 10) || 200, 1), 1000);
 
     let q = admin.from("newsletter_subscribers")
-      .select("id,email,name,audience,theme,branche,lemlist_campaign_id,lemlist_synced_at,status")
+      .select("id,email,name,audience,theme,branche,lemlist_campaign_id,lemlist_synced_at,status,unsubscribe_token")
       .eq("status", "active")
       .is("lemlist_synced_at", null)
       .not("lemlist_campaign_id", "is", null)
@@ -166,7 +172,7 @@ Deno.serve(async (req) => {
 
     if (ids.length) {
       q = admin.from("newsletter_subscribers")
-        .select("id,email,name,audience,theme,branche,lemlist_campaign_id,lemlist_synced_at,status")
+        .select("id,email,name,audience,theme,branche,lemlist_campaign_id,lemlist_synced_at,status,unsubscribe_token")
         .in("id", ids).limit(limit);
     } else {
       if (payload?.audience) q = q.eq("audience", String(payload.audience));
@@ -184,6 +190,7 @@ Deno.serve(async (req) => {
       if (!s.lemlist_campaign_id) { results.push({ id: s.id, ok: false, error: "no_campaign" }); continue; }
       const email = String(s.email).toLowerCase();
       const [firstName, ...rest] = String(s.name || "").trim().split(/\s+/);
+      const unsubscribeUrl = `${UNSUB_BASE}?token=${s.unsubscribe_token}`;
       const leadBody: Record<string, unknown> = {
         firstName: firstName || undefined,
         lastName: rest.join(" ") || undefined,
@@ -191,6 +198,8 @@ Deno.serve(async (req) => {
         audience: s.audience,
         branche: s.branche || undefined,
         theme: s.theme || undefined,
+        // Pflicht bei Single-Opt-in: Abmeldelink in JEDER Mail ({{unsubscribeUrl}}).
+        unsubscribeUrl,
       };
       const r = await lemlist(
         "POST",
