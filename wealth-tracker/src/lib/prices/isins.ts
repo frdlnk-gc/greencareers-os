@@ -18,21 +18,21 @@ export const SYMBOL_TO_ISIN: Record<string, string> = {
   PEP: "US7134481081", // PepsiCo
   "0669.HK": "HK0669013440", // Techtronic Industries
   MEDP: "US58506Q1094", // Medpace
-  HUBS: "US4433201062", // HubSpot
+  HUBS: "US4435731009", // HubSpot
   ADP: "US0530151036", // Automatic Data Processing
 
   // --- CapTrader ---
   FFIN: "US32020R1095", // First Financial Bankshares
   NOW: "US81762P1021", // ServiceNow
-  NRIX: "US67079A1043", // Nurix Therapeutics
+  NRIX: "US67080M1036", // Nurix Therapeutics
   CSL: "US1423391002", // Carlisle Companies
   "2020.HK": "KYG040111059", // Anta Sports
   PSA: "US74460D1090", // Public Storage
   "4063.T": "JP3371200001", // Shin-Etsu Chemical
   MSFT: "US5949181045", // Microsoft
   CWT: "US1309301090", // California Water Service
-  RDDT: "US7551071016", // Reddit
-  GRRR: "US38268T1034", // Gorilla Technology
+  RDDT: "US75734B1008", // Reddit
+  GRRR: "KYG4000K1756", // Gorilla Technology
   PG: "US7427181091", // Procter & Gamble
   UPS: "US9113121068", // United Parcel Service
   "RMS.PA": "FR0000052292", // Hermès
@@ -54,15 +54,15 @@ export const SYMBOL_TO_ISIN: Record<string, string> = {
   ADBE: "US00724F1012", // Adobe
   SNPS: "US8716071076", // Synopsys
   HSY: "US4278661081", // Hershey
-  "MFT.NZ": "NZMFTE0001S2", // Mainfreight
-  JOBY: "US4771431016", // Joby Aviation
+  "MFT.NZ": "NZMFTE0001S9", // Mainfreight
+  JOBY: "US47215P1066", // Joby Aviation
   COST: "US22160K1051", // Costco
   APD: "US0091581068", // Air Products & Chemicals
   "4519.T": "JP3519400000", // Chugai Pharmaceutical
   WCN: "CA94106B1013", // Waste Connections
 
   // --- Flatex ---
-  MAA: "US59522J1033", // Mid-America Apartment
+  MAA: "US59522J1034", // Mid-America Apartment
   "BATS.L": "GB0002875804", // British American Tobacco
   "BKW.SW": "CH0130293662", // BKW
   ABT: "US0028241000", // Abbott Laboratories

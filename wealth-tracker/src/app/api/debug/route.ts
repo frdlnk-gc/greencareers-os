@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { SYMBOL_TO_ISIN } from "@/lib/prices/isins";
-import { fetchTradegateQuote } from "@/lib/prices/tradegate";
+import { fetchTradegateQuotes } from "@/lib/prices/tradegate";
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -46,6 +48,7 @@ async function openFigiNames(
         out.set(isin, `Fehler: ${e instanceof Error ? e.message : String(e)}`),
       );
     }
+    await sleep(400); // OpenFIGI-Ratelimit schonen
   }
   return out;
 }
@@ -54,25 +57,16 @@ export async function GET() {
   const symbols = Object.keys(SYMBOL_TO_ISIN);
   const isins = symbols.map((s) => SYMBOL_TO_ISIN[s]);
 
-  const [figi, tgResults] = await Promise.all([
+  const [figi, tgMap] = await Promise.all([
     openFigiNames(isins),
-    Promise.all(
-      symbols.map(async (sym) => {
-        try {
-          const q = await fetchTradegateQuote(SYMBOL_TO_ISIN[sym]);
-          return q ? q.price : null;
-        } catch {
-          return null;
-        }
-      }),
-    ),
+    fetchTradegateQuotes(isins), // Limit 6 intern -> keine Überlastung
   ]);
 
-  const rows = symbols.map((sym, k) => ({
+  const rows = symbols.map((sym) => ({
     symbol: sym,
     isin: SYMBOL_TO_ISIN[sym],
     figiName: figi.get(SYMBOL_TO_ISIN[sym]) ?? "?",
-    tradegateEur: tgResults[k],
+    tradegateEur: tgMap.get(SYMBOL_TO_ISIN[sym])?.price ?? null,
   }));
 
   const missingTradegate = rows.filter((r) => r.tradegateEur == null);
