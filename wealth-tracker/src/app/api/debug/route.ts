@@ -42,46 +42,34 @@ export async function GET() {
   const fmpKey = process.env.FMP_API_KEY ?? "";
   const fmpSet = fmpKey.length > 0;
 
-  const tdKey = process.env.TWELVEDATA_API_KEY ?? "";
-  const tdSet = tdKey.length > 0;
-  const tdProbes = tdSet
-    ? [
-        probe(
-          "td_eu_amsterdam",
-          `https://api.twelvedata.com/quote?symbol=ASML&mic_code=XAMS&apikey=${tdKey}`,
-        ),
-        probe(
-          "td_eu_xetra",
-          `https://api.twelvedata.com/quote?symbol=DHL&mic_code=XETR&apikey=${tdKey}`,
-        ),
-      ]
-    : [];
-
+  // Deutsche Börsenquellen (frei, in Euro). ISINs decken US, EU und Asien ab.
   const results = await Promise.all([
-    ...tdProbes,
+    // Tradegate – liefert bid/ask/last als kleines JSON, in Euro.
     probe(
-      "stooq_single",
-      "https://stooq.com/q/l/?s=aapl.us&f=sd2t2ohlcv&h&e=csv",
+      "tradegate_asml_nl",
+      "https://www.tradegate.de/refresh.php?isin=NL0010273215",
     ),
     probe(
-      "stooq_multi",
-      "https://stooq.com/q/l/?s=aapl.us,asml.nl,mc.fr&f=sd2t2ohlcv&h&e=csv",
+      "tradegate_novo_dk",
+      "https://www.tradegate.de/refresh.php?isin=DK0062498333",
     ),
     probe(
-      "yahoo_v7",
-      "https://query1.finance.yahoo.com/v7/finance/quote?symbols=AAPL",
+      "tradegate_techtronic_hk",
+      "https://www.tradegate.de/refresh.php?isin=HK0669013440",
     ),
     probe(
-      "yahoo_chart",
-      "https://query1.finance.yahoo.com/v8/finance/chart/AAPL?range=1d&interval=1d",
+      "tradegate_shinetsu_jp",
+      "https://www.tradegate.de/refresh.php?isin=JP3371200001",
     ),
     probe(
-      "fmp_demo",
-      "https://financialmodelingprep.com/api/v3/quote/AAPL?apikey=demo",
+      "tradegate_apple_us",
+      "https://www.tradegate.de/refresh.php?isin=US0378331005",
     ),
+    // börse-frankfurt API (Xetra/Frankfurt), ebenfalls in Euro.
     probe(
-      "twelvedata_demo",
-      "https://api.twelvedata.com/quote?symbol=AAPL&apikey=demo",
+      "bf_asml",
+      "https://api.boerse-frankfurt.de/v1/data/quote_box/single?isin=NL0010273215&mic=XETR",
+      { Accept: "application/json", Origin: "https://www.boerse-frankfurt.de" },
     ),
     probe(
       "coingecko",
@@ -95,7 +83,6 @@ export async function GET() {
 
   return NextResponse.json({
     fmpKeySet: fmpSet,
-    tdKeySet: tdSet,
     probes: results,
   });
 }
