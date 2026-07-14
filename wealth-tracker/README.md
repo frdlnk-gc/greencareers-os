@@ -40,7 +40,7 @@ Die beiden benötigten Werte (`NEXT_PUBLIC_SUPABASE_URL`,
 2. Nutzer anlegen: im Supabase-Dashboard unter **Authentication → Users**
    einen Nutzer mit E-Mail/Passwort erstellen.
 3. Startdaten einspielen: `supabase/seed.sql` ausführen (verknüpft die echten
-   Depots und Positionen mit diesem Nutzer über dessen E-Mail).
+   Depots und Positionen mit dem in Schritt 2 angelegten Nutzer).
 
 Der Seed wird aus `scripts/gen-seed.mjs` erzeugt (`node scripts/gen-seed.mjs`).
 Die Zuordnung Position → Depot ist dort eine Demo-Zuordnung; die echte

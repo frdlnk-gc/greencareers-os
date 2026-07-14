@@ -12,8 +12,6 @@
 
 import { writeFileSync } from "node:fs";
 
-const USER_EMAIL = "frederik.linke@greenfield-digital.de";
-
 // Depots (Reihenfolge = Anzeige-Reihenfolge)
 const accounts = [
   { key: "tr", name: "Trade Republic", type: "broker" },
@@ -143,9 +141,11 @@ lines.push("  uid uuid;");
 for (const a of accounts) lines.push(`  acc_${a.key} uuid;`);
 lines.push("  inst uuid;");
 lines.push("begin");
-lines.push(`  select id into uid from auth.users where email = ${sqlStr(USER_EMAIL)} limit 1;`);
+lines.push("  -- Nimmt den (einzigen) angemeldeten Nutzer dieses Projekts.");
+lines.push("  -- Lege den Nutzer vorher an: Authentication -> Users -> Add user.");
+lines.push("  select id into uid from auth.users order by created_at asc limit 1;");
 lines.push("  if uid is null then");
-lines.push("    raise exception 'Kein Auth-Nutzer mit dieser E-Mail gefunden. Bitte zuerst anlegen.';");
+lines.push("    raise exception 'Kein Auth-Nutzer gefunden. Bitte zuerst unter Authentication -> Users anlegen.';");
 lines.push("  end if;");
 lines.push("");
 lines.push("  -- Idempotent: vorhandene Startdaten dieses Nutzers entfernen.");

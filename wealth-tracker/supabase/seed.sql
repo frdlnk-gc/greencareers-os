@@ -11,9 +11,11 @@ declare
   acc_krypto uuid;
   inst uuid;
 begin
-  select id into uid from auth.users where email = 'frederik.linke@greenfield-digital.de' limit 1;
+  -- Nimmt den (einzigen) angemeldeten Nutzer dieses Projekts.
+  -- Lege den Nutzer vorher an: Authentication -> Users -> Add user.
+  select id into uid from auth.users order by created_at asc limit 1;
   if uid is null then
-    raise exception 'Kein Auth-Nutzer mit dieser E-Mail gefunden. Bitte zuerst anlegen.';
+    raise exception 'Kein Auth-Nutzer gefunden. Bitte zuerst unter Authentication -> Users anlegen.';
   end if;
 
   -- Idempotent: vorhandene Startdaten dieses Nutzers entfernen.
