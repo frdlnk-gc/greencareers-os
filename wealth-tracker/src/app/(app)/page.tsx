@@ -91,8 +91,8 @@ export default async function OverviewPage() {
           </ul>
 
           <p className="mt-8 text-center text-xs text-neutral-600">
-            Kurse werden in Phase 2 automatisch aktualisiert · aktuell
-            Startdaten
+            Tippe oben auf „Aktualisieren" für Live-Kurse · automatische
+            Updates folgen
           </p>
         </section>
       )}
