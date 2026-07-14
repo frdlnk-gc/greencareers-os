@@ -39,7 +39,19 @@ async function probe(
 }
 
 export async function GET() {
+  const fmpKey = process.env.FMP_API_KEY ?? "";
+  const fmpSet = fmpKey.length > 0;
+  const fmpProbes = fmpSet
+    ? [
+        probe(
+          "fmp_batch",
+          `https://financialmodelingprep.com/api/v3/quote/AAPL,ASML.AS,MC.PA,NOVO-B.CO,0669.HK,4063.T,DPLM.L,BKW.SW?apikey=${fmpKey}`,
+        ),
+      ]
+    : [];
+
   const results = await Promise.all([
+    ...fmpProbes,
     probe(
       "stooq_single",
       "https://stooq.com/q/l/?s=aapl.us&f=sd2t2ohlcv&h&e=csv",
@@ -74,5 +86,5 @@ export async function GET() {
     ),
   ]);
 
-  return NextResponse.json({ probes: results });
+  return NextResponse.json({ fmpKeySet: fmpSet, probes: results });
 }

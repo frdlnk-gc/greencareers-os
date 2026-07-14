@@ -34,8 +34,11 @@ export async function updateSession(request: NextRequest) {
     request.nextUrl.pathname.startsWith("/login") ||
     request.nextUrl.pathname.startsWith("/auth");
 
+  // Öffentliche Routen (kein Login nötig): Diagnose-Endpunkt.
+  const isPublic = request.nextUrl.pathname.startsWith("/api/debug");
+
   // Nicht angemeldet + geschützte Route -> zur Anmeldung
-  if (!user && !isAuthRoute) {
+  if (!user && !isAuthRoute && !isPublic) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
