@@ -38,12 +38,48 @@ async function probe(
   }
 }
 
+async function probePost(name: string, url: string, body: unknown) {
+  const started = Date.now();
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "User-Agent": UA },
+      body: JSON.stringify(body),
+      cache: "no-store",
+    });
+    const text = await res.text();
+    return {
+      name,
+      status: res.status,
+      ok: res.ok,
+      ms: Date.now() - started,
+      snippet: text.slice(0, 1400),
+    };
+  } catch (e) {
+    return {
+      name,
+      error: e instanceof Error ? e.message : String(e),
+      ms: Date.now() - started,
+    };
+  }
+}
+
 export async function GET() {
   const fmpKey = process.env.FMP_API_KEY ?? "";
   const fmpSet = fmpKey.length > 0;
 
   // Deutsche Börsenquellen (frei, in Euro). ISINs decken US, EU und Asien ab.
   const results = await Promise.all([
+    // OpenFIGI: ISIN -> Name/Ticker (zum Verifizieren unserer ISIN-Liste).
+    probePost("openfigi", "https://api.openfigi.com/v3/mapping", [
+      { idType: "ID_ISIN", idValue: "NL0010273215" },
+      { idType: "ID_ISIN", idValue: "US5949181045" },
+    ]),
+    // Tradegate-Suche (Autocomplete) — gibt sie Name+ISIN zurück?
+    probe(
+      "tradegate_search",
+      "https://www.tradegate.de/searchGesamt.php?searchText=ASML",
+    ),
     // Tradegate – liefert bid/ask/last als kleines JSON, in Euro.
     probe(
       "tradegate_asml_nl",
