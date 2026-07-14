@@ -9,18 +9,28 @@ export function AppHeader({ title }: { title: string }) {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [note, setNote] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   function refresh() {
     setError(null);
+    setNote(null);
     startTransition(async () => {
       try {
         const res = await fetch("/api/refresh", { method: "POST" });
+        const body = (await res.json().catch(() => ({}))) as {
+          error?: string;
+          updated?: number;
+          failed?: string[];
+        };
         if (!res.ok) {
-          const body = (await res.json().catch(() => ({}))) as {
-            error?: string;
-          };
           setError(body.error ?? "Aktualisieren fehlgeschlagen.");
+        } else {
+          const failedCount = body.failed?.length ?? 0;
+          setNote(
+            `${body.updated ?? 0} Kurse aktualisiert` +
+              (failedCount > 0 ? ` · ${failedCount} ohne Kurs` : ""),
+          );
         }
       } catch {
         setError("Netzwerkfehler beim Aktualisieren.");
@@ -84,6 +94,9 @@ export function AppHeader({ title }: { title: string }) {
 
       {error && (
         <p className="mt-2 text-right text-xs text-red-400">{error}</p>
+      )}
+      {note && !error && (
+        <p className="mt-2 text-right text-xs text-neutral-500">{note}</p>
       )}
     </header>
   );
