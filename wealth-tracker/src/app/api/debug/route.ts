@@ -44,8 +44,20 @@ export async function GET() {
   const fmpProbes = fmpSet
     ? [
         probe(
-          "fmp_batch",
-          `https://financialmodelingprep.com/api/v3/quote/AAPL,ASML.AS,MC.PA,NOVO-B.CO,0669.HK,4063.T,DPLM.L,BKW.SW?apikey=${fmpKey}`,
+          "fmp_stable_single",
+          `https://financialmodelingprep.com/stable/quote?symbol=AAPL&apikey=${fmpKey}`,
+        ),
+        probe(
+          "fmp_stable_multi",
+          `https://financialmodelingprep.com/stable/quote?symbol=AAPL,MSFT,ASML.AS&apikey=${fmpKey}`,
+        ),
+        probe(
+          "fmp_stable_batch",
+          `https://financialmodelingprep.com/stable/batch-quote?symbols=AAPL,MSFT,ASML.AS&apikey=${fmpKey}`,
+        ),
+        probe(
+          "fmp_stable_intl",
+          `https://financialmodelingprep.com/stable/quote?symbol=0669.HK&apikey=${fmpKey}`,
         ),
       ]
     : [];
