@@ -1,0 +1,527 @@
+<!doctype html>
+<!--
+  GreenCareers · Newsletter-Cockpit (nur GC-Team / gc_admin)
+  =====================================================================
+  Eigenstaendige Betriebs-Oberflaeche fuer den Newsletter-Versand ueber
+  Lemlist. Gedacht als "Marketing -> Newsletter"-Modul; laeuft hier als
+  eigene Seite (Muster wie admin.html) und ist so aufgebaut, dass es 1:1
+  ins GC Tracking Dashboard (Bereich Marketing) uebernommen werden kann.
+
+  Braucht:
+    - Schema v20 (supabase-schema-v20-newsletter.sql) eingespielt
+    - Edge Functions deployt: newsletter-ki, newsletter-lemlist
+    - Secrets gesetzt: ANTHROPIC_API_KEY, LEMLIST_API_KEY, SB_SERVICE_ROLE_KEY
+  Zugriff nur mit profiles.role = 'gc_admin'.
+
+  Vier Bereiche:
+    1. Newsletter erstellen (KI)  – Entwurf generieren, prüfen, freigeben, an Lemlist
+    2. Abonnenten                 – Liste/Filter je Zielgruppe + Kennzahlen
+    3. Leadmagneten               – Mapping Landingpage -> Lemlist-Kampagne
+    4. Einstellungen              – Lemlist-Verbindung testen, Abmeldungen syncen
+-->
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>GreenCareers · Newsletter</title>
+<style>
+  :root{ --green:#16A34A; --green-2:#0E7A43; --tiefbau:#EA580C; --land:#CA8A04;
+         --ink:#0F1B14; --muted:#6B7B72; --line:#E4EAE6; --soft:#F3F7F4; --bg:#F7FAF8; --radius:14px; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+        background:var(--bg); color:var(--ink); -webkit-font-smoothing:antialiased; }
+  .wrap{ max-width:1000px; margin:0 auto; padding:24px 18px 90px; }
+  header{ display:flex; align-items:center; gap:12px; margin-bottom:20px; }
+  .logo{ width:38px; height:38px; border-radius:10px; background:linear-gradient(135deg,var(--green),var(--green-2));
+         display:flex; align-items:center; justify-content:center; color:#fff; font-weight:800; font-size:18px; }
+  header h1{ font-size:17px; margin:0; font-weight:800; letter-spacing:-.2px; }
+  header small{ display:block; color:var(--muted); font-weight:600; font-size:12px; margin-top:1px; }
+  .who{ margin-left:auto; display:flex; align-items:center; gap:10px; font-size:12.5px; color:var(--muted); }
+  .card{ background:#fff; border:1px solid var(--line); border-radius:var(--radius); padding:20px;
+         box-shadow:0 1px 2px rgba(16,40,25,.04); margin-bottom:16px; }
+  label{ display:block; font-size:12.5px; font-weight:700; margin:0 0 6px; }
+  input, select, textarea{ width:100%; padding:11px 12px; border:1px solid var(--line); border-radius:10px; font-size:14px;
+                 background:#fff; color:var(--ink); outline:none; font-family:inherit; transition:border-color .15s, box-shadow .15s; }
+  textarea{ resize:vertical; min-height:70px; }
+  input:focus, select:focus, textarea:focus{ border-color:var(--green); box-shadow:0 0 0 3px rgba(22,163,74,.12); }
+  .row{ display:flex; gap:12px; flex-wrap:wrap; } .row > *{ flex:1; min-width:150px; }
+  .btn{ display:inline-flex; align-items:center; justify-content:center; gap:7px; padding:11px 16px; border:0;
+        border-radius:10px; background:var(--green); color:#fff; font-weight:700; font-size:14px; cursor:pointer;
+        transition:background .15s, transform .04s; }
+  .btn:hover{ background:var(--green-2); } .btn:active{ transform:translateY(1px); }
+  .btn[disabled]{ opacity:.55; cursor:not-allowed; }
+  .btn.ghost{ background:var(--soft); color:var(--ink); } .btn.ghost:hover{ background:#e9efeb; }
+  .btn.sm{ padding:8px 12px; font-size:13px; }
+  .muted{ color:var(--muted); } .hidden{ display:none !important; }
+  .err{ color:#B42318; background:#FEF3F2; border:1px solid #FDA29B; padding:9px 12px; border-radius:9px; font-size:13px; margin-top:10px; }
+  .ok{ color:#067647; background:#ECFDF3; border:1px solid #A6F4C5; padding:9px 12px; border-radius:9px; font-size:13px; margin-top:10px; }
+  .hint{ color:var(--muted); font-size:12.5px; line-height:1.5; }
+  .tabs{ display:flex; gap:6px; margin-bottom:16px; flex-wrap:wrap; }
+  .tab{ padding:9px 14px; border-radius:10px; border:1px solid var(--line); background:#fff; font-weight:700;
+        font-size:13.5px; cursor:pointer; color:var(--muted); }
+  .tab.on{ background:var(--green); color:#fff; border-color:var(--green); }
+  .stat-row{ display:flex; gap:12px; flex-wrap:wrap; margin-bottom:16px; }
+  .stat{ flex:1; min-width:130px; background:#fff; border:1px solid var(--line); border-radius:12px; padding:14px 16px; }
+  .stat b{ font-size:22px; display:block; } .stat span{ font-size:12px; color:var(--muted); font-weight:600; }
+  .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:16px; } @media(max-width:820px){ .grid2{ grid-template-columns:1fr; } }
+  .prev-frame{ width:100%; height:520px; border:1px solid var(--line); border-radius:10px; background:#fff; }
+  table{ width:100%; border-collapse:collapse; font-size:13.5px; }
+  th, td{ text-align:left; padding:9px 8px; border-bottom:1px solid var(--line); }
+  th{ font-size:11.5px; text-transform:uppercase; letter-spacing:.4px; color:var(--muted); }
+  .badge{ font-size:11px; font-weight:800; padding:3px 8px; border-radius:999px; background:var(--soft); color:var(--muted); }
+  .badge.act{ background:rgba(22,163,74,.12); color:#067647; }
+  .badge.uns{ background:#FEF3F2; color:#B42318; }
+  .spin{ display:inline-block; width:15px; height:15px; border:2px solid rgba(255,255,255,.5); border-top-color:#fff;
+         border-radius:50%; animation:sp .6s linear infinite; } @keyframes sp{ to{ transform:rotate(360deg); } }
+  .pill{ font-size:11px; font-weight:700; padding:4px 9px; border-radius:999px; border:1px solid var(--line); background:#fff; }
+  .lm-item{ border:1px solid var(--line); border-radius:12px; padding:14px 16px; margin-top:10px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">GC</div>
+    <div>
+      <h1>GreenCareers · Newsletter</h1>
+      <small>Marketing · Versand über Lemlist</small>
+    </div>
+    <div class="who" id="who"></div>
+  </header>
+
+  <!-- LOGIN -->
+  <div class="card" id="loginCard">
+    <label for="email">E-Mail</label>
+    <input id="email" type="email" autocomplete="username" placeholder="admin@greenfield-digital.de">
+    <div style="height:12px"></div>
+    <label for="pw">Passwort</label>
+    <input id="pw" type="password" autocomplete="current-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+    <div style="height:16px"></div>
+    <button class="btn" id="loginBtn" onclick="doLogin()">Anmelden</button>
+    <div id="loginErr" class="err hidden"></div>
+    <p class="hint" style="margin-top:16px">Nur für GreenCareers-Team (Rolle <b>gc_admin</b>).</p>
+  </div>
+
+  <!-- KEIN ZUGRIFF -->
+  <div class="card hidden" id="denyCard">
+    <p style="margin:0 0 14px"><b>Kein Zugriff.</b> Dieser Bereich ist dem GreenCareers-Team vorbehalten (Rolle <code>gc_admin</code>).</p>
+    <button class="btn ghost sm" onclick="doLogout()">Abmelden</button>
+  </div>
+
+  <!-- APP -->
+  <div class="hidden" id="app">
+    <div class="stat-row" id="stats"></div>
+    <div class="tabs" id="tabs">
+      <button class="tab on" data-tab="create" onclick="setTab('create')">✏️ Newsletter erstellen</button>
+      <button class="tab" data-tab="subs" onclick="setTab('subs')">👥 Abonnenten</button>
+      <button class="tab" data-tab="magnets" onclick="setTab('magnets')">🧲 Leadmagneten</button>
+      <button class="tab" data-tab="settings" onclick="setTab('settings')">⚙️ Einstellungen</button>
+    </div>
+    <div id="body"></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+  const SB_URL  = 'https://tfoopogxaqvfwbonabpi.supabase.co';
+  const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmb29wb2d4YXF2Zndib25hYnBpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEyNTQzMjQsImV4cCI6MjA5NjgzMDMyNH0.udWRPszXVOj7EG4bspmsU9HXbZYFRDn8QO9kZi2tw8M';
+  const sb = window.supabase.createClient(SB_URL, SB_ANON);
+
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const show = (id,on)=>{ const el=$(id); if(el) el.classList.toggle('hidden', !on); };
+
+  const AUDIENCES = [
+    { id:'b2b_neukunde',      label:'B2B · Neukunden (Betriebe)' },
+    { id:'b2b_bestandskunde', label:'B2B · Bestandskunden' },
+    { id:'bewerber',          label:'Bewerber' },
+  ];
+  const THEMES = [
+    { id:'', label:'— übergreifend —' },
+    { id:'galabau', label:'Garten & Landschaft' },
+    { id:'tiefbau', label:'Straßen- & Tiefbau' },
+    { id:'landwirtschaft', label:'Landwirtschaft' },
+  ];
+  // Branchen je Theme (aus BRANCHEN_CATALOG des OS gespiegelt).
+  const BRANCHEN = {
+    galabau: ['Garten- und Landschaftsbau','Garten- und Landschaftspflege','Baumpflege','Forstwirtschaft'],
+    tiefbau: ['Straßen- und Tiefbau'],
+    landwirtschaft: ['Landwirtschaft','Landtechnik','Landmaschinenbau','Landmaschinenhandel','Tierwirtschaft'],
+  };
+  const audLabel = id => (AUDIENCES.find(a=>a.id===id)||{}).label || id;
+
+  let TOKEN = null;          // JWT fuer Edge-Function-Aufrufe
+  let lemlistCampaigns = []; // gecachte Lemlist-Kampagnen fuers Mapping
+  let curDraft = null;       // aktueller KI-Entwurf
+  let activeTab = 'create';
+
+  async function edge(name, payload){
+    const res = await fetch(SB_URL+'/functions/v1/'+name, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'apikey':SB_ANON, 'Authorization':'Bearer '+(TOKEN||SB_ANON) },
+      body: JSON.stringify(payload||{}),
+    });
+    let data=null; try{ data = await res.json(); }catch(_){}
+    return { ok:res.ok, status:res.status, data };
+  }
+
+  /* ============ AUTH ============ */
+  async function boot(){
+    const { data:{ session } } = await sb.auth.getSession();
+    if(session){ await afterLogin(); } else { show('loginCard',true); }
+  }
+  async function doLogin(){
+    const email = $('email').value.trim(), pw = $('pw').value;
+    const errEl = $('loginErr'); errEl.classList.add('hidden');
+    if(!email || !pw){ errEl.textContent='Bitte E-Mail und Passwort eingeben.'; errEl.classList.remove('hidden'); return; }
+    const btn = $('loginBtn'); btn.disabled=true; btn.innerHTML='<span class="spin"></span>';
+    const { error } = await sb.auth.signInWithPassword({ email, password: pw });
+    btn.disabled=false; btn.textContent='Anmelden';
+    if(error){ errEl.textContent='Anmeldung fehlgeschlagen: '+error.message; errEl.classList.remove('hidden'); return; }
+    await afterLogin();
+  }
+  async function doLogout(){ await sb.auth.signOut(); location.reload(); }
+  async function afterLogin(){
+    show('loginCard',false);
+    const { data:{ session } } = await sb.auth.getSession();
+    TOKEN = session && session.access_token;
+    const { data:{ user } } = await sb.auth.getUser();
+    let role=''; try{ const { data } = await sb.from('profiles').select('role').eq('id',user.id).maybeSingle(); role=(data&&data.role)||''; }catch(_){}
+    $('who').innerHTML = esc(user.email)+' · <a href="#" onclick="doLogout();return false" style="color:var(--green);font-weight:700;text-decoration:none">Abmelden</a>';
+    if(role !== 'gc_admin'){ show('denyCard',true); return; }
+    show('app',true);
+    loadStats();
+    setTab('create');
+  }
+
+  async function loadStats(){
+    try{
+      const { data } = await sb.rpc('admin_newsletter_stats');
+      if(!data || !data.ok){ $('stats').innerHTML=''; return; }
+      const by = data.by_audience || {};
+      $('stats').innerHTML =
+        stat(data.active, 'Aktive Abonnenten') +
+        stat(by.b2b_neukunde||0, 'B2B Neukunden') +
+        stat(by.b2b_bestandskunde||0, 'B2B Bestand') +
+        stat(by.bewerber||0, 'Bewerber') +
+        stat(data.pending_sync||0, 'Wartet auf Lemlist');
+    }catch(_){ $('stats').innerHTML=''; }
+  }
+  const stat = (n,l)=>`<div class="stat"><b>${n}</b><span>${l}</span></div>`;
+
+  /* ============ TABS ============ */
+  function setTab(t){
+    activeTab = t;
+    document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on', b.dataset.tab===t));
+    if(t==='create')   renderCreate();
+    if(t==='subs')     renderSubs();
+    if(t==='magnets')  renderMagnets();
+    if(t==='settings') renderSettings();
+  }
+
+  /* ============ 1) NEWSLETTER ERSTELLEN (KI) ============ */
+  function renderCreate(){
+    $('body').innerHTML = `
+      <div class="grid2">
+        <div class="card">
+          <h3 style="margin:0 0 4px">Entwurf generieren</h3>
+          <p class="hint" style="margin:0 0 16px">Zielgruppe + Branche wählen, optional ein Thema vorgeben. Die KI schreibt einen fertigen Entwurf – du prüfst und gibst frei.</p>
+          <label>Zielgruppe</label>
+          <select id="c-aud" onchange="onAudChange()">${AUDIENCES.map(a=>`<option value="${a.id}">${a.label}</option>`).join('')}</select>
+          <div style="height:12px"></div>
+          <div class="row">
+            <div>
+              <label>Branchen-Familie</label>
+              <select id="c-theme" onchange="onThemeChange()">${THEMES.map(t=>`<option value="${t.id}">${t.label}</option>`).join('')}</select>
+            </div>
+            <div>
+              <label>Sub-Branche <span class="muted">(optional)</span></label>
+              <select id="c-branche"><option value="">— alle —</option></select>
+            </div>
+          </div>
+          <p class="hint" id="c-bewerber-hint" style="margin:8px 0 0"></p>
+          <div style="height:12px"></div>
+          <label>Thema / Anlass <span class="muted">(optional)</span></label>
+          <textarea id="c-topic" placeholder="z. B. 'Arbeitgeber des Monats vorstellen' oder 'Fachkräftemangel Winter – planbare Bewerber'"></textarea>
+          <div style="height:14px"></div>
+          <button class="btn" id="c-gen" onclick="genDraft()">✨ Entwurf generieren</button>
+          <div id="c-msg"></div>
+        </div>
+        <div class="card">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+            <h3 style="margin:0">Entwurf</h3>
+            <span class="muted" id="c-status" style="font-size:12px"></span>
+          </div>
+          <div id="c-editor"><p class="hint">Noch kein Entwurf. Links Zielgruppe wählen und generieren.</p></div>
+        </div>
+      </div>`;
+    onAudChange();
+  }
+  function onAudChange(){
+    const aud = $('c-aud').value;
+    const el = $('c-bewerber-hint');
+    if(el) el.textContent = aud==='bewerber'
+      ? 'Tipp: Bei Bewerbern zählt meist Recruiting (attraktiver Arbeitgeber, mehr Gehalt) – Branche ist oft zweitrangig. „übergreifend" ist hier häufig die bessere Wahl.'
+      : '';
+  }
+  function onThemeChange(){
+    const th = $('c-theme').value;
+    const list = BRANCHEN[th] || [];
+    $('c-branche').innerHTML = '<option value="">— alle —</option>' + list.map(b=>`<option value="${esc(b)}">${esc(b)}</option>`).join('');
+  }
+
+  async function genDraft(){
+    const btn = $('c-gen'); btn.disabled=true; btn.innerHTML='<span class="spin"></span> KI schreibt …';
+    $('c-msg').innerHTML='';
+    const payload = {
+      audience: $('c-aud').value,
+      theme: $('c-theme').value || null,
+      branche: $('c-branche').value || null,
+      topic: $('c-topic').value.trim() || null,
+    };
+    const r = await edge('newsletter-ki', payload);
+    btn.disabled=false; btn.textContent='✨ Entwurf generieren';
+    if(!r.ok || !r.data || !r.data.ok){
+      $('c-msg').innerHTML = `<div class="err">KI-Generierung fehlgeschlagen (${r.status||'?'}). ${esc((r.data&&(r.data.message||r.data.error))||'')}</div>`;
+      return;
+    }
+    curDraft = Object.assign({ _meta: payload, accent: r.data.accent }, r.data.draft);
+    renderEditor();
+  }
+
+  function renderEditor(){
+    if(!curDraft){ return; }
+    $('c-status').textContent = 'Entwurf · noch nicht gespeichert';
+    const variants = (curDraft.subject_variants||[]).map(v=>`<button class="pill" style="cursor:pointer;margin:2px 4px 0 0" onclick="useSubject(this)">${esc(v)}</button>`).join('');
+    $('c-editor').innerHTML = `
+      <label>Betreff</label>
+      <input id="e-subject" value="${esc(curDraft.subject||'')}">
+      ${variants ? `<div style="margin:6px 0 0"><span class="hint">Varianten:</span> ${variants}</div>` : ''}
+      <div style="height:12px"></div>
+      <label>Preheader (Vorschautext)</label>
+      <input id="e-preheader" value="${esc(curDraft.preheader||'')}">
+      <div style="height:12px"></div>
+      <label>Vorschau</label>
+      <iframe class="prev-frame" id="e-preview"></iframe>
+      <div style="height:8px"></div>
+      <details><summary class="hint" style="cursor:pointer">HTML bearbeiten</summary>
+        <textarea id="e-html" style="min-height:160px;margin-top:8px;font-family:ui-monospace,Menlo,monospace;font-size:12px" oninput="refreshPreview()">${esc(curDraft.body_html||'')}</textarea>
+      </details>
+      <div style="height:14px"></div>
+      <div class="row">
+        <button class="btn ghost" onclick="saveCampaign('entwurf')">💾 Als Entwurf speichern</button>
+        <button class="btn" onclick="saveCampaign('freigegeben')">✅ Freigeben</button>
+      </div>
+      <div id="e-msg"></div>
+      <p class="hint" style="margin-top:12px">Nach dem Freigeben: Text in die passende Lemlist-Kampagne einsetzen und die Zielgruppe unter „Einstellungen → Leads einschleusen" übergeben.</p>`;
+    refreshPreview();
+  }
+  function useSubject(btn){ $('e-subject').value = btn.textContent; }
+  function refreshPreview(){
+    const html = $('e-html') ? $('e-html').value : (curDraft.body_html||'');
+    const doc = `<!doctype html><meta charset="utf-8"><div style="font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:#f4f4f4;padding:16px">
+      <div style="max-width:600px;margin:0 auto;background:#fff;border-radius:8px;padding:20px">${html
+        .replace(/{{firstName}}/g,'Max')
+        .replace(/{{cta_url}}/g,'#')
+        .replace(/{{unsubscribe_url}}/g,'#')}</div></div>`;
+    const f = $('e-preview'); if(f) f.srcdoc = doc;
+  }
+
+  async function saveCampaign(status){
+    if(!curDraft){ return; }
+    const m = $('e-msg'); m.innerHTML='';
+    const meta = curDraft._meta || {};
+    const row = {
+      title: ($('e-subject').value || 'Newsletter').slice(0,120),
+      audience: meta.audience || 'b2b_neukunde',
+      theme: meta.theme || null,
+      branche: meta.branche || null,
+      subject: $('e-subject').value || null,
+      preheader: $('e-preheader').value || null,
+      body_html: ($('e-html') ? $('e-html').value : curDraft.body_html) || null,
+      body_text: curDraft.body_text || null,
+      status: status,
+      generated_by_ai: true,
+      ai_prompt: meta.topic || null,
+    };
+    if(status==='freigegeben'){ row.approved_at = new Date().toISOString(); }
+    const { error } = await sb.from('newsletter_campaigns').insert(row);
+    if(error){ m.innerHTML = `<div class="err">Speichern fehlgeschlagen: ${esc(error.message)}</div>`; return; }
+    m.innerHTML = `<div class="ok">${status==='freigegeben'?'Freigegeben und gespeichert.':'Als Entwurf gespeichert.'}</div>`;
+    $('c-status').textContent = status==='freigegeben' ? 'Freigegeben ✓' : 'Entwurf gespeichert ✓';
+  }
+
+  /* ============ 2) ABONNENTEN ============ */
+  function renderSubs(){
+    $('body').innerHTML = `
+      <div class="card">
+        <div class="row" style="align-items:flex-end">
+          <div><label>Zielgruppe</label><select id="s-aud" onchange="loadSubs()"><option value="">Alle</option>${AUDIENCES.map(a=>`<option value="${a.id}">${a.label}</option>`).join('')}</select></div>
+          <div><label>Status</label><select id="s-status" onchange="loadSubs()"><option value="active">Aktiv</option><option value="unsubscribed">Abgemeldet</option><option value="">Alle</option></select></div>
+          <div style="flex:2"><label>Suche</label><input id="s-search" placeholder="E-Mail oder Name …" oninput="debounceSubs()"></div>
+        </div>
+      </div>
+      <div class="card"><div id="s-list"><p class="hint">Lädt …</p></div></div>`;
+    loadSubs();
+  }
+  let _st=null; function debounceSubs(){ clearTimeout(_st); _st=setTimeout(loadSubs,300); }
+  async function loadSubs(){
+    const el = $('s-list'); if(!el) return; el.innerHTML='<p class="hint">Lädt …</p>';
+    const { data, error } = await sb.rpc('admin_newsletter_subscribers', {
+      p_audience: $('s-aud').value || null,
+      p_status: $('s-status').value || null,
+      p_search: $('s-search').value.trim() || null,
+      p_limit: 500,
+    });
+    if(error){ el.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
+    if(!data || !data.length){ el.innerHTML = '<p class="hint">Keine Abonnenten für diese Auswahl.</p>'; return; }
+    el.innerHTML = `<p class="hint" style="margin:0 0 10px">${data.length} Eintrag(e)</p>
+      <div style="overflow-x:auto"><table><thead><tr><th>E-Mail</th><th>Name</th><th>Zielgruppe</th><th>Branche</th><th>Status</th><th>Lemlist</th><th>Eingetragen</th></tr></thead><tbody>
+      ${data.map(s=>`<tr>
+        <td>${esc(s.email)}</td>
+        <td>${esc(s.name||'—')}</td>
+        <td><span class="pill">${esc(audLabel(s.audience))}</span></td>
+        <td>${esc(s.branche||s.theme||'—')}</td>
+        <td><span class="badge ${s.status==='active'?'act':s.status==='unsubscribed'?'uns':''}">${esc(s.status)}</span></td>
+        <td>${s.lemlist_synced_at?'<span class="badge act">synced</span>':(s.lemlist_campaign_id?'<span class="badge">wartet</span>':'<span class="badge">—</span>')}</td>
+        <td class="muted">${s.created_at?new Date(s.created_at).toLocaleDateString('de-DE'):''}</td>
+      </tr>`).join('')}
+      </tbody></table></div>`;
+  }
+
+  /* ============ 3) LEADMAGNETEN ============ */
+  async function renderMagnets(){
+    $('body').innerHTML = `
+      <div class="card">
+        <h3 style="margin:0 0 4px">Neuer Leadmagnet</h3>
+        <p class="hint" style="margin:0 0 14px">Bildet eine Landingpage/ein Freebie auf eine Lemlist-Kampagne ab. Neue Leads mit diesem <b>slug</b> laufen automatisch in diese Kampagne.</p>
+        <div class="row">
+          <div><label>Slug (LP-Referenz)</label><input id="m-slug" placeholder="galabau-fachkraefte-guide"></div>
+          <div><label>Titel</label><input id="m-title" placeholder="Fachkräfte-Guide GaLaBau"></div>
+        </div>
+        <div style="height:12px"></div>
+        <div class="row">
+          <div><label>Zielgruppe</label><select id="m-aud">${AUDIENCES.map(a=>`<option value="${a.id}">${a.label}</option>`).join('')}</select></div>
+          <div><label>Branchen-Familie</label><select id="m-theme">${THEMES.map(t=>`<option value="${t.id}">${t.label}</option>`).join('')}</select></div>
+          <div><label>Lemlist-Kampagne</label><select id="m-camp"><option value="">— erst Verbindung testen —</option></select></div>
+        </div>
+        <div style="height:12px"></div>
+        <label>Einwilligungstext (Single-Opt-in)</label>
+        <textarea id="m-consent" placeholder="Ja, schickt mir den Guide und relevante GreenCareers-News per E-Mail. Abmeldung jederzeit über den Link in jeder Mail."></textarea>
+        <div style="height:12px"></div>
+        <label>Landingpage-URL <span class="muted">(optional)</span></label>
+        <input id="m-url" placeholder="https://galabau.green-careers.de/fachkraefte-guide">
+        <div style="height:14px"></div>
+        <button class="btn" onclick="saveMagnet()">Leadmagnet speichern</button>
+        <div id="m-msg"></div>
+      </div>
+      <div class="card"><h3 style="margin:0 0 10px">Bestehende Leadmagneten</h3><div id="m-list"><p class="hint">Lädt …</p></div></div>`;
+    fillCampaignSelect('m-camp');
+    loadMagnets();
+  }
+  async function saveMagnet(){
+    const m = $('m-msg'); m.innerHTML='';
+    const slug = $('m-slug').value.trim();
+    if(!slug){ m.innerHTML='<div class="err">Bitte einen Slug angeben.</div>'; return; }
+    const row = {
+      slug, title: $('m-title').value.trim() || slug,
+      audience: $('m-aud').value, theme: $('m-theme').value || null,
+      lemlist_campaign_id: $('m-camp').value || null,
+      consent_text: $('m-consent').value.trim() || null,
+      landingpage_url: $('m-url').value.trim() || null,
+    };
+    const { error } = await sb.from('newsletter_leadmagnets').upsert(row, { onConflict:'slug' });
+    if(error){ m.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
+    m.innerHTML = '<div class="ok">Gespeichert.</div>';
+    loadMagnets();
+  }
+  async function loadMagnets(){
+    const el = $('m-list'); if(!el) return;
+    const { data, error } = await sb.from('newsletter_leadmagnets').select('*').order('created_at',{ascending:false});
+    if(error){ el.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
+    if(!data || !data.length){ el.innerHTML = '<p class="hint">Noch keine Leadmagneten angelegt.</p>'; return; }
+    el.innerHTML = data.map(lm=>`<div class="lm-item">
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <b>${esc(lm.title)}</b>
+          <span class="pill">${esc(lm.slug)}</span>
+          <span class="pill">${esc(audLabel(lm.audience))}</span>
+          ${lm.theme?`<span class="pill">${esc(lm.theme)}</span>`:''}
+          <span class="badge ${lm.active?'act':''}" style="margin-left:auto">${lm.active?'aktiv':'inaktiv'}</span>
+        </div>
+        <div class="hint" style="margin-top:6px">Kampagne: ${lm.lemlist_campaign_id?esc(campName(lm.lemlist_campaign_id)):'<span style="color:#B42318">nicht gemappt</span>'} ${lm.landingpage_url?'· <a href="'+esc(lm.landingpage_url)+'" target="_blank" style="color:var(--green)">LP</a>':''}</div>
+      </div>`).join('');
+  }
+  function campName(id){ const c = lemlistCampaigns.find(c=>c.id===id); return c?c.name:id; }
+  function fillCampaignSelect(selId){
+    const sel = $(selId); if(!sel) return;
+    if(!lemlistCampaigns.length){ return; }
+    sel.innerHTML = '<option value="">— keine —</option>' + lemlistCampaigns.map(c=>`<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');
+  }
+
+  /* ============ 4) EINSTELLUNGEN ============ */
+  function renderSettings(){
+    $('body').innerHTML = `
+      <div class="card">
+        <h3 style="margin:0 0 4px">Lemlist-Verbindung</h3>
+        <p class="hint" style="margin:0 0 14px">Prüft den hinterlegten LEMLIST_API_KEY und lädt die Kampagnen fürs Mapping.</p>
+        <div class="row">
+          <button class="btn ghost" onclick="testLemlist()">🔌 Verbindung testen</button>
+          <button class="btn ghost" onclick="loadCampaigns()">🔄 Kampagnen laden</button>
+        </div>
+        <div id="set-msg"></div>
+        <div id="camp-list" style="margin-top:12px"></div>
+      </div>
+      <div class="card">
+        <h3 style="margin:0 0 4px">Leads einschleusen</h3>
+        <p class="hint" style="margin:0 0 14px">Übergibt aktive, noch nicht synchronisierte Abonnenten an ihre gemappte Lemlist-Kampagne.</p>
+        <div class="row">
+          <div><label>Zielgruppe (optional)</label><select id="en-aud"><option value="">Alle</option>${AUDIENCES.map(a=>`<option value="${a.id}">${a.label}</option>`).join('')}</select></div>
+          <div><label>Branchen-Familie (optional)</label><select id="en-theme">${THEMES.map(t=>`<option value="${t.id}">${t.label}</option>`).join('')}</select></div>
+        </div>
+        <div style="height:12px"></div>
+        <button class="btn" onclick="doEnroll()">➡️ Jetzt einschleusen</button>
+        <div id="en-msg"></div>
+      </div>
+      <div class="card">
+        <h3 style="margin:0 0 4px">Abmeldungen synchronisieren</h3>
+        <p class="hint" style="margin:0 0 14px">Meldet in Supabase abgemeldete Adressen auch in Lemlist global ab.</p>
+        <button class="btn ghost" onclick="doSyncUnsub()">🚫 Abmeldungen an Lemlist</button>
+        <div id="un-msg"></div>
+      </div>`;
+    if(lemlistCampaigns.length) renderCampList();
+  }
+  async function testLemlist(){
+    const m=$('set-msg'); m.innerHTML='<p class="hint">Teste …</p>';
+    const r = await edge('newsletter-lemlist', { action:'test' });
+    if(r.ok && r.data && r.data.ok){ m.innerHTML = `<div class="ok">Verbindung ok${r.data.team&&r.data.team.name?' · Team: '+esc(r.data.team.name):''}.</div>`; }
+    else{ m.innerHTML = `<div class="err">Verbindung fehlgeschlagen (${r.status}). ${esc((r.data&&(r.data.message||JSON.stringify(r.data.error)))||'')}</div>`; }
+  }
+  async function loadCampaigns(){
+    const m=$('set-msg'); m.innerHTML='<p class="hint">Lade Kampagnen …</p>';
+    const r = await edge('newsletter-lemlist', { action:'campaigns' });
+    if(r.ok && r.data && r.data.ok){ lemlistCampaigns = r.data.campaigns||[]; m.innerHTML = `<div class="ok">${lemlistCampaigns.length} Kampagne(n) geladen.</div>`; renderCampList(); }
+    else{ m.innerHTML = `<div class="err">Konnte Kampagnen nicht laden (${r.status}).</div>`; }
+  }
+  function renderCampList(){
+    const el=$('camp-list'); if(!el) return;
+    el.innerHTML = lemlistCampaigns.length
+      ? '<table><thead><tr><th>Kampagne</th><th>ID</th></tr></thead><tbody>'+lemlistCampaigns.map(c=>`<tr><td>${esc(c.name)}</td><td class="muted">${esc(c.id)}</td></tr>`).join('')+'</tbody></table>'
+      : '<p class="hint">Keine Kampagnen geladen.</p>';
+  }
+  async function doEnroll(){
+    const m=$('en-msg'); m.innerHTML='<p class="hint">Schleuse ein …</p>';
+    const r = await edge('newsletter-lemlist', { action:'enroll', audience: $('en-aud').value||null, theme: $('en-theme').value||null, limit:500 });
+    if(r.ok && r.data && r.data.ok){ m.innerHTML = `<div class="ok">${r.data.enrolled} von ${r.data.total} Lead(s) eingeschleust.</div>`; loadStats(); }
+    else{ m.innerHTML = `<div class="err">Einschleusen fehlgeschlagen (${r.status}). ${esc((r.data&&r.data.message)||'')}</div>`; }
+  }
+  async function doSyncUnsub(){
+    const m=$('un-msg'); m.innerHTML='<p class="hint">Synchronisiere …</p>';
+    const r = await edge('newsletter-lemlist', { action:'sync_unsubscribes', limit:500 });
+    if(r.ok && r.data && r.data.ok){ m.innerHTML = `<div class="ok">${r.data.unsubscribed} Abmeldung(en) an Lemlist übergeben.</div>`; }
+    else{ m.innerHTML = `<div class="err">Fehlgeschlagen (${r.status}).</div>`; }
+  }
+
+  boot();
+</script>
+</body>
+</html>
