@@ -41,29 +41,36 @@ async function probe(
 export async function GET() {
   const fmpKey = process.env.FMP_API_KEY ?? "";
   const fmpSet = fmpKey.length > 0;
-  const fmpProbes = fmpSet
+
+  const tdKey = process.env.TWELVEDATA_API_KEY ?? "";
+  const tdSet = tdKey.length > 0;
+  const tdProbes = tdSet
     ? [
         probe(
-          "fmp_stable_single",
-          `https://financialmodelingprep.com/stable/quote?symbol=AAPL&apikey=${fmpKey}`,
+          "td_batch_intl",
+          `https://api.twelvedata.com/quote?symbol=AAPL,ASML.AS,MC.PA,NOVO_B.CO,LOTB.BR&apikey=${tdKey}`,
         ),
         probe(
-          "fmp_stable_multi",
-          `https://financialmodelingprep.com/stable/quote?symbol=AAPL,MSFT,ASML.AS&apikey=${fmpKey}`,
+          "td_intl_hk",
+          `https://api.twelvedata.com/quote?symbol=0669.HK&apikey=${tdKey}`,
         ),
         probe(
-          "fmp_stable_batch",
-          `https://financialmodelingprep.com/stable/batch-quote?symbols=AAPL,MSFT,ASML.AS&apikey=${fmpKey}`,
+          "td_intl_hk_alt",
+          `https://api.twelvedata.com/quote?symbol=0669&exchange=HKEX&apikey=${tdKey}`,
         ),
         probe(
-          "fmp_stable_intl",
-          `https://financialmodelingprep.com/stable/quote?symbol=0669.HK&apikey=${fmpKey}`,
+          "td_intl_tokyo",
+          `https://api.twelvedata.com/quote?symbol=4063.T&apikey=${tdKey}`,
+        ),
+        probe(
+          "td_usage",
+          `https://api.twelvedata.com/api_usage?apikey=${tdKey}`,
         ),
       ]
     : [];
 
   const results = await Promise.all([
-    ...fmpProbes,
+    ...tdProbes,
     probe(
       "stooq_single",
       "https://stooq.com/q/l/?s=aapl.us&f=sd2t2ohlcv&h&e=csv",
@@ -98,5 +105,9 @@ export async function GET() {
     ),
   ]);
 
-  return NextResponse.json({ fmpKeySet: fmpSet, probes: results });
+  return NextResponse.json({
+    fmpKeySet: fmpSet,
+    tdKeySet: tdSet,
+    probes: results,
+  });
 }
