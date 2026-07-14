@@ -1,0 +1,83 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { getPortfolio } from "@/lib/data";
+import { formatEur, formatPct, formatQuantity, changeColor } from "@/lib/format";
+import { Avatar } from "@/components/Avatar";
+
+export const dynamic = "force-dynamic";
+
+export default async function DepotPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const portfolio = await getPortfolio();
+  const summary = portfolio.accounts.find((a) => a.account.id === id);
+
+  if (!summary) notFound();
+
+  return (
+    <div>
+      {/* Kopf mit Zurück + Depotname */}
+      <header className="mb-6 flex items-center gap-3">
+        <Link
+          href="/"
+          className="flex h-9 w-9 items-center justify-center rounded-full text-neutral-300 active:opacity-60"
+          aria-label="Zurück"
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M15 6l-6 6 6 6" />
+          </svg>
+        </Link>
+        <h1 className="truncate text-xl font-bold">{summary.account.name}</h1>
+      </header>
+
+      {/* Depotwert */}
+      <section className="mb-8">
+        <div className="tabular text-4xl font-semibold tracking-tight">
+          {formatEur(summary.valueEur)}
+        </div>
+        <div className={`mt-1 text-sm tabular ${changeColor(summary.changeEur1d)}`}>
+          {formatPct(summary.changePct1d)} · {summary.changeEur1d >= 0 ? "+" : ""}
+          {formatEur(summary.changeEur1d)} heute
+        </div>
+        <div className="mt-1 text-sm text-neutral-500 tabular">
+          {formatPct(summary.gainPct)} seit Kauf ({summary.gainEur >= 0 ? "+" : ""}
+          {formatEur(summary.gainEur)})
+        </div>
+      </section>
+
+      {/* Positionen */}
+      <h2 className="mb-2 text-lg font-semibold">Positionen</h2>
+      {summary.positions.length === 0 ? (
+        <p className="text-sm text-neutral-500">
+          In diesem Depot sind noch keine Positionen erfasst.
+        </p>
+      ) : (
+        <ul className="divide-y divide-neutral-900">
+          {summary.positions.map((p) => (
+            <li key={p.instrument.id} className="flex items-center gap-3 py-4">
+              <Avatar label={p.instrument.name} />
+              <div className="min-w-0 flex-1">
+                <div className="truncate font-medium">{p.instrument.name}</div>
+                <div className="flex items-center gap-2 text-xs text-neutral-500">
+                  <span>{p.instrument.display_symbol ?? ""}</span>
+                  <span className="rounded-md bg-neutral-800 px-1.5 py-0.5 tabular text-neutral-400">
+                    ×{formatQuantity(p.quantity)}
+                  </span>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="tabular font-medium">{formatEur(p.valueEur)}</div>
+                <div className={`text-xs tabular ${changeColor(p.gainPct)}`}>
+                  {formatPct(p.gainPct)}
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
