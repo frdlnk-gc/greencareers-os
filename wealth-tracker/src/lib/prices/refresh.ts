@@ -1,5 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { toStooqSymbol, fetchStooqCloses, fetchStooqEurRates } from "./stooq";
+import { fetchFmpQuotes } from "./fmp";
+import { fetchFrankfurterRates } from "./frankfurter";
+import { currencyForSymbol } from "./exchanges";
 import { fetchCoinGeckoPrices } from "./coingecko";
 
 export interface RefreshResult {
@@ -43,42 +45,44 @@ export async function refreshPrices(
   const now = new Date().toISOString();
   const rows: PriceRow[] = [];
 
-  // --- Aktien/ETFs über Stooq ---
-  const mapped = stocks.map((i) => ({
-    i,
-    m: toStooqSymbol(i.yahoo_symbol as string),
-  }));
-  for (const x of mapped) {
-    if (!x.m) failed.push(`${x.i.yahoo_symbol} (Börse?)`);
-  }
-  const withSym = mapped.filter(
-    (x): x is { i: InstrumentRow; m: NonNullable<typeof x.m> } => x.m !== null,
+  // --- Aktien/ETFs über FMP, Umrechnung via Frankfurter ---
+  const apiKey = process.env.FMP_API_KEY ?? "";
+  const quotes = await fetchFmpQuotes(
+    stocks.map((i) => i.yahoo_symbol as string),
+    apiKey,
   );
 
-  const closes = await fetchStooqCloses(withSym.map((x) => x.m.stooq));
   const currencies = new Set<string>();
-  for (const x of withSym) if (x.m.currency !== "EUR") currencies.add(x.m.currency);
-  const fx = await fetchStooqEurRates([...currencies]);
+  for (const i of stocks) {
+    const c = currencyForSymbol(i.yahoo_symbol as string);
+    if (c !== "EUR") currencies.add(c);
+  }
+  const fx = await fetchFrankfurterRates([...currencies]);
 
   let stockUpdated = 0;
-  for (const { i, m } of withSym) {
-    const close = closes.get(m.stooq);
-    if (close === undefined) {
-      failed.push(i.yahoo_symbol as string);
+  for (const i of stocks) {
+    const q = quotes.get(i.yahoo_symbol as string);
+    if (!q) {
+      failed.push(
+        apiKey
+          ? (i.yahoo_symbol as string)
+          : `${i.yahoo_symbol} (kein FMP-Key)`,
+      );
       continue;
     }
-    const rate = fx.get(m.currency);
+    const cur = currencyForSymbol(i.yahoo_symbol as string);
+    const rate = fx.get(cur);
     if (!rate) {
-      failed.push(`${i.yahoo_symbol} (FX ${m.currency}?)`);
+      failed.push(`${i.yahoo_symbol} (FX ${cur}?)`);
       continue;
     }
     rows.push({
       instrument_id: i.id,
-      price: close / rate,
+      price: q.price / rate,
       currency: "EUR",
-      change_pct_1d: null, // Tagesveränderung folgt (Stooq liefert sie nicht direkt)
+      change_pct_1d: q.changePct,
       as_of: now,
-      source: "stooq",
+      source: "fmp",
     });
     stockUpdated++;
   }
