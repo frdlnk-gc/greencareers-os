@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { fetchYahooQuotes, fetchEurRates } from "./yahoo";
+import { toStooqSymbol, fetchStooqCloses, fetchStooqEurRates } from "./stooq";
 import { fetchCoinGeckoPrices } from "./coingecko";
 
 export interface RefreshResult {
@@ -43,39 +43,47 @@ export async function refreshPrices(
   const now = new Date().toISOString();
   const rows: PriceRow[] = [];
 
-  // --- Aktien/ETFs: gebündelt über Yahoo, dann Wechselkurse ---
-  const quotes = await fetchYahooQuotes(stocks.map((i) => i.yahoo_symbol as string));
-
-  const currencies = new Set<string>();
-  for (const q of quotes.values()) {
-    if (q.currency !== "EUR") currencies.add(q.currency);
+  // --- Aktien/ETFs über Stooq ---
+  const mapped = stocks.map((i) => ({
+    i,
+    m: toStooqSymbol(i.yahoo_symbol as string),
+  }));
+  for (const x of mapped) {
+    if (!x.m) failed.push(`${x.i.yahoo_symbol} (Börse?)`);
   }
-  const fx = await fetchEurRates([...currencies]);
+  const withSym = mapped.filter(
+    (x): x is { i: InstrumentRow; m: NonNullable<typeof x.m> } => x.m !== null,
+  );
+
+  const closes = await fetchStooqCloses(withSym.map((x) => x.m.stooq));
+  const currencies = new Set<string>();
+  for (const x of withSym) if (x.m.currency !== "EUR") currencies.add(x.m.currency);
+  const fx = await fetchStooqEurRates([...currencies]);
 
   let stockUpdated = 0;
-  for (const i of stocks) {
-    const q = quotes.get(i.yahoo_symbol as string);
-    if (!q) {
+  for (const { i, m } of withSym) {
+    const close = closes.get(m.stooq);
+    if (close === undefined) {
       failed.push(i.yahoo_symbol as string);
       continue;
     }
-    const rate = fx.get(q.currency);
+    const rate = fx.get(m.currency);
     if (!rate) {
-      failed.push(`${i.yahoo_symbol} (FX ${q.currency}?)`);
+      failed.push(`${i.yahoo_symbol} (FX ${m.currency}?)`);
       continue;
     }
     rows.push({
       instrument_id: i.id,
-      price: q.price / rate,
+      price: close / rate,
       currency: "EUR",
-      change_pct_1d: q.changePct,
+      change_pct_1d: null, // Tagesveränderung folgt (Stooq liefert sie nicht direkt)
       as_of: now,
-      source: "yahoo",
+      source: "stooq",
     });
     stockUpdated++;
   }
 
-  // --- Krypto: CoinGecko, bereits in EUR ---
+  // --- Krypto über CoinGecko (bereits in EUR, inkl. 24h-Veränderung) ---
   const cg = await fetchCoinGeckoPrices(cryptos.map((c) => c.coingecko_id as string));
   let cryptoUpdated = 0;
   for (const i of cryptos) {
