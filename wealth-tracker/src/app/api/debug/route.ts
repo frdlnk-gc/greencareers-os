@@ -27,7 +27,7 @@ async function probe(
       status: res.status,
       ok: res.ok,
       ms: Date.now() - started,
-      snippet: text.slice(0, 250),
+      snippet: text.slice(0, 1400),
     };
   } catch (e) {
     return {
@@ -47,24 +47,8 @@ export async function GET() {
   const tdProbes = tdSet
     ? [
         probe(
-          "td_batch_intl",
-          `https://api.twelvedata.com/quote?symbol=AAPL,ASML.AS,MC.PA,NOVO_B.CO,LOTB.BR&apikey=${tdKey}`,
-        ),
-        probe(
-          "td_intl_hk",
-          `https://api.twelvedata.com/quote?symbol=0669.HK&apikey=${tdKey}`,
-        ),
-        probe(
-          "td_intl_hk_alt",
-          `https://api.twelvedata.com/quote?symbol=0669&exchange=HKEX&apikey=${tdKey}`,
-        ),
-        probe(
-          "td_intl_tokyo",
-          `https://api.twelvedata.com/quote?symbol=4063.T&apikey=${tdKey}`,
-        ),
-        probe(
-          "td_usage",
-          `https://api.twelvedata.com/api_usage?apikey=${tdKey}`,
+          "td_eu_batch",
+          `https://api.twelvedata.com/quote?symbol=ASML.AS,MC.PA,NOVO_B.CO,LOTB.BR,DHL.DE&apikey=${tdKey}`,
         ),
       ]
     : [];
