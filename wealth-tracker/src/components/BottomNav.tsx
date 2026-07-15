@@ -7,7 +7,7 @@ const items = [
   { href: "/home", label: "Home", icon: HomeIcon },
   { href: "/", label: "Vermögen", icon: ChartIcon },
   { href: "/analyse", label: "Analyse", icon: PieIcon },
-  { href: "/wealth", label: "Wealth", icon: SparkIcon },
+  { href: "/wealth", label: "Prognose", icon: SparkIcon },
 ];
 
 export function BottomNav() {

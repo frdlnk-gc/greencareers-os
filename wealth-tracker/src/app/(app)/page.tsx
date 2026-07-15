@@ -4,6 +4,7 @@ import { formatEur, formatPct, changeColor } from "@/lib/format";
 import { Avatar } from "@/components/Avatar";
 import { AppHeader } from "@/components/AppHeader";
 import { AutoRefresh } from "@/components/AutoRefresh";
+import { LastUpdated } from "@/components/LastUpdated";
 
 export const dynamic = "force-dynamic";
 
@@ -48,6 +49,9 @@ export default async function OverviewPage() {
         <div className={`mt-1 text-sm tabular ${changeColor(changeEur1d)}`}>
           {formatPct(changePct1d)} · {changeEur1d >= 0 ? "+" : ""}
           {formatEur(changeEur1d)} heute
+        </div>
+        <div className="mt-1">
+          <LastUpdated iso={lastUpdate} />
         </div>
       </section>
 
