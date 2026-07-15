@@ -307,6 +307,8 @@ export async function getLastPriceUpdate(): Promise<string | null> {
   return (data?.[0]?.as_of as string | undefined) ?? null;
 }
 
+export type DividendStatus = "paid" | "announced" | "forecast";
+
 export interface DividendEvent {
   date: string; // YYYY-MM-DD
   amountEur: number;
@@ -316,6 +318,7 @@ export interface DividendEvent {
   instrumentId: string | null;
   instrumentName: string;
   accountId: string;
+  status: DividendStatus; // ausgezahlt / angekündigt / Prognose
 }
 
 export interface DividendSummary {
@@ -368,7 +371,8 @@ export async function getDividends(): Promise<DividendSummary> {
     quantity: number | null;
   }[];
 
-  const events: DividendEvent[] = raw
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const actual: DividendEvent[] = raw
     .filter((t) => (t.amount ?? 0) !== 0)
     .map((t) => ({
       date: t.trade_date,
@@ -381,7 +385,35 @@ export async function getDividends(): Promise<DividendSummary> {
         ? nameById.get(t.instrument_id) ?? "Unbekannt"
         : "Sonstige",
       accountId: t.account_id,
+      // Vergangen = ausgezahlt; in der Zukunft erfasst = angekündigt.
+      status: t.trade_date <= todayStr ? "paid" : "announced",
     }));
+
+  // Prognose: jede Dividende der letzten 12 Monate ein Jahr weiter fortschreiben
+  // (an heutigen Wechselkurs angepasst), sofern sie in der Zukunft liegt und
+  // dort noch keine erfasste Zahlung existiert.
+  const now = new Date();
+  const yearAgo = new Date(now);
+  yearAgo.setFullYear(yearAgo.getFullYear() - 1);
+  const haveKey = new Set(
+    actual.map((e) => `${e.instrumentId}|${e.date.slice(0, 7)}`),
+  );
+  const forecast: DividendEvent[] = [];
+  for (const e of actual) {
+    if (e.status !== "paid") continue;
+    const d = new Date(e.date);
+    if (d < yearAgo) continue;
+    const proj = new Date(d);
+    proj.setFullYear(proj.getFullYear() + 1);
+    if (proj <= now) continue;
+    const projDate = proj.toISOString().slice(0, 10);
+    const key = `${e.instrumentId}|${projDate.slice(0, 7)}`;
+    if (haveKey.has(key)) continue;
+    haveKey.add(key);
+    forecast.push({ ...e, date: projDate, status: "forecast" });
+  }
+
+  const events: DividendEvent[] = [...actual, ...forecast];
 
   const txns = raw.map((t) => ({
     ...t,
