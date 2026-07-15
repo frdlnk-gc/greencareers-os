@@ -78,8 +78,11 @@ export interface AccountSummary {
 
 // Gesamtvermögen über alle Depots.
 export interface PortfolioSummary {
-  accounts: AccountSummary[];
-  totalValueEur: number;
+  accounts: AccountSummary[]; // Investment-Depots (broker/crypto)
+  otherAccounts: AccountSummary[]; // Cash, Verbindlichkeiten, Sonstiges
+  totalValueEur: number; // Gesamtvermögen (Netto)
+  investmentsValueEur: number; // nur Wertpapiere/Krypto
+  otherAssetsEur: number; // Summe weitere Werte (Verbindlichkeiten negativ)
   totalInvestedEur: number;
   totalGainEur: number;
   totalGainPct: number | null;

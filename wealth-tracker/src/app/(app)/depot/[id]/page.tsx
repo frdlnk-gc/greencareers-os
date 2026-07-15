@@ -13,7 +13,9 @@ export default async function DepotPage({
 }) {
   const { id } = await params;
   const portfolio = await getPortfolio();
-  const summary = portfolio.accounts.find((a) => a.account.id === id);
+  const summary = [...portfolio.accounts, ...portfolio.otherAccounts].find(
+    (a) => a.account.id === id,
+  );
 
   if (!summary) notFound();
 
@@ -30,7 +32,20 @@ export default async function DepotPage({
             <path d="M15 6l-6 6 6 6" />
           </svg>
         </Link>
-        <h1 className="truncate text-xl font-bold">{summary.account.name}</h1>
+        <h1 className="min-w-0 flex-1 truncate text-xl font-bold">
+          {summary.account.name}
+        </h1>
+        <Link
+          href={`/depot/${id}/verwalten`}
+          className="flex h-9 w-9 items-center justify-center rounded-full text-neutral-400 active:opacity-60"
+          aria-label="Depot verwalten"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="1.6" />
+            <circle cx="12" cy="5" r="1.6" />
+            <circle cx="12" cy="19" r="1.6" />
+          </svg>
+        </Link>
       </header>
 
       {/* Depotwert */}
@@ -49,7 +64,15 @@ export default async function DepotPage({
       </section>
 
       {/* Positionen */}
-      <h2 className="mb-2 text-lg font-semibold">Positionen</h2>
+      <div className="mb-2 flex items-center justify-between">
+        <h2 className="text-lg font-semibold">Positionen</h2>
+        <Link
+          href={`/depot/${id}/neu`}
+          className="rounded-lg bg-neutral-800 px-3 py-1.5 text-sm font-medium text-neutral-100 active:opacity-70"
+        >
+          + Transaktion
+        </Link>
+      </div>
       {summary.positions.length === 0 ? (
         <p className="text-sm text-neutral-500">
           In diesem Depot sind noch keine Positionen erfasst.

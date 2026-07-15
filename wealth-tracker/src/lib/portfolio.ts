@@ -32,7 +32,7 @@ export function computePortfolio(input: PortfolioInput): PortfolioSummary {
   const instrumentById = new Map(instruments.map((i) => [i.id, i]));
   const priceByInstrument = new Map(prices.map((p) => [p.instrument_id, p]));
 
-  const accountSummaries: AccountSummary[] = accounts
+  const allSummaries: AccountSummary[] = accounts
     .slice()
     .sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name))
     .map((account) => {
@@ -142,18 +142,36 @@ export function computePortfolio(input: PortfolioInput): PortfolioSummary {
       };
     });
 
-  const totalValueEur = accountSummaries.reduce((s, a) => s + a.valueEur, 0);
+  // Investment-Depots (broker/crypto) vs. weitere Werte (cash/other).
+  const accountSummaries = allSummaries.filter(
+    (a) => a.account.type === "broker" || a.account.type === "crypto",
+  );
+  const otherAccounts = allSummaries.filter(
+    (a) => a.account.type === "cash" || a.account.type === "other",
+  );
+
+  // Investitionen (Wertpapiere/Krypto).
+  const investmentsValueEur = accountSummaries.reduce((s, a) => s + a.valueEur, 0);
   const totalInvestedEur = accountSummaries.reduce((s, a) => s + a.investedEur, 0);
   const changeEur1d = accountSummaries.reduce((s, a) => s + a.changeEur1d, 0);
-  const prevTotal = totalValueEur - changeEur1d;
+  const prevTotal = investmentsValueEur - changeEur1d;
   const changePct1d = prevTotal > 0 ? (changeEur1d / prevTotal) * 100 : null;
-  const totalGainEur = totalValueEur - totalInvestedEur;
+  const totalGainEur = investmentsValueEur - totalInvestedEur;
   const totalGainPct =
     totalInvestedEur > 0 ? (totalGainEur / totalInvestedEur) * 100 : null;
 
+  // Weitere Werte (Cash, Verbindlichkeiten, Sonstiges) — Verbindlichkeiten sind negativ.
+  const otherAssetsEur = otherAccounts.reduce((s, a) => s + a.valueEur, 0);
+
+  // Gesamtvermögen = Investitionen + weitere Werte.
+  const totalValueEur = investmentsValueEur + otherAssetsEur;
+
   return {
     accounts: accountSummaries,
+    otherAccounts,
     totalValueEur,
+    investmentsValueEur,
+    otherAssetsEur,
     totalInvestedEur,
     totalGainEur,
     totalGainPct,
