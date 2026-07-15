@@ -90,11 +90,19 @@ export function WealthChart({
     // kumulierter Gewinn/Verlust gain(t) = Wert(t) − eingesetztes Kapital(t).
     // Über Zukäufe hinweg glatt (Kauf erhöht Wert UND Kapital gleich viel).
     // Auf den Fensterstart genullt -> % und € haben IMMER dasselbe Vorzeichen.
+    // Anker = erster Punkt mit echtem Wert (>0), damit der %-Nenner nie ~0 ist.
     const gainAt = (i: number) => (vWin[i]?.[1] ?? 0) - (invWin[i]?.[1] ?? 0);
-    const base = vWin.length ? Math.max(1, Math.abs(vWin[0][1])) : 1;
-    const g0 = gainAt(0);
-    points = vWin.map(([ms], i) => [ms, ((gainAt(i) - g0) / base) * 100]);
-    if (vWin.length >= 2) {
+    let startIdx = vWin.findIndex(([, v]) => v > 0);
+    if (startIdx < 0) startIdx = 0;
+    // Nenner = eingesetztes Kapital (wie „seit Kauf"/gainPct); fällt auf den
+    // Startwert im Fenster zurück, falls kein Kapital hinterlegt ist.
+    const investedNow = Math.abs(invWin[invWin.length - 1]?.[1] ?? 0);
+    const base = Math.max(1, investedNow || Math.abs(vWin[startIdx]?.[1] ?? 1));
+    const g0 = gainAt(startIdx);
+    points = vWin
+      .slice(startIdx)
+      .map(([ms], i) => [ms, ((gainAt(startIdx + i) - g0) / base) * 100]);
+    if (points.length >= 2) {
       headEur = gainAt(vWin.length - 1) - g0;
       headPct = (headEur / base) * 100;
     }
