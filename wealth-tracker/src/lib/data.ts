@@ -307,6 +307,17 @@ export async function getLastPriceUpdate(): Promise<string | null> {
   return (data?.[0]?.as_of as string | undefined) ?? null;
 }
 
+export interface DividendEvent {
+  date: string; // YYYY-MM-DD
+  amountEur: number;
+  amountOrig: number | null;
+  currency: string | null;
+  quantity: number | null; // Stückzahl bei Zahlung (falls erfasst)
+  instrumentId: string | null;
+  instrumentName: string;
+  accountId: string;
+}
+
 export interface DividendSummary {
   totalAllTime: number;
   byYear: { year: number; total: number }[];
@@ -319,6 +330,7 @@ export interface DividendSummary {
     instrument: string;
   }[];
   byInstrument: { name: string; total: number }[];
+  events: DividendEvent[]; // alle Einzel-Dividenden (für die Analyse-Ansicht)
 }
 
 // Lädt Dividenden (aus Transaktionen vom Typ 'dividend') und bereitet sie auf:
@@ -328,7 +340,9 @@ export async function getDividends(): Promise<DividendSummary> {
   const [txRes, instRes, fxRes, liveFx] = await Promise.all([
     supabase
       .from("transactions")
-      .select("trade_date,amount,instrument_id,type,currency")
+      .select(
+        "trade_date,amount,instrument_id,type,currency,account_id,quantity",
+      )
       .eq("type", "dividend")
       .order("trade_date", { ascending: false }),
     supabase.from("instruments").select("id,name"),
@@ -345,12 +359,31 @@ export async function getDividends(): Promise<DividendSummary> {
   const nameById = new Map(
     (instRes.data ?? []).map((i) => [i.id as string, i.name as string]),
   );
-  const txns = ((txRes.data ?? []) as {
+  const raw = (txRes.data ?? []) as {
     trade_date: string;
     amount: number | null;
     instrument_id: string | null;
     currency: string | null;
-  }[]).map((t) => ({
+    account_id: string;
+    quantity: number | null;
+  }[];
+
+  const events: DividendEvent[] = raw
+    .filter((t) => (t.amount ?? 0) !== 0)
+    .map((t) => ({
+      date: t.trade_date,
+      amountEur: toEur(t.amount ?? 0, t.currency, fxRates),
+      amountOrig: t.amount,
+      currency: t.currency,
+      quantity: t.quantity,
+      instrumentId: t.instrument_id,
+      instrumentName: t.instrument_id
+        ? nameById.get(t.instrument_id) ?? "Unbekannt"
+        : "Sonstige",
+      accountId: t.account_id,
+    }));
+
+  const txns = raw.map((t) => ({
     ...t,
     amount: t.amount == null ? null : toEur(t.amount, t.currency, fxRates),
   }));
@@ -401,5 +434,6 @@ export async function getDividends(): Promise<DividendSummary> {
         : "Sonstige",
     })),
     byInstrument,
+    events,
   };
 }
