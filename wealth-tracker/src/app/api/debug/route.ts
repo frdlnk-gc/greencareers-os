@@ -1,88 +1,83 @@
 import { NextResponse } from "next/server";
+import { SYMBOL_TO_ISIN } from "@/lib/prices/isins";
+import { fetchTradegateQuotes } from "@/lib/prices/tradegate";
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-// Diagnose: prüft, welche Kursquellen vom Server (Vercel) aus erreichbar sind.
-// Nur eingeloggt aufrufbar (Middleware schützt die Route). Im Browser öffnen:
-//   /api/debug
+// Diagnose/Verifikation der ISIN-Liste. Öffentlich (Middleware lässt /api/debug
+// durch). Prüft für jedes Symbol:
+//  - OpenFIGI: liefert die ISIN den erwarteten Firmennamen? (falsche ISIN -> Name passt nicht)
+//  - Tradegate: kommt ein Live-Kurs (EUR) zurück?
+
 const UA =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 " +
   "(KHTML, like Gecko) Chrome/125.0 Safari/537.36";
 
-async function probe(
-  name: string,
-  url: string,
-  headers?: Record<string, string>,
-) {
-  const started = Date.now();
-  try {
-    const res = await fetch(url, {
-      headers: { "User-Agent": UA, ...headers },
-      cache: "no-store",
-    });
-    const text = await res.text();
-    return {
-      name,
-      status: res.status,
-      ok: res.ok,
-      ms: Date.now() - started,
-      snippet: text.slice(0, 1400),
-    };
-  } catch (e) {
-    return {
-      name,
-      error: e instanceof Error ? e.message : String(e),
-      ms: Date.now() - started,
-    };
+interface FigiEntry {
+  data?: { name?: string; ticker?: string }[];
+  warning?: string;
+}
+
+// OpenFIGI in Blöcken zu 10 (Limit ohne API-Key).
+async function openFigiNames(
+  isins: string[],
+): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  for (let i = 0; i < isins.length; i += 10) {
+    const chunk = isins.slice(i, i + 10);
+    try {
+      const res = await fetch("https://api.openfigi.com/v3/mapping", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "User-Agent": UA },
+        body: JSON.stringify(
+          chunk.map((isin) => ({ idType: "ID_ISIN", idValue: isin })),
+        ),
+        cache: "no-store",
+      });
+      const arr = (await res.json()) as FigiEntry[];
+      chunk.forEach((isin, k) => {
+        const entry = arr[k];
+        const name = entry?.data?.[0]?.name;
+        out.set(isin, name ?? (entry?.warning ? `⚠ ${entry.warning}` : "?"));
+      });
+    } catch (e) {
+      chunk.forEach((isin) =>
+        out.set(isin, `Fehler: ${e instanceof Error ? e.message : String(e)}`),
+      );
+    }
+    await sleep(400); // OpenFIGI-Ratelimit schonen
   }
+  return out;
 }
 
 export async function GET() {
-  const fmpKey = process.env.FMP_API_KEY ?? "";
-  const fmpSet = fmpKey.length > 0;
+  const symbols = Object.keys(SYMBOL_TO_ISIN);
+  const isins = symbols.map((s) => SYMBOL_TO_ISIN[s]);
 
-  // Deutsche Börsenquellen (frei, in Euro). ISINs decken US, EU und Asien ab.
-  const results = await Promise.all([
-    // Tradegate – liefert bid/ask/last als kleines JSON, in Euro.
-    probe(
-      "tradegate_asml_nl",
-      "https://www.tradegate.de/refresh.php?isin=NL0010273215",
-    ),
-    probe(
-      "tradegate_novo_dk",
-      "https://www.tradegate.de/refresh.php?isin=DK0062498333",
-    ),
-    probe(
-      "tradegate_techtronic_hk",
-      "https://www.tradegate.de/refresh.php?isin=HK0669013440",
-    ),
-    probe(
-      "tradegate_shinetsu_jp",
-      "https://www.tradegate.de/refresh.php?isin=JP3371200001",
-    ),
-    probe(
-      "tradegate_apple_us",
-      "https://www.tradegate.de/refresh.php?isin=US0378331005",
-    ),
-    // börse-frankfurt API (Xetra/Frankfurt), ebenfalls in Euro.
-    probe(
-      "bf_asml",
-      "https://api.boerse-frankfurt.de/v1/data/quote_box/single?isin=NL0010273215&mic=XETR",
-      { Accept: "application/json", Origin: "https://www.boerse-frankfurt.de" },
-    ),
-    probe(
-      "coingecko",
-      "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=eur",
-    ),
-    probe(
-      "frankfurter_fx",
-      "https://api.frankfurter.app/latest?from=EUR&to=USD",
-    ),
+  const [figi, tgMap] = await Promise.all([
+    openFigiNames(isins),
+    fetchTradegateQuotes(isins), // Limit 6 intern -> keine Überlastung
   ]);
 
+  const rows = symbols.map((sym) => ({
+    symbol: sym,
+    isin: SYMBOL_TO_ISIN[sym],
+    figiName: figi.get(SYMBOL_TO_ISIN[sym]) ?? "?",
+    tradegateEur: tgMap.get(SYMBOL_TO_ISIN[sym])?.price ?? null,
+  }));
+
+  const missingTradegate = rows.filter((r) => r.tradegateEur == null);
+  const figiUnknown = rows.filter(
+    (r) => r.figiName === "?" || r.figiName.startsWith("⚠"),
+  );
+
   return NextResponse.json({
-    fmpKeySet: fmpSet,
-    probes: results,
+    count: rows.length,
+    missingTradegateCount: missingTradegate.length,
+    figiUnknownCount: figiUnknown.length,
+    rows,
   });
 }
