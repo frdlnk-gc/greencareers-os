@@ -72,7 +72,7 @@ export async function fetchSalt(): Promise<string | null> {
 }
 
 // Signierte Header (minimal – kein origin/referer!).
-function signedHeaders(url: string, salt: string): Record<string, string> {
+export function signedHeaders(url: string, salt: string): Record<string, string> {
   const iso = new Date().toISOString();
   return {
     accept: "application/json, text/plain, */*",
