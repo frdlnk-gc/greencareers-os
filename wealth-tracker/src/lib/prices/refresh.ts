@@ -1,11 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { fetchFmpQuotes } from "./fmp";
-import { fetchTwelveDataHistory } from "./twelvedata";
-import { fetchFrankfurterRates, fetchFrankfurterSeriesToEur } from "./frankfurter";
+import { fetchFrankfurterRates } from "./frankfurter";
 import { currencyForSymbol } from "./exchanges";
 import { fetchCoinGeckoPrices, fetchCoinGeckoHistory } from "./coingecko";
 import { fetchTradegateQuotes } from "./tradegate";
-import { isinForSymbol, looksLikeIsin } from "./isins";
+import { fetchBfHistory, fetchBfQuotes } from "./boersefrankfurt";
+import { isinForSymbol } from "./isins";
 
 export interface RefreshResult {
   updated: number;
@@ -64,23 +64,47 @@ export async function refreshPrices(
     sources[s] = (sources[s] ?? 0) + 1;
   };
 
-  // Aktien in "hat ISIN" (Tradegate) und "keine ISIN" (FMP) aufteilen.
-  const viaTradegate = stocks.filter((i) => isinForSymbol(i.yahoo_symbol));
+  // Aktien mit ISIN (Börse Frankfurt/Xetra) und ohne ISIN (FMP) aufteilen.
+  const withIsin = stocks.filter((i) => isinForSymbol(i.yahoo_symbol));
   const viaFmp = stocks.filter((i) => !isinForSymbol(i.yahoo_symbol));
 
-  // --- Tradegate: Kurse per ISIN, direkt in EUR ---
   let stockUpdated = 0;
-  const tgFailed: InstrumentRow[] = [];
-  if (viaTradegate.length > 0) {
-    const isins = viaTradegate.map(
-      (i) => isinForSymbol(i.yahoo_symbol) as string,
-    );
-    const quotes = await fetchTradegateQuotes(isins);
-    for (const i of viaTradegate) {
+
+  // --- Börse Frankfurt/Xetra: akkurate EUR-Kurse + Tagesveränderung ---
+  const bfFailed: InstrumentRow[] = [];
+  if (withIsin.length > 0) {
+    const isins = withIsin.map((i) => isinForSymbol(i.yahoo_symbol) as string);
+    const quotes = await fetchBfQuotes(isins);
+    for (const i of withIsin) {
       const isin = isinForSymbol(i.yahoo_symbol) as string;
       const q = quotes.get(isin);
       if (!q) {
-        tgFailed.push(i); // -> FMP-Fallback unten
+        bfFailed.push(i);
+        continue;
+      }
+      rows.push({
+        instrument_id: i.id,
+        price: q.price,
+        currency: "EUR",
+        change_pct_1d: q.changePct,
+        as_of: now,
+        source: "boerse-frankfurt",
+      });
+      bump("boerse-frankfurt");
+      stockUpdated++;
+    }
+  }
+
+  // --- Tradegate-Fallback für Titel, die Börse Frankfurt nicht liefert ---
+  const tgFailed: InstrumentRow[] = [];
+  if (bfFailed.length > 0) {
+    const isins = bfFailed.map((i) => isinForSymbol(i.yahoo_symbol) as string);
+    const quotes = await fetchTradegateQuotes(isins);
+    for (const i of bfFailed) {
+      const isin = isinForSymbol(i.yahoo_symbol) as string;
+      const q = quotes.get(isin);
+      if (!q) {
+        tgFailed.push(i);
         continue;
       }
       rows.push({
@@ -96,7 +120,7 @@ export async function refreshPrices(
     }
   }
 
-  // --- FMP-Fallback: Symbole ohne ISIN + Tradegate-Ausfälle (via Frankfurter) ---
+  // --- FMP-Fallback: Symbole ohne ISIN + übrige Ausfälle (via Frankfurter) ---
   const fmpList = [...viaFmp, ...tgFailed];
   if (fmpList.length > 0) {
     const apiKey = process.env.FMP_API_KEY ?? "";
@@ -252,43 +276,21 @@ async function backfillCryptoHistory(
   return filled;
 }
 
-// Füllt die Kurs-Historie für US-Aktien aus Twelve Data (Gratis-Tarif) und
-// rechnet die USD-Schlusskurse mit historischen Frankfurter-Kursen in EUR um.
-// Wegen des Ratelimits (8/Min) höchstens einige Titel pro Aktualisierung –
-// der Rest wird bei den nächsten Aktualisierungen nachgezogen.
-const BACKFILL_PER_RUN = 7;
+// Füllt die Kurs-Historie für Aktien/ETFs aus der Börse-Frankfurt-API — für
+// ALLE Titel (US, Europa, Asien) direkt in EURO. Pro Durchlauf begrenzt, damit
+// jede Aktualisierung schnell bleibt; der Rest wird nachgezogen.
+const BACKFILL_PER_RUN = 12;
 
 async function backfillUsStockHistory(
   supabase: SupabaseClient,
   stocks: InstrumentRow[],
 ): Promise<number> {
-  const apiKey = process.env.TWELVEDATA_API_KEY ?? "";
-  if (!apiKey) return 0;
-
-  const usStocks = stocks.filter(
-    (i) =>
-      i.yahoo_symbol &&
-      !looksLikeIsin(i.yahoo_symbol) &&
-      currencyForSymbol(i.yahoo_symbol) === "USD",
-  );
-  if (usStocks.length === 0) return 0;
-
-  // Historische USD->EUR-Kurse einmal laden (~2 Jahre).
-  const start = new Date(Date.now() - 800 * 86400000).toISOString().slice(0, 10);
-  const fx = await fetchFrankfurterSeriesToEur("USD", start);
-  if (fx.length === 0) return 0;
-  const eurPerUsdAt = (ms: number): number | null => {
-    let rate: number | null = null;
-    for (const [t, r] of fx) {
-      if (t <= ms) rate = r;
-      else break;
-    }
-    return rate;
-  };
+  const withIsin = stocks.filter((i) => isinForSymbol(i.yahoo_symbol));
+  if (withIsin.length === 0) return 0;
 
   let done = 0;
   let filled = 0;
-  for (const s of usStocks) {
+  for (const s of withIsin) {
     if (done >= BACKFILL_PER_RUN) break;
     const { count } = await supabase
       .from("price_history")
@@ -296,17 +298,15 @@ async function backfillUsStockHistory(
       .eq("instrument_id", s.id);
     if ((count ?? 0) >= 30) continue; // schon befüllt
 
-    const series = await fetchTwelveDataHistory(s.yahoo_symbol as string, apiKey);
+    const isin = isinForSymbol(s.yahoo_symbol) as string;
+    const series = await fetchBfHistory(isin);
     done++;
     if (series.length === 0) continue;
-    const histRows = series
-      .map(([day, closeUsd]) => {
-        const rate = eurPerUsdAt(new Date(day).getTime());
-        if (rate == null) return null;
-        return { instrument_id: s.id, as_of: day, price_eur: closeUsd * rate };
-      })
-      .filter((r): r is { instrument_id: string; as_of: string; price_eur: number } => r !== null);
-    if (histRows.length === 0) continue;
+    const histRows = series.map(([day, priceEur]) => ({
+      instrument_id: s.id,
+      as_of: day,
+      price_eur: priceEur,
+    }));
     await supabase
       .from("price_history")
       .upsert(histRows, { onConflict: "instrument_id,as_of" });
