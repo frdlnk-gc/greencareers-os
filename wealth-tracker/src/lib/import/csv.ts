@@ -129,8 +129,9 @@ export function parseCsvTransactions(text: string): ParsedRow[] {
     const cells = splitLine(lines[i], delim);
     if (cells.length < 2) continue;
 
-    const rawType = (col.type >= 0 ? cells[col.type] : "").toLowerCase();
-    const isSell = /sell|verkauf|sale|sold|s$|-/.test(rawType) && !/buy|kauf/.test(rawType);
+    const rawType = (col.type >= 0 ? cells[col.type] : "").trim().toLowerCase();
+    const isSell =
+      /sell|verkauf|sale|sold|^s$|^-/.test(rawType) && !/buy|kauf/.test(rawType);
     const qty = col.qty >= 0 ? parseNumber(cells[col.qty]) : null;
     const price = col.price >= 0 ? parseNumber(cells[col.price]) : null;
     const name = col.name >= 0 ? cells[col.name] : "";

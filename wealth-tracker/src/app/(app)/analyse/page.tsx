@@ -66,7 +66,13 @@ export default function AnalysePage() {
     .filter((p) => p.changePct1d !== null)
     .sort((a, b) => (b.changePct1d ?? 0) - (a.changePct1d ?? 0));
   const winners = movers.slice(0, 3);
-  const losers = movers.slice(-3).reverse();
+  // Verlierer aus den Titeln NACH den Gewinnern (keine Überschneidung bei
+  // wenigen Positionen) – nur echte Minus-Werte.
+  const losers = movers
+    .slice(3)
+    .filter((p) => (p.changePct1d ?? 0) < 0)
+    .slice(-3)
+    .reverse();
 
   const maxMonth = Math.max(...(dividends?.byMonthThisYear ?? [0]), 1);
 

@@ -20,11 +20,24 @@ async function requireUser(): Promise<{
   return { supabase, userId: user.id };
 }
 
+// Wandelt Nutzereingaben in Zahlen – robust für deutsches (1.234,56) UND
+// englisches (1,234.56) Format. Wichtig: "2.609,00" darf NICHT als NaN
+// verloren gehen.
 function num(v: FormDataEntryValue | null): number | null {
   if (v == null) return null;
-  const s = String(v).trim().replace(/\s/g, "").replace(",", ".");
+  let s = String(v).replace(/[^\d,.-]/g, "").trim();
   if (!s) return null;
-  const n = Number(s);
+  if (s.includes(",") && s.includes(".")) {
+    // Das hintere Zeichen ist der Dezimaltrenner.
+    if (s.lastIndexOf(",") > s.lastIndexOf(".")) {
+      s = s.replace(/\./g, "").replace(",", ".");
+    } else {
+      s = s.replace(/,/g, "");
+    }
+  } else if (s.includes(",")) {
+    s = s.replace(",", ".");
+  }
+  const n = parseFloat(s);
   return Number.isFinite(n) ? n : null;
 }
 
@@ -240,13 +253,17 @@ async function resolveInstrumentId(
   const kind = String(formData.get("new_kind") ?? "stock");
   const symbol = String(formData.get("new_symbol") ?? "").trim();
   const isin = String(formData.get("new_isin") ?? "").trim().toUpperCase();
+  const rawCur = String(formData.get("currency") ?? "EUR").toUpperCase();
+  const cur = /^[A-Z]{3}$/.test(rawCur) ? rawCur : "EUR";
 
   const row: Record<string, unknown> = {
     user_id: userId,
     kind: ["stock", "etf", "crypto", "cash"].includes(kind) ? kind : "stock",
     name,
     display_symbol: symbol || null,
-    currency: "EUR",
+    // Krypto wird über CoinGecko in EUR bewertet; Aktien tragen ihre
+    // Handelswährung (Anzeige/Live-Kurs rechnen in EUR um).
+    currency: kind === "crypto" ? "EUR" : cur,
   };
   if (kind === "crypto") {
     row.coingecko_id = symbol || null;
@@ -364,6 +381,9 @@ export async function importTransactions(
         ? { coingecko_id: r.symbol || null }
         : { yahoo_symbol: (r.isin || r.symbol || "").toUpperCase() || null };
 
+    const rawCur = String(r.currency ?? "EUR").toUpperCase();
+    const currency = /^[A-Z]{3}$/.test(rawCur) ? rawCur : "EUR";
+
     // Bestehendes Instrument über Name suchen, sonst neu anlegen.
     const { data: existing } = await supabase
       .from("instruments")
@@ -379,7 +399,7 @@ export async function importTransactions(
           kind,
           name: r.name,
           display_symbol: r.symbol || null,
-          currency: "EUR",
+          currency: kind === "crypto" ? "EUR" : currency,
           ...symField,
         })
         .select("id")
@@ -387,9 +407,6 @@ export async function importTransactions(
       instrumentId = created?.id as string | undefined;
     }
     if (!instrumentId) continue;
-
-    const rawCur = String(r.currency ?? "EUR").toUpperCase();
-    const currency = /^[A-Z]{3}$/.test(rawCur) ? rawCur : "EUR";
     await supabase.from("transactions").insert({
       user_id: userId,
       account_id: accountId,
