@@ -1,16 +1,22 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { formatEur } from "@/lib/format";
+import { formatEur, formatPct } from "@/lib/format";
 
 // Interaktiver Linien-/Flächenchart aus [Zeit(ms), Wert]-Punkten.
 // Zeigt beim Berühren/Hovern den Wert am Punkt. Grün wenn im Plus, sonst rot.
+// format: "eur" (Werte in €) oder "pct" (Performance in %).
+// baseline: optionale gestrichelte Nulllinie (z. B. 0 % im Performance-Modus).
 export function LineChart({
   points,
   height = 160,
+  format = "eur",
+  baseline,
 }: {
   points: [number, number][];
   height?: number;
+  format?: "eur" | "pct";
+  baseline?: number;
 }) {
   const [hover, setHover] = useState<number | null>(null);
 
@@ -18,6 +24,8 @@ export function LineChart({
     () => points.filter(([, v]) => Number.isFinite(v)),
     [points],
   );
+
+  const fmt = (v: number) => (format === "pct" ? formatPct(v) : formatEur(v));
 
   if (data.length < 2) {
     return (
@@ -34,8 +42,8 @@ export function LineChart({
   const h = height;
   const pad = 6;
   const values = data.map((d) => d[1]);
-  const min = Math.min(...values);
-  const max = Math.max(...values);
+  const min = Math.min(...values, baseline ?? Infinity);
+  const max = Math.max(...values, baseline ?? -Infinity);
   const range = max - min || 1;
   const x = (i: number) => (i / (data.length - 1)) * (w - pad * 2) + pad;
   const y = (v: number) => h - pad - ((v - min) / range) * (h - pad * 2);
@@ -60,7 +68,7 @@ export function LineChart({
   return (
     <div>
       <div className="mb-1 flex items-baseline justify-between text-sm">
-        <span className="tabular font-medium">{formatEur(hVal)}</span>
+        <span className="tabular font-medium">{fmt(hVal)}</span>
         <span className="text-xs text-neutral-500">{hDate}</span>
       </div>
       <svg
@@ -86,6 +94,18 @@ export function LineChart({
           </linearGradient>
         </defs>
         <path d={areaPath} fill={`url(#${gradId})`} />
+        {baseline !== undefined && baseline >= min && baseline <= max && (
+          <line
+            x1={pad}
+            x2={w - pad}
+            y1={y(baseline)}
+            y2={y(baseline)}
+            stroke="rgb(82 82 82)"
+            strokeWidth="1"
+            strokeDasharray="4 4"
+            vectorEffect="non-scaling-stroke"
+          />
+        )}
         <path d={linePath} fill="none" stroke={stroke} strokeWidth="2" vectorEffect="non-scaling-stroke" />
         <line
           x1={x(hi)}

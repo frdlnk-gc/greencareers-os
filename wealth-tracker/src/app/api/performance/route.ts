@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { getPeriodPerformance } from "@/lib/data";
+import { getWealthSeries } from "@/lib/data";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-// Liefert Zeitraum-Entwicklung + Chart-Reihen (gesamt & je Depot). Wird von der
-// UI asynchron nachgeladen, damit die Seiten sofort erscheinen.
+// Liefert die Vermögens-Zeitreihen (Wert + Performance je Scope: Gesamt & je
+// Depot). Wird von der UI asynchron nachgeladen.
 export async function GET() {
   const supabase = await createClient();
   const {
@@ -15,6 +15,6 @@ export async function GET() {
   if (!user) {
     return NextResponse.json({ error: "Nicht angemeldet." }, { status: 401 });
   }
-  const perf = await getPeriodPerformance();
-  return NextResponse.json(perf);
+  const data = await getWealthSeries();
+  return NextResponse.json(data);
 }

@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useSyncExternalStore } from "react";
 import type { PortfolioSummary } from "./types";
-import type { Period, PeriodResult } from "./history";
+import type { ScopeSeries } from "./history";
 import type { DividendSummary } from "./data";
 
 // Client-seitiger Daten-Store mit Modul-Cache + Subscription.
@@ -15,11 +15,15 @@ import type { DividendSummary } from "./data";
 // Hintergrund wird bei Bedarf revalidiert. So fühlt sich die App wie eine
 // native App an.
 
-export interface PerfData {
-  total: Record<Period, PeriodResult>;
-  byAccount: Record<string, Record<Period, PeriodResult>>;
-  totalSeries: [number, number][];
-  seriesByAccount: Record<string, [number, number][]>;
+export interface WealthScope {
+  id: string;
+  name: string;
+  series: ScopeSeries;
+  dayChangePct: number | null;
+  currentValueEur: number;
+}
+export interface WealthData {
+  scopes: WealthScope[];
 }
 
 export type PortfolioWithMeta = PortfolioSummary & {
@@ -140,7 +144,7 @@ export function usePortfolio() {
 }
 
 export function usePerformance() {
-  return useResource<PerfData>("performance", "/api/performance");
+  return useResource<WealthData>("performance", "/api/performance");
 }
 
 export function useDividends() {

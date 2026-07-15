@@ -9,8 +9,7 @@ import {
   changeColor,
 } from "@/lib/format";
 import { Avatar } from "@/components/Avatar";
-import { LineChart } from "@/components/LineChart";
-import { PeriodPerformance } from "@/components/PeriodPerformance";
+import { WealthChart } from "@/components/WealthChart";
 
 export const dynamic = "force-dynamic";
 
@@ -29,7 +28,14 @@ export default async function PositionPage({
   const detail = await getInstrumentDetail(id, iid);
   if (!detail) notFound();
 
-  const { position: p, priceSeries, periods, transactions, accountName } = detail;
+  const {
+    position: p,
+    series,
+    dayChangePct,
+    currentValueEur,
+    transactions,
+    accountName,
+  } = detail;
   const price = p.quantity > 0 ? p.valueEur / p.quantity : 0;
 
   return (
@@ -67,14 +73,20 @@ export default async function PositionPage({
         </div>
       </section>
 
-      {/* Chart */}
-      <section className="mb-5">
-        <LineChart points={priceSeries} />
-      </section>
-
-      {/* Zeiträume */}
+      {/* Chart nach Zeitraum + Modus (Performance / Wert) */}
       <section className="mb-6">
-        <PeriodPerformance data={periods} />
+        <WealthChart
+          scopes={[
+            {
+              id: iid,
+              name: p.instrument.name,
+              series,
+              dayChangePct,
+              currentValueEur,
+            },
+          ]}
+          initialScopeId={iid}
+        />
       </section>
 
       {/* Kennzahlen */}

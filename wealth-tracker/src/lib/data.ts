@@ -3,12 +3,9 @@ import { computePortfolio } from "./portfolio";
 import { getLiveFxRates, mergeFxRates, toEur } from "./prices/fx";
 import { ensureHistory } from "./prices/refresh";
 import {
-  PERIODS,
-  computePeriod,
-  computeValueSeries,
+  computeScopeSeries,
   type HistoryMap,
-  type Period,
-  type PeriodResult,
+  type ScopeSeries,
 } from "./history";
 import type {
   Account,
@@ -53,19 +50,37 @@ export async function getPortfolio(): Promise<PortfolioSummary> {
   });
 }
 
-export interface PeriodPerformance {
-  total: Record<Period, PeriodResult>;
-  byAccount: Record<string, Record<Period, PeriodResult>>;
-  totalSeries: [number, number][];
-  seriesByAccount: Record<string, [number, number][]>;
+export interface WealthScope {
+  id: string; // "total" oder Depot-ID
+  name: string; // "Gesamt" oder Depotname
+  series: ScopeSeries; // value / twr / invested je Tag
+  dayChangePct: number | null; // Tagesveränderung (heute)
+  currentValueEur: number; // aktueller Wert
+}
+export interface WealthData {
+  scopes: WealthScope[]; // [Gesamt, ...Depots]
 }
 
-// Berechnet die Wertentwicklung über alle Zeiträume – gesamt und je Depot.
-export async function getPeriodPerformance(): Promise<PeriodPerformance> {
+// Lädt die Vermögens-Zeitreihen (wie getquin) für die Übersicht/Depots:
+// pro Scope (Gesamt + je Depot) den Wert- und den Performance-Verlauf (TWR).
+export async function getWealthSeries(): Promise<WealthData> {
   const supabase = await createClient();
-  const portfolio = await getPortfolio();
+  const [portfolio, txRes, liveFx, fxRes] = await Promise.all([
+    getPortfolio(),
+    supabase
+      .from("transactions")
+      .select(
+        "account_id,instrument_id,type,trade_date,quantity,price,fees,currency",
+      ),
+    getLiveFxRates(),
+    supabase.from("fx_rates").select("quote,rate"),
+  ]);
+  const fxRates = mergeFxRates(
+    fxRes.data as { quote: string; rate: number }[] | null,
+    liveFx,
+  );
 
-  // Historie laden (kann fehlen, falls Tabelle noch nicht angelegt ist).
+  // Historie laden.
   const history: HistoryMap = new Map();
   try {
     const { data } = await supabase
@@ -81,12 +96,10 @@ export async function getPeriodPerformance(): Promise<PeriodPerformance> {
     }
     for (const arr of history.values()) arr.sort((a, b) => a[0] - b[0]);
   } catch {
-    // keine Historie -> nur 1T verfügbar
+    // keine Historie
   }
 
-  // Fehlende Historie sofort nachladen (Börse Frankfurt / CoinGecko), damit die
-  // Charts direkt gefüllt sind statt „sammelt noch Daten". Nur für Instrumente
-  // ohne (ausreichende) Historie – danach kommt alles aus price_history.
+  // Fehlende Historie sofort nachladen (Börse Frankfurt / CoinGecko).
   const positionsInstruments = portfolio.accounts.flatMap((a) =>
     a.positions.map((p) => p.instrument),
   );
@@ -111,44 +124,74 @@ export async function getPeriodPerformance(): Promise<PeriodPerformance> {
     }
   }
 
-  const now = new Date();
-  const emptyMap = () =>
-    Object.fromEntries(
-      PERIODS.map((p) => [p, { pct: null, changeEur: null, covered: false }]),
-    ) as Record<Period, PeriodResult>;
-
-  const holdingsOf = (positions: typeof portfolio.accounts[number]["positions"]) =>
-    positions.map((p) => ({
-      instrumentId: p.instrument.id,
-      quantity: p.quantity,
-      currentPriceEur: p.quantity > 0 ? p.valueEur / p.quantity : 0,
-      changePct1d: p.changePct1d,
-    }));
-
-  const allHoldings = portfolio.accounts.flatMap((a) => holdingsOf(a.positions));
-  const total = emptyMap();
-  for (const p of PERIODS) total[p] = computePeriod(p, allHoldings, history, now);
-  const totalSeries = computeValueSeries(allHoldings, history);
-
-  const byAccount: Record<string, Record<Period, PeriodResult>> = {};
-  const seriesByAccount: Record<string, [number, number][]> = {};
+  // Aktuelle EUR-Kurse je Instrument (aus den Positionen).
+  const currentPriceEur = new Map<string, number>();
   for (const a of portfolio.accounts) {
-    const holdings = holdingsOf(a.positions);
-    const map = emptyMap();
-    for (const p of PERIODS) map[p] = computePeriod(p, holdings, history, now);
-    byAccount[a.account.id] = map;
-    seriesByAccount[a.account.id] = computeValueSeries(holdings, history);
+    for (const p of a.positions) {
+      if (p.quantity > 0) currentPriceEur.set(p.instrument.id, p.valueEur / p.quantity);
+    }
   }
 
-  return { total, byAccount, totalSeries, seriesByAccount };
+  const now = new Date();
+  const allTx = (txRes.data ?? []) as {
+    account_id: string;
+    instrument_id: string | null;
+    type: string;
+    trade_date: string;
+    quantity: number | null;
+    price: number | null;
+    fees: number | null;
+    currency: string | null;
+  }[];
+
+  const investmentAccountIds = new Set(
+    portfolio.accounts.map((a) => a.account.id),
+  );
+
+  const scopes: WealthScope[] = [];
+
+  // Gesamt (alle Investment-Depots zusammen).
+  scopes.push({
+    id: "total",
+    name: "Gesamt",
+    series: computeScopeSeries(
+      allTx.filter((t) => investmentAccountIds.has(t.account_id)),
+      history,
+      currentPriceEur,
+      fxRates,
+      now,
+    ),
+    dayChangePct: portfolio.changePct1d,
+    currentValueEur: portfolio.investmentsValueEur,
+  });
+
+  // Je Depot.
+  for (const a of portfolio.accounts) {
+    scopes.push({
+      id: a.account.id,
+      name: a.account.name,
+      series: computeScopeSeries(
+        allTx.filter((t) => t.account_id === a.account.id),
+        history,
+        currentPriceEur,
+        fxRates,
+        now,
+      ),
+      dayChangePct: a.changePct1d,
+      currentValueEur: a.valueEur,
+    });
+  }
+
+  return { scopes };
 }
 
 export interface InstrumentDetail {
   accountId: string;
   accountName: string;
   position: import("./types").Position;
-  priceSeries: [number, number][]; // [ms, EUR]
-  periods: Record<Period, PeriodResult>;
+  series: ScopeSeries; // value / twr / invested je Tag (für den Chart)
+  dayChangePct: number | null;
+  currentValueEur: number;
   transactions: {
     id: string;
     type: string;
@@ -157,6 +200,7 @@ export interface InstrumentDetail {
     price: number | null;
     amount: number | null;
     currency: string | null;
+    fees: number | null;
   }[];
 }
 
@@ -176,7 +220,7 @@ export async function getInstrumentDetail(
   );
   if (!account || !position) return null;
 
-  const [histRes, txRes] = await Promise.all([
+  const [histRes, txRes, liveFx, fxRes] = await Promise.all([
     supabase
       .from("price_history")
       .select("as_of,price_eur")
@@ -184,19 +228,24 @@ export async function getInstrumentDetail(
       .order("as_of", { ascending: true }),
     supabase
       .from("transactions")
-      .select("id,type,trade_date,quantity,price,amount,currency")
+      .select("id,type,trade_date,quantity,price,amount,currency,fees")
       .eq("account_id", accountId)
       .eq("instrument_id", instrumentId)
       .order("trade_date", { ascending: false }),
+    getLiveFxRates(),
+    supabase.from("fx_rates").select("quote,rate"),
   ]);
+  const fxRates = mergeFxRates(
+    fxRes.data as { quote: string; rate: number }[] | null,
+    liveFx,
+  );
 
   let priceSeries: [number, number][] = (histRes.data ?? []).map((r) => [
     new Date((r as { as_of: string }).as_of).getTime(),
     Number((r as { price_eur: number }).price_eur),
   ]);
 
-  // Historie fehlt noch? Sofort von Börse Frankfurt / CoinGecko holen, damit
-  // der Chart direkt da ist.
+  // Historie fehlt noch? Sofort von Börse Frankfurt / CoinGecko holen.
   if (priceSeries.length < 2) {
     const filled = await ensureHistory(supabase, [
       {
@@ -211,27 +260,39 @@ export async function getInstrumentDetail(
   }
 
   const history: HistoryMap = new Map([[instrumentId, priceSeries]]);
-  const holding = [
-    {
+  const currentPriceEur = new Map<string, number>([
+    [
       instrumentId,
-      quantity: position.quantity,
-      currentPriceEur:
-        position.quantity > 0 ? position.valueEur / position.quantity : 0,
-      changePct1d: position.changePct1d,
-    },
-  ];
+      position.quantity > 0 ? position.valueEur / position.quantity : 0,
+    ],
+  ]);
   const now = new Date();
-  const periods = Object.fromEntries(
-    PERIODS.map((p) => [p, computePeriod(p, holding, history, now)]),
-  ) as Record<Period, PeriodResult>;
+
+  const transactions = (txRes.data ?? []) as InstrumentDetail["transactions"];
+  const series = computeScopeSeries(
+    transactions.map((t) => ({
+      instrument_id: instrumentId,
+      type: t.type,
+      trade_date: t.trade_date,
+      quantity: t.quantity,
+      price: t.price,
+      fees: t.fees,
+      currency: t.currency,
+    })),
+    history,
+    currentPriceEur,
+    fxRates,
+    now,
+  );
 
   return {
     accountId,
     accountName: account.account.name,
     position,
-    priceSeries,
-    periods,
-    transactions: (txRes.data ?? []) as InstrumentDetail["transactions"],
+    series,
+    dayChangePct: position.changePct1d,
+    currentValueEur: position.valueEur,
+    transactions,
   };
 }
 
