@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { fetchFmpQuotes, fetchFmpHistory } from "./fmp";
+import { fetchFmpQuotes } from "./fmp";
+import { fetchTwelveDataHistory } from "./twelvedata";
 import { fetchFrankfurterRates, fetchFrankfurterSeriesToEur } from "./frankfurter";
 import { currencyForSymbol } from "./exchanges";
 import { fetchCoinGeckoPrices, fetchCoinGeckoHistory } from "./coingecko";
@@ -220,13 +221,17 @@ async function backfillCryptoHistory(
   }
 }
 
-// Füllt die Kurs-Historie für US-Aktien einmalig aus FMP (Gratis-Tarif) und
+// Füllt die Kurs-Historie für US-Aktien aus Twelve Data (Gratis-Tarif) und
 // rechnet die USD-Schlusskurse mit historischen Frankfurter-Kursen in EUR um.
+// Wegen des Ratelimits (8/Min) höchstens einige Titel pro Aktualisierung –
+// der Rest wird bei den nächsten Aktualisierungen nachgezogen.
+const BACKFILL_PER_RUN = 6;
+
 async function backfillUsStockHistory(
   supabase: SupabaseClient,
   stocks: InstrumentRow[],
 ): Promise<void> {
-  const apiKey = process.env.FMP_API_KEY ?? "";
+  const apiKey = process.env.TWELVEDATA_API_KEY ?? "";
   if (!apiKey) return;
 
   const usStocks = stocks.filter(
@@ -250,21 +255,18 @@ async function backfillUsStockHistory(
     return rate;
   };
 
-  let anySuccess = false;
+  let done = 0;
   for (const s of usStocks) {
+    if (done >= BACKFILL_PER_RUN) break;
     const { count } = await supabase
       .from("price_history")
       .select("as_of", { count: "exact", head: true })
       .eq("instrument_id", s.id);
     if ((count ?? 0) >= 30) continue; // schon befüllt
 
-    const series = await fetchFmpHistory(s.yahoo_symbol as string, apiKey);
-    if (series.length === 0) {
-      // Erster Versuch leer -> Historie im FMP-Tarif nicht verfügbar, abbrechen.
-      if (!anySuccess) break;
-      continue;
-    }
-    anySuccess = true;
+    const series = await fetchTwelveDataHistory(s.yahoo_symbol as string, apiKey);
+    done++;
+    if (series.length === 0) continue;
     const histRows = series
       .map(([day, closeUsd]) => {
         const rate = eurPerUsdAt(new Date(day).getTime());
