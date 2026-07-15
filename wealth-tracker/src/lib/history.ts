@@ -3,8 +3,148 @@
 // einem früheren Datum (Kurs aus price_history). Zeiträume, für die (noch) zu
 // wenig Historie vorliegt, werden als „nicht abgedeckt" markiert.
 
+import { toEur } from "./prices/fx";
+
 export const PERIODS = ["1T", "7T", "30T", "YTD", "1J", "3J", "5J", "10J"] as const;
 export type Period = (typeof PERIODS)[number];
+
+// --- Vermögens-Zeitreihen (wie getquin: Wert + Performance) -----------------
+
+export interface ScopeSeries {
+  value: [number, number][]; // Portfoliowert € je Tag (inkl. Zukäufe)
+  twr: [number, number][]; // zeitgewichteter Rendite-Index (Start 1.0)
+  invested: [number, number][]; // kumuliert eingesetztes Kapital € je Tag
+}
+
+interface TxLite {
+  instrument_id: string | null;
+  type: string;
+  trade_date: string;
+  quantity: number | null;
+  price: number | null;
+  fees: number | null;
+  currency: string | null;
+}
+
+const DAY_MS = 86_400_000;
+
+// Berechnet für eine Menge von Transaktionen (ein Depot, mehrere Depots oder
+// eine einzelne Position) die täglichen Reihen:
+//  - value:    tatsächlicher Portfoliowert (historische Stückzahl × Kurs)
+//  - twr:      zeitgewichteter Rendite-Index (Zukäufe rausgerechnet)
+//  - invested: kumuliert eingesetztes Kapital (Netto-Ein-/Auszahlungen)
+// So kann der Chart sowohl „Performance" (twr) als auch „Portfoliowert" (value)
+// darstellen und die €-Gewinne je Zeitraum ableiten.
+export function computeScopeSeries(
+  txs: TxLite[],
+  history: HistoryMap,
+  currentPriceEur: Map<string, number>,
+  fxRates: Record<string, number>,
+  now: Date,
+): ScopeSeries {
+  const trades = txs
+    .filter((t) => t.instrument_id)
+    .filter((t) => t.type === "buy" || t.type === "sell")
+    .map((t) => ({
+      instrumentId: t.instrument_id as string,
+      ms: new Date(t.trade_date).getTime(),
+      type: t.type,
+      qty: t.quantity ?? 0,
+      // Kaufkosten/Verkaufserlös in EUR (Kurs in Originalwährung -> EUR),
+      // Gebühren sind in EUR erfasst.
+      cashEur:
+        toEur((t.price ?? 0) * (t.quantity ?? 0), t.currency, fxRates) +
+        (t.type === "buy" ? t.fees ?? 0 : 0),
+    }))
+    .sort((a, b) => a.ms - b.ms);
+
+  if (trades.length === 0) {
+    return { value: [], twr: [], invested: [] };
+  }
+
+  const instrumentIds = [...new Set(trades.map((t) => t.instrumentId))];
+  const firstMs = trades[0].ms;
+  const nowMs = now.getTime();
+
+  // Handelstage aus der Historie (nur ab dem ersten Kauf) + heute.
+  const daySet = new Set<number>();
+  for (const id of instrumentIds) {
+    for (const [ms] of history.get(id) ?? []) {
+      if (ms >= firstMs - DAY_MS) daySet.add(ms);
+    }
+  }
+  for (const t of trades) daySet.add(t.ms);
+  daySet.add(nowMs);
+  const days = [...daySet].sort((a, b) => a - b);
+
+  // Kurs-Zeiger je Instrument (vorwärts, Fill-Forward = letzter bekannter Kurs).
+  const priceArr = new Map<string, [number, number][]>();
+  const pricePtr = new Map<string, number>();
+  const lastPrice = new Map<string, number>();
+  for (const id of instrumentIds) {
+    priceArr.set(id, history.get(id) ?? []);
+    pricePtr.set(id, 0);
+    lastPrice.set(id, 0);
+  }
+
+  const qty = new Map<string, number>();
+  for (const id of instrumentIds) qty.set(id, 0);
+
+  const value: [number, number][] = [];
+  const twr: [number, number][] = [];
+  const invested: [number, number][] = [];
+
+  let txi = 0;
+  let investedEur = 0;
+  let prevV: number | null = null;
+  let prevInvested = 0;
+  let index = 1;
+
+  for (const d of days) {
+    // Transaktionen bis einschließlich diesem Tag anwenden.
+    while (txi < trades.length && trades[txi].ms <= d) {
+      const tr = trades[txi];
+      if (tr.type === "buy") {
+        qty.set(tr.instrumentId, (qty.get(tr.instrumentId) ?? 0) + tr.qty);
+        investedEur += tr.cashEur;
+      } else {
+        qty.set(tr.instrumentId, (qty.get(tr.instrumentId) ?? 0) - tr.qty);
+        investedEur -= tr.cashEur; // Verkaufserlös reduziert eingesetztes Kapital
+      }
+      txi++;
+    }
+
+    // Kurse fill-forward bis zu diesem Tag; am „Jetzt"-Punkt Live-Kurs nutzen.
+    let V = 0;
+    for (const id of instrumentIds) {
+      const arr = priceArr.get(id)!;
+      let p = pricePtr.get(id)!;
+      while (p < arr.length && arr[p][0] <= d) {
+        lastPrice.set(id, arr[p][1]);
+        p++;
+      }
+      pricePtr.set(id, p);
+      let px = lastPrice.get(id) ?? 0;
+      if (d === nowMs) px = currentPriceEur.get(id) ?? px;
+      V += (qty.get(id) ?? 0) * px;
+    }
+
+    // Zeitgewichtete Rendite: Zufluss des Tages (CF) rausrechnen.
+    const cf = investedEur - prevInvested;
+    if (prevV !== null && prevV > 0) {
+      const r = (V - prevV - cf) / prevV;
+      index *= 1 + r;
+    }
+    prevV = V;
+    prevInvested = investedEur;
+
+    value.push([d, V]);
+    twr.push([d, index]);
+    invested.push([d, investedEur]);
+  }
+
+  return { value, twr, invested };
+}
 
 export interface PeriodResult {
   pct: number | null;
