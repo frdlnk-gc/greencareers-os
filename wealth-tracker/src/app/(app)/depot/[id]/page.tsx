@@ -4,6 +4,7 @@ import { getPortfolio, getPeriodPerformance } from "@/lib/data";
 import { formatEur, formatPct, formatQuantity, changeColor } from "@/lib/format";
 import { Avatar } from "@/components/Avatar";
 import { PeriodPerformance } from "@/components/PeriodPerformance";
+import { LineChart } from "@/components/LineChart";
 
 export const dynamic = "force-dynamic";
 
@@ -72,6 +73,11 @@ export default async function DepotPage({
             <PeriodPerformance data={periodData} />
           </div>
         )}
+        {performance.seriesByAccount[id]?.length >= 2 && (
+          <div className="mt-4">
+            <LineChart points={performance.seriesByAccount[id]} height={140} />
+          </div>
+        )}
       </section>
 
       {/* Positionen */}
@@ -91,23 +97,33 @@ export default async function DepotPage({
       ) : (
         <ul className="divide-y divide-neutral-900">
           {summary.positions.map((p) => (
-            <li key={p.instrument.id} className="flex items-center gap-3 py-4">
-              <Avatar label={p.instrument.name} />
-              <div className="min-w-0 flex-1">
-                <div className="truncate font-medium">{p.instrument.name}</div>
-                <div className="flex items-center gap-2 text-xs text-neutral-500">
-                  <span>{p.instrument.display_symbol ?? ""}</span>
-                  <span className="rounded-md bg-neutral-800 px-1.5 py-0.5 tabular text-neutral-400">
-                    ×{formatQuantity(p.quantity)}
-                  </span>
+            <li key={p.instrument.id}>
+              <Link
+                href={`/depot/${id}/pos/${p.instrument.id}`}
+                className="flex items-center gap-3 py-4 active:opacity-70"
+              >
+                <Avatar label={p.instrument.name} />
+                <div className="min-w-0 flex-1">
+                  <div className="truncate font-medium">{p.instrument.name}</div>
+                  <div className="flex items-center gap-2 text-xs text-neutral-500">
+                    <span>{p.instrument.display_symbol ?? ""}</span>
+                    <span className="rounded-md bg-neutral-800 px-1.5 py-0.5 tabular text-neutral-400">
+                      ×{formatQuantity(p.quantity)}
+                    </span>
+                  </div>
                 </div>
-              </div>
-              <div className="text-right">
-                <div className="tabular font-medium">{formatEur(p.valueEur)}</div>
-                <div className={`text-xs tabular ${changeColor(p.gainPct)}`}>
-                  {formatPct(p.gainPct)}
+                <div className="text-right">
+                  <div className="tabular font-medium">
+                    {formatEur(p.valueEur)}
+                  </div>
+                  <div className={`text-xs tabular ${changeColor(p.gainPct)}`}>
+                    {formatPct(p.gainPct)}
+                  </div>
                 </div>
-              </div>
+                <svg className="ml-1 shrink-0 text-neutral-600" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 6l6 6-6 6" />
+                </svg>
+              </Link>
             </li>
           ))}
         </ul>

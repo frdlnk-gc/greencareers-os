@@ -57,6 +57,49 @@ function priceAt(
   return bestDiff <= toleranceDays * 86400000 ? best : null;
 }
 
+// Tägliche Wert-Zeitreihe einer Positionsgruppe aus der Historie.
+// Nimmt nur Tage, an denen mind. 90 % des heutigen Werts eine Historie haben,
+// damit der Chart nicht durch Lücken verzerrt wird.
+export function computeValueSeries(
+  holdings: Holding[],
+  history: HistoryMap,
+): [number, number][] {
+  const currentTotal = holdings.reduce(
+    (s, h) => s + h.quantity * h.currentPriceEur,
+    0,
+  );
+  if (currentTotal <= 0) return [];
+
+  // Preis-Maps je Instrument + alle vorkommenden Tage sammeln.
+  const priceMap = new Map<string, Map<number, number>>();
+  const days = new Set<number>();
+  for (const h of holdings) {
+    const series = history.get(h.instrumentId);
+    if (!series) continue;
+    const m = new Map<number, number>();
+    for (const [ms, price] of series) {
+      m.set(ms, price);
+      days.add(ms);
+    }
+    priceMap.set(h.instrumentId, m);
+  }
+
+  const out: [number, number][] = [];
+  for (const d of [...days].sort((a, b) => a - b)) {
+    let value = 0;
+    let coveredCurrent = 0;
+    for (const h of holdings) {
+      const price = priceMap.get(h.instrumentId)?.get(d);
+      if (price !== undefined) {
+        value += h.quantity * price;
+        coveredCurrent += h.quantity * h.currentPriceEur;
+      }
+    }
+    if (coveredCurrent / currentTotal >= 0.9) out.push([d, value]);
+  }
+  return out;
+}
+
 export function computePeriod(
   period: Period,
   holdings: Holding[],

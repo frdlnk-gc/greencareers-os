@@ -69,6 +69,7 @@ export async function refreshPrices(
 
   // --- Tradegate: Kurse per ISIN, direkt in EUR ---
   let stockUpdated = 0;
+  const tgFailed: InstrumentRow[] = [];
   if (viaTradegate.length > 0) {
     const isins = viaTradegate.map(
       (i) => isinForSymbol(i.yahoo_symbol) as string,
@@ -78,7 +79,7 @@ export async function refreshPrices(
       const isin = isinForSymbol(i.yahoo_symbol) as string;
       const q = quotes.get(isin);
       if (!q) {
-        failed.push(`${i.yahoo_symbol} (Tradegate ${isin})`);
+        tgFailed.push(i); // -> FMP-Fallback unten
         continue;
       }
       rows.push({
@@ -94,20 +95,21 @@ export async function refreshPrices(
     }
   }
 
-  // --- FMP-Fallback für Symbole ohne ISIN (Umrechnung via Frankfurter) ---
-  if (viaFmp.length > 0) {
+  // --- FMP-Fallback: Symbole ohne ISIN + Tradegate-Ausfälle (via Frankfurter) ---
+  const fmpList = [...viaFmp, ...tgFailed];
+  if (fmpList.length > 0) {
     const apiKey = process.env.FMP_API_KEY ?? "";
     const quotes = await fetchFmpQuotes(
-      viaFmp.map((i) => i.yahoo_symbol as string),
+      fmpList.map((i) => i.yahoo_symbol as string),
       apiKey,
     );
     const currencies = new Set<string>();
-    for (const i of viaFmp) {
+    for (const i of fmpList) {
       const c = currencyForSymbol(i.yahoo_symbol as string);
       if (c !== "EUR") currencies.add(c);
     }
     const fx = await fetchFrankfurterRates([...currencies]);
-    for (const i of viaFmp) {
+    for (const i of fmpList) {
       const q = quotes.get(i.yahoo_symbol as string);
       if (!q) {
         failed.push(
