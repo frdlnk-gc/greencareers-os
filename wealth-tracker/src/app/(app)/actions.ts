@@ -27,6 +27,28 @@ function num(v: FormDataEntryValue | null): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+// Zurücksetzen: löscht ALLE Instrumente + Transaktionen (und darüber via
+// Fremdschlüssel-Kaskade auch Kurse & Historie). Die Depots bleiben erhalten.
+export async function resetPositions(formData: FormData): Promise<void> {
+  const { supabase, userId } = await requireUser();
+  if (formData.get("confirm") !== "on") return;
+  await supabase.from("transactions").delete().eq("user_id", userId);
+  await supabase.from("instruments").delete().eq("user_id", userId);
+  revalidatePath("/", "layout");
+  redirect("/");
+}
+
+// Optional: löscht zusätzlich alle Depots (kompletter Neuanfang).
+export async function resetEverything(formData: FormData): Promise<void> {
+  const { supabase, userId } = await requireUser();
+  if (formData.get("confirm") !== "on") return;
+  await supabase.from("transactions").delete().eq("user_id", userId);
+  await supabase.from("instruments").delete().eq("user_id", userId);
+  await supabase.from("accounts").delete().eq("user_id", userId);
+  revalidatePath("/", "layout");
+  redirect("/");
+}
+
 // Depots --------------------------------------------------------------------
 
 export async function createAccount(formData: FormData): Promise<void> {

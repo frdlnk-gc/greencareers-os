@@ -193,7 +193,14 @@ function MoverList({ title, items }: { title: string; items: Position[] }) {
             key={p.instrument.id}
             className="flex items-center justify-between text-sm"
           >
-            <span className="min-w-0 flex-1 truncate">{p.instrument.name}</span>
+            <span className="min-w-0 flex-1 truncate">
+              {p.instrument.name}
+              {p.instrument.display_symbol ? (
+                <span className="ml-1 text-xs text-neutral-500">
+                  {p.instrument.display_symbol}
+                </span>
+              ) : null}
+            </span>
             <span className={`tabular ml-2 ${changeColor(p.changePct1d)}`}>
               {formatPct(p.changePct1d)}
             </span>
