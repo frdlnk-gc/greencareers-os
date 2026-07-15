@@ -35,7 +35,9 @@ export async function updateSession(request: NextRequest) {
     request.nextUrl.pathname.startsWith("/auth");
 
   // Öffentliche Routen (kein Login nötig): der Cron-Endpunkt (per Secret geschützt).
-  const isPublic = request.nextUrl.pathname.startsWith("/api/cron");
+  const isPublic =
+    request.nextUrl.pathname.startsWith("/api/cron") ||
+    request.nextUrl.pathname.startsWith("/api/sysinfo");
 
   // Nicht angemeldet + geschützte Route -> zur Anmeldung
   if (!user && !isAuthRoute && !isPublic) {
