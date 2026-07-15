@@ -77,8 +77,8 @@ export default function HomePage() {
       <div className="grid grid-cols-2 gap-3">
         <QuickAction
           href="/import"
-          title="Screenshot-Import"
-          subtitle="Trades aus einem Bild übernehmen"
+          title="Import"
+          subtitle="Broker-CSV oder Screenshot"
           accent
         />
         <QuickAction
