@@ -88,6 +88,32 @@ export interface BfBar {
   close: number;
 }
 
+// Diagnose: roher Aufruf mehrerer Endpunkt-Varianten (Status + Auszug).
+export async function bfRawProbe(isin: string): Promise<unknown> {
+  const salt = await fetchSalt();
+  if (!salt) return { error: "kein salt" };
+  const from = new Date(Date.now() - 400 * 86400000).toISOString().slice(0, 10);
+  const to = new Date().toISOString().slice(0, 10);
+  const variants = [
+    `price_history?isin=${isin}&mic=XETR&minDate=${from}&maxDate=${to}&limit=1000&offset=0&cleanSplit=false&cleanPayout=false&cleanSubscriptionRights=false`,
+    `price_history?isin=${isin}&mic=XETR&from=${from}&to=${to}`,
+    `eod?isin=${isin}&mic=XETR&minDate=${from}&maxDate=${to}`,
+    `price_history/single?isin=${isin}&mic=XETR&minDate=${from}&maxDate=${to}`,
+  ];
+  const out: unknown[] = [];
+  for (const v of variants) {
+    const url = BASE + v;
+    try {
+      const res = await fetch(url, { headers: headersFor(url, salt), cache: "no-store" });
+      const text = await res.text();
+      out.push({ path: v.split("?")[0], status: res.status, snippet: text.slice(0, 250) });
+    } catch (e) {
+      out.push({ path: v.split("?")[0], error: e instanceof Error ? e.message : String(e) });
+    }
+  }
+  return out;
+}
+
 // Historische Tagesschlusskurse (EUR) für eine ISIN an Xetra.
 export async function fetchBfHistory(
   isin: string,
