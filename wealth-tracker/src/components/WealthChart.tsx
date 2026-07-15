@@ -64,23 +64,36 @@ export function WealthChart({
     return arr.filter(([ms]) => ms >= s);
   }
   const earliest = value.length ? value[0][0] : nowMs;
-  function isEnabled(key: RangeKey): boolean {
+
+  // Hat der Zeitraum genug Datenpunkte für eine Kurve?
+  function hasData(key: RangeKey): boolean {
     if (key === "1T")
       return scope.dayChangePct !== null || inWindow(value, "1T").length >= 2;
-    // Trailing-Jahres-Zeiträume brauchen echte Historie zurück bis zum
-    // Fensterstart – sonst würden sie nur so tun als gäbe es 1 Jahr Daten.
-    if (key === "1J") {
-      return (
-        inWindow(value, key).length >= 2 && earliest <= startOf("1J") + 7 * DAY
-      );
-    }
-    return inWindow(value, key).length >= 2; // 7T, 30T, YTD, Max
+    return inWindow(value, key).length >= 2;
   }
+  // Effektiver Fensterstart, an die frühesten vorhandenen Daten geklemmt.
+  const effStart = (key: RangeKey) => Math.max(startOf(key), earliest);
 
-  const firstEnabled =
-    (["30T", "7T", "1J", "YTD", "Max", "1T"] as RangeKey[]).find(isEnabled) ??
-    "Max";
-  const active = isEnabled(chosen) ? chosen : firstEnabled;
+  // Sichtbare Zeiträume: nur solche mit Daten. Zeiträume, die auf DASSELBE
+  // Fenster hinauslaufen (z. B. YTD == 1J == Max, wenn die Historie erst in
+  // diesem Jahr beginnt und < 1 Jahr alt ist), werden zu EINEM Button
+  // zusammengefasst – dem mit der größten Zeitspanne. Ergebnis: keine
+  // ausgegrauten Buttons und keine zwei identischen Ansichten mehr.
+  const byStart = new Map<number, RangeKey>();
+  const startOrder: number[] = [];
+  for (const { key } of RANGES) {
+    if (!hasData(key)) continue;
+    const s = effStart(key);
+    if (!byStart.has(s)) startOrder.push(s);
+    byStart.set(s, key); // RANGES ist aufsteigend → längster Zeitraum gewinnt
+  }
+  const visible = startOrder.map((s) => byStart.get(s)!);
+
+  const active = visible.includes(chosen)
+    ? chosen
+    : visible.includes("30T")
+      ? "30T"
+      : visible[visible.length - 1] ?? "Max";
 
   const vWin = inWindow(value, active);
   const invWin = inWindow(invested, active);
@@ -204,28 +217,24 @@ export function WealthChart({
         </div>
       )}
 
-      {/* Zeitraum-Auswahl */}
-      <div className="mt-3 flex flex-wrap gap-1.5">
-        {RANGES.map(({ key }) => {
-          const en = isEnabled(key);
-          return (
+      {/* Zeitraum-Auswahl (nur echte, unterscheidbare Zeiträume) */}
+      {visible.length > 1 && (
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {visible.map((key) => (
             <button
               key={key}
-              disabled={!en}
               onClick={() => setChosen(key)}
               className={`rounded-lg px-2.5 py-1 text-xs font-medium ${
                 active === key
                   ? "bg-neutral-100 text-neutral-900"
-                  : en
-                    ? "bg-neutral-800 text-neutral-400"
-                    : "cursor-default bg-neutral-900 text-neutral-700"
+                  : "bg-neutral-800 text-neutral-400"
               }`}
             >
               {key}
             </button>
-          );
-        })}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
