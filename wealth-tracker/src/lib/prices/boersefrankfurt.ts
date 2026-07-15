@@ -88,27 +88,47 @@ export interface BfBar {
   close: number;
 }
 
-// Diagnose: roher Aufruf mehrerer Endpunkt-Varianten (Status + Auszug).
+function utcStamp(): string {
+  const iso = new Date().toISOString(); // YYYY-MM-DDTHH:MM...
+  return iso.slice(0, 16).replace(/[-T:]/g, "");
+}
+
+// Diagnose: probiert Zeit-/Header-Kombinationen für price_history.
 export async function bfRawProbe(isin: string): Promise<unknown> {
   const salt = await fetchSalt();
   if (!salt) return { error: "kein salt" };
   const from = new Date(Date.now() - 400 * 86400000).toISOString().slice(0, 10);
   const to = new Date().toISOString().slice(0, 10);
-  const variants = [
-    `price_history?isin=${isin}&mic=XETR&minDate=${from}&maxDate=${to}&limit=1000&offset=0&cleanSplit=false&cleanPayout=false&cleanSubscriptionRights=false`,
-    `price_history?isin=${isin}&mic=XETR&from=${from}&to=${to}`,
-    `eod?isin=${isin}&mic=XETR&minDate=${from}&maxDate=${to}`,
-    `price_history/single?isin=${isin}&mic=XETR&minDate=${from}&maxDate=${to}`,
+  const path = `price_history?isin=${isin}&mic=XETR&minDate=${from}&maxDate=${to}&limit=1000&offset=0&cleanSplit=false&cleanPayout=false&cleanSubscriptionRights=false`;
+  const url = BASE + path;
+
+  const combos = [
+    { name: "berlin+bf", stamp: berlinStamp(), origin: "https://www.boerse-frankfurt.de" },
+    { name: "utc+bf", stamp: utcStamp(), origin: "https://www.boerse-frankfurt.de" },
+    { name: "berlin+db", stamp: berlinStamp(), origin: "https://live.deutsche-boerse.com" },
+    { name: "berlin+min", stamp: berlinStamp(), origin: null },
   ];
+
   const out: unknown[] = [];
-  for (const v of variants) {
-    const url = BASE + v;
+  for (const c of combos) {
+    const iso = new Date().toISOString();
+    const headers: Record<string, string> = {
+      accept: "application/json, text/plain, */*",
+      "client-date": iso,
+      "x-client-traceid": md5(iso + url + salt),
+      "x-security": md5(c.stamp),
+    };
+    if (c.origin) {
+      headers["origin"] = c.origin;
+      headers["referer"] = c.origin + "/";
+      headers["user-agent"] = UA;
+    }
     try {
-      const res = await fetch(url, { headers: headersFor(url, salt), cache: "no-store" });
+      const res = await fetch(url, { headers, cache: "no-store" });
       const text = await res.text();
-      out.push({ path: v.split("?")[0], status: res.status, snippet: text.slice(0, 250) });
+      out.push({ combo: c.name, status: res.status, snippet: text.slice(0, 200) });
     } catch (e) {
-      out.push({ path: v.split("?")[0], error: e instanceof Error ? e.message : String(e) });
+      out.push({ combo: c.name, error: e instanceof Error ? e.message : String(e) });
     }
   }
   return out;
