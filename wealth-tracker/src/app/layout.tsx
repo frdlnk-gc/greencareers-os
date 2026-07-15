@@ -2,8 +2,8 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Vermögen",
-  description: "Persönlicher Vermögens- und Aktien-Tracker",
+  title: "Compound",
+  description: "Compound · Watch it grow – dein Vermögen an einem Ort.",
 };
 
 export const viewport: Viewport = {

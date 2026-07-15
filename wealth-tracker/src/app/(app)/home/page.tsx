@@ -9,8 +9,11 @@ export default async function HomePage() {
 
   return (
     <div>
-      <header className="mb-6 pt-2">
-        <h1 className="text-2xl font-bold">Übersicht</h1>
+      <header className="mb-6 flex items-center gap-2 pt-2">
+        <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 text-base font-black text-neutral-950">
+          C
+        </span>
+        <h1 className="text-2xl font-bold tracking-tight">Compound</h1>
       </header>
 
       {/* Nettovermögen */}

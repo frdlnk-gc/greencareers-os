@@ -9,10 +9,11 @@ export default function LoginPage() {
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-sm flex-col justify-center px-6">
       <div className="mb-8 text-center">
-        <h1 className="text-3xl font-bold">Vermögen</h1>
-        <p className="mt-1 text-sm text-neutral-400">
-          Dein persönlicher Tracker
-        </p>
+        <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 text-2xl font-black text-neutral-950">
+          C
+        </div>
+        <h1 className="text-3xl font-bold tracking-tight">Compound</h1>
+        <p className="mt-1 text-sm text-neutral-400">Watch it grow.</p>
       </div>
 
       <form action={formAction} className="space-y-4">
