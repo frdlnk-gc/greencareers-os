@@ -70,7 +70,9 @@ export function computeScopeSeries(
   const daySet = new Set<number>();
   for (const id of instrumentIds) {
     for (const [ms] of history.get(id) ?? []) {
-      if (ms >= firstMs - DAY_MS) daySet.add(ms);
+      // Erst ab dem ersten Kauf – sonst gäbe es einen Startpunkt mit Wert 0
+      // (noch nichts im Depot), der Prozent-Berechnungen verfälscht.
+      if (ms >= firstMs) daySet.add(ms);
     }
   }
   for (const t of trades) daySet.add(t.ms);
