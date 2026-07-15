@@ -1,15 +1,24 @@
+"use client";
+
 import { AppHeader } from "@/components/AppHeader";
 import { ProjectionCalculator } from "@/components/ProjectionCalculator";
-import { getPortfolio } from "@/lib/data";
+import { usePortfolio } from "@/lib/store";
 
-export const dynamic = "force-dynamic";
+export default function WealthPage() {
+  const { portfolio } = usePortfolio();
 
-export default async function WealthPage() {
-  const portfolio = await getPortfolio();
   return (
     <div>
       <AppHeader title="Prognose" />
-      <ProjectionCalculator initialStart={portfolio.totalValueEur} />
+      {portfolio ? (
+        <ProjectionCalculator initialStart={portfolio.totalValueEur} />
+      ) : (
+        <div className="animate-pulse space-y-4">
+          <div className="h-44 rounded-2xl bg-neutral-900" />
+          <div className="h-12 rounded-xl bg-neutral-900" />
+          <div className="h-12 rounded-xl bg-neutral-900" />
+        </div>
+      )}
     </div>
   );
 }

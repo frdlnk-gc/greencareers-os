@@ -1,9 +1,9 @@
+"use client";
+
 import { AppHeader } from "@/components/AppHeader";
-import { getPortfolio, getDividends } from "@/lib/data";
 import { formatEur, formatPct, changeColor } from "@/lib/format";
 import type { Position } from "@/lib/types";
-
-export const dynamic = "force-dynamic";
+import { usePortfolio, useDividends } from "@/lib/store";
 
 const MONTHS = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"];
 const CLASS_LABEL: Record<string, string> = {
@@ -14,11 +14,22 @@ const CLASS_LABEL: Record<string, string> = {
   other: "Sonstiges",
 };
 
-export default async function AnalysePage() {
-  const [portfolio, dividends] = await Promise.all([
-    getPortfolio(),
-    getDividends(),
-  ]);
+export default function AnalysePage() {
+  const { portfolio } = usePortfolio();
+  const { data: dividends } = useDividends();
+
+  if (!portfolio) {
+    return (
+      <div>
+        <AppHeader title="Analyse" />
+        <div className="animate-pulse space-y-3">
+          {[0, 1, 2, 3, 4].map((i) => (
+            <div key={i} className="h-10 rounded-lg bg-neutral-900" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   // Alle Positionen einsammeln.
   const allPositions: Position[] = portfolio.accounts.flatMap((a) => a.positions);
@@ -52,7 +63,7 @@ export default async function AnalysePage() {
   const winners = movers.slice(0, 3);
   const losers = movers.slice(-3).reverse();
 
-  const maxMonth = Math.max(...dividends.byMonthThisYear, 1);
+  const maxMonth = Math.max(...(dividends?.byMonthThisYear ?? [0]), 1);
 
   return (
     <div>
@@ -116,66 +127,80 @@ export default async function AnalysePage() {
       {/* Dividenden */}
       <section className="mb-4">
         <h2 className="mb-3 text-lg font-semibold">Dividenden</h2>
-        <div className="mb-4 grid grid-cols-2 gap-3">
-          <div className="rounded-2xl border border-neutral-800 bg-neutral-900/40 p-4">
-            <div className="text-xs text-neutral-500">Dieses Jahr</div>
-            <div className="tabular mt-1 text-2xl font-semibold">
-              {formatEur(dividends.thisYearTotal)}
+        {!dividends ? (
+          <div className="animate-pulse space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="h-20 rounded-2xl bg-neutral-900" />
+              <div className="h-20 rounded-2xl bg-neutral-900" />
             </div>
           </div>
-          <div className="rounded-2xl border border-neutral-800 bg-neutral-900/40 p-4">
-            <div className="text-xs text-neutral-500">Prognose (12 Mon.)</div>
-            <div className="tabular mt-1 text-2xl font-semibold text-emerald-400">
-              {formatEur(dividends.forecastAnnual)}
-            </div>
-          </div>
-        </div>
-
-        {dividends.totalAllTime === 0 ? (
-          <p className="rounded-2xl border border-neutral-800 bg-neutral-900/40 p-4 text-sm text-neutral-400">
-            Noch keine Dividenden erfasst. Trage sie als Transaktion vom Typ
-            „Dividende" im jeweiligen Depot ein – dann erscheinen hier Kalender,
-            Jahressummen und Prognose.
-          </p>
         ) : (
           <>
-            {/* Monatskalender laufendes Jahr */}
-            <div className="mb-4">
-              <div className="mb-2 text-sm text-neutral-400">
-                Kalender {new Date().getFullYear()}
+            <div className="mb-4 grid grid-cols-2 gap-3">
+              <div className="rounded-2xl border border-neutral-800 bg-neutral-900/40 p-4">
+                <div className="text-xs text-neutral-500">Dieses Jahr</div>
+                <div className="tabular mt-1 text-2xl font-semibold">
+                  {formatEur(dividends.thisYearTotal)}
+                </div>
               </div>
-              <div className="flex items-end gap-1.5" style={{ height: 80 }}>
-                {dividends.byMonthThisYear.map((v, i) => (
-                  <div key={i} className="flex flex-1 flex-col items-center gap-1">
-                    <div className="flex w-full flex-1 items-end">
-                      <div
-                        className="w-full rounded-t bg-emerald-500/80"
-                        style={{ height: `${(v / maxMonth) * 100}%` }}
-                        title={formatEur(v)}
-                      />
-                    </div>
-                    <span className="text-[10px] text-neutral-600">
-                      {MONTHS[i]}
-                    </span>
-                  </div>
-                ))}
+              <div className="rounded-2xl border border-neutral-800 bg-neutral-900/40 p-4">
+                <div className="text-xs text-neutral-500">Prognose (12 Mon.)</div>
+                <div className="tabular mt-1 text-2xl font-semibold text-emerald-400">
+                  {formatEur(dividends.forecastAnnual)}
+                </div>
               </div>
             </div>
 
-            {/* Jahressummen */}
-            <div className="mb-4">
-              <div className="mb-2 text-sm text-neutral-400">Pro Jahr</div>
-              <ul className="divide-y divide-neutral-900 text-sm">
-                {dividends.byYear.map((y) => (
-                  <li key={y.year} className="flex justify-between py-2">
-                    <span className="tabular text-neutral-400">{y.year}</span>
-                    <span className="tabular font-medium">
-                      {formatEur(y.total)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            {dividends.totalAllTime === 0 ? (
+              <p className="rounded-2xl border border-neutral-800 bg-neutral-900/40 p-4 text-sm text-neutral-400">
+                Noch keine Dividenden erfasst. Trage sie als Transaktion vom Typ
+                „Dividende" im jeweiligen Depot ein – dann erscheinen hier
+                Kalender, Jahressummen und Prognose.
+              </p>
+            ) : (
+              <>
+                {/* Monatskalender laufendes Jahr */}
+                <div className="mb-4">
+                  <div className="mb-2 text-sm text-neutral-400">
+                    Kalender {new Date().getFullYear()}
+                  </div>
+                  <div className="flex items-end gap-1.5" style={{ height: 80 }}>
+                    {dividends.byMonthThisYear.map((v, i) => (
+                      <div
+                        key={i}
+                        className="flex flex-1 flex-col items-center gap-1"
+                      >
+                        <div className="flex w-full flex-1 items-end">
+                          <div
+                            className="w-full rounded-t bg-emerald-500/80"
+                            style={{ height: `${(v / maxMonth) * 100}%` }}
+                            title={formatEur(v)}
+                          />
+                        </div>
+                        <span className="text-[10px] text-neutral-600">
+                          {MONTHS[i]}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Jahressummen */}
+                <div className="mb-4">
+                  <div className="mb-2 text-sm text-neutral-400">Pro Jahr</div>
+                  <ul className="divide-y divide-neutral-900 text-sm">
+                    {dividends.byYear.map((y) => (
+                      <li key={y.year} className="flex justify-between py-2">
+                        <span className="tabular text-neutral-400">{y.year}</span>
+                        <span className="tabular font-medium">
+                          {formatEur(y.total)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </>
+            )}
           </>
         )}
       </section>

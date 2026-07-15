@@ -1,16 +1,18 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { revalidateAll } from "@/lib/store";
 
 // Hält Kurse und Chart-Historie aktuell, ohne dass der Nutzer wartet:
-//  - Live-Kurse: bei Öffnen, wenn älter als ~1 Stunde (6–24 Uhr).
+//  - Live-Kurse: bei Öffnen, wenn älter als ~1 Stunde (ab 6 Uhr).
 //  - Historie/Charts: im Hintergrund nachladen (Krypto sofort komplett,
-//    US-Aktien gedrosselt in mehreren Durchläufen). Läuft in Schleife, bis
+//    Aktien gedrosselt in mehreren Durchläufen). Läuft in Schleife, bis
 //    nichts mehr nachzuladen ist.
+//
+// Wichtig für die Performance: Es wird NICHT mehr `router.refresh()` gefeuert
+// (das rerenderte die ganze Server-Seite und ruckelte). Stattdessen wird nur
+// der Client-Store leise revalidiert, wenn wirklich neue Daten da sind.
 export function AutoRefresh({ lastUpdatedMs }: { lastUpdatedMs: number | null }) {
-  const router = useRouter();
-
   useEffect(() => {
     const HOUR = 60 * 60 * 1000;
     const now = Date.now();
@@ -23,7 +25,7 @@ export function AutoRefresh({ lastUpdatedMs }: { lastUpdatedMs: number | null })
       if (stale && now - lastTry >= 30 * 60 * 1000) {
         sessionStorage.setItem("wt-autorefresh", String(now));
         fetch("/api/refresh", { method: "POST" })
-          .then((r) => (r.ok ? router.refresh() : null))
+          .then((r) => (r.ok ? revalidateAll() : null))
           .catch(() => {});
       }
     }
@@ -35,27 +37,30 @@ export function AutoRefresh({ lastUpdatedMs }: { lastUpdatedMs: number | null })
     sessionStorage.setItem("wt-backfill", String(now));
 
     async function fillHistory() {
+      let anyFilled = false;
       for (let i = 0; i < 8 && !cancelled; i++) {
         try {
           const res = await fetch("/api/backfill", { method: "POST" });
           if (!res.ok) break;
           const data = await res.json();
-          router.refresh();
           const filled = (data.cryptoFilled ?? 0) + (data.usFilled ?? 0);
           if (filled === 0) break; // nichts mehr nachzuladen
+          anyFilled = true;
         } catch {
           break;
         }
         // Kurze Pause zwischen den Durchläufen.
         await new Promise((r) => setTimeout(r, 12000));
       }
+      // Erst am Ende einmal leise aktualisieren, wenn neue Historie kam.
+      if (anyFilled && !cancelled) revalidateAll();
     }
     fillHistory();
 
     return () => {
       cancelled = true;
     };
-  }, [lastUpdatedMs, router]);
+  }, [lastUpdatedMs]);
 
   return null;
 }
