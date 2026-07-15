@@ -1,11 +1,15 @@
 import { AppHeader } from "@/components/AppHeader";
-import { Placeholder } from "@/components/Placeholder";
+import { ProjectionCalculator } from "@/components/ProjectionCalculator";
+import { getPortfolio } from "@/lib/data";
 
-export default function WealthPage() {
+export const dynamic = "force-dynamic";
+
+export default async function WealthPage() {
+  const portfolio = await getPortfolio();
   return (
     <div>
-      <AppHeader title="Wealth" />
-      <Placeholder text="Vermögens-Prognose und Sparplan-Rechner folgen in Phase 5." />
+      <AppHeader title="Prognose" />
+      <ProjectionCalculator initialStart={portfolio.totalValueEur} />
     </div>
   );
 }
