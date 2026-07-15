@@ -62,10 +62,8 @@ function quoteFromJson(j: RefreshJson): TradegateQuote | null {
   return { price, changePct, prevClose: close };
 }
 
-// Holt einen einzelnen Kurs über die ISIN.
-export async function fetchTradegateQuote(
-  isin: string,
-): Promise<TradegateQuote | null> {
+// Holt einen einzelnen Kurs über die ISIN. Ein Versuch (ohne Retry).
+async function fetchOnce(isin: string): Promise<TradegateQuote | null> {
   const res = await fetch(
     `https://www.tradegate.de/refresh.php?isin=${encodeURIComponent(isin)}`,
     { headers: { "User-Agent": UA }, cache: "no-store" },
@@ -79,6 +77,23 @@ export async function fetchTradegateQuote(
     return null;
   }
   return quoteFromJson(json);
+}
+
+// Holt einen Kurs über die ISIN, mit einem Wiederholungsversuch
+// (Tradegate antwortet gelegentlich kurz leer).
+export async function fetchTradegateQuote(
+  isin: string,
+): Promise<TradegateQuote | null> {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const q = await fetchOnce(isin);
+      if (q) return q;
+    } catch {
+      // nächster Versuch
+    }
+    if (attempt === 0) await new Promise((r) => setTimeout(r, 300));
+  }
+  return null;
 }
 
 // Läuft eine Liste mit begrenzter Parallelität ab (schont die Quelle).

@@ -55,7 +55,7 @@ export const SYMBOL_TO_ISIN: Record<string, string> = {
   SNPS: "US8716071076", // Synopsys
   HSY: "US4278661081", // Hershey
   "MFT.NZ": "NZMFTE0001S9", // Mainfreight
-  JOBY: "US47215P1066", // Joby Aviation
+  JOBY: "KYG651631007", // Joby Aviation
   COST: "US22160K1051", // Costco
   APD: "US0091581068", // Air Products & Chemicals
   "4519.T": "JP3519400000", // Chugai Pharmaceutical
