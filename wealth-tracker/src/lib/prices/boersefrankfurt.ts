@@ -99,13 +99,14 @@ async function historyForMic(
   salt: string,
   fromDate: string,
   toDate: string,
+  limit: string,
 ): Promise<[string, number][]> {
   const params = new URLSearchParams({
     isin,
     mic,
     minDate: fromDate,
     maxDate: toDate,
-    limit: "2600",
+    limit,
     offset: "0",
     cleanSplit: "false",
     cleanPayout: "false",
@@ -128,20 +129,38 @@ async function historyForMic(
     .map((d) => [d.date.slice(0, 10), d.close] as [string, number]);
 }
 
+const dayStr = (daysBack: number) =>
+  new Date(Date.now() - daysBack * 86400000).toISOString().slice(0, 10);
+
 // Historische Tagesschlusskurse (EUR) für eine ISIN. Probiert die deutschen
 // Handelsplätze der Reihe nach durch (Xetra, Frankfurt, Tradegate).
+//
+// Erst wird eine TIEFE Historie versucht (großer Zeitraum + hohes Limit, damit
+// der Chart bis zum ersten Kauf zurückreicht). Falls die Börse Frankfurt das
+// hohe Limit ablehnt (leere Antwort), wird automatisch auf den bewährten
+// 4-Jahres-Abruf (Limit 1000) zurückgefallen – so kann die Historie nie ganz
+// wegbrechen.
 export async function fetchBfHistory(
   isin: string,
   fromDate?: string,
 ): Promise<[string, number][]> {
   const salt = await fetchSalt();
   if (!salt) return [];
-  const from =
-    fromDate ?? new Date(Date.now() - 2800 * 86400000).toISOString().slice(0, 10);
   const to = new Date().toISOString().slice(0, 10);
+  const attempts: { from: string; limit: string }[] = fromDate
+    ? [
+        { from: fromDate, limit: "2600" },
+        { from: fromDate, limit: "1000" },
+      ]
+    : [
+        { from: dayStr(2800), limit: "2600" }, // tief (~7,7 Jahre)
+        { from: dayStr(1400), limit: "1000" }, // sicherer Fallback (~4 Jahre)
+      ];
   for (const mic of ["XETR", "XFRA", "TGAT"]) {
-    const series = await historyForMic(isin, mic, salt, from, to);
-    if (series.length >= 5) return series;
+    for (const a of attempts) {
+      const series = await historyForMic(isin, mic, salt, a.from, to, a.limit);
+      if (series.length >= 5) return series;
+    }
   }
   return [];
 }
@@ -160,7 +179,7 @@ export async function fetchBfQuote(isin: string): Promise<BfQuote | null> {
   const from = new Date(Date.now() - 12 * 86400000).toISOString().slice(0, 10);
   const to = new Date().toISOString().slice(0, 10);
   for (const mic of ["XETR", "XFRA", "TGAT"]) {
-    const series = await historyForMic(isin, mic, salt, from, to);
+    const series = await historyForMic(isin, mic, salt, from, to, "20");
     if (series.length === 0) continue;
     // Nach Datum absteigend sortieren: [0] = aktuell, [1] = Vortag.
     const sorted = [...series].sort((a, b) => (a[0] < b[0] ? 1 : -1));
