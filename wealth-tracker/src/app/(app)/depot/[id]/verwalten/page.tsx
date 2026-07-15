@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { renameAccount, deleteAccount, deleteTransaction } from "../../../actions";
-import { formatEur, formatQuantity } from "@/lib/format";
+import { formatMoney, formatQuantity } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
@@ -30,7 +30,7 @@ export default async function ManageAccountPage({
       supabase.from("instruments").select("id,name"),
       supabase
         .from("transactions")
-        .select("id,type,trade_date,quantity,price,amount,instrument_id")
+        .select("id,type,trade_date,quantity,price,amount,instrument_id,currency")
         .eq("account_id", id)
         .order("trade_date", { ascending: false }),
     ]);
@@ -92,11 +92,15 @@ export default async function ManageAccountPage({
                 <div className="text-xs text-neutral-500 tabular">
                   {t.trade_date}
                   {t.quantity != null
-                    ? ` · ${formatQuantity(t.quantity as number)} × ${formatEur(
+                    ? ` · ${formatQuantity(t.quantity as number)} × ${formatMoney(
                         (t.price as number) ?? 0,
+                        t.currency as string | null,
                       )}`
                     : t.amount != null
-                      ? ` · ${formatEur(t.amount as number)}`
+                      ? ` · ${formatMoney(
+                          t.amount as number,
+                          t.currency as string | null,
+                        )}`
                       : ""}
                 </div>
               </div>

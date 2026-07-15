@@ -1,3 +1,4 @@
+import { toEur } from "./prices/fx";
 import type {
   Account,
   AccountSummary,
@@ -16,12 +17,13 @@ export interface PortfolioInput {
   fxRates: Record<string, number>; // Währung -> (1 EUR = rate * Währung)
 }
 
-// Rechnet einen Betrag aus einer Fremdwährung in EUR um.
-function toEur(amount: number, currency: string, fxRates: Record<string, number>): number {
-  if (!currency || currency === "EUR") return amount;
-  const rate = fxRates[currency];
-  if (!rate || rate <= 0) return amount; // Fallback: unbekannte Währung 1:1
-  return amount / rate;
+// EUR-Tagesveränderung aus Wert + Tagesprozent. Fängt den Sonderfall
+// changePct <= -100 % ab (sonst Division durch 0 -> Infinity).
+function dayChangeEur(valueEur: number, changePct1d: number | null): number {
+  if (changePct1d === null) return 0;
+  const denom = 1 + changePct1d / 100;
+  if (denom <= 0) return valueEur; // Vortageswert praktisch 0
+  return valueEur - valueEur / denom;
 }
 
 // Baut aus Transaktionen + Kursen die aggregierten Depot- und Gesamtwerte.
@@ -70,9 +72,10 @@ export function computePortfolio(input: PortfolioInput): PortfolioSummary {
         for (const tx of txs) {
           const q = tx.quantity ?? 0;
           if (tx.type === "buy") {
+            // Kurs in Originalwährung -> EUR; Gebühren werden im Formular in
+            // EUR erfasst, daher NICHT zusätzlich umrechnen.
             const costEur =
-              toEur((tx.price ?? 0) * q, tx.currency, fxRates) +
-              toEur(tx.fees ?? 0, tx.currency, fxRates);
+              toEur((tx.price ?? 0) * q, tx.currency, fxRates) + (tx.fees ?? 0);
             buyQty += q;
             buyCostEur += costEur;
             netQty += q;
@@ -93,10 +96,7 @@ export function computePortfolio(input: PortfolioInput): PortfolioSummary {
         const valueEur = priceEur * netQty;
 
         const changePct1d = price?.change_pct_1d ?? null;
-        const changeEur1d =
-          changePct1d !== null
-            ? valueEur - valueEur / (1 + changePct1d / 100)
-            : 0;
+        const changeEur1d = dayChangeEur(valueEur, changePct1d);
 
         const gainEur = valueEur - investedEur;
         const gainPct = investedEur > 0 ? (gainEur / investedEur) * 100 : null;
@@ -118,11 +118,7 @@ export function computePortfolio(input: PortfolioInput): PortfolioSummary {
         positions.reduce((s, p) => s + p.investedEur, 0) + Math.max(cashEur, 0);
       const valueEur = positions.reduce((s, p) => s + p.valueEur, 0) + cashEur;
       const changeEur1d = positions.reduce(
-        (s, p) =>
-          s +
-          (p.changePct1d !== null
-            ? p.valueEur - p.valueEur / (1 + p.changePct1d / 100)
-            : 0),
+        (s, p) => s + dayChangeEur(p.valueEur, p.changePct1d),
         0,
       );
       const prevValue = valueEur - changeEur1d;

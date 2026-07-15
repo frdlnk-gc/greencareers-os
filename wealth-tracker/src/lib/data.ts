@@ -1,5 +1,6 @@
 import { createClient } from "./supabase/server";
 import { computePortfolio } from "./portfolio";
+import { getLiveFxRates, mergeFxRates, toEur } from "./prices/fx";
 import {
   PERIODS,
   computePeriod,
@@ -21,13 +22,14 @@ import type {
 export async function getPortfolio(): Promise<PortfolioSummary> {
   const supabase = await createClient();
 
-  const [accountsRes, instrumentsRes, transactionsRes, pricesRes, fxRes] =
+  const [accountsRes, instrumentsRes, transactionsRes, pricesRes, fxRes, liveFx] =
     await Promise.all([
       supabase.from("accounts").select("*"),
       supabase.from("instruments").select("*"),
       supabase.from("transactions").select("*"),
       supabase.from("prices").select("*"),
-      supabase.from("fx_rates").select("*"),
+      supabase.from("fx_rates").select("quote,rate"),
+      getLiveFxRates(),
     ]);
 
   const accounts = (accountsRes.data ?? []) as Account[];
@@ -35,10 +37,11 @@ export async function getPortfolio(): Promise<PortfolioSummary> {
   const transactions = (transactionsRes.data ?? []) as Transaction[];
   const prices = (pricesRes.data ?? []) as Price[];
 
-  const fxRates: Record<string, number> = {};
-  for (const row of fxRes.data ?? []) {
-    fxRates[(row as { quote: string }).quote] = (row as { rate: number }).rate;
-  }
+  // Live-Kurse (EZB) haben Vorrang, DB-Seed als Baseline, statischer Fallback.
+  const fxRates = mergeFxRates(
+    fxRes.data as { quote: string; rate: number }[] | null,
+    liveFx,
+  );
 
   return computePortfolio({
     accounts,
@@ -125,6 +128,7 @@ export interface InstrumentDetail {
     quantity: number | null;
     price: number | null;
     amount: number | null;
+    currency: string | null;
   }[];
 }
 
@@ -152,7 +156,7 @@ export async function getInstrumentDetail(
       .order("as_of", { ascending: true }),
     supabase
       .from("transactions")
-      .select("id,type,trade_date,quantity,price,amount")
+      .select("id,type,trade_date,quantity,price,amount,currency")
       .eq("account_id", accountId)
       .eq("instrument_id", instrumentId)
       .order("trade_date", { ascending: false }),
@@ -217,23 +221,35 @@ export interface DividendSummary {
 // Jahressummen, Monatskalender, Historie und eine einfache Prognose.
 export async function getDividends(): Promise<DividendSummary> {
   const supabase = await createClient();
-  const [txRes, instRes] = await Promise.all([
+  const [txRes, instRes, fxRes, liveFx] = await Promise.all([
     supabase
       .from("transactions")
-      .select("trade_date,amount,instrument_id,type")
+      .select("trade_date,amount,instrument_id,type,currency")
       .eq("type", "dividend")
       .order("trade_date", { ascending: false }),
     supabase.from("instruments").select("id,name"),
+    supabase.from("fx_rates").select("quote,rate"),
+    getLiveFxRates(),
   ]);
+
+  // Dividenden können in Fremdwährung sein (z. B. US$) -> in EUR umrechnen.
+  const fxRates = mergeFxRates(
+    fxRes.data as { quote: string; rate: number }[] | null,
+    liveFx,
+  );
 
   const nameById = new Map(
     (instRes.data ?? []).map((i) => [i.id as string, i.name as string]),
   );
-  const txns = (txRes.data ?? []) as {
+  const txns = ((txRes.data ?? []) as {
     trade_date: string;
     amount: number | null;
     instrument_id: string | null;
-  }[];
+    currency: string | null;
+  }[]).map((t) => ({
+    ...t,
+    amount: t.amount == null ? null : toEur(t.amount, t.currency, fxRates),
+  }));
 
   const thisYear = new Date().getFullYear();
   const byYearMap = new Map<number, number>();

@@ -113,7 +113,8 @@ export function computePeriod(
     for (const h of holdings) {
       const v = h.quantity * h.currentPriceEur;
       cur += v;
-      prev += h.changePct1d !== null ? v / (1 + h.changePct1d / 100) : v;
+      const denom = h.changePct1d !== null ? 1 + h.changePct1d / 100 : 1;
+      prev += denom > 0 ? v / denom : v;
     }
     const changeEur = cur - prev;
     return {

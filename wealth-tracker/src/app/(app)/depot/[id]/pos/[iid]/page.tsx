@@ -1,7 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getInstrumentDetail } from "@/lib/data";
-import { formatEur, formatPct, formatQuantity, changeColor } from "@/lib/format";
+import {
+  formatEur,
+  formatMoney,
+  formatPct,
+  formatQuantity,
+  changeColor,
+} from "@/lib/format";
 import { Avatar } from "@/components/Avatar";
 import { LineChart } from "@/components/LineChart";
 import { PeriodPerformance } from "@/components/PeriodPerformance";
@@ -100,15 +106,18 @@ export default async function PositionPage({
                   <div className="text-xs text-neutral-500 tabular">
                     {t.trade_date}
                     {t.quantity != null
-                      ? ` · ${formatQuantity(t.quantity)} × ${formatEur(t.price ?? 0)}`
+                      ? ` · ${formatQuantity(t.quantity)} × ${formatMoney(
+                          t.price ?? 0,
+                          t.currency,
+                        )}`
                       : ""}
                   </div>
                 </div>
                 <div className="tabular text-right font-medium">
                   {t.amount != null
-                    ? formatEur(t.amount)
+                    ? formatMoney(t.amount, t.currency)
                     : t.quantity != null && t.price != null
-                      ? formatEur(t.quantity * t.price)
+                      ? formatMoney(t.quantity * t.price, t.currency)
                       : "–"}
                 </div>
               </li>

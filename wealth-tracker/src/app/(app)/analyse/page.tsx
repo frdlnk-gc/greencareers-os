@@ -4,6 +4,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { formatEur, formatPct, changeColor } from "@/lib/format";
 import type { Position } from "@/lib/types";
 import { usePortfolio, useDividends } from "@/lib/store";
+import { LoadError } from "@/components/LoadError";
 
 const MONTHS = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"];
 const CLASS_LABEL: Record<string, string> = {
@@ -15,18 +16,22 @@ const CLASS_LABEL: Record<string, string> = {
 };
 
 export default function AnalysePage() {
-  const { portfolio } = usePortfolio();
+  const { portfolio, error } = usePortfolio();
   const { data: dividends } = useDividends();
 
   if (!portfolio) {
     return (
       <div>
         <AppHeader title="Analyse" />
-        <div className="animate-pulse space-y-3">
-          {[0, 1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-10 rounded-lg bg-neutral-900" />
-          ))}
-        </div>
+        {error ? (
+          <LoadError label="Analyse" />
+        ) : (
+          <div className="animate-pulse space-y-3">
+            {[0, 1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-10 rounded-lg bg-neutral-900" />
+            ))}
+          </div>
+        )}
       </div>
     );
   }
@@ -61,7 +66,13 @@ export default function AnalysePage() {
     .filter((p) => p.changePct1d !== null)
     .sort((a, b) => (b.changePct1d ?? 0) - (a.changePct1d ?? 0));
   const winners = movers.slice(0, 3);
-  const losers = movers.slice(-3).reverse();
+  // Verlierer aus den Titeln NACH den Gewinnern (keine Überschneidung bei
+  // wenigen Positionen) – nur echte Minus-Werte.
+  const losers = movers
+    .slice(3)
+    .filter((p) => (p.changePct1d ?? 0) < 0)
+    .slice(-3)
+    .reverse();
 
   const maxMonth = Math.max(...(dividends?.byMonthThisYear ?? [0]), 1);
 

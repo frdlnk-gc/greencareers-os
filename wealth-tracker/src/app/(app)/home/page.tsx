@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { formatEur, formatPct, changeColor } from "@/lib/format";
-import { usePortfolio } from "@/lib/store";
+import { revalidateAll, usePortfolio } from "@/lib/store";
 
 export default function HomePage() {
-  const { portfolio: p } = usePortfolio();
+  const { portfolio: p, error } = usePortfolio();
 
   return (
     <div>
@@ -53,6 +53,13 @@ export default function HomePage() {
               </div>
             </div>
           </>
+        ) : error ? (
+          <button
+            onClick={() => revalidateAll()}
+            className="mt-2 text-sm text-neutral-400 active:opacity-60"
+          >
+            Konnte nicht laden – erneut versuchen
+          </button>
         ) : (
           <div className="animate-pulse">
             <div className="mt-1 h-9 w-48 rounded bg-neutral-800" />

@@ -5,6 +5,7 @@ import { use } from "react";
 import { formatEur, formatPct, formatQuantity, changeColor } from "@/lib/format";
 import { Avatar } from "@/components/Avatar";
 import { PerformanceSection } from "@/components/PerformanceSection";
+import { LoadError } from "@/components/LoadError";
 import { usePortfolio } from "@/lib/store";
 
 export default function DepotPage({
@@ -13,7 +14,7 @@ export default function DepotPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
-  const { portfolio } = usePortfolio();
+  const { portfolio, error } = usePortfolio();
 
   const summary = portfolio
     ? [...portfolio.accounts, ...portfolio.otherAccounts].find(
@@ -53,7 +54,11 @@ export default function DepotPage({
       </header>
 
       {!portfolio ? (
-        <DepotSkeleton />
+        error ? (
+          <LoadError label="Depot" />
+        ) : (
+          <DepotSkeleton />
+        )
       ) : !summary ? (
         <div className="rounded-2xl border border-neutral-800 bg-neutral-900/40 p-6 text-center text-sm text-neutral-400">
           Dieses Depot wurde nicht gefunden.{" "}

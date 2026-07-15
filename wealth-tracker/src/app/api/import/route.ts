@@ -12,11 +12,12 @@ export const maxDuration = 60;
 
 const EXTRACT_PROMPT = `Du extrahierst Wertpapier-/Krypto-Transaktionen aus einem Broker-Dokument (Screenshot, Foto oder PDF wie Kontoauszug, Trade-Liste oder Vermögensaufstellung).
 Gib AUSSCHLIESSLICH ein JSON-Objekt zurück, keine Erklärung, in diesem Format:
-{"rows":[{"type":"buy"|"sell","name":"...","symbol":"...","isin":"...","kind":"stock"|"etf"|"crypto","quantity":Zahl,"price":Zahl,"date":"YYYY-MM-DD"}]}
+{"rows":[{"type":"buy"|"sell","name":"...","symbol":"...","isin":"...","kind":"stock"|"etf"|"crypto","quantity":Zahl,"price":Zahl,"currency":"EUR"|"USD"|"CAD"|...,"date":"YYYY-MM-DD"}]}
 Regeln:
 - name = ausgeschriebener Name (z. B. "Apple").
 - isin nur wenn sichtbar, sonst weglassen.
-- price = Kurs je Stück in Euro (Dezimalpunkt, kein Tausenderpunkt).
+- price = Kurs je Stück in der ORIGINALWÄHRUNG des Dokuments (Dezimalpunkt, kein Tausenderpunkt). NICHT umrechnen.
+- currency = ISO-Code der Kurswährung (z. B. "USD", "CAD", "EUR"). Erkenne Symbole: CA$/C$ = CAD, US$/$ = USD, € = EUR, £ = GBP. Wenn unklar, "EUR".
 - quantity = Stückzahl (Dezimalpunkt).
 - Erfasse JEDE einzelne Transaktion (auch mehrere Käufe/Verkäufe desselben Titels).
 - Wenn nur ein Bestand ohne Kaufkurs sichtbar ist, nutze den aktuellen Kurs als price und type "buy".

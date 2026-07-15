@@ -23,15 +23,7 @@ interface State {
 const STORE_KEY = "wt-projection-v1";
 
 function loadState(fallbackStart: number): State {
-  if (typeof window !== "undefined") {
-    try {
-      const raw = window.localStorage.getItem(STORE_KEY);
-      if (raw) return { ...JSON.parse(raw) };
-    } catch {
-      /* ignore */
-    }
-  }
-  return {
+  const defaults: State = {
     start: Math.round(fallbackStart),
     annual: 24000,
     rate: 7,
@@ -40,6 +32,17 @@ function loadState(fallbackStart: number): State {
     stopAfter: 5,
     custom: {},
   };
+  if (typeof window !== "undefined") {
+    try {
+      const raw = window.localStorage.getItem(STORE_KEY);
+      // Über die Defaults legen, damit fehlende Felder (z. B. custom) nicht
+      // zu Abstürzen führen.
+      if (raw) return { ...defaults, ...JSON.parse(raw) };
+    } catch {
+      /* ignore */
+    }
+  }
+  return defaults;
 }
 
 function contributionForYear(s: State, i: number): number {
