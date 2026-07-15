@@ -31,6 +31,34 @@ async function fetchOne(
   };
 }
 
+// Historische Tagesschlusskurse (US-Aktien, Gratis-Tarif) in USD.
+// Rückgabe: [Datum 'YYYY-MM-DD', Schlusskurs USD], neueste zuerst begrenzt.
+export async function fetchFmpHistory(
+  symbol: string,
+  apiKey: string,
+  maxDays = 800,
+): Promise<[string, number][]> {
+  if (!apiKey) return [];
+  const url =
+    `https://financialmodelingprep.com/api/v3/historical-price-full/${encodeURIComponent(symbol)}` +
+    `?serietype=line&apikey=${encodeURIComponent(apiKey)}`;
+  let res: Response;
+  try {
+    res = await fetch(url, { cache: "no-store" });
+  } catch {
+    return [];
+  }
+  if (!res.ok) return [];
+  const json = (await res.json().catch(() => null)) as {
+    historical?: { date: string; close: number }[];
+  } | null;
+  const hist = json?.historical ?? [];
+  return hist
+    .slice(0, maxDays)
+    .filter((h) => typeof h.close === "number")
+    .map((h) => [h.date, h.close] as [string, number]);
+}
+
 // Ruft Kurse für viele Symbole ab (Map: Symbol -> Kurs/Änderung).
 export async function fetchFmpQuotes(
   symbols: string[],

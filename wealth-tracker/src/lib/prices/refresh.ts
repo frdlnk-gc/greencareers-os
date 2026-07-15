@@ -1,10 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { fetchFmpQuotes } from "./fmp";
-import { fetchFrankfurterRates } from "./frankfurter";
+import { fetchTwelveDataHistory } from "./twelvedata";
+import { fetchFrankfurterRates, fetchFrankfurterSeriesToEur } from "./frankfurter";
 import { currencyForSymbol } from "./exchanges";
 import { fetchCoinGeckoPrices, fetchCoinGeckoHistory } from "./coingecko";
 import { fetchTradegateQuotes } from "./tradegate";
-import { isinForSymbol } from "./isins";
+import { isinForSymbol, looksLikeIsin } from "./isins";
 
 export interface RefreshResult {
   updated: number;
@@ -183,6 +184,8 @@ export async function refreshPrices(
     }
     // Krypto einmalig aus CoinGecko rückbefüllen (max. 365 Tage).
     await backfillCryptoHistory(supabase, cryptos);
+    // US-Aktien-Historie einmalig aus FMP rückbefüllen (in EUR umgerechnet).
+    await backfillUsStockHistory(supabase, stocks);
   } catch {
     // Historie optional — ignorieren, wenn Tabelle fehlt.
   }
@@ -212,6 +215,66 @@ async function backfillCryptoHistory(
       as_of: day,
       price_eur: price,
     }));
+    await supabase
+      .from("price_history")
+      .upsert(histRows, { onConflict: "instrument_id,as_of" });
+  }
+}
+
+// Füllt die Kurs-Historie für US-Aktien aus Twelve Data (Gratis-Tarif) und
+// rechnet die USD-Schlusskurse mit historischen Frankfurter-Kursen in EUR um.
+// Wegen des Ratelimits (8/Min) höchstens einige Titel pro Aktualisierung –
+// der Rest wird bei den nächsten Aktualisierungen nachgezogen.
+const BACKFILL_PER_RUN = 6;
+
+async function backfillUsStockHistory(
+  supabase: SupabaseClient,
+  stocks: InstrumentRow[],
+): Promise<void> {
+  const apiKey = process.env.TWELVEDATA_API_KEY ?? "";
+  if (!apiKey) return;
+
+  const usStocks = stocks.filter(
+    (i) =>
+      i.yahoo_symbol &&
+      !looksLikeIsin(i.yahoo_symbol) &&
+      currencyForSymbol(i.yahoo_symbol) === "USD",
+  );
+  if (usStocks.length === 0) return;
+
+  // Historische USD->EUR-Kurse einmal laden (~2 Jahre).
+  const start = new Date(Date.now() - 800 * 86400000).toISOString().slice(0, 10);
+  const fx = await fetchFrankfurterSeriesToEur("USD", start);
+  if (fx.length === 0) return;
+  const eurPerUsdAt = (ms: number): number | null => {
+    let rate: number | null = null;
+    for (const [t, r] of fx) {
+      if (t <= ms) rate = r;
+      else break;
+    }
+    return rate;
+  };
+
+  let done = 0;
+  for (const s of usStocks) {
+    if (done >= BACKFILL_PER_RUN) break;
+    const { count } = await supabase
+      .from("price_history")
+      .select("as_of", { count: "exact", head: true })
+      .eq("instrument_id", s.id);
+    if ((count ?? 0) >= 30) continue; // schon befüllt
+
+    const series = await fetchTwelveDataHistory(s.yahoo_symbol as string, apiKey);
+    done++;
+    if (series.length === 0) continue;
+    const histRows = series
+      .map(([day, closeUsd]) => {
+        const rate = eurPerUsdAt(new Date(day).getTime());
+        if (rate == null) return null;
+        return { instrument_id: s.id, as_of: day, price_eur: closeUsd * rate };
+      })
+      .filter((r): r is { instrument_id: string; as_of: string; price_eur: number } => r !== null);
+    if (histRows.length === 0) continue;
     await supabase
       .from("price_history")
       .upsert(histRows, { onConflict: "instrument_id,as_of" });
