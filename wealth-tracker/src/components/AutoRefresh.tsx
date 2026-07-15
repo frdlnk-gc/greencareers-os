@@ -46,8 +46,8 @@ export function AutoRefresh({ lastUpdatedMs }: { lastUpdatedMs: number | null })
         } catch {
           break;
         }
-        // Ratelimit von Twelve Data (8/Min) respektieren.
-        await new Promise((r) => setTimeout(r, 60000));
+        // Kurze Pause zwischen den Durchläufen.
+        await new Promise((r) => setTimeout(r, 12000));
       }
     }
     fillHistory();
