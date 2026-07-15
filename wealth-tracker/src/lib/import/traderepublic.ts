@@ -28,6 +28,16 @@ export interface ParseResult {
   skipped: { reason: string; count: number }[];
 }
 
+// Ergebnis des Voll-Imports (vom /api/import-tr-Endpunkt zurückgegeben).
+export interface ImportSummary {
+  inserted: number;
+  failed: number;
+  instruments: number;
+  counts: { buy: number; sell: number; dividend: number };
+  skipped: { reason: string; count: number }[];
+  error: string | null;
+}
+
 // Robuster CSV-Parser (RFC4180-ähnlich: Felder in ", doppelte " = escaped,
 // Zeilenumbrüche innerhalb von Feldern erlaubt).
 function splitCsv(text: string): string[][] {

@@ -4,7 +4,6 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { parseTradeRepublicCsv } from "@/lib/import/traderepublic";
 
 // Gemeinsame Hilfen ---------------------------------------------------------
 
@@ -325,113 +324,6 @@ export async function importTransactions(
 
   revalidatePath("/", "layout");
   return { inserted };
-}
-
-// Voll-Import eines Trade-Republic-CSV-Exports in EIN Depot. Ersetzt die
-// bisherigen Transaktionen dieses Depots (sauberer Voll-Import), legt
-// Instrumente je ISIN an und bucht Käufe/Verkäufe/Dividenden. Cash-Buchungen
-// und komplexe Kapitalmaßnahmen werden bewusst ausgelassen (siehe Parser).
-export interface BrokerImportResult {
-  inserted: number;
-  instruments: number;
-  counts: { buy: number; sell: number; dividend: number };
-  skipped: { reason: string; count: number }[];
-}
-
-export async function importTradeRepublicCsv(
-  accountId: string,
-  csvText: string,
-): Promise<BrokerImportResult> {
-  const { supabase, userId } = await requireUser();
-  const empty: BrokerImportResult = {
-    inserted: 0,
-    instruments: 0,
-    counts: { buy: 0, sell: 0, dividend: 0 },
-    skipped: [],
-  };
-  if (!accountId || !csvText) return empty;
-
-  const { rows, counts, skipped } = parseTradeRepublicCsv(csvText);
-  if (rows.length === 0) return { ...empty, skipped };
-
-  // Bestehende Transaktionen dieses Depots ersetzen.
-  await supabase
-    .from("transactions")
-    .delete()
-    .eq("account_id", accountId)
-    .eq("user_id", userId);
-
-  // Fehlende Instrumente je ISIN anlegen.
-  const distinct = new Map<string, { name: string; kind: string }>();
-  for (const r of rows)
-    if (!distinct.has(r.isin)) distinct.set(r.isin, { name: r.name, kind: r.kind });
-
-  const keyFor = (isin: string, kind: string) =>
-    kind === "crypto" ? isin.toLowerCase() : isin.toUpperCase();
-
-  const { data: existing } = await supabase
-    .from("instruments")
-    .select("id,yahoo_symbol,coingecko_id")
-    .eq("user_id", userId);
-  const known = new Set<string>();
-  for (const it of existing ?? []) {
-    if (it.yahoo_symbol) known.add(String(it.yahoo_symbol).toUpperCase());
-    if (it.coingecko_id) known.add(String(it.coingecko_id).toLowerCase());
-  }
-
-  const toCreate: Record<string, unknown>[] = [];
-  for (const [isin, meta] of distinct) {
-    if (known.has(keyFor(isin, meta.kind))) continue;
-    toCreate.push({
-      user_id: userId,
-      kind: meta.kind,
-      name: meta.name,
-      display_symbol: null,
-      currency: "EUR",
-      yahoo_symbol: meta.kind === "crypto" ? null : isin.toUpperCase(),
-      coingecko_id: meta.kind === "crypto" ? isin.toLowerCase() : null,
-    });
-  }
-  if (toCreate.length) await supabase.from("instruments").insert(toCreate);
-
-  // Alle Instrumente frisch laden und ISIN → id auflösen (reihenfolgensicher).
-  const { data: allInst } = await supabase
-    .from("instruments")
-    .select("id,yahoo_symbol,coingecko_id")
-    .eq("user_id", userId);
-  const idByKey = new Map<string, string>();
-  for (const it of allInst ?? []) {
-    if (it.yahoo_symbol) idByKey.set(String(it.yahoo_symbol).toUpperCase(), it.id);
-    if (it.coingecko_id) idByKey.set(String(it.coingecko_id).toLowerCase(), it.id);
-  }
-
-  const txRows: Record<string, unknown>[] = [];
-  for (const r of rows) {
-    const instrument_id = idByKey.get(keyFor(r.isin, r.kind));
-    if (!instrument_id) continue;
-    txRows.push({
-      user_id: userId,
-      account_id: accountId,
-      instrument_id,
-      type: r.type,
-      trade_date: r.date,
-      quantity: r.quantity,
-      price: r.price,
-      amount: r.amount,
-      fees: r.fee,
-      currency: "EUR",
-    });
-  }
-
-  let inserted = 0;
-  for (let i = 0; i < txRows.length; i += 500) {
-    const chunk = txRows.slice(i, i + 500);
-    const { error } = await supabase.from("transactions").insert(chunk);
-    if (!error) inserted += chunk.length;
-  }
-
-  revalidatePath("/", "layout");
-  return { inserted, instruments: distinct.size, counts, skipped };
 }
 
 export async function deleteTransaction(formData: FormData): Promise<void> {
