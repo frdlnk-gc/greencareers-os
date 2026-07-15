@@ -27,7 +27,10 @@ const cell =
 export function ImportWizard({ accounts }: { accounts: Account[] }) {
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
   const [image, setImage] = useState<string | null>(null);
+  const [payload, setPayload] = useState<Record<string, string> | null>(null);
+  const [fileName, setFileName] = useState<string | null>(null);
   const [rows, setRows] = useState<ImportRow[]>([]);
   const [accountId, setAccountId] = useState(accounts[0]?.id ?? "");
   const [status, setStatus] = useState<string | null>(null);
@@ -37,20 +40,38 @@ export function ImportWizard({ accounts }: { accounts: Account[] }) {
   function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    setFileName(file.name);
+    setImage(null);
+    const isCsv =
+      file.type === "text/csv" ||
+      file.name.toLowerCase().endsWith(".csv") ||
+      file.type === "text/plain";
     const reader = new FileReader();
-    reader.onload = () => setImage(String(reader.result));
-    reader.readAsDataURL(file);
+    if (isCsv) {
+      reader.onload = () => setPayload({ csv: String(reader.result) });
+      reader.readAsText(file);
+    } else if (file.type === "application/pdf") {
+      reader.onload = () => setPayload({ pdf: String(reader.result) });
+      reader.readAsDataURL(file);
+    } else {
+      reader.onload = () => {
+        const url = String(reader.result);
+        setImage(url);
+        setPayload({ image: url });
+      };
+      reader.readAsDataURL(file);
+    }
   }
 
   async function extract() {
-    if (!image) return;
+    if (!payload) return;
     setLoading(true);
     setStatus(null);
     try {
       const res = await fetch("/api/import", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ image }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (data.configured === false) {
@@ -104,32 +125,57 @@ export function ImportWizard({ accounts }: { accounts: Account[] }) {
 
   return (
     <div className="space-y-5">
-      {/* Upload */}
+      {/* Upload: Datei (Bild/PDF/CSV) oder Kamera */}
       <div>
         <input
           ref={fileRef}
           type="file"
-          accept="image/*"
+          accept="image/*,application/pdf,.csv,text/csv"
           onChange={onFile}
           className="hidden"
         />
-        <button
-          onClick={() => fileRef.current?.click()}
-          className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-neutral-700 py-6 text-sm text-neutral-400 active:opacity-70"
-        >
-          {image ? "Anderes Bild wählen" : "Screenshot auswählen"}
-        </button>
+        <input
+          ref={cameraRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          onChange={onFile}
+          className="hidden"
+        />
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            onClick={() => fileRef.current?.click()}
+            className="flex flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-neutral-700 py-6 text-sm text-neutral-400 active:opacity-70"
+          >
+            <span className="text-lg">📄</span>
+            Datei wählen
+            <span className="text-[10px] text-neutral-600">CSV · PDF · Bild</span>
+          </button>
+          <button
+            onClick={() => cameraRef.current?.click()}
+            className="flex flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-neutral-700 py-6 text-sm text-neutral-400 active:opacity-70"
+          >
+            <span className="text-lg">📷</span>
+            Foto aufnehmen
+          </button>
+        </div>
+
         {image && (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={image}
-            alt="Screenshot"
+            alt="Vorschau"
             className="mt-3 max-h-64 w-full rounded-xl border border-neutral-800 object-contain"
           />
         )}
+        {fileName && !image && (
+          <div className="mt-3 rounded-xl border border-neutral-800 bg-neutral-900/40 p-3 text-sm text-neutral-300">
+            📎 {fileName}
+          </div>
+        )}
       </div>
 
-      {image && (
+      {payload && (
         <button
           onClick={extract}
           disabled={loading}
@@ -256,12 +302,12 @@ export function ImportWizard({ accounts }: { accounts: Account[] }) {
         </>
       )}
 
-      {rows.length === 0 && !image && (
+      {rows.length === 0 && !payload && (
         <button
           onClick={() => setRows([emptyRow()])}
           className="w-full rounded-xl border border-neutral-800 py-3 text-sm text-neutral-300 active:opacity-70"
         >
-          Ohne Screenshot manuell erfassen
+          Ohne Datei manuell erfassen
         </button>
       )}
     </div>
