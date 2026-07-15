@@ -5,7 +5,8 @@ import { refreshPrices } from "@/lib/prices/refresh";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-// Automatische Kursaktualisierung per Vercel-Cron (stündlich 6–24 Uhr).
+// Automatische Kursaktualisierung per Vercel-Cron (täglich; Hobby-Plan erlaubt
+// nur einen Lauf pro Tag). Intraday aktualisiert die App zusätzlich beim Öffnen.
 // Schreibt für alle Instrumente die aktuellen Kurse. Braucht dafür den
 // Service-Role-Key (umgeht RLS), da kein Nutzer angemeldet ist.
 //
