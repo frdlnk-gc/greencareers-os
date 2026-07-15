@@ -8,10 +8,13 @@ export const dynamic = "force-dynamic";
 // Transaktion in einem bestimmten Depot erfassen.
 export default async function NewTransactionPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ instrument?: string }>;
 }) {
   const { id } = await params;
+  const { instrument } = await searchParams;
   const supabase = await createClient();
 
   const [{ data: account }, { data: instruments }] = await Promise.all([
@@ -42,7 +45,11 @@ export default async function NewTransactionPage({
         </div>
       </header>
 
-      <TransactionForm accountId={id} instruments={instruments ?? []} />
+      <TransactionForm
+        accountId={id}
+        instruments={instruments ?? []}
+        initialInstrumentId={instrument}
+      />
     </div>
   );
 }
