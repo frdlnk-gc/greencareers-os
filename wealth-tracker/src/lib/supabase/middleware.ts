@@ -37,6 +37,7 @@ export async function updateSession(request: NextRequest) {
   // Öffentliche Routen (kein Login nötig): Diagnose-Endpunkte.
   const isPublic =
     request.nextUrl.pathname.startsWith("/api/debug") ||
+    request.nextUrl.pathname.startsWith("/api/cron") ||
     request.nextUrl.pathname.startsWith("/browsercheck");
 
   // Nicht angemeldet + geschützte Route -> zur Anmeldung

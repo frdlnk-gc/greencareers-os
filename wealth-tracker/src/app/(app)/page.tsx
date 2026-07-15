@@ -1,13 +1,18 @@
 import Link from "next/link";
-import { getPortfolio } from "@/lib/data";
+import { getPortfolio, getLastPriceUpdate } from "@/lib/data";
 import { formatEur, formatPct, changeColor } from "@/lib/format";
 import { Avatar } from "@/components/Avatar";
 import { AppHeader } from "@/components/AppHeader";
+import { AutoRefresh } from "@/components/AutoRefresh";
 
 export const dynamic = "force-dynamic";
 
 export default async function OverviewPage() {
-  const portfolio = await getPortfolio();
+  const [portfolio, lastUpdate] = await Promise.all([
+    getPortfolio(),
+    getLastPriceUpdate(),
+  ]);
+  const lastUpdatedMs = lastUpdate ? new Date(lastUpdate).getTime() : null;
   const {
     accounts,
     otherAccounts,
@@ -24,6 +29,7 @@ export default async function OverviewPage() {
 
   return (
     <div>
+      <AutoRefresh lastUpdatedMs={lastUpdatedMs} />
       <AppHeader title="Übersicht" />
 
       {/* Gesamtvermögen */}

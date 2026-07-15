@@ -41,6 +41,17 @@ export async function getPortfolio(): Promise<PortfolioSummary> {
   });
 }
 
+// Zeitpunkt der zuletzt gespeicherten Kurse (für Auto-Aktualisierung/Anzeige).
+export async function getLastPriceUpdate(): Promise<string | null> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("prices")
+    .select("as_of")
+    .order("as_of", { ascending: false })
+    .limit(1);
+  return (data?.[0]?.as_of as string | undefined) ?? null;
+}
+
 export interface DividendSummary {
   totalAllTime: number;
   byYear: { year: number; total: number }[];
