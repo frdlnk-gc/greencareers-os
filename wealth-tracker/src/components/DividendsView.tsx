@@ -293,13 +293,22 @@ function AllTimeView({
   );
 }
 
+const STATUS_STYLE: Record<
+  DividendEvent["status"],
+  { label: string; cls: string }
+> = {
+  paid: { label: "Ausgezahlt", cls: "bg-emerald-500/15 text-emerald-400" },
+  announced: { label: "Angekündigt", cls: "bg-neutral-700/40 text-neutral-300" },
+  forecast: { label: "Prognose", cls: "bg-violet-500/15 text-violet-300" },
+};
+
 function DividendRow({ e }: { e: DividendEvent }) {
   const d = new Date(e.date);
-  const paid = d.getTime() <= Date.now();
   const perShare =
     e.quantity && e.quantity !== 0 && e.amountOrig != null
       ? e.amountOrig / e.quantity
       : null;
+  const st = STATUS_STYLE[e.status];
   return (
     <li className="flex items-center gap-3">
       <span
@@ -312,13 +321,9 @@ function DividendRow({ e }: { e: DividendEvent }) {
         <div className="flex items-center gap-2">
           <span className="truncate font-medium">{e.instrumentName}</span>
           <span
-            className={`shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-medium ${
-              paid
-                ? "bg-emerald-500/15 text-emerald-400"
-                : "bg-neutral-700/40 text-neutral-400"
-            }`}
+            className={`shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-medium ${st.cls}`}
           >
-            {paid ? "Ausgezahlt" : "Geplant"}
+            {st.label}
           </span>
         </div>
         <div className="text-xs text-neutral-500 tabular">
