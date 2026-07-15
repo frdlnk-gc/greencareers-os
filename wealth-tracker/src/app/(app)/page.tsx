@@ -5,13 +5,16 @@ import { Avatar } from "@/components/Avatar";
 import { AppHeader } from "@/components/AppHeader";
 import { AutoRefresh } from "@/components/AutoRefresh";
 import { LastUpdated } from "@/components/LastUpdated";
+import { PeriodPerformance } from "@/components/PeriodPerformance";
+import { getPeriodPerformance } from "@/lib/data";
 
 export const dynamic = "force-dynamic";
 
 export default async function OverviewPage() {
-  const [portfolio, lastUpdate] = await Promise.all([
+  const [portfolio, lastUpdate, performance] = await Promise.all([
     getPortfolio(),
     getLastPriceUpdate(),
+    getPeriodPerformance(),
   ]);
   const lastUpdatedMs = lastUpdate ? new Date(lastUpdate).getTime() : null;
   const {
@@ -52,6 +55,9 @@ export default async function OverviewPage() {
         </div>
         <div className="mt-1">
           <LastUpdated iso={lastUpdate} />
+        </div>
+        <div className="mt-4">
+          <PeriodPerformance data={performance.total} />
         </div>
       </section>
 
