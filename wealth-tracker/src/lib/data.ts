@@ -2,6 +2,8 @@ import { createClient } from "./supabase/server";
 import { computePortfolio } from "./portfolio";
 import { getLiveFxRates, mergeFxRates, toEur } from "./prices/fx";
 import { ensureHistory } from "./prices/refresh";
+import { fetchBfDividends } from "./prices/boersefrankfurt";
+import { isinForSymbol } from "./prices/isins";
 import {
   computeScopeSeries,
   type HistoryMap,
@@ -336,8 +338,11 @@ export interface DividendSummary {
   events: DividendEvent[]; // alle Einzel-Dividenden (für die Analyse-Ansicht)
 }
 
-// Lädt Dividenden (aus Transaktionen vom Typ 'dividend') und bereitet sie auf:
-// Jahressummen, Monatskalender, Historie und eine einfache Prognose.
+// Lädt Dividenden aus zwei Quellen und bereitet sie auf:
+//  - Manuell erfasste Dividenden (haben Vorrang).
+//  - Automatisch je Aktie über die ISIN von Börse Frankfurt (reale Zahlungen
+//    je Aktie × gehaltene Stückzahl am Zahltag) – so muss man nichts eintippen.
+//  - Prognose: letzte 12 Monate ein Jahr fortgeschrieben.
 export async function getDividends(): Promise<DividendSummary> {
   const supabase = await createClient();
   const [txRes, instRes, fxRes, liveFx] = await Promise.all([
@@ -346,34 +351,39 @@ export async function getDividends(): Promise<DividendSummary> {
       .select(
         "trade_date,amount,instrument_id,type,currency,account_id,quantity",
       )
-      .eq("type", "dividend")
       .order("trade_date", { ascending: false }),
-    supabase.from("instruments").select("id,name"),
+    supabase.from("instruments").select("id,name,yahoo_symbol,kind"),
     supabase.from("fx_rates").select("quote,rate"),
     getLiveFxRates(),
   ]);
 
-  // Dividenden können in Fremdwährung sein (z. B. US$) -> in EUR umrechnen.
   const fxRates = mergeFxRates(
     fxRes.data as { quote: string; rate: number }[] | null,
     liveFx,
   );
 
-  const nameById = new Map(
-    (instRes.data ?? []).map((i) => [i.id as string, i.name as string]),
-  );
-  const raw = (txRes.data ?? []) as {
+  const instruments = (instRes.data ?? []) as {
+    id: string;
+    name: string;
+    yahoo_symbol: string | null;
+    kind: string;
+  }[];
+  const nameById = new Map(instruments.map((i) => [i.id, i.name]));
+  const allTx = (txRes.data ?? []) as {
     trade_date: string;
     amount: number | null;
     instrument_id: string | null;
+    type: string;
     currency: string | null;
     account_id: string;
     quantity: number | null;
   }[];
 
   const todayStr = new Date().toISOString().slice(0, 10);
-  const actual: DividendEvent[] = raw
-    .filter((t) => (t.amount ?? 0) !== 0)
+
+  // 1) Manuell erfasste Dividenden.
+  const manual: DividendEvent[] = allTx
+    .filter((t) => t.type === "dividend" && (t.amount ?? 0) !== 0)
     .map((t) => ({
       date: t.trade_date,
       amountEur: toEur(t.amount ?? 0, t.currency, fxRates),
@@ -385,21 +395,93 @@ export async function getDividends(): Promise<DividendSummary> {
         ? nameById.get(t.instrument_id) ?? "Unbekannt"
         : "Sonstige",
       accountId: t.account_id,
-      // Vergangen = ausgezahlt; in der Zukunft erfasst = angekündigt.
       status: t.trade_date <= todayStr ? "paid" : "announced",
     }));
 
-  // Prognose: jede Dividende der letzten 12 Monate ein Jahr weiter fortschreiben
-  // (an heutigen Wechselkurs angepasst), sofern sie in der Zukunft liegt und
-  // dort noch keine erfasste Zahlung existiert.
+  // 2) Bestände je (Instrument, Depot) über die Zeit (aus Kauf/Verkauf).
+  const lotsByKey = new Map<string, { ms: number; qty: number }[]>();
+  for (const t of allTx) {
+    if (!t.instrument_id || (t.type !== "buy" && t.type !== "sell")) continue;
+    const key = `${t.instrument_id}|${t.account_id}`;
+    const arr = lotsByKey.get(key) ?? [];
+    arr.push({
+      ms: new Date(t.trade_date).getTime(),
+      qty: (t.type === "buy" ? 1 : -1) * (t.quantity ?? 0),
+    });
+    lotsByKey.set(key, arr);
+  }
+  const qtyHeld = (instId: string, accId: string, ms: number) => {
+    let q = 0;
+    for (const l of lotsByKey.get(`${instId}|${accId}`) ?? []) {
+      if (l.ms <= ms) q += l.qty;
+    }
+    return q;
+  };
+  const accountsForInstrument = (instId: string) => {
+    const set = new Set<string>();
+    for (const key of lotsByKey.keys()) {
+      const sep = key.indexOf("|");
+      if (key.slice(0, sep) === instId) set.add(key.slice(sep + 1));
+    }
+    return [...set];
+  };
+
+  // 3) Echte Dividenden je gehaltener Aktie (ISIN) von Börse Frankfurt.
+  const heldStocks = instruments.filter(
+    (i) =>
+      i.kind !== "crypto" &&
+      isinForSymbol(i.yahoo_symbol) &&
+      accountsForInstrument(i.id).length > 0,
+  );
+  const manualKeys = new Set(
+    manual.map((e) => `${e.instrumentId}|${e.accountId}|${e.date.slice(0, 7)}`),
+  );
+  const bfEvents: DividendEvent[] = [];
+  await Promise.all(
+    heldStocks.map(async (inst) => {
+      const isin = isinForSymbol(inst.yahoo_symbol) as string;
+      let divs;
+      try {
+        divs = await fetchBfDividends(isin);
+      } catch {
+        return;
+      }
+      for (const d of divs) {
+        const ms = new Date(d.date).getTime();
+        for (const accId of accountsForInstrument(inst.id)) {
+          const qty = qtyHeld(inst.id, accId, ms);
+          if (qty <= 0) continue;
+          if (manualKeys.has(`${inst.id}|${accId}|${d.date.slice(0, 7)}`))
+            continue; // manuell hat Vorrang
+          bfEvents.push({
+            date: d.date,
+            amountEur: toEur(d.perShare * qty, d.currency, fxRates),
+            amountOrig: d.perShare * qty,
+            currency: d.currency,
+            quantity: qty,
+            instrumentId: inst.id,
+            instrumentName: inst.name,
+            accountId: accId,
+            status: d.date <= todayStr ? "paid" : "announced",
+          });
+        }
+      }
+    }),
+  );
+
+  const combined = [...manual, ...bfEvents];
+
+  // 4) Prognose: jede Zahlung der letzten 12 Monate ein Jahr fortschreiben.
   const now = new Date();
   const yearAgo = new Date(now);
   yearAgo.setFullYear(yearAgo.getFullYear() - 1);
   const haveKey = new Set(
-    actual.map((e) => `${e.instrumentId}|${e.date.slice(0, 7)}`),
+    combined.map(
+      (e) => `${e.instrumentId}|${e.accountId}|${e.date.slice(0, 7)}`,
+    ),
   );
   const forecast: DividendEvent[] = [];
-  for (const e of actual) {
+  for (const e of combined) {
     if (e.status !== "paid") continue;
     const d = new Date(e.date);
     if (d < yearAgo) continue;
@@ -407,20 +489,17 @@ export async function getDividends(): Promise<DividendSummary> {
     proj.setFullYear(proj.getFullYear() + 1);
     if (proj <= now) continue;
     const projDate = proj.toISOString().slice(0, 10);
-    const key = `${e.instrumentId}|${projDate.slice(0, 7)}`;
+    const key = `${e.instrumentId}|${e.accountId}|${projDate.slice(0, 7)}`;
     if (haveKey.has(key)) continue;
     haveKey.add(key);
     forecast.push({ ...e, date: projDate, status: "forecast" });
   }
 
-  const events: DividendEvent[] = [...actual, ...forecast];
+  const events: DividendEvent[] = [...combined, ...forecast];
 
-  const txns = raw.map((t) => ({
-    ...t,
-    amount: t.amount == null ? null : toEur(t.amount, t.currency, fxRates),
-  }));
-
-  const thisYear = new Date().getFullYear();
+  // 5) Aggregate aus tatsächlichen Zahlungen (ohne Prognose).
+  const paidEvents = events.filter((e) => e.status !== "forecast");
+  const thisYear = now.getFullYear();
   const byYearMap = new Map<number, number>();
   const byMonthThisYear = new Array(12).fill(0);
   const byInstrumentMap = new Map<string, number>();
@@ -428,26 +507,22 @@ export async function getDividends(): Promise<DividendSummary> {
   const cutoff = new Date();
   cutoff.setFullYear(cutoff.getFullYear() - 1);
   let last12 = 0;
-
-  for (const t of txns) {
-    const amount = t.amount ?? 0;
-    if (amount === 0) continue;
-    const d = new Date(t.trade_date);
+  for (const e of paidEvents) {
+    const d = new Date(e.date);
     const year = d.getFullYear();
-    totalAllTime += amount;
-    byYearMap.set(year, (byYearMap.get(year) ?? 0) + amount);
-    if (year === thisYear) byMonthThisYear[d.getMonth()] += amount;
-    if (d >= cutoff) last12 += amount;
-    const name = t.instrument_id
-      ? (nameById.get(t.instrument_id) ?? "Unbekannt")
-      : "Sonstige";
-    byInstrumentMap.set(name, (byInstrumentMap.get(name) ?? 0) + amount);
+    totalAllTime += e.amountEur;
+    byYearMap.set(year, (byYearMap.get(year) ?? 0) + e.amountEur);
+    if (year === thisYear) byMonthThisYear[d.getMonth()] += e.amountEur;
+    if (d >= cutoff && e.status === "paid") last12 += e.amountEur;
+    byInstrumentMap.set(
+      e.instrumentName,
+      (byInstrumentMap.get(e.instrumentName) ?? 0) + e.amountEur,
+    );
   }
 
   const byYear = [...byYearMap.entries()]
     .map(([year, total]) => ({ year, total }))
     .sort((a, b) => b.year - a.year);
-
   const byInstrument = [...byInstrumentMap.entries()]
     .map(([name, total]) => ({ name, total }))
     .sort((a, b) => b.total - a.total);
@@ -458,12 +533,10 @@ export async function getDividends(): Promise<DividendSummary> {
     byMonthThisYear,
     thisYearTotal: byYearMap.get(thisYear) ?? 0,
     forecastAnnual: last12,
-    recent: txns.slice(0, 20).map((t) => ({
-      date: t.trade_date,
-      amount: t.amount ?? 0,
-      instrument: t.instrument_id
-        ? (nameById.get(t.instrument_id) ?? "Unbekannt")
-        : "Sonstige",
+    recent: paidEvents.slice(0, 20).map((e) => ({
+      date: e.date,
+      amount: e.amountEur,
+      instrument: e.instrumentName,
     })),
     byInstrument,
     events,
