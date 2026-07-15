@@ -18,13 +18,17 @@ const inputCls =
 export function TransactionForm({
   accountId,
   instruments,
+  initialInstrumentId,
 }: {
   accountId: string;
   instruments: InstrumentOption[];
+  initialInstrumentId?: string;
 }) {
   const [type, setType] = useState("buy");
   const [instrumentId, setInstrumentId] = useState(
-    instruments[0]?.id ?? "__new__",
+    initialInstrumentId && instruments.some((i) => i.id === initialInstrumentId)
+      ? initialInstrumentId
+      : instruments[0]?.id ?? "__new__",
   );
   const [newKind, setNewKind] = useState("stock");
   const [currency, setCurrency] = useState("EUR");

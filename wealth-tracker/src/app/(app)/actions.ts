@@ -3,7 +3,6 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { refreshPrices } from "@/lib/prices/refresh";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 // Gemeinsame Hilfen ---------------------------------------------------------
@@ -61,112 +60,6 @@ export async function resetEverything(formData: FormData): Promise<void> {
   await supabase.from("accounts").delete().eq("user_id", userId);
   revalidatePath("/", "layout");
   redirect("/");
-}
-
-// Frischer Start: alles leeren + Constellation Software als Testfall -------
-//
-// Löscht ALLE Instrumente + Transaktionen (Depots bleiben leer erhalten) und
-// legt dann als erste echte Position „Constellation Software" im CapTrader-
-// Depot an – exakt mit den vom Nutzer gesendeten Trades. Käufe in CA$, die
-// Dividenden in US$. Anschließend wird sofort ein Live-Kurs (Börse Frankfurt,
-// in EUR) gezogen, damit der Wert stimmt.
-export async function resetAndSeedConstellation(
-  formData: FormData,
-): Promise<void> {
-  const { supabase, userId } = await requireUser();
-  if (formData.get("confirm") !== "on") return;
-
-  // 1) Alles leeren – Depots (accounts) bleiben erhalten.
-  await supabase.from("transactions").delete().eq("user_id", userId);
-  await supabase.from("instruments").delete().eq("user_id", userId);
-
-  // 2) CapTrader-Depot finden (sonst erstes Broker-Depot, sonst erstes Depot).
-  const { data: accounts } = await supabase
-    .from("accounts")
-    .select("id,name,type,sort_order")
-    .order("sort_order");
-  const list = accounts ?? [];
-  const target =
-    list.find((a) => /captrader/i.test(a.name as string)) ??
-    list.find((a) => a.type === "broker") ??
-    list[0];
-  if (!target) {
-    // Keine Depots vorhanden -> nichts einzutragen.
-    revalidatePath("/", "layout");
-    redirect("/");
-  }
-  const accountId = target.id as string;
-
-  // 3) Constellation-Instrument anlegen (ISIN im Symbolfeld -> Börse Frankfurt
-  //    liefert darüber den EUR-Live-Kurs).
-  const { data: inst } = await supabase
-    .from("instruments")
-    .insert({
-      user_id: userId,
-      kind: "stock",
-      name: "Constellation Software",
-      display_symbol: "CSU",
-      yahoo_symbol: "CA21037X1006",
-      currency: "CAD",
-    })
-    .select("id")
-    .single();
-
-  if (inst?.id) {
-    const instrumentId = inst.id as string;
-    // 4) Transaktionen (Käufe in CA$, Dividenden in US$).
-    const txns = [
-      {
-        type: "buy",
-        trade_date: "2026-02-26",
-        quantity: 3,
-        price: 2609.0,
-        amount: 3 * 2609.0,
-        currency: "CAD",
-      },
-      {
-        type: "dividend",
-        trade_date: "2026-04-15",
-        quantity: null,
-        price: null,
-        amount: 3, // 1 US$ je Stück × 3 Stück
-        currency: "USD",
-      },
-      {
-        type: "buy",
-        trade_date: "2026-06-02",
-        quantity: 2,
-        price: 2881.4,
-        amount: 2 * 2881.4,
-        currency: "CAD",
-      },
-      {
-        type: "dividend",
-        trade_date: "2026-07-10",
-        quantity: null,
-        price: null,
-        amount: 5, // 1 US$ je Stück × 5 Stück
-        currency: "USD",
-      },
-    ].map((t) => ({
-      user_id: userId,
-      account_id: accountId,
-      instrument_id: instrumentId,
-      fees: 0,
-      ...t,
-    }));
-    await supabase.from("transactions").insert(txns);
-
-    // 5) Sofort einen Live-Kurs ziehen, damit der Wert direkt stimmt.
-    try {
-      await refreshPrices(supabase);
-    } catch {
-      // Kurs kommt sonst beim nächsten Aktualisieren/Auto-Refresh.
-    }
-  }
-
-  revalidatePath("/", "layout");
-  redirect(`/depot/${accountId}`);
 }
 
 // Depots --------------------------------------------------------------------
@@ -430,8 +323,54 @@ export async function deleteTransaction(formData: FormData): Promise<void> {
   const { supabase } = await requireUser();
   const id = String(formData.get("id") ?? "");
   const accountId = String(formData.get("account_id") ?? "");
+  const instrumentId = String(formData.get("instrument_id") ?? "");
   if (!id) return;
   await supabase.from("transactions").delete().eq("id", id);
   revalidatePath("/", "layout");
+  // Zurück zur Position (falls von dort gelöscht), sonst zum Depot.
+  if (instrumentId && accountId) redirect(`/depot/${accountId}/pos/${instrumentId}`);
+  if (accountId) redirect(`/depot/${accountId}`);
+}
+
+// Eine bestehende Transaktion bearbeiten (Art, Datum, Menge, Kurs, Währung,
+// Betrag, Gebühren). Das Instrument bleibt unverändert.
+export async function editTransaction(formData: FormData): Promise<void> {
+  const { supabase } = await requireUser();
+  const id = String(formData.get("id") ?? "");
+  const accountId = String(formData.get("account_id") ?? "");
+  const instrumentId = String(formData.get("instrument_id") ?? "");
+  if (!id) return;
+
+  const type = String(formData.get("type") ?? "buy");
+  const date =
+    String(formData.get("trade_date") ?? "") ||
+    new Date().toISOString().slice(0, 10);
+  const rawCur = String(formData.get("currency") ?? "EUR").toUpperCase();
+  const currency = /^[A-Z]{3}$/.test(rawCur) ? rawCur : "EUR";
+  const isCashOrDiv =
+    type === "dividend" || type === "deposit" || type === "withdrawal";
+  const quantity = isCashOrDiv ? null : num(formData.get("quantity"));
+  const price = isCashOrDiv ? null : num(formData.get("price"));
+  const amount = isCashOrDiv
+    ? num(formData.get("amount"))
+    : quantity != null && price != null
+      ? quantity * price
+      : null;
+
+  await supabase
+    .from("transactions")
+    .update({
+      type,
+      trade_date: date,
+      quantity,
+      price,
+      amount,
+      fees: num(formData.get("fees")) ?? 0,
+      currency,
+    })
+    .eq("id", id);
+
+  revalidatePath("/", "layout");
+  if (instrumentId && accountId) redirect(`/depot/${accountId}/pos/${instrumentId}`);
   if (accountId) redirect(`/depot/${accountId}`);
 }

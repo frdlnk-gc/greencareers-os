@@ -90,36 +90,54 @@ export default async function PositionPage({
 
       {/* Transaktionen */}
       <section>
-        <h2 className="mb-2 text-lg font-semibold">Transaktionen</h2>
+        <div className="mb-2 flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Transaktionen</h2>
+          <Link
+            href={`/depot/${id}/neu?instrument=${iid}`}
+            className="rounded-lg bg-neutral-800 px-3 py-1.5 text-sm font-medium text-neutral-100 active:opacity-70"
+          >
+            + Transaktion
+          </Link>
+        </div>
         {transactions.length === 0 ? (
           <p className="text-sm text-neutral-500">
-            Noch keine Transaktionen erfasst.
+            Noch keine Transaktionen erfasst. Tippe auf „+ Transaktion".
           </p>
         ) : (
           <ul className="divide-y divide-neutral-900 text-sm">
             {transactions.map((t) => (
-              <li key={t.id} className="flex items-center justify-between py-2.5">
-                <div>
-                  <div className="font-medium">
-                    {TYPE_LABEL[t.type] ?? t.type}
+              <li key={t.id}>
+                <Link
+                  href={`/depot/${id}/tx/${t.id}`}
+                  className="flex items-center justify-between py-2.5 active:opacity-70"
+                >
+                  <div>
+                    <div className="font-medium">
+                      {TYPE_LABEL[t.type] ?? t.type}
+                    </div>
+                    <div className="text-xs text-neutral-500 tabular">
+                      {t.trade_date}
+                      {t.quantity != null
+                        ? ` · ${formatQuantity(t.quantity)} × ${formatMoney(
+                            t.price ?? 0,
+                            t.currency,
+                          )}`
+                        : ""}
+                    </div>
                   </div>
-                  <div className="text-xs text-neutral-500 tabular">
-                    {t.trade_date}
-                    {t.quantity != null
-                      ? ` · ${formatQuantity(t.quantity)} × ${formatMoney(
-                          t.price ?? 0,
-                          t.currency,
-                        )}`
-                      : ""}
+                  <div className="flex items-center gap-2">
+                    <span className="tabular text-right font-medium">
+                      {t.amount != null
+                        ? formatMoney(t.amount, t.currency)
+                        : t.quantity != null && t.price != null
+                          ? formatMoney(t.quantity * t.price, t.currency)
+                          : "–"}
+                    </span>
+                    <svg className="shrink-0 text-neutral-600" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M9 6l6 6-6 6" />
+                    </svg>
                   </div>
-                </div>
-                <div className="tabular text-right font-medium">
-                  {t.amount != null
-                    ? formatMoney(t.amount, t.currency)
-                    : t.quantity != null && t.price != null
-                      ? formatMoney(t.quantity * t.price, t.currency)
-                      : "–"}
-                </div>
+                </Link>
               </li>
             ))}
           </ul>
