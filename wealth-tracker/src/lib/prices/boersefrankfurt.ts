@@ -162,6 +162,57 @@ export async function fetchBfQuote(isin: string): Promise<BfQuote | null> {
   return null;
 }
 
+export interface BfDividend {
+  date: string; // Zahltag YYYY-MM-DD
+  perShare: number; // Betrag je Aktie
+  currency: string; // ISO-Code
+}
+
+// Wandelt ein Währungssymbol (wie es Börse Frankfurt liefert) in einen ISO-Code.
+function symbolToCode(sym: string | null | undefined): string {
+  const s = (sym ?? "").trim().toUpperCase();
+  if (/^[A-Z]{3}$/.test(s)) return s;
+  if (s.includes("CA$") || s.includes("C$")) return "CAD";
+  if (s.includes("US$")) return "USD";
+  if (s.includes("€") || s === "EUR") return "EUR";
+  if (s.includes("£")) return "GBP";
+  if (s.includes("¥")) return "JPY";
+  if (s.includes("CHF")) return "CHF";
+  if (s === "$") return "USD";
+  return "EUR";
+}
+
+// Reale Dividenden-Zahlungen einer ISIN (je Aktie, Datum, Währung) von der
+// Börse-Frankfurt-API. Deckt viele Titel ab; leer, wenn BF keine Historie hat.
+export async function fetchBfDividends(isin: string): Promise<BfDividend[]> {
+  const salt = await fetchSalt();
+  if (!salt) return [];
+  const url = `${BASE}dividend_information?isin=${isin}`;
+  try {
+    const res = await fetch(url, {
+      headers: signedHeaders(url, salt),
+      cache: "no-store",
+    });
+    if (!res.ok) return [];
+    const json = (await res.json().catch(() => null)) as {
+      data?: {
+        dividendLastPayment?: string;
+        dividendValue?: number;
+        dividendCurrency?: string;
+      }[];
+    } | null;
+    return (json?.data ?? [])
+      .map((d) => ({
+        date: String(d.dividendLastPayment ?? "").slice(0, 10),
+        perShare: Number(d.dividendValue),
+        currency: symbolToCode(d.dividendCurrency),
+      }))
+      .filter((d) => d.date.length === 10 && Number.isFinite(d.perShare) && d.perShare > 0);
+  } catch {
+    return [];
+  }
+}
+
 async function mapLimit<T, R>(
   items: T[],
   limit: number,
