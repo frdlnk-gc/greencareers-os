@@ -3,6 +3,7 @@ import { computePortfolio } from "./portfolio";
 import {
   PERIODS,
   computePeriod,
+  computeValueSeries,
   type HistoryMap,
   type Period,
   type PeriodResult,
@@ -51,6 +52,8 @@ export async function getPortfolio(): Promise<PortfolioSummary> {
 export interface PeriodPerformance {
   total: Record<Period, PeriodResult>;
   byAccount: Record<string, Record<Period, PeriodResult>>;
+  totalSeries: [number, number][];
+  seriesByAccount: Record<string, [number, number][]>;
 }
 
 // Berechnet die Wertentwicklung über alle Zeiträume – gesamt und je Depot.
@@ -94,16 +97,95 @@ export async function getPeriodPerformance(): Promise<PeriodPerformance> {
   const allHoldings = portfolio.accounts.flatMap((a) => holdingsOf(a.positions));
   const total = emptyMap();
   for (const p of PERIODS) total[p] = computePeriod(p, allHoldings, history, now);
+  const totalSeries = computeValueSeries(allHoldings, history);
 
   const byAccount: Record<string, Record<Period, PeriodResult>> = {};
+  const seriesByAccount: Record<string, [number, number][]> = {};
   for (const a of portfolio.accounts) {
     const holdings = holdingsOf(a.positions);
     const map = emptyMap();
     for (const p of PERIODS) map[p] = computePeriod(p, holdings, history, now);
     byAccount[a.account.id] = map;
+    seriesByAccount[a.account.id] = computeValueSeries(holdings, history);
   }
 
-  return { total, byAccount };
+  return { total, byAccount, totalSeries, seriesByAccount };
+}
+
+export interface InstrumentDetail {
+  accountId: string;
+  accountName: string;
+  position: import("./types").Position;
+  priceSeries: [number, number][]; // [ms, EUR]
+  periods: Record<Period, PeriodResult>;
+  transactions: {
+    id: string;
+    type: string;
+    trade_date: string;
+    quantity: number | null;
+    price: number | null;
+    amount: number | null;
+  }[];
+}
+
+// Lädt Detaildaten zu einer Position (in einem Depot): Kurs-Historie,
+// Zeitraum-Entwicklung und Transaktionen.
+export async function getInstrumentDetail(
+  accountId: string,
+  instrumentId: string,
+): Promise<InstrumentDetail | null> {
+  const supabase = await createClient();
+  const portfolio = await getPortfolio();
+  const account = [...portfolio.accounts, ...portfolio.otherAccounts].find(
+    (a) => a.account.id === accountId,
+  );
+  const position = account?.positions.find(
+    (p) => p.instrument.id === instrumentId,
+  );
+  if (!account || !position) return null;
+
+  const [histRes, txRes] = await Promise.all([
+    supabase
+      .from("price_history")
+      .select("as_of,price_eur")
+      .eq("instrument_id", instrumentId)
+      .order("as_of", { ascending: true }),
+    supabase
+      .from("transactions")
+      .select("id,type,trade_date,quantity,price,amount")
+      .eq("account_id", accountId)
+      .eq("instrument_id", instrumentId)
+      .order("trade_date", { ascending: false }),
+  ]);
+
+  const priceSeries: [number, number][] = (histRes.data ?? []).map((r) => [
+    new Date((r as { as_of: string }).as_of).getTime(),
+    Number((r as { price_eur: number }).price_eur),
+  ]);
+
+  const history: HistoryMap = new Map([[instrumentId, priceSeries]]);
+  const holding = [
+    {
+      instrumentId,
+      quantity: position.quantity,
+      currentPriceEur:
+        position.quantity > 0 ? position.valueEur / position.quantity : 0,
+      changePct1d: position.changePct1d,
+    },
+  ];
+  const now = new Date();
+  const periods = Object.fromEntries(
+    PERIODS.map((p) => [p, computePeriod(p, holding, history, now)]),
+  ) as Record<Period, PeriodResult>;
+
+  return {
+    accountId,
+    accountName: account.account.name,
+    position,
+    priceSeries,
+    periods,
+    transactions: (txRes.data ?? []) as InstrumentDetail["transactions"],
+  };
 }
 
 // Zeitpunkt der zuletzt gespeicherten Kurse (für Auto-Aktualisierung/Anzeige).

@@ -6,6 +6,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { AutoRefresh } from "@/components/AutoRefresh";
 import { LastUpdated } from "@/components/LastUpdated";
 import { PeriodPerformance } from "@/components/PeriodPerformance";
+import { LineChart } from "@/components/LineChart";
 import { getPeriodPerformance } from "@/lib/data";
 
 export const dynamic = "force-dynamic";
@@ -59,6 +60,11 @@ export default async function OverviewPage() {
         <div className="mt-4">
           <PeriodPerformance data={performance.total} />
         </div>
+        {performance.totalSeries.length >= 2 && (
+          <div className="mt-4">
+            <LineChart points={performance.totalSeries} height={140} />
+          </div>
+        )}
       </section>
 
       {!hasData ? (
