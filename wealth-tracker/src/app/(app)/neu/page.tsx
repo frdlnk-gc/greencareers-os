@@ -1,10 +1,16 @@
 import Link from "next/link";
-import { createAccount } from "../actions";
+import { NewAccountForm } from "@/components/NewAccountForm";
 
 export const dynamic = "force-dynamic";
 
-// Neues Depot / Konto anlegen.
-export default function NewAccountPage() {
+// Neues Depot / Konto anlegen. ?type=… wählt die Art vor (z. B. „+ Cash").
+export default async function NewAccountPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ type?: string }>;
+}) {
+  const { type } = await searchParams;
+
   return (
     <div>
       <header className="mb-6 flex items-center gap-3">
@@ -17,56 +23,12 @@ export default function NewAccountPage() {
             <path d="M15 6l-6 6 6 6" />
           </svg>
         </Link>
-        <h1 className="text-xl font-bold">Neues Depot</h1>
+        <h1 className="text-xl font-bold">
+          {type === "cash" ? "Cash / Vermögen" : "Neues Depot"}
+        </h1>
       </header>
 
-      <form action={createAccount} className="space-y-5">
-        <div>
-          <label className="mb-1 block text-sm text-neutral-400">Name</label>
-          <input
-            name="name"
-            required
-            autoFocus
-            placeholder="z. B. Trade Republic"
-            className="w-full rounded-xl border border-neutral-800 bg-neutral-900 px-4 py-3 text-base outline-none focus:border-neutral-600"
-          />
-        </div>
-        <div>
-          <label className="mb-1 block text-sm text-neutral-400">Art</label>
-          <select
-            name="type"
-            defaultValue="broker"
-            className="w-full rounded-xl border border-neutral-800 bg-neutral-900 px-4 py-3 text-base outline-none focus:border-neutral-600"
-          >
-            <option value="broker">Broker / Wertpapierdepot</option>
-            <option value="crypto">Krypto</option>
-            <option value="cash">Cash / Konto</option>
-            <option value="other">Sonstiges Vermögen</option>
-          </select>
-        </div>
-        <div className="rounded-xl border border-neutral-800 bg-neutral-900/40 p-3">
-          <label className="mb-1 block text-sm text-neutral-400">
-            Aktueller Wert (nur für Cash / Sonstiges)
-          </label>
-          <input
-            name="value"
-            inputMode="decimal"
-            placeholder="z. B. 15000"
-            className="w-full rounded-xl border border-neutral-800 bg-neutral-900 px-4 py-3 text-base outline-none focus:border-neutral-600"
-          />
-          <label className="mt-3 flex items-center gap-2 text-sm text-neutral-300">
-            <input type="checkbox" name="liability" className="h-4 w-4 accent-red-500" />
-            Ist eine Verbindlichkeit (Schulden – wird abgezogen)
-          </label>
-        </div>
-
-        <button
-          type="submit"
-          className="w-full rounded-xl bg-emerald-600 px-4 py-3 font-medium text-white active:opacity-80"
-        >
-          Anlegen
-        </button>
-      </form>
+      <NewAccountForm initialType={type ?? "broker"} />
     </div>
   );
 }

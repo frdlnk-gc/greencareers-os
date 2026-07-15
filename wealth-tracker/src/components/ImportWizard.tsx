@@ -26,6 +26,21 @@ const emptyRow = (): ImportRow => ({
 const cell =
   "w-full rounded-lg border border-neutral-800 bg-neutral-900 px-2 py-1.5 text-sm outline-none focus:border-neutral-600";
 
+// Zahl aus deutscher ODER englischer Eingabe (1.234,56 / 1,5 / 12.50).
+function parseNum(v: string): number {
+  let s = v.replace(/[^\d,.-]/g, "").trim();
+  if (!s) return 0;
+  if (s.includes(",") && s.includes(".")) {
+    s = s.lastIndexOf(",") > s.lastIndexOf(".")
+      ? s.replace(/\./g, "").replace(",", ".")
+      : s.replace(/,/g, "");
+  } else if (s.includes(",")) {
+    s = s.replace(",", ".");
+  }
+  const n = parseFloat(s);
+  return Number.isFinite(n) ? n : 0;
+}
+
 export function ImportWizard({ accounts }: { accounts: Account[] }) {
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -38,6 +53,9 @@ export function ImportWizard({ accounts }: { accounts: Account[] }) {
   const [status, setStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  // Roh-Text der Zahl-Felder, damit man Kommazahlen (1,5) tippen kann, ohne
+  // dass das Feld beim Parsen zurückspringt.
+  const [draft, setDraft] = useState<Record<string, string>>({});
 
   function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -263,16 +281,22 @@ export function ImportWizard({ accounts }: { accounts: Account[] }) {
               <option value="crypto">Krypto</option>
             </select>
             <input
-              value={r.quantity || ""}
-              onChange={(e) => update(i, { quantity: Number(e.target.value) || 0 })}
+              value={draft[`${i}q`] ?? (r.quantity || "")}
+              onChange={(e) => {
+                setDraft((d) => ({ ...d, [`${i}q`]: e.target.value }));
+                update(i, { quantity: parseNum(e.target.value) });
+              }}
               inputMode="decimal"
               placeholder="Menge"
               className={cell}
             />
             <div className="flex gap-2">
               <input
-                value={r.price || ""}
-                onChange={(e) => update(i, { price: Number(e.target.value) || 0 })}
+                value={draft[`${i}p`] ?? (r.price || "")}
+                onChange={(e) => {
+                  setDraft((d) => ({ ...d, [`${i}p`]: e.target.value }));
+                  update(i, { price: parseNum(e.target.value) });
+                }}
                 inputMode="decimal"
                 placeholder="Kurs"
                 className={cell}

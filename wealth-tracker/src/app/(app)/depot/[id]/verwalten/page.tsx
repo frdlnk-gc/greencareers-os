@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { renameAccount, deleteAccount, deleteTransaction } from "../../../actions";
 import { formatMoney, formatQuantity } from "@/lib/format";
+import { SubmitButton, ConfirmButton } from "@/components/FormButtons";
 
 export const dynamic = "force-dynamic";
 
@@ -64,12 +65,9 @@ export default async function ManageAccountPage({
           defaultValue={account.name}
           className="flex-1 rounded-xl border border-neutral-800 bg-neutral-900 px-4 py-3 text-base outline-none focus:border-neutral-600"
         />
-        <button
-          type="submit"
-          className="rounded-xl bg-neutral-800 px-4 py-3 text-sm font-medium active:opacity-70"
-        >
+        <SubmitButton className="rounded-xl bg-neutral-800 px-4 py-3 text-sm font-medium active:opacity-70 disabled:opacity-50">
           Speichern
-        </button>
+        </SubmitButton>
       </form>
 
       {/* Transaktionen */}
@@ -107,13 +105,12 @@ export default async function ManageAccountPage({
               <form action={deleteTransaction}>
                 <input type="hidden" name="id" value={t.id} />
                 <input type="hidden" name="account_id" value={id} />
-                <button
-                  type="submit"
-                  className="rounded-lg px-2 py-1 text-xs text-red-400 active:opacity-60"
-                  aria-label="Löschen"
+                <ConfirmButton
+                  confirm="Diese Transaktion wirklich löschen?"
+                  className="rounded-lg px-3 py-2 text-xs text-red-400 active:opacity-60 disabled:opacity-50"
                 >
                   Löschen
-                </button>
+                </ConfirmButton>
               </form>
             </li>
           ))}
@@ -123,12 +120,12 @@ export default async function ManageAccountPage({
       {/* Depot löschen */}
       <form action={deleteAccount} className="border-t border-neutral-900 pt-6">
         <input type="hidden" name="id" value={id} />
-        <button
-          type="submit"
-          className="w-full rounded-xl border border-red-900/60 py-3 text-sm font-medium text-red-400 active:opacity-70"
+        <ConfirmButton
+          confirm="Depot samt aller Transaktionen unwiderruflich löschen?"
+          className="w-full rounded-xl border border-red-900/60 py-3 text-sm font-medium text-red-400 active:opacity-70 disabled:opacity-50"
         >
           Depot löschen
-        </button>
+        </ConfirmButton>
         <p className="mt-2 text-center text-xs text-neutral-600">
           Löscht das Depot samt aller Transaktionen unwiderruflich.
         </p>

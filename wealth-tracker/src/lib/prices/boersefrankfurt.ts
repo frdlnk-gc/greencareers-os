@@ -16,6 +16,7 @@ const UA =
   "(KHTML, like Gecko) Chrome/125.0 Safari/537.36";
 
 let cachedSalt: { value: string; at: number } | null = null;
+let saltInflight: Promise<string | null> | null = null;
 
 function md5(s: string): string {
   return createHash("md5").update(s, "utf8").digest("hex");
@@ -36,39 +37,49 @@ function berlinStamp(): string {
   return `${get("year")}${get("month")}${get("day")}${get("hour")}${get("minute")}`;
 }
 
-// Holt (und cached) den salt aus der main.js der Website.
+// Holt (und cached) den salt aus der main.js der Website. Inflight-Dedup:
+// bei vielen gleichzeitigen Anfragen wird der Salt nur EINMAL geladen (statt
+// dass jede Anfrage die Homepage + main.js herunterlädt).
 export async function fetchSalt(): Promise<string | null> {
   if (cachedSalt && Date.now() - cachedSalt.at < 6 * 3600 * 1000) {
     return cachedSalt.value;
   }
-  try {
-    const home = await fetch("https://www.boerse-frankfurt.de/", {
-      headers: { "User-Agent": UA },
-      cache: "no-store",
-    });
-    const html = await home.text();
-    const jsFiles = [
-      ...html.matchAll(/(?:src|href)="([^"]*?main[^"]*?\.js)"/g),
-    ].map((m) => m[1]);
-    for (const rel of jsFiles) {
-      const jsUrl = rel.startsWith("http")
-        ? rel
-        : `https://www.boerse-frankfurt.de/${rel.replace(/^\//, "")}`;
-      const jsRes = await fetch(jsUrl, {
+  if (saltInflight) return saltInflight;
+  saltInflight = (async () => {
+    try {
+      const home = await fetch("https://www.boerse-frankfurt.de/", {
         headers: { "User-Agent": UA },
         cache: "no-store",
+        signal: AbortSignal.timeout(10000),
       });
-      const js = await jsRes.text();
-      const m = /salt:"(\w+)"/.exec(js);
-      if (m) {
-        cachedSalt = { value: m[1], at: Date.now() };
-        return m[1];
+      const html = await home.text();
+      const jsFiles = [
+        ...html.matchAll(/(?:src|href)="([^"]*?main[^"]*?\.js)"/g),
+      ].map((m) => m[1]);
+      for (const rel of jsFiles) {
+        const jsUrl = rel.startsWith("http")
+          ? rel
+          : `https://www.boerse-frankfurt.de/${rel.replace(/^\//, "")}`;
+        const jsRes = await fetch(jsUrl, {
+          headers: { "User-Agent": UA },
+          cache: "no-store",
+          signal: AbortSignal.timeout(10000),
+        });
+        const js = await jsRes.text();
+        const m = /salt:"(\w+)"/.exec(js);
+        if (m) {
+          cachedSalt = { value: m[1], at: Date.now() };
+          return m[1];
+        }
       }
+    } catch {
+      /* ignore */
+    } finally {
+      saltInflight = null;
     }
-  } catch {
-    /* ignore */
-  }
-  return null;
+    return cachedSalt?.value ?? null;
+  })();
+  return saltInflight;
 }
 
 // Signierte Header (minimal – kein origin/referer!).

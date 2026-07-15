@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { createTransaction } from "@/app/(app)/actions";
 import { TRADE_CURRENCIES } from "@/lib/prices/fx";
+import { SubmitButton } from "./FormButtons";
 
 interface InstrumentOption {
   id: string;
@@ -41,6 +42,9 @@ export function TransactionForm({
   return (
     <form action={createTransaction} className="space-y-5">
       <input type="hidden" name="account_id" value={accountId} />
+      {initialInstrumentId && (
+        <input type="hidden" name="from_instrument" value={initialInstrumentId} />
+      )}
 
       {/* Typ */}
       <div>
@@ -225,12 +229,9 @@ export function TransactionForm({
         )}
       </div>
 
-      <button
-        type="submit"
-        className="w-full rounded-xl bg-emerald-600 px-4 py-3 font-medium text-white active:opacity-80"
-      >
+      <SubmitButton className="w-full rounded-xl bg-emerald-600 px-4 py-3 font-medium text-white active:opacity-80 disabled:opacity-50">
         Speichern
-      </button>
+      </SubmitButton>
     </form>
   );
 }

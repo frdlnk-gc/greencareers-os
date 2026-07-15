@@ -162,16 +162,12 @@ export default function OverviewPage() {
             </ul>
           )}
           <Link
-            href="/neu"
+            href="/neu?type=cash"
             className="mt-2 flex items-center justify-center gap-2 rounded-xl border border-dashed border-neutral-700 py-3 text-sm text-neutral-400 active:opacity-70"
           >
             <span className="text-lg leading-none">+</span> Cash / Verbindlichkeit
             / Sonstiges
           </Link>
-
-          <p className="mt-6 text-center text-xs text-neutral-600">
-            Nach unten ziehen für Live-Kurse
-          </p>
         </section>
       )}
     </div>

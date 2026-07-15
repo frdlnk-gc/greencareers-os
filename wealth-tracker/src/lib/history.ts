@@ -96,6 +96,14 @@ export function computeScopeSeries(
   const twr: [number, number][] = [];
   const invested: [number, number][] = [];
 
+  // Durchschnittskosten je Instrument (für „eingesetztes Kapital" der noch
+  // GEHALTENEN Stücke – wie in portfolio.ts). Ein Verkauf reduziert das
+  // eingesetzte Kapital um die Durchschnittskosten der verkauften Stücke (nicht
+  // um den Verkaufserlös), damit gain(t)=Wert−Kapital dem „seit Kauf"-Gewinn
+  // entspricht und nach Teilverkäufen nicht auseinanderläuft.
+  const buyQty = new Map<string, number>();
+  const buyCost = new Map<string, number>();
+
   let txi = 0;
   let investedEur = 0;
   let prevV: number | null = null;
@@ -106,12 +114,20 @@ export function computeScopeSeries(
     // Transaktionen bis einschließlich diesem Tag anwenden.
     while (txi < trades.length && trades[txi].ms <= d) {
       const tr = trades[txi];
+      const id = tr.instrumentId;
       if (tr.type === "buy") {
-        qty.set(tr.instrumentId, (qty.get(tr.instrumentId) ?? 0) + tr.qty);
+        qty.set(id, (qty.get(id) ?? 0) + tr.qty);
+        buyQty.set(id, (buyQty.get(id) ?? 0) + tr.qty);
+        buyCost.set(id, (buyCost.get(id) ?? 0) + tr.cashEur);
         investedEur += tr.cashEur;
       } else {
-        qty.set(tr.instrumentId, (qty.get(tr.instrumentId) ?? 0) - tr.qty);
-        investedEur -= tr.cashEur; // Verkaufserlös reduziert eingesetztes Kapital
+        qty.set(id, (qty.get(id) ?? 0) - tr.qty);
+        const bq = buyQty.get(id) ?? 0;
+        const avg = bq > 0 ? (buyCost.get(id) ?? 0) / bq : 0;
+        const soldBasis = avg * tr.qty;
+        buyQty.set(id, bq - tr.qty);
+        buyCost.set(id, (buyCost.get(id) ?? 0) - soldBasis);
+        investedEur -= soldBasis; // Durchschnittskosten der verkauften Stücke
       }
       txi++;
     }

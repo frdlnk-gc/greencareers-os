@@ -198,6 +198,7 @@ export async function createTransaction(formData: FormData): Promise<void> {
     currency,
   };
 
+  let goToInstrument: string | null = null;
   if (type === "deposit" || type === "withdrawal") {
     // Reine Geldbewegung (kein Instrument).
     await supabase.from("transactions").insert({
@@ -207,6 +208,7 @@ export async function createTransaction(formData: FormData): Promise<void> {
   } else {
     const instrumentId = await resolveInstrumentId(supabase, userId, formData);
     if (!instrumentId) return;
+    goToInstrument = instrumentId;
     const quantity = num(formData.get("quantity"));
     const price = num(formData.get("price"));
     await supabase.from("transactions").insert({
@@ -242,6 +244,11 @@ export async function createTransaction(formData: FormData): Promise<void> {
   }
 
   revalidatePath("/", "layout");
+  // Kam die Transaktion aus einer Positionsansicht, dorthin zurück.
+  const fromInstrument = String(formData.get("from_instrument") ?? "");
+  if (fromInstrument && fromInstrument === goToInstrument) {
+    redirect(`/depot/${accountId}/pos/${goToInstrument}`);
+  }
   redirect(`/depot/${accountId}`);
 }
 

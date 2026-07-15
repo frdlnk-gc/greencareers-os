@@ -63,6 +63,18 @@ export default function AnalysePage() {
   const divEvents = (dividends?.events ?? []).filter((e) =>
     selectedIds.has(e.accountId),
   );
+  // Run-Rate (letzte 12 Monate, ausgezahlt) + eingesetztes Kapital im Scope –
+  // für Dividendenrendite / Yield on Cost.
+  const yearMs = 365 * 86_400_000;
+  const nowMs = Date.now();
+  const divRunRate = divEvents
+    .filter(
+      (e) => e.status === "paid" && nowMs - new Date(e.date).getTime() <= yearMs,
+    )
+    .reduce((s, e) => s + e.amountEur, 0);
+  const scopeInvestCost = portfolio.accounts
+    .filter((a) => selectedIds.has(a.account.id))
+    .reduce((s, a) => s + a.investedEur, 0);
 
   return (
     <div>
@@ -115,7 +127,12 @@ export default function AnalysePage() {
       {/* Dividenden */}
       <section className="mb-4">
         <h2 className="mb-4 text-lg font-semibold">Dividenden</h2>
-        <DividendsView events={divEvents} />
+        <DividendsView
+          events={divEvents}
+          forecastAnnual={divRunRate}
+          investValue={allocTotal}
+          investCost={scopeInvestCost}
+        />
       </section>
     </div>
   );

@@ -436,6 +436,7 @@ export async function getDividends(): Promise<DividendSummary> {
   const manualKeys = new Set(
     manual.map((e) => `${e.instrumentId}|${e.accountId}|${e.date.slice(0, 7)}`),
   );
+  const bfSeen = new Set<string>(); // dedup identischer BF-Zeilen (Handelsplätze)
   const bfEvents: DividendEvent[] = [];
   await Promise.all(
     heldStocks.map(async (inst) => {
@@ -453,6 +454,9 @@ export async function getDividends(): Promise<DividendSummary> {
           if (qty <= 0) continue;
           if (manualKeys.has(`${inst.id}|${accId}|${d.date.slice(0, 7)}`))
             continue; // manuell hat Vorrang
+          const seenKey = `${inst.id}|${accId}|${d.date}`;
+          if (bfSeen.has(seenKey)) continue; // identische Zahlung nur einmal
+          bfSeen.add(seenKey);
           bfEvents.push({
             date: d.date,
             amountEur: toEur(d.perShare * qty, d.currency, fxRates),
