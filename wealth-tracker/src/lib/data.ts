@@ -1,5 +1,12 @@
 import { createClient } from "./supabase/server";
 import { computePortfolio } from "./portfolio";
+import {
+  PERIODS,
+  computePeriod,
+  type HistoryMap,
+  type Period,
+  type PeriodResult,
+} from "./history";
 import type {
   Account,
   Instrument,
@@ -39,6 +46,64 @@ export async function getPortfolio(): Promise<PortfolioSummary> {
     prices,
     fxRates,
   });
+}
+
+export interface PeriodPerformance {
+  total: Record<Period, PeriodResult>;
+  byAccount: Record<string, Record<Period, PeriodResult>>;
+}
+
+// Berechnet die Wertentwicklung über alle Zeiträume – gesamt und je Depot.
+export async function getPeriodPerformance(): Promise<PeriodPerformance> {
+  const supabase = await createClient();
+  const portfolio = await getPortfolio();
+
+  // Historie laden (kann fehlen, falls Tabelle noch nicht angelegt ist).
+  const history: HistoryMap = new Map();
+  try {
+    const { data } = await supabase
+      .from("price_history")
+      .select("instrument_id,as_of,price_eur");
+    for (const row of data ?? []) {
+      const id = (row as { instrument_id: string }).instrument_id;
+      const ts = new Date((row as { as_of: string }).as_of).getTime();
+      const price = Number((row as { price_eur: number }).price_eur);
+      const arr = history.get(id) ?? [];
+      arr.push([ts, price]);
+      history.set(id, arr);
+    }
+    for (const arr of history.values()) arr.sort((a, b) => a[0] - b[0]);
+  } catch {
+    // keine Historie -> nur 1T verfügbar
+  }
+
+  const now = new Date();
+  const emptyMap = () =>
+    Object.fromEntries(
+      PERIODS.map((p) => [p, { pct: null, changeEur: null, covered: false }]),
+    ) as Record<Period, PeriodResult>;
+
+  const holdingsOf = (positions: typeof portfolio.accounts[number]["positions"]) =>
+    positions.map((p) => ({
+      instrumentId: p.instrument.id,
+      quantity: p.quantity,
+      currentPriceEur: p.quantity > 0 ? p.valueEur / p.quantity : 0,
+      changePct1d: p.changePct1d,
+    }));
+
+  const allHoldings = portfolio.accounts.flatMap((a) => holdingsOf(a.positions));
+  const total = emptyMap();
+  for (const p of PERIODS) total[p] = computePeriod(p, allHoldings, history, now);
+
+  const byAccount: Record<string, Record<Period, PeriodResult>> = {};
+  for (const a of portfolio.accounts) {
+    const holdings = holdingsOf(a.positions);
+    const map = emptyMap();
+    for (const p of PERIODS) map[p] = computePeriod(p, holdings, history, now);
+    byAccount[a.account.id] = map;
+  }
+
+  return { total, byAccount };
 }
 
 // Zeitpunkt der zuletzt gespeicherten Kurse (für Auto-Aktualisierung/Anzeige).

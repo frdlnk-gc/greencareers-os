@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { fetchFmpQuotes } from "./fmp";
 import { fetchFrankfurterRates } from "./frankfurter";
 import { currencyForSymbol } from "./exchanges";
-import { fetchCoinGeckoPrices } from "./coingecko";
+import { fetchCoinGeckoPrices, fetchCoinGeckoHistory } from "./coingecko";
 import { fetchTradegateQuotes } from "./tradegate";
 import { isinForSymbol } from "./isins";
 
@@ -165,5 +165,53 @@ export async function refreshPrices(
     if (upErr) throw new Error("Kurse speichern: " + upErr.message);
   }
 
+  // --- Tageskurse in die Historie schreiben (für Zeitraum-Entwicklung) ---
+  // Fehlschlag (z. B. Tabelle noch nicht angelegt) darf den Refresh nicht stören.
+  const today = now.slice(0, 10);
+  try {
+    const histRows = rows.map((r) => ({
+      instrument_id: r.instrument_id,
+      as_of: today,
+      price_eur: r.price,
+    }));
+    if (histRows.length > 0) {
+      await supabase
+        .from("price_history")
+        .upsert(histRows, { onConflict: "instrument_id,as_of" });
+    }
+    // Krypto einmalig aus CoinGecko rückbefüllen (max. 365 Tage).
+    await backfillCryptoHistory(supabase, cryptos);
+  } catch {
+    // Historie optional — ignorieren, wenn Tabelle fehlt.
+  }
+
   return { updated: rows.length, stockUpdated, cryptoUpdated, failed, sources };
+}
+
+// Füllt die Kurs-Historie für Krypto-Instrumente einmalig aus CoinGecko.
+// Läuft nur für Coins, die noch (fast) keine Historie haben.
+async function backfillCryptoHistory(
+  supabase: SupabaseClient,
+  cryptos: InstrumentRow[],
+): Promise<void> {
+  for (const c of cryptos) {
+    const id = c.coingecko_id;
+    if (!id) continue;
+    const { count } = await supabase
+      .from("price_history")
+      .select("as_of", { count: "exact", head: true })
+      .eq("instrument_id", c.id);
+    if ((count ?? 0) >= 30) continue; // schon befüllt
+
+    const series = await fetchCoinGeckoHistory(id, 365);
+    if (series.length === 0) continue;
+    const histRows = series.map(([day, price]) => ({
+      instrument_id: c.id,
+      as_of: day,
+      price_eur: price,
+    }));
+    await supabase
+      .from("price_history")
+      .upsert(histRows, { onConflict: "instrument_id,as_of" });
+  }
 }

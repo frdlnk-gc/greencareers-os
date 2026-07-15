@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getPortfolio } from "@/lib/data";
+import { getPortfolio, getPeriodPerformance } from "@/lib/data";
 import { formatEur, formatPct, formatQuantity, changeColor } from "@/lib/format";
 import { Avatar } from "@/components/Avatar";
+import { PeriodPerformance } from "@/components/PeriodPerformance";
 
 export const dynamic = "force-dynamic";
 
@@ -12,12 +13,17 @@ export default async function DepotPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const portfolio = await getPortfolio();
+  const [portfolio, performance] = await Promise.all([
+    getPortfolio(),
+    getPeriodPerformance(),
+  ]);
   const summary = [...portfolio.accounts, ...portfolio.otherAccounts].find(
     (a) => a.account.id === id,
   );
 
   if (!summary) notFound();
+
+  const periodData = performance.byAccount[id];
 
   return (
     <div>
@@ -61,6 +67,11 @@ export default async function DepotPage({
           {formatPct(summary.gainPct)} seit Kauf ({summary.gainEur >= 0 ? "+" : ""}
           {formatEur(summary.gainEur)})
         </div>
+        {periodData && (
+          <div className="mt-4">
+            <PeriodPerformance data={periodData} />
+          </div>
+        )}
       </section>
 
       {/* Positionen */}
