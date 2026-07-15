@@ -1,10 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { fetchFmpQuotes } from "./fmp";
-import { fetchFrankfurterRates } from "./frankfurter";
+import { fetchFmpQuotes, fetchFmpHistory } from "./fmp";
+import { fetchFrankfurterRates, fetchFrankfurterSeriesToEur } from "./frankfurter";
 import { currencyForSymbol } from "./exchanges";
 import { fetchCoinGeckoPrices, fetchCoinGeckoHistory } from "./coingecko";
 import { fetchTradegateQuotes } from "./tradegate";
-import { isinForSymbol } from "./isins";
+import { isinForSymbol, looksLikeIsin } from "./isins";
 
 export interface RefreshResult {
   updated: number;
@@ -183,6 +183,8 @@ export async function refreshPrices(
     }
     // Krypto einmalig aus CoinGecko rückbefüllen (max. 365 Tage).
     await backfillCryptoHistory(supabase, cryptos);
+    // US-Aktien-Historie einmalig aus FMP rückbefüllen (in EUR umgerechnet).
+    await backfillUsStockHistory(supabase, stocks);
   } catch {
     // Historie optional — ignorieren, wenn Tabelle fehlt.
   }
@@ -212,6 +214,65 @@ async function backfillCryptoHistory(
       as_of: day,
       price_eur: price,
     }));
+    await supabase
+      .from("price_history")
+      .upsert(histRows, { onConflict: "instrument_id,as_of" });
+  }
+}
+
+// Füllt die Kurs-Historie für US-Aktien einmalig aus FMP (Gratis-Tarif) und
+// rechnet die USD-Schlusskurse mit historischen Frankfurter-Kursen in EUR um.
+async function backfillUsStockHistory(
+  supabase: SupabaseClient,
+  stocks: InstrumentRow[],
+): Promise<void> {
+  const apiKey = process.env.FMP_API_KEY ?? "";
+  if (!apiKey) return;
+
+  const usStocks = stocks.filter(
+    (i) =>
+      i.yahoo_symbol &&
+      !looksLikeIsin(i.yahoo_symbol) &&
+      currencyForSymbol(i.yahoo_symbol) === "USD",
+  );
+  if (usStocks.length === 0) return;
+
+  // Historische USD->EUR-Kurse einmal laden (~2 Jahre).
+  const start = new Date(Date.now() - 800 * 86400000).toISOString().slice(0, 10);
+  const fx = await fetchFrankfurterSeriesToEur("USD", start);
+  if (fx.length === 0) return;
+  const eurPerUsdAt = (ms: number): number | null => {
+    let rate: number | null = null;
+    for (const [t, r] of fx) {
+      if (t <= ms) rate = r;
+      else break;
+    }
+    return rate;
+  };
+
+  let anySuccess = false;
+  for (const s of usStocks) {
+    const { count } = await supabase
+      .from("price_history")
+      .select("as_of", { count: "exact", head: true })
+      .eq("instrument_id", s.id);
+    if ((count ?? 0) >= 30) continue; // schon befüllt
+
+    const series = await fetchFmpHistory(s.yahoo_symbol as string, apiKey);
+    if (series.length === 0) {
+      // Erster Versuch leer -> Historie im FMP-Tarif nicht verfügbar, abbrechen.
+      if (!anySuccess) break;
+      continue;
+    }
+    anySuccess = true;
+    const histRows = series
+      .map(([day, closeUsd]) => {
+        const rate = eurPerUsdAt(new Date(day).getTime());
+        if (rate == null) return null;
+        return { instrument_id: s.id, as_of: day, price_eur: closeUsd * rate };
+      })
+      .filter((r): r is { instrument_id: string; as_of: string; price_eur: number } => r !== null);
+    if (histRows.length === 0) continue;
     await supabase
       .from("price_history")
       .upsert(histRows, { onConflict: "instrument_id,as_of" });
