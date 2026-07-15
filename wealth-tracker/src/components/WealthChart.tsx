@@ -42,7 +42,7 @@ export function WealthChart({
   const scope = scopes.find((s) => s.id === scopeId) ?? scopes[0];
   if (!scope) return null;
 
-  const { value, twr, invested } = scope.series;
+  const { value, invested } = scope.series;
   const nowMs = value.length ? value[value.length - 1][0] : Date.now();
 
   function startOf(key: RangeKey): number {
@@ -59,10 +59,18 @@ export function WealthChart({
     const s = startOf(key);
     return arr.filter(([ms]) => ms >= s);
   }
+  const earliest = value.length ? value[0][0] : nowMs;
   function isEnabled(key: RangeKey): boolean {
     if (key === "1T")
       return scope.dayChangePct !== null || inWindow(value, "1T").length >= 2;
-    return inWindow(value, key).length >= 2;
+    // Trailing-Jahres-Zeiträume brauchen echte Historie zurück bis zum
+    // Fensterstart – sonst würden sie nur so tun als gäbe es 1 Jahr Daten.
+    if (key === "1J") {
+      return (
+        inWindow(value, key).length >= 2 && earliest <= startOf("1J") + 7 * DAY
+      );
+    }
+    return inWindow(value, key).length >= 2; // 7T, 30T, YTD, Max
   }
 
   const firstEnabled =
@@ -71,7 +79,6 @@ export function WealthChart({
   const active = isEnabled(chosen) ? chosen : firstEnabled;
 
   const vWin = inWindow(value, active);
-  const twrWin = inWindow(twr, active);
   const invWin = inWindow(invested, active);
 
   // Kennzahl + Chart-Punkte je nach Modus.
@@ -80,17 +87,19 @@ export function WealthChart({
   let headEur = 0;
 
   if (mode === "performance") {
-    const base = twrWin.length ? twrWin[0][1] : 1;
-    points = twrWin.map(([ms, idx]) => [ms, (idx / base - 1) * 100]);
-    if (twrWin.length >= 2 && base > 0) {
-      headPct = (twrWin[twrWin.length - 1][1] / base - 1) * 100;
-      const vStart = vWin[0][1];
-      const vEnd = vWin[vWin.length - 1][1];
-      const cf =
-        (invWin[invWin.length - 1]?.[1] ?? 0) - (invWin[0]?.[1] ?? 0);
-      headEur = vEnd - vStart - cf;
+    // kumulierter Gewinn/Verlust gain(t) = Wert(t) − eingesetztes Kapital(t).
+    // Über Zukäufe hinweg glatt (Kauf erhöht Wert UND Kapital gleich viel).
+    // Auf den Fensterstart genullt -> % und € haben IMMER dasselbe Vorzeichen.
+    const gainAt = (i: number) => (vWin[i]?.[1] ?? 0) - (invWin[i]?.[1] ?? 0);
+    const base = vWin.length ? Math.max(1, Math.abs(vWin[0][1])) : 1;
+    const g0 = gainAt(0);
+    points = vWin.map(([ms], i) => [ms, ((gainAt(i) - g0) / base) * 100]);
+    if (vWin.length >= 2) {
+      headEur = gainAt(vWin.length - 1) - g0;
+      headPct = (headEur / base) * 100;
     }
-    if (active === "1T" && headPct === null && scope.dayChangePct !== null) {
+    // 1T: den exakten Tageswert nehmen (Tagesveränderung heute).
+    if (active === "1T" && scope.dayChangePct !== null) {
       headPct = scope.dayChangePct;
       const last = value.length ? value[value.length - 1][1] : 0;
       const denom = 1 + scope.dayChangePct / 100;
