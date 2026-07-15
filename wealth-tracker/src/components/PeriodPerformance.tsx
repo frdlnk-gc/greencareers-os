@@ -45,7 +45,7 @@ export function PeriodPerformance({
         </div>
       ) : (
         <div className="text-sm text-neutral-600">
-          sammelt noch Daten – füllt sich in den nächsten Tagen
+          Für diesen Zeitraum liegen keine Kurse vor.
         </div>
       )}
     </div>

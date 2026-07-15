@@ -1,6 +1,7 @@
 import { createClient } from "./supabase/server";
 import { computePortfolio } from "./portfolio";
 import { getLiveFxRates, mergeFxRates, toEur } from "./prices/fx";
+import { ensureHistory } from "./prices/refresh";
 import {
   PERIODS,
   computePeriod,
@@ -83,6 +84,33 @@ export async function getPeriodPerformance(): Promise<PeriodPerformance> {
     // keine Historie -> nur 1T verfügbar
   }
 
+  // Fehlende Historie sofort nachladen (Börse Frankfurt / CoinGecko), damit die
+  // Charts direkt gefüllt sind statt „sammelt noch Daten". Nur für Instrumente
+  // ohne (ausreichende) Historie – danach kommt alles aus price_history.
+  const positionsInstruments = portfolio.accounts.flatMap((a) =>
+    a.positions.map((p) => p.instrument),
+  );
+  const missing = positionsInstruments.filter(
+    (inst) => (history.get(inst.id)?.length ?? 0) < 2,
+  );
+  if (missing.length > 0) {
+    const filled = await ensureHistory(
+      supabase,
+      missing.map((inst) => ({
+        id: inst.id,
+        kind: inst.kind,
+        yahoo_symbol: inst.yahoo_symbol,
+        coingecko_id: inst.coingecko_id,
+      })),
+    );
+    for (const [id, series] of filled) {
+      const arr = history.get(id) ?? [];
+      const merged = [...arr, ...series];
+      merged.sort((a, b) => a[0] - b[0]);
+      history.set(id, merged);
+    }
+  }
+
   const now = new Date();
   const emptyMap = () =>
     Object.fromEntries(
@@ -162,10 +190,25 @@ export async function getInstrumentDetail(
       .order("trade_date", { ascending: false }),
   ]);
 
-  const priceSeries: [number, number][] = (histRes.data ?? []).map((r) => [
+  let priceSeries: [number, number][] = (histRes.data ?? []).map((r) => [
     new Date((r as { as_of: string }).as_of).getTime(),
     Number((r as { price_eur: number }).price_eur),
   ]);
+
+  // Historie fehlt noch? Sofort von Börse Frankfurt / CoinGecko holen, damit
+  // der Chart direkt da ist.
+  if (priceSeries.length < 2) {
+    const filled = await ensureHistory(supabase, [
+      {
+        id: instrumentId,
+        kind: position.instrument.kind,
+        yahoo_symbol: position.instrument.yahoo_symbol,
+        coingecko_id: position.instrument.coingecko_id,
+      },
+    ]);
+    const s = filled.get(instrumentId);
+    if (s && s.length >= 2) priceSeries = s;
+  }
 
   const history: HistoryMap = new Map([[instrumentId, priceSeries]]);
   const holding = [
