@@ -199,6 +199,77 @@ export async function createTransaction(formData: FormData): Promise<void> {
   redirect(`/depot/${accountId}`);
 }
 
+// Mehrere Transaktionen auf einmal buchen (z. B. aus dem Screenshot-Import).
+export interface ImportRow {
+  type: "buy" | "sell";
+  name: string;
+  symbol?: string;
+  isin?: string;
+  kind?: "stock" | "etf" | "crypto";
+  quantity: number;
+  price: number;
+  date?: string;
+}
+
+export async function importTransactions(
+  accountId: string,
+  rows: ImportRow[],
+): Promise<{ inserted: number }> {
+  const { supabase, userId } = await requireUser();
+  if (!accountId || rows.length === 0) return { inserted: 0 };
+
+  let inserted = 0;
+  for (const r of rows) {
+    if (!r.name || !r.quantity) continue;
+    const kind = r.kind ?? "stock";
+    const symField =
+      kind === "crypto"
+        ? { coingecko_id: r.symbol || null }
+        : { yahoo_symbol: (r.isin || r.symbol || "").toUpperCase() || null };
+
+    // Bestehendes Instrument über Name suchen, sonst neu anlegen.
+    const { data: existing } = await supabase
+      .from("instruments")
+      .select("id")
+      .eq("name", r.name)
+      .limit(1);
+    let instrumentId = existing?.[0]?.id as string | undefined;
+    if (!instrumentId) {
+      const { data: created } = await supabase
+        .from("instruments")
+        .insert({
+          user_id: userId,
+          kind,
+          name: r.name,
+          display_symbol: r.symbol || null,
+          currency: "EUR",
+          ...symField,
+        })
+        .select("id")
+        .single();
+      instrumentId = created?.id as string | undefined;
+    }
+    if (!instrumentId) continue;
+
+    await supabase.from("transactions").insert({
+      user_id: userId,
+      account_id: accountId,
+      instrument_id: instrumentId,
+      type: r.type === "sell" ? "sell" : "buy",
+      trade_date: r.date || new Date().toISOString().slice(0, 10),
+      quantity: r.quantity,
+      price: r.price,
+      amount: r.quantity * r.price,
+      fees: 0,
+      currency: "EUR",
+    });
+    inserted++;
+  }
+
+  revalidatePath("/", "layout");
+  return { inserted };
+}
+
 export async function deleteTransaction(formData: FormData): Promise<void> {
   const { supabase } = await requireUser();
   const id = String(formData.get("id") ?? "");
