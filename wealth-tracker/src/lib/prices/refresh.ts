@@ -324,7 +324,7 @@ async function backfillCryptoHistory(
 // Füllt die Kurs-Historie für Aktien/ETFs aus der Börse-Frankfurt-API — für
 // ALLE Titel (US, Europa, Asien) direkt in EURO. Pro Durchlauf begrenzt, damit
 // jede Aktualisierung schnell bleibt; der Rest wird nachgezogen.
-const BACKFILL_PER_RUN = 12;
+const BACKFILL_PER_RUN = 20;
 
 async function backfillUsStockHistory(
   supabase: SupabaseClient,

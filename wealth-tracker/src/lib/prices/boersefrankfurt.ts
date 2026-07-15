@@ -105,7 +105,7 @@ async function historyForMic(
     mic,
     minDate: fromDate,
     maxDate: toDate,
-    limit: "1000",
+    limit: "2600",
     offset: "0",
     cleanSplit: "false",
     cleanPayout: "false",
@@ -137,7 +137,7 @@ export async function fetchBfHistory(
   const salt = await fetchSalt();
   if (!salt) return [];
   const from =
-    fromDate ?? new Date(Date.now() - 1500 * 86400000).toISOString().slice(0, 10);
+    fromDate ?? new Date(Date.now() - 2800 * 86400000).toISOString().slice(0, 10);
   const to = new Date().toISOString().slice(0, 10);
   for (const mic of ["XETR", "XFRA", "TGAT"]) {
     const series = await historyForMic(isin, mic, salt, from, to);
