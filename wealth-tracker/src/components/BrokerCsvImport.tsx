@@ -2,10 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  importTradeRepublicCsv,
-  type BrokerImportResult,
-} from "@/app/(app)/actions";
+import type { ImportSummary } from "@/lib/import/traderepublic";
 
 interface Account {
   id: string;
@@ -26,7 +23,7 @@ export function BrokerCsvImport({ accounts }: { accounts: Account[] }) {
   );
   const [status, setStatus] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [result, setResult] = useState<BrokerImportResult | null>(null);
+  const [result, setResult] = useState<ImportSummary | null>(null);
 
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -37,12 +34,17 @@ export function BrokerCsvImport({ accounts }: { accounts: Account[] }) {
     try {
       const text = await file.text();
       setStatus("Transaktionen werden gebucht … (kann kurz dauern)");
-      const res = await importTradeRepublicCsv(accountId, text);
+      const res: ImportSummary = await fetch("/api/import-tr", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ accountId, csv: text }),
+      }).then((r) => r.json());
       setResult(res);
       if (res.inserted > 0) {
-        // Kurshistorie im Hintergrund nachladen – so lange, bis nichts mehr
-        // nachkommt (jeder Lauf füllt einen Teil der Instrumente).
-        setStatus("Kurshistorie wird geladen … (läuft weiter im Hintergrund)");
+        // Erst aktuelle Live-Kurse holen (damit die Depotwerte stimmen), dann
+        // die Kurshistorie nachladen – so lange, bis nichts mehr nachkommt.
+        setStatus("Live-Kurse und Historie werden geladen … (kann dauern)");
+        await fetch("/api/refresh", { method: "POST" }).catch(() => {});
         for (let i = 0; i < 12; i++) {
           const r = await fetch("/api/backfill", { method: "POST" })
             .then((x) => x.json())
@@ -50,6 +52,7 @@ export function BrokerCsvImport({ accounts }: { accounts: Account[] }) {
           if (!r || ((r.usFilled ?? 0) === 0 && (r.cryptoFilled ?? 0) === 0))
             break;
         }
+        await fetch("/api/refresh", { method: "POST" }).catch(() => {});
         setStatus(null);
       } else {
         setStatus("Nichts gebucht – bitte prüfen, ob es der TR-CSV-Export ist.");
@@ -128,6 +131,12 @@ export function BrokerCsvImport({ accounts }: { accounts: Account[] }) {
             <span>{result.counts.sell} Verkäufe</span>
             <span>{result.counts.dividend} Dividenden</span>
           </div>
+          {result.failed > 0 && (
+            <div className="rounded-lg border border-red-900/50 bg-red-950/30 p-2 text-xs text-red-200/80">
+              {result.failed} Zeilen konnten nicht gebucht werden.
+              {result.error ? ` (${result.error})` : ""}
+            </div>
+          )}
           {result.skipped.length > 0 && (
             <div className="border-t border-neutral-800 pt-2 text-xs text-neutral-500">
               <div className="mb-1">Nicht importiert:</div>
