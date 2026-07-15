@@ -16,6 +16,7 @@ const UA =
   "(KHTML, like Gecko) Chrome/125.0 Safari/537.36";
 
 let cachedSalt: { value: string; at: number } | null = null;
+let saltInflight: Promise<string | null> | null = null;
 
 function md5(s: string): string {
   return createHash("md5").update(s, "utf8").digest("hex");
@@ -36,39 +37,49 @@ function berlinStamp(): string {
   return `${get("year")}${get("month")}${get("day")}${get("hour")}${get("minute")}`;
 }
 
-// Holt (und cached) den salt aus der main.js der Website.
+// Holt (und cached) den salt aus der main.js der Website. Inflight-Dedup:
+// bei vielen gleichzeitigen Anfragen wird der Salt nur EINMAL geladen (statt
+// dass jede Anfrage die Homepage + main.js herunterlädt).
 export async function fetchSalt(): Promise<string | null> {
   if (cachedSalt && Date.now() - cachedSalt.at < 6 * 3600 * 1000) {
     return cachedSalt.value;
   }
-  try {
-    const home = await fetch("https://www.boerse-frankfurt.de/", {
-      headers: { "User-Agent": UA },
-      cache: "no-store",
-    });
-    const html = await home.text();
-    const jsFiles = [
-      ...html.matchAll(/(?:src|href)="([^"]*?main[^"]*?\.js)"/g),
-    ].map((m) => m[1]);
-    for (const rel of jsFiles) {
-      const jsUrl = rel.startsWith("http")
-        ? rel
-        : `https://www.boerse-frankfurt.de/${rel.replace(/^\//, "")}`;
-      const jsRes = await fetch(jsUrl, {
+  if (saltInflight) return saltInflight;
+  saltInflight = (async () => {
+    try {
+      const home = await fetch("https://www.boerse-frankfurt.de/", {
         headers: { "User-Agent": UA },
         cache: "no-store",
+        signal: AbortSignal.timeout(10000),
       });
-      const js = await jsRes.text();
-      const m = /salt:"(\w+)"/.exec(js);
-      if (m) {
-        cachedSalt = { value: m[1], at: Date.now() };
-        return m[1];
+      const html = await home.text();
+      const jsFiles = [
+        ...html.matchAll(/(?:src|href)="([^"]*?main[^"]*?\.js)"/g),
+      ].map((m) => m[1]);
+      for (const rel of jsFiles) {
+        const jsUrl = rel.startsWith("http")
+          ? rel
+          : `https://www.boerse-frankfurt.de/${rel.replace(/^\//, "")}`;
+        const jsRes = await fetch(jsUrl, {
+          headers: { "User-Agent": UA },
+          cache: "no-store",
+          signal: AbortSignal.timeout(10000),
+        });
+        const js = await jsRes.text();
+        const m = /salt:"(\w+)"/.exec(js);
+        if (m) {
+          cachedSalt = { value: m[1], at: Date.now() };
+          return m[1];
+        }
       }
+    } catch {
+      /* ignore */
+    } finally {
+      saltInflight = null;
     }
-  } catch {
-    /* ignore */
-  }
-  return null;
+    return cachedSalt?.value ?? null;
+  })();
+  return saltInflight;
 }
 
 // Signierte Header (minimal – kein origin/referer!).
@@ -182,18 +193,26 @@ function symbolToCode(sym: string | null | undefined): string {
   return "EUR";
 }
 
+// Server-Cache für Dividenden (ändern sich selten -> 12 h). Verhindert, dass
+// bei jedem /api/dividends-Aufruf für jede Aktie erneut BF angefragt wird.
+const divCache = new Map<string, { data: BfDividend[]; at: number }>();
+const DIV_TTL = 12 * 3600 * 1000;
+
 // Reale Dividenden-Zahlungen einer ISIN (je Aktie, Datum, Währung) von der
 // Börse-Frankfurt-API. Deckt viele Titel ab; leer, wenn BF keine Historie hat.
 export async function fetchBfDividends(isin: string): Promise<BfDividend[]> {
+  const cached = divCache.get(isin);
+  if (cached && Date.now() - cached.at < DIV_TTL) return cached.data;
+
   const salt = await fetchSalt();
-  if (!salt) return [];
+  if (!salt) return cached?.data ?? [];
   const url = `${BASE}dividend_information?isin=${isin}`;
   try {
     const res = await fetch(url, {
       headers: signedHeaders(url, salt),
       cache: "no-store",
     });
-    if (!res.ok) return [];
+    if (!res.ok) return cached?.data ?? [];
     const json = (await res.json().catch(() => null)) as {
       data?: {
         dividendLastPayment?: string;
@@ -201,15 +220,19 @@ export async function fetchBfDividends(isin: string): Promise<BfDividend[]> {
         dividendCurrency?: string;
       }[];
     } | null;
-    return (json?.data ?? [])
+    const out = (json?.data ?? [])
       .map((d) => ({
         date: String(d.dividendLastPayment ?? "").slice(0, 10),
         perShare: Number(d.dividendValue),
         currency: symbolToCode(d.dividendCurrency),
       }))
-      .filter((d) => d.date.length === 10 && Number.isFinite(d.perShare) && d.perShare > 0);
+      .filter(
+        (d) => d.date.length === 10 && Number.isFinite(d.perShare) && d.perShare > 0,
+      );
+    divCache.set(isin, { data: out, at: Date.now() });
+    return out;
   } catch {
-    return [];
+    return cached?.data ?? [];
   }
 }
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { formatEur, formatMoney, formatPct } from "@/lib/format";
+import { formatEur, formatMoney, formatPct, formatQuantity } from "@/lib/format";
 import { colorForName } from "./Donut";
 import type { DividendEvent } from "@/lib/data";
 
@@ -13,7 +13,17 @@ const MONTHS = [
 // Dividenden-Ansicht nach getquin-Vorbild: Jahres-Tabs, Balkendiagramm (pro
 // Monat im Jahr, pro Jahr bei All-Time) mit Ø-Linie und eine Aufschlüsselung.
 // Zeigt die tatsächlich erfassten („ausgezahlten") Dividenden.
-export function DividendsView({ events }: { events: DividendEvent[] }) {
+export function DividendsView({
+  events,
+  forecastAnnual = 0,
+  investValue = 0,
+  investCost = 0,
+}: {
+  events: DividendEvent[];
+  forecastAnnual?: number; // Dividenden der letzten 12 Monate (Run-Rate)
+  investValue?: number; // aktueller Investitionswert (für Rendite)
+  investCost?: number; // eingesetztes Kapital (für Yield on Cost)
+}) {
   const years = useMemo(() => {
     const s = new Set<number>();
     for (const e of events) s.add(new Date(e.date).getFullYear());
@@ -34,9 +44,9 @@ export function DividendsView({ events }: { events: DividendEvent[] }) {
   if (events.length === 0) {
     return (
       <p className="rounded-2xl border border-neutral-800 bg-neutral-900/40 p-4 text-sm text-neutral-400">
-        Noch keine Dividenden erfasst. Trage sie als Transaktion vom Typ
-        „Dividende" bei der jeweiligen Position ein – dann erscheinen hier
-        Kalender, Balken und Aufschlüsselung.
+        Noch keine Dividenden. Für viele Aktien werden sie automatisch über die
+        ISIN geladen; sonst als Transaktion vom Typ „Dividende" bei der Position
+        erfassen – dann erscheinen hier Balken und Aufschlüsselung.
       </p>
     );
   }
@@ -72,14 +82,47 @@ export function DividendsView({ events }: { events: DividendEvent[] }) {
       </div>
 
       {activeTab === "all" ? (
-        <AllTimeView events={events} years={years} sumFor={sumFor} />
+        <AllTimeView events={events} />
       ) : (
-        <YearView
-          events={events}
-          year={Number(activeTab)}
-          sumFor={sumFor}
-        />
+        <YearView events={events} year={Number(activeTab)} sumFor={sumFor} />
       )}
+
+      <YieldFooter
+        forecastAnnual={forecastAnnual}
+        investValue={investValue}
+        investCost={investCost}
+      />
+    </div>
+  );
+}
+
+// Dividendenrendite (Prognose) + Yield on Cost, aus dem Portfolio abgeleitet.
+function YieldFooter({
+  forecastAnnual,
+  investValue,
+  investCost,
+}: {
+  forecastAnnual: number;
+  investValue: number;
+  investCost: number;
+}) {
+  if (forecastAnnual <= 0 || investValue <= 0) return null;
+  const yieldFwd = (forecastAnnual / investValue) * 100;
+  const yoc = investCost > 0 ? (forecastAnnual / investCost) * 100 : null;
+  return (
+    <div className="mt-4 grid grid-cols-2 gap-3">
+      <div className="rounded-2xl border border-neutral-800 bg-neutral-900/40 p-4">
+        <div className="text-xs text-neutral-500">Dividendenrendite</div>
+        <div className="tabular mt-1 text-xl font-semibold text-emerald-400">
+          {formatPct(yieldFwd)}
+        </div>
+      </div>
+      <div className="rounded-2xl border border-neutral-800 bg-neutral-900/40 p-4">
+        <div className="text-xs text-neutral-500">Yield on Cost</div>
+        <div className="tabular mt-1 text-xl font-semibold">
+          {yoc !== null ? formatPct(yoc) : "–"}
+        </div>
+      </div>
     </div>
   );
 }
@@ -204,24 +247,24 @@ function YearView({
 }
 
 // --- All-Time: Jahresbalken + Positions-Aufschlüsselung ---------------------
-function AllTimeView({
-  events,
-  years,
-  sumFor,
-}: {
-  events: DividendEvent[];
-  years: number[];
-  sumFor: (y: number, m?: number) => number;
-}) {
-  const yearsAsc = [...years].sort((a, b) => a - b);
-  const totals = yearsAsc.map((y) => sumFor(y));
+// „Gesamteinnahmen" = nur tatsächlich erhaltene Dividenden (keine Prognose).
+function AllTimeView({ events }: { events: DividendEvent[] }) {
+  const actual = events.filter((e) => e.status !== "forecast");
+  const yearSet = new Set<number>();
+  for (const e of actual) yearSet.add(new Date(e.date).getFullYear());
+  const yearsAsc = [...yearSet].sort((a, b) => a - b);
+  const totals = yearsAsc.map((y) =>
+    actual
+      .filter((e) => new Date(e.date).getFullYear() === y)
+      .reduce((s, e) => s + e.amountEur, 0),
+  );
   const allTotal = totals.reduce((s, v) => s + v, 0);
   const avg = allTotal / (yearsAsc.length || 1);
   const maxYear = Math.max(...totals, 1);
 
-  // Summe je Position (all-time).
+  // Summe je Position (all-time, nur erhaltene).
   const byInstrument = new Map<string, number>();
-  for (const e of events) {
+  for (const e of actual) {
     byInstrument.set(
       e.instrumentName,
       (byInstrument.get(e.instrumentName) ?? 0) + e.amountEur,
@@ -232,7 +275,7 @@ function AllTimeView({
     .sort((a, b) => b.total - a.total);
 
   const stacksByYear = yearsAsc.map((y) =>
-    events
+    actual
       .filter((e) => new Date(e.date).getFullYear() === y)
       .sort((a, b) => b.amountEur - a.amountEur),
   );
@@ -329,7 +372,7 @@ function DividendRow({ e }: { e: DividendEvent }) {
         <div className="text-xs text-neutral-500 tabular">
           {d.toLocaleDateString("de-DE", { day: "2-digit", month: "short" })}
           {perShare !== null
-            ? ` · ${formatMoney(perShare, e.currency)} × ${e.quantity}`
+            ? ` · ${formatMoney(perShare, e.currency)} × ${formatQuantity(e.quantity ?? 0)}`
             : ""}
         </div>
       </div>

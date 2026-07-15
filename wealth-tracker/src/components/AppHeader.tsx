@@ -21,16 +21,25 @@ export function AppHeader({ title }: { title: string }) {
             <path d="M4 21c0-4 4-6 8-6s8 2 8 6" />
           </svg>
           {menuOpen && (
-            <div className="absolute left-0 top-11 z-30 w-40 overflow-hidden rounded-xl border border-neutral-800 bg-neutral-900 text-left text-sm shadow-xl">
-              <form action={signOut}>
-                <button
-                  type="submit"
-                  className="block w-full px-4 py-3 text-left text-neutral-200 hover:bg-neutral-800"
-                >
-                  Abmelden
-                </button>
-              </form>
-            </div>
+            <>
+              <span
+                className="fixed inset-0 z-20"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setMenuOpen(false);
+                }}
+              />
+              <div className="absolute left-0 top-11 z-30 w-40 overflow-hidden rounded-xl border border-neutral-800 bg-neutral-900 text-left text-sm shadow-xl">
+                <form action={signOut}>
+                  <button
+                    type="submit"
+                    className="block w-full px-4 py-3 text-left text-neutral-200 hover:bg-neutral-800"
+                  >
+                    Abmelden
+                  </button>
+                </form>
+              </div>
+            </>
           )}
         </button>
         <h1 className="text-2xl font-bold">{title}</h1>

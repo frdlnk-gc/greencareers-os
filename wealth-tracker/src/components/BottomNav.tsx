@@ -14,7 +14,7 @@ export function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="sticky bottom-0 z-20 border-t border-neutral-800 bg-neutral-950/90 backdrop-blur">
+    <nav className="sticky bottom-0 z-20 border-t border-neutral-800 bg-neutral-950/90 pb-[env(safe-area-inset-bottom)] backdrop-blur">
       <div className="mx-auto flex max-w-xl items-center justify-around px-2 py-2">
         {items.map(({ href, label, icon: Icon }) => {
           const active =

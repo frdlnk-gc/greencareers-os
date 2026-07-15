@@ -7,12 +7,28 @@ import { Donut, colorForName } from "@/components/Donut";
 import { DividendsView } from "@/components/DividendsView";
 import { LoadError } from "@/components/LoadError";
 import { formatEur } from "@/lib/format";
+import { usePersistentState } from "@/lib/usePersistentState";
 import { usePortfolio, useDividends } from "@/lib/store";
+import type { InstrumentKind } from "@/lib/types";
+
+type AllocView = "position" | "class";
+
+// Anlageklassen für die „Anlageklasse"-Ansicht der Allokation.
+const KIND_LABEL: Record<InstrumentKind, string> = {
+  stock: "Aktien",
+  etf: "ETFs",
+  crypto: "Krypto",
+  cash: "Cash",
+};
 
 export default function AnalysePage() {
   const { portfolio, error } = usePortfolio();
   const { data: dividends } = useDividends();
   const [selected, setSelected] = useState<string[]>([]);
+  const [allocView, setAllocView] = usePersistentState<AllocView>(
+    "allocView",
+    "position",
+  );
 
   if (!portfolio) {
     return (
@@ -40,20 +56,24 @@ export default function AnalysePage() {
       ? new Set(selected)
       : new Set(accounts.map((a) => a.id));
 
-  // Allokation je Position (über die gewählten Depots aggregiert).
-  const byInstrument = new Map<string, { name: string; value: number }>();
+  // Allokation über die gewählten Depots aggregiert – wahlweise je Position
+  // (einzelnes Instrument) oder je Anlageklasse (Aktien/ETFs/Krypto/Cash).
+  const byKey = new Map<string, { name: string; value: number }>();
   for (const a of portfolio.accounts) {
     if (!selectedIds.has(a.account.id)) continue;
     for (const p of a.positions) {
-      const cur = byInstrument.get(p.instrument.id) ?? {
-        name: p.instrument.name,
-        value: 0,
-      };
+      const key =
+        allocView === "class" ? p.instrument.kind : p.instrument.id;
+      const name =
+        allocView === "class"
+          ? KIND_LABEL[p.instrument.kind] ?? p.instrument.kind
+          : p.instrument.name;
+      const cur = byKey.get(key) ?? { name, value: 0 };
       cur.value += p.valueEur;
-      byInstrument.set(p.instrument.id, cur);
+      byKey.set(key, cur);
     }
   }
-  const segments = [...byInstrument.values()]
+  const segments = [...byKey.values()]
     .filter((x) => x.value > 0)
     .sort((a, b) => b.value - a.value)
     .map((x) => ({ label: x.name, value: x.value, color: colorForName(x.name) }));
@@ -63,6 +83,18 @@ export default function AnalysePage() {
   const divEvents = (dividends?.events ?? []).filter((e) =>
     selectedIds.has(e.accountId),
   );
+  // Run-Rate (letzte 12 Monate, ausgezahlt) + eingesetztes Kapital im Scope –
+  // für Dividendenrendite / Yield on Cost.
+  const yearMs = 365 * 86_400_000;
+  const nowMs = Date.now();
+  const divRunRate = divEvents
+    .filter(
+      (e) => e.status === "paid" && nowMs - new Date(e.date).getTime() <= yearMs,
+    )
+    .reduce((s, e) => s + e.amountEur, 0);
+  const scopeInvestCost = portfolio.accounts
+    .filter((a) => selectedIds.has(a.account.id))
+    .reduce((s, a) => s + a.investedEur, 0);
 
   return (
     <div>
@@ -79,7 +111,29 @@ export default function AnalysePage() {
 
       {/* Allokation */}
       <section className="mb-10">
-        <h2 className="mb-4 text-lg font-semibold">Allokation</h2>
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Allokation</h2>
+          <div className="flex gap-1 rounded-lg bg-neutral-900 p-0.5 text-xs font-medium">
+            {(
+              [
+                ["position", "Position"],
+                ["class", "Anlageklasse"],
+              ] as [AllocView, string][]
+            ).map(([key, label]) => (
+              <button
+                key={key}
+                onClick={() => setAllocView(key)}
+                className={`rounded-md px-2.5 py-1 transition-colors ${
+                  allocView === key
+                    ? "bg-neutral-800 text-neutral-100"
+                    : "text-neutral-500"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
         {segments.length === 0 ? (
           <p className="rounded-2xl border border-neutral-800 bg-neutral-900/40 p-4 text-sm text-neutral-400">
             Keine Positionen in der Auswahl.
@@ -115,7 +169,12 @@ export default function AnalysePage() {
       {/* Dividenden */}
       <section className="mb-4">
         <h2 className="mb-4 text-lg font-semibold">Dividenden</h2>
-        <DividendsView events={divEvents} />
+        <DividendsView
+          events={divEvents}
+          forecastAnnual={divRunRate}
+          investValue={allocTotal}
+          investCost={scopeInvestCost}
+        />
       </section>
     </div>
   );

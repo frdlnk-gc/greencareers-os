@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { formatEur, formatPct, changeColor } from "@/lib/format";
+import { usePersistentState } from "@/lib/usePersistentState";
 import { LineChart } from "./LineChart";
 import type { WealthScope } from "@/lib/store";
 
@@ -31,13 +32,16 @@ export function WealthChart({
   scopes: WealthScope[];
   initialScopeId?: string;
 }) {
+  // Scope hängt vom Kontext ab (Übersicht = „total", Depot = dessen ID) und
+  // wird daher NICHT gespeichert. Modus & Zeitraum sind Nutzervorlieben und
+  // bleiben über Tab-Wechsel/erneutes Öffnen erhalten.
   const [scopeId, setScopeId] = useState(
     scopes.some((s) => s.id === initialScopeId)
       ? initialScopeId
       : scopes[0]?.id ?? "total",
   );
-  const [mode, setMode] = useState<Mode>("performance");
-  const [chosen, setChosen] = useState<RangeKey>("30T");
+  const [mode, setMode] = usePersistentState<Mode>("chartMode", "performance");
+  const [chosen, setChosen] = usePersistentState<RangeKey>("chartRange", "30T");
 
   const scope = scopes.find((s) => s.id === scopeId) ?? scopes[0];
   if (!scope) return null;

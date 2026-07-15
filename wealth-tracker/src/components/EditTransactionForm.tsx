@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { editTransaction, deleteTransaction } from "@/app/(app)/actions";
 import { TRADE_CURRENCIES } from "@/lib/prices/fx";
+import { SubmitButton, ConfirmButton } from "./FormButtons";
 
 interface Tx {
   id: string;
@@ -186,12 +187,9 @@ export function EditTransactionForm({
           )}
         </div>
 
-        <button
-          type="submit"
-          className="w-full rounded-xl bg-emerald-600 px-4 py-3 font-medium text-white active:opacity-80"
-        >
+        <SubmitButton className="w-full rounded-xl bg-emerald-600 px-4 py-3 font-medium text-white active:opacity-80 disabled:opacity-50">
           Änderungen speichern
-        </button>
+        </SubmitButton>
       </form>
 
       {/* Löschen (separates Formular) */}
@@ -201,12 +199,12 @@ export function EditTransactionForm({
         {instrumentId && (
           <input type="hidden" name="instrument_id" value={instrumentId} />
         )}
-        <button
-          type="submit"
-          className="w-full rounded-xl border border-red-900/60 py-3 text-sm font-medium text-red-400 active:opacity-70"
+        <ConfirmButton
+          confirm="Diese Transaktion wirklich löschen?"
+          className="w-full rounded-xl border border-red-900/60 py-3 text-sm font-medium text-red-400 active:opacity-70 disabled:opacity-50"
         >
           Transaktion löschen
-        </button>
+        </ConfirmButton>
       </form>
     </>
   );

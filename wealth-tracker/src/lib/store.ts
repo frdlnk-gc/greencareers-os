@@ -60,7 +60,7 @@ async function load<T>(key: string, url: string, force = false): Promise<T> {
     return e.data as T;
   }
   if (e.inflight) return e.inflight as Promise<T>;
-  e.inflight = fetch(url, { cache: "no-store" })
+  e.inflight = fetch(url, { cache: "no-store", signal: AbortSignal.timeout(20000) })
     .then((r) => {
       if (!r.ok) throw new Error(`${url} ${r.status}`);
       return r.json();
@@ -120,14 +120,14 @@ function useResource<T>(
     load<T>(key, url, swr).catch(() => {});
   }, [key, url, swr]);
 
-  // Bei einem Fehler (z. B. kurzer Netz-/Serveraussetzer) automatisch erneut
-  // versuchen, damit die Seite nicht dauerhaft im Ladezustand hängt.
+  // Bei einem Fehler (z. B. Netz-/Serveraussetzer) automatisch weiter versuchen
+  // (alle 5 s), bis es klappt – dann wird das Intervall aufgeräumt.
   useEffect(() => {
     if (!errored) return;
-    const t = setTimeout(() => {
+    const t = setInterval(() => {
       load<T>(key, url, true).catch(() => {});
-    }, 4000);
-    return () => clearTimeout(t);
+    }, 5000);
+    return () => clearInterval(t);
   }, [errored, key, url]);
 
   const data = snapshot ?? null;
@@ -144,11 +144,12 @@ export function usePortfolio() {
 }
 
 export function usePerformance() {
-  return useResource<WealthData>("performance", "/api/performance");
+  // swr: nach Mutationen (Kauf/Verkauf) beim erneuten Öffnen frisch laden.
+  return useResource<WealthData>("performance", "/api/performance", true);
 }
 
 export function useDividends() {
-  return useResource<DividendSummary>("dividends", "/api/dividends");
+  return useResource<DividendSummary>("dividends", "/api/dividends", true);
 }
 
 // Alle Daten neu laden (nach „Aktualisieren" / Pull-to-Refresh). Löst zuerst
