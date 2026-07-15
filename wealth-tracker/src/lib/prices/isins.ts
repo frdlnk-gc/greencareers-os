@@ -70,7 +70,18 @@ export const SYMBOL_TO_ISIN: Record<string, string> = {
   SPCE: "US92766K1060", // Virgin Galactic
 };
 
+// Erkennt, ob ein String selbst schon eine ISIN ist (z. B. wenn ein neu
+// angelegtes Instrument die ISIN direkt im Symbolfeld trägt).
+export function looksLikeIsin(s: string | null | undefined): boolean {
+  return !!s && /^[A-Z]{2}[A-Z0-9]{9}\d$/.test(s.trim());
+}
+
+// Liefert die ISIN zu einem Symbol: erst aus der festen Zuordnung, sonst
+// (falls das Symbol selbst wie eine ISIN aussieht) das Symbol direkt.
 export function isinForSymbol(symbol: string | null | undefined): string | null {
   if (!symbol) return null;
-  return SYMBOL_TO_ISIN[symbol] ?? null;
+  const s = symbol.trim();
+  if (SYMBOL_TO_ISIN[s]) return SYMBOL_TO_ISIN[s];
+  if (looksLikeIsin(s)) return s;
+  return null;
 }

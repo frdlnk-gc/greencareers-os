@@ -90,9 +90,15 @@ export default async function OverviewPage() {
             ))}
           </ul>
 
-          <p className="mt-8 text-center text-xs text-neutral-600">
-            Tippe oben auf „Aktualisieren" für Live-Kurse · automatische
-            Updates folgen
+          <Link
+            href="/neu"
+            className="mt-4 flex items-center justify-center gap-2 rounded-xl border border-dashed border-neutral-700 py-3 text-sm text-neutral-400 active:opacity-70"
+          >
+            <span className="text-lg leading-none">+</span> Neues Depot
+          </Link>
+
+          <p className="mt-6 text-center text-xs text-neutral-600">
+            Tippe oben auf „Aktualisieren" für Live-Kurse
           </p>
         </section>
       )}
@@ -104,10 +110,15 @@ function EmptyState() {
   return (
     <div className="rounded-2xl border border-neutral-800 bg-neutral-900/40 p-6 text-center">
       <div className="mb-1 font-medium">Noch keine Depots</div>
-      <p className="text-sm text-neutral-400">
-        Sobald das Startpaket eingespielt ist, erscheinen hier deine Depots
-        aggregiert.
+      <p className="mb-4 text-sm text-neutral-400">
+        Lege dein erstes Depot an und erfasse deine Positionen.
       </p>
+      <Link
+        href="/neu"
+        className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white active:opacity-80"
+      >
+        <span className="text-lg leading-none">+</span> Neues Depot
+      </Link>
     </div>
   );
 }
