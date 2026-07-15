@@ -182,10 +182,6 @@ export async function refreshPrices(
         .from("price_history")
         .upsert(histRows, { onConflict: "instrument_id,as_of" });
     }
-    // Krypto einmalig aus CoinGecko rückbefüllen (max. 365 Tage).
-    await backfillCryptoHistory(supabase, cryptos);
-    // US-Aktien-Historie einmalig aus FMP rückbefüllen (in EUR umgerechnet).
-    await backfillUsStockHistory(supabase, stocks);
   } catch {
     // Historie optional — ignorieren, wenn Tabelle fehlt.
   }
@@ -193,12 +189,45 @@ export async function refreshPrices(
   return { updated: rows.length, stockUpdated, cryptoUpdated, failed, sources };
 }
 
+// Füllt die Kurs-HISTORIE nach (für Charts/Zeiträume). Läuft getrennt vom
+// normalen Aktualisieren im Hintergrund, damit das Aktualisieren schnell bleibt.
+// Krypto in einem Rutsch (CoinGecko), US-Aktien gedrosselt (Twelve Data 8/Min).
+export interface HistoryResult {
+  cryptoFilled: number;
+  usFilled: number;
+}
+export async function refreshHistory(
+  supabase: SupabaseClient,
+): Promise<HistoryResult> {
+  const { data } = await supabase
+    .from("instruments")
+    .select("id,kind,yahoo_symbol,coingecko_id");
+  const instruments = (data ?? []) as InstrumentRow[];
+  const cryptos = instruments.filter(
+    (i) => i.kind === "crypto" && i.coingecko_id,
+  );
+  const stocks = instruments.filter(
+    (i) => i.kind !== "crypto" && i.yahoo_symbol,
+  );
+
+  let cryptoFilled = 0;
+  let usFilled = 0;
+  try {
+    cryptoFilled = await backfillCryptoHistory(supabase, cryptos);
+    usFilled = await backfillUsStockHistory(supabase, stocks);
+  } catch {
+    // Historie optional.
+  }
+  return { cryptoFilled, usFilled };
+}
+
 // Füllt die Kurs-Historie für Krypto-Instrumente einmalig aus CoinGecko.
 // Läuft nur für Coins, die noch (fast) keine Historie haben.
 async function backfillCryptoHistory(
   supabase: SupabaseClient,
   cryptos: InstrumentRow[],
-): Promise<void> {
+): Promise<number> {
+  let filled = 0;
   for (const c of cryptos) {
     const id = c.coingecko_id;
     if (!id) continue;
@@ -218,21 +247,23 @@ async function backfillCryptoHistory(
     await supabase
       .from("price_history")
       .upsert(histRows, { onConflict: "instrument_id,as_of" });
+    filled++;
   }
+  return filled;
 }
 
 // Füllt die Kurs-Historie für US-Aktien aus Twelve Data (Gratis-Tarif) und
 // rechnet die USD-Schlusskurse mit historischen Frankfurter-Kursen in EUR um.
 // Wegen des Ratelimits (8/Min) höchstens einige Titel pro Aktualisierung –
 // der Rest wird bei den nächsten Aktualisierungen nachgezogen.
-const BACKFILL_PER_RUN = 6;
+const BACKFILL_PER_RUN = 7;
 
 async function backfillUsStockHistory(
   supabase: SupabaseClient,
   stocks: InstrumentRow[],
-): Promise<void> {
+): Promise<number> {
   const apiKey = process.env.TWELVEDATA_API_KEY ?? "";
-  if (!apiKey) return;
+  if (!apiKey) return 0;
 
   const usStocks = stocks.filter(
     (i) =>
@@ -240,12 +271,12 @@ async function backfillUsStockHistory(
       !looksLikeIsin(i.yahoo_symbol) &&
       currencyForSymbol(i.yahoo_symbol) === "USD",
   );
-  if (usStocks.length === 0) return;
+  if (usStocks.length === 0) return 0;
 
   // Historische USD->EUR-Kurse einmal laden (~2 Jahre).
   const start = new Date(Date.now() - 800 * 86400000).toISOString().slice(0, 10);
   const fx = await fetchFrankfurterSeriesToEur("USD", start);
-  if (fx.length === 0) return;
+  if (fx.length === 0) return 0;
   const eurPerUsdAt = (ms: number): number | null => {
     let rate: number | null = null;
     for (const [t, r] of fx) {
@@ -256,6 +287,7 @@ async function backfillUsStockHistory(
   };
 
   let done = 0;
+  let filled = 0;
   for (const s of usStocks) {
     if (done >= BACKFILL_PER_RUN) break;
     const { count } = await supabase
@@ -278,5 +310,7 @@ async function backfillUsStockHistory(
     await supabase
       .from("price_history")
       .upsert(histRows, { onConflict: "instrument_id,as_of" });
+    filled++;
   }
+  return filled;
 }
