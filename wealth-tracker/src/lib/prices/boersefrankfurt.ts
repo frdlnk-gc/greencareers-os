@@ -182,18 +182,26 @@ function symbolToCode(sym: string | null | undefined): string {
   return "EUR";
 }
 
+// Server-Cache für Dividenden (ändern sich selten -> 12 h). Verhindert, dass
+// bei jedem /api/dividends-Aufruf für jede Aktie erneut BF angefragt wird.
+const divCache = new Map<string, { data: BfDividend[]; at: number }>();
+const DIV_TTL = 12 * 3600 * 1000;
+
 // Reale Dividenden-Zahlungen einer ISIN (je Aktie, Datum, Währung) von der
 // Börse-Frankfurt-API. Deckt viele Titel ab; leer, wenn BF keine Historie hat.
 export async function fetchBfDividends(isin: string): Promise<BfDividend[]> {
+  const cached = divCache.get(isin);
+  if (cached && Date.now() - cached.at < DIV_TTL) return cached.data;
+
   const salt = await fetchSalt();
-  if (!salt) return [];
+  if (!salt) return cached?.data ?? [];
   const url = `${BASE}dividend_information?isin=${isin}`;
   try {
     const res = await fetch(url, {
       headers: signedHeaders(url, salt),
       cache: "no-store",
     });
-    if (!res.ok) return [];
+    if (!res.ok) return cached?.data ?? [];
     const json = (await res.json().catch(() => null)) as {
       data?: {
         dividendLastPayment?: string;
@@ -201,15 +209,19 @@ export async function fetchBfDividends(isin: string): Promise<BfDividend[]> {
         dividendCurrency?: string;
       }[];
     } | null;
-    return (json?.data ?? [])
+    const out = (json?.data ?? [])
       .map((d) => ({
         date: String(d.dividendLastPayment ?? "").slice(0, 10),
         perShare: Number(d.dividendValue),
         currency: symbolToCode(d.dividendCurrency),
       }))
-      .filter((d) => d.date.length === 10 && Number.isFinite(d.perShare) && d.perShare > 0);
+      .filter(
+        (d) => d.date.length === 10 && Number.isFinite(d.perShare) && d.perShare > 0,
+      );
+    divCache.set(isin, { data: out, at: Date.now() });
+    return out;
   } catch {
-    return [];
+    return cached?.data ?? [];
   }
 }
 
