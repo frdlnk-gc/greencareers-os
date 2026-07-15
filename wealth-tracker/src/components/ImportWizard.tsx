@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { importTransactions, type ImportRow } from "@/app/(app)/actions";
+import { TRADE_CURRENCIES } from "@/lib/prices/fx";
 
 interface Account {
   id: string;
@@ -18,6 +19,7 @@ const emptyRow = (): ImportRow => ({
   kind: "stock",
   quantity: 0,
   price: 0,
+  currency: "EUR",
   date: new Date().toISOString().slice(0, 10),
 });
 
@@ -267,13 +269,27 @@ export function ImportWizard({ accounts }: { accounts: Account[] }) {
               placeholder="Menge"
               className={cell}
             />
-            <input
-              value={r.price || ""}
-              onChange={(e) => update(i, { price: Number(e.target.value) || 0 })}
-              inputMode="decimal"
-              placeholder="Kurs (EUR)"
-              className={cell}
-            />
+            <div className="flex gap-2">
+              <input
+                value={r.price || ""}
+                onChange={(e) => update(i, { price: Number(e.target.value) || 0 })}
+                inputMode="decimal"
+                placeholder="Kurs"
+                className={cell}
+              />
+              <select
+                value={r.currency ?? "EUR"}
+                onChange={(e) => update(i, { currency: e.target.value })}
+                className={cell + " w-24 shrink-0"}
+                aria-label="Währung"
+              >
+                {TRADE_CURRENCIES.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            </div>
             <input
               type="date"
               value={r.date ?? ""}

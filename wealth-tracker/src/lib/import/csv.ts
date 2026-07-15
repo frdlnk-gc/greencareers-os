@@ -11,7 +11,23 @@ export interface ParsedRow {
   kind?: "stock" | "etf" | "crypto";
   quantity: number;
   price: number;
+  currency?: string;
   date?: string;
+}
+
+// Erkennt einen ISO-Währungscode (z. B. "USD", "CA$", "EUR").
+function detectCurrency(v: string | undefined): string | undefined {
+  if (!v) return undefined;
+  const s = v.toUpperCase();
+  const m = /\b(EUR|USD|CAD|GBP|GBX|CHF|JPY|HKD|SEK|DKK|NOK|AUD|NZD|SGD|CNY|PLN|CZK|ZAR)\b/.exec(
+    s,
+  );
+  if (m) return m[1] === "GBX" ? "GBP" : m[1];
+  if (s.includes("CA$") || s.includes("C$")) return "CAD";
+  if (s.includes("US$")) return "USD";
+  if (s.includes("€")) return "EUR";
+  if (s.includes("£")) return "GBP";
+  return undefined;
 }
 
 function detectDelimiter(line: string): string {
@@ -104,6 +120,7 @@ export function parseCsvTransactions(text: string): ParsedRow[] {
     symbol: findCol(headers, ["symbol", "ticker", "wkn", "kürzel", "kurzel"]),
     qty: findCol(headers, ["quantity", "anzahl", "stück", "stuck", "menge", "shares", "nominal", "units", "stk"]),
     price: findCol(headers, ["price", "kurs", "preis", "rate", "ausführungskurs", "einstand"]),
+    currency: findCol(headers, ["currency", "währung", "waehrung", "ccy", "devise"]),
     date: findCol(headers, ["date", "datum", "zeit", "time", "handelstag", "valuta"]),
   };
 
@@ -121,6 +138,11 @@ export function parseCsvTransactions(text: string): ParsedRow[] {
 
     if ((!name && !isin) || qty == null || qty === 0) continue;
 
+    // Währung: eigene Spalte, sonst aus der Kurs-Zelle (z. B. "2.609,00 CA$").
+    const currency =
+      (col.currency >= 0 ? detectCurrency(cells[col.currency]) : undefined) ??
+      (col.price >= 0 ? detectCurrency(cells[col.price]) : undefined);
+
     rows.push({
       type: isSell ? "sell" : "buy",
       name: name || isin,
@@ -129,6 +151,7 @@ export function parseCsvTransactions(text: string): ParsedRow[] {
       kind: "stock",
       quantity: qty,
       price: price ?? 0,
+      currency,
       date: col.date >= 0 ? normalizeDate(cells[col.date]) : undefined,
     });
   }

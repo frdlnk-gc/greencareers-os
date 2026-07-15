@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createTransaction } from "@/app/(app)/actions";
+import { TRADE_CURRENCIES } from "@/lib/prices/fx";
 
 interface InstrumentOption {
   id: string;
@@ -26,6 +27,7 @@ export function TransactionForm({
     instruments[0]?.id ?? "__new__",
   );
   const [newKind, setNewKind] = useState("stock");
+  const [currency, setCurrency] = useState("EUR");
 
   const isCash = type === "deposit" || type === "withdrawal";
   const isDividend = type === "dividend";
@@ -120,32 +122,65 @@ export function TransactionForm({
 
       {/* Mengen/Kurs bei Kauf/Verkauf */}
       {!isCash && !isDividend && (
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1 block text-sm text-neutral-400">Menge</label>
+              <input
+                name="quantity"
+                inputMode="decimal"
+                placeholder="0"
+                className={inputCls}
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm text-neutral-400">
+                Kurs je Stück
+              </label>
+              <input
+                name="price"
+                inputMode="decimal"
+                placeholder="0,00"
+                className={inputCls}
+              />
+            </div>
+          </div>
+          <CurrencyField value={currency} onChange={setCurrency} />
+        </div>
+      )}
+
+      {/* Betrag bei Dividende */}
+      {isDividend && (
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="mb-1 block text-sm text-neutral-400">Menge</label>
+            <label className="mb-1 block text-sm text-neutral-400">Betrag</label>
             <input
-              name="quantity"
-              inputMode="decimal"
-              placeholder="0"
-              className={inputCls}
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm text-neutral-400">
-              Kurs je Stück (EUR)
-            </label>
-            <input
-              name="price"
+              name="amount"
               inputMode="decimal"
               placeholder="0,00"
               className={inputCls}
             />
           </div>
+          <div>
+            <label className="mb-1 block text-sm text-neutral-400">Währung</label>
+            <select
+              name="currency"
+              value={currency}
+              onChange={(e) => setCurrency(e.target.value)}
+              className={inputCls}
+            >
+              {TRADE_CURRENCIES.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       )}
 
-      {/* Betrag bei Dividende / Cash */}
-      {(isCash || isDividend) && (
+      {/* Betrag bei Cash (immer EUR) */}
+      {isCash && (
         <div>
           <label className="mb-1 block text-sm text-neutral-400">
             Betrag (EUR)
@@ -156,6 +191,7 @@ export function TransactionForm({
             placeholder="0,00"
             className={inputCls}
           />
+          <input type="hidden" name="currency" value="EUR" />
         </div>
       )}
 
@@ -192,5 +228,38 @@ export function TransactionForm({
         Speichern
       </button>
     </form>
+  );
+}
+
+// Währung des Kurses (z. B. CA$ bei Constellation über CapTrader). Wird beim
+// Speichern korrekt in EUR umgerechnet.
+function CurrencyField({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div>
+      <label className="mb-1 block text-sm text-neutral-400">
+        Währung des Kurses
+      </label>
+      <select
+        name="currency"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className={inputCls}
+      >
+        {TRADE_CURRENCIES.map((c) => (
+          <option key={c} value={c}>
+            {c}
+          </option>
+        ))}
+      </select>
+      <p className="mt-1 text-xs text-neutral-600">
+        In der Währung, in der dein Broker den Kurs anzeigt (z. B. CAD, USD).
+      </p>
+    </div>
   );
 }

@@ -275,13 +275,17 @@ export async function createTransaction(formData: FormData): Promise<void> {
     new Date().toISOString().slice(0, 10);
   if (!accountId) return;
 
+  // Währung des Kurses/Betrags (Kauf/Verkauf/Dividende); Cash immer EUR.
+  const rawCur = String(formData.get("currency") ?? "EUR").toUpperCase();
+  const currency = /^[A-Z]{3}$/.test(rawCur) ? rawCur : "EUR";
+
   const base = {
     user_id: userId,
     account_id: accountId,
     type,
     trade_date: date,
     fees: num(formData.get("fees")) ?? 0,
-    currency: "EUR",
+    currency,
   };
 
   if (type === "deposit" || type === "withdrawal") {
@@ -307,7 +311,10 @@ export async function createTransaction(formData: FormData): Promise<void> {
             ? quantity * price
             : null,
     });
-    // Falls noch kein Kurs bekannt ist: eingegebenen Kurs als Startwert setzen.
+    // Falls noch kein Kurs bekannt ist: eingegebenen Kurs als Startwert setzen
+    // (in seiner Originalwährung – die Anzeige rechnet in EUR um). Ein echter
+    // Live-Kurs (Börse Frankfurt, in EUR) überschreibt ihn beim nächsten
+    // Aktualisieren.
     if (type === "buy" && price != null) {
       await supabase
         .from("prices")
@@ -315,7 +322,7 @@ export async function createTransaction(formData: FormData): Promise<void> {
           {
             instrument_id: instrumentId,
             price,
-            currency: "EUR",
+            currency,
             change_pct_1d: 0,
             source: "manuell",
           },
@@ -337,6 +344,7 @@ export interface ImportRow {
   kind?: "stock" | "etf" | "crypto";
   quantity: number;
   price: number;
+  currency?: string;
   date?: string;
 }
 
@@ -380,6 +388,8 @@ export async function importTransactions(
     }
     if (!instrumentId) continue;
 
+    const rawCur = String(r.currency ?? "EUR").toUpperCase();
+    const currency = /^[A-Z]{3}$/.test(rawCur) ? rawCur : "EUR";
     await supabase.from("transactions").insert({
       user_id: userId,
       account_id: accountId,
@@ -390,7 +400,7 @@ export async function importTransactions(
       price: r.price,
       amount: r.quantity * r.price,
       fees: 0,
-      currency: "EUR",
+      currency,
     });
     inserted++;
   }

@@ -28,6 +28,28 @@ export function formatEur(value: number, decimals = true): string {
   return (decimals ? eur : eur0).format(value);
 }
 
+// Betrag in seiner Originalwährung (z. B. 2.609,00 CA$). Fällt bei unbekannter
+// Währung sauber auf ein einfaches Format zurück.
+export function formatMoney(
+  value: number,
+  currency: string | null | undefined,
+): string {
+  const cur = currency && /^[A-Z]{3}$/.test(currency) ? currency : "EUR";
+  try {
+    return new Intl.NumberFormat("de-DE", {
+      style: "currency",
+      currency: cur,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(value);
+  } catch {
+    return `${value.toLocaleString("de-DE", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })} ${cur}`;
+  }
+}
+
 export function formatPct(value: number | null): string {
   if (value === null || Number.isNaN(value)) return "–";
   const sign = value > 0 ? "+" : "";

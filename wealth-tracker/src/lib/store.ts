@@ -116,6 +116,16 @@ function useResource<T>(
     load<T>(key, url, swr).catch(() => {});
   }, [key, url, swr]);
 
+  // Bei einem Fehler (z. B. kurzer Netz-/Serveraussetzer) automatisch erneut
+  // versuchen, damit die Seite nicht dauerhaft im Ladezustand hängt.
+  useEffect(() => {
+    if (!errored) return;
+    const t = setTimeout(() => {
+      load<T>(key, url, true).catch(() => {});
+    }, 4000);
+    return () => clearTimeout(t);
+  }, [errored, key, url]);
+
   const data = snapshot ?? null;
   return { data, loading: data === null && !errored, error: errored };
 }

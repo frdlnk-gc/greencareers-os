@@ -7,16 +7,17 @@ import { AppHeader } from "@/components/AppHeader";
 import { AutoRefresh } from "@/components/AutoRefresh";
 import { LastUpdated } from "@/components/LastUpdated";
 import { PerformanceSection } from "@/components/PerformanceSection";
+import { LoadError } from "@/components/LoadError";
 import { usePortfolio } from "@/lib/store";
 
 export default function OverviewPage() {
-  const { portfolio } = usePortfolio();
+  const { portfolio, error } = usePortfolio();
 
   if (!portfolio) {
     return (
       <div>
         <AppHeader title="Übersicht" />
-        <OverviewSkeleton />
+        {error ? <LoadError label="Vermögen" /> : <OverviewSkeleton />}
       </div>
     );
   }

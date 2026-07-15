@@ -1,3 +1,4 @@
+import { toEur } from "./prices/fx";
 import type {
   Account,
   AccountSummary,
@@ -14,14 +15,6 @@ export interface PortfolioInput {
   transactions: Transaction[];
   prices: Price[];
   fxRates: Record<string, number>; // Währung -> (1 EUR = rate * Währung)
-}
-
-// Rechnet einen Betrag aus einer Fremdwährung in EUR um.
-function toEur(amount: number, currency: string, fxRates: Record<string, number>): number {
-  if (!currency || currency === "EUR") return amount;
-  const rate = fxRates[currency];
-  if (!rate || rate <= 0) return amount; // Fallback: unbekannte Währung 1:1
-  return amount / rate;
 }
 
 // Baut aus Transaktionen + Kursen die aggregierten Depot- und Gesamtwerte.
