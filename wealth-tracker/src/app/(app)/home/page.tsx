@@ -1,11 +1,11 @@
+"use client";
+
 import Link from "next/link";
-import { getPortfolio } from "@/lib/data";
 import { formatEur, formatPct, changeColor } from "@/lib/format";
+import { usePortfolio } from "@/lib/store";
 
-export const dynamic = "force-dynamic";
-
-export default async function HomePage() {
-  const p = await getPortfolio();
+export default function HomePage() {
+  const { portfolio: p } = usePortfolio();
 
   return (
     <div>
@@ -29,27 +29,40 @@ export default async function HomePage() {
       {/* Nettovermögen */}
       <section className="mb-6 rounded-2xl border border-neutral-800 bg-neutral-900/40 p-5">
         <div className="text-sm text-neutral-400">Gesamtvermögen</div>
-        <div className="tabular mt-1 text-3xl font-semibold tracking-tight">
-          {formatEur(p.totalValueEur)}
-        </div>
-        <div className={`mt-1 text-sm tabular ${changeColor(p.changeEur1d)}`}>
-          {formatPct(p.changePct1d)} · {p.changeEur1d >= 0 ? "+" : ""}
-          {formatEur(p.changeEur1d)} heute
-        </div>
-        <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
-          <div>
-            <div className="text-neutral-500">Investitionen</div>
-            <div className="tabular font-medium">
-              {formatEur(p.investmentsValueEur)}
+        {p ? (
+          <>
+            <div className="tabular mt-1 text-3xl font-semibold tracking-tight">
+              {formatEur(p.totalValueEur)}
+            </div>
+            <div className={`mt-1 text-sm tabular ${changeColor(p.changeEur1d)}`}>
+              {formatPct(p.changePct1d)} · {p.changeEur1d >= 0 ? "+" : ""}
+              {formatEur(p.changeEur1d)} heute
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
+              <div>
+                <div className="text-neutral-500">Investitionen</div>
+                <div className="tabular font-medium">
+                  {formatEur(p.investmentsValueEur)}
+                </div>
+              </div>
+              <div>
+                <div className="text-neutral-500">Weitere Werte</div>
+                <div className="tabular font-medium">
+                  {formatEur(p.otherAssetsEur)}
+                </div>
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="animate-pulse">
+            <div className="mt-1 h-9 w-48 rounded bg-neutral-800" />
+            <div className="mt-2 h-4 w-32 rounded bg-neutral-800" />
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <div className="h-10 rounded bg-neutral-800" />
+              <div className="h-10 rounded bg-neutral-800" />
             </div>
           </div>
-          <div>
-            <div className="text-neutral-500">Weitere Werte</div>
-            <div className="tabular font-medium">
-              {formatEur(p.otherAssetsEur)}
-            </div>
-          </div>
-        </div>
+        )}
       </section>
 
       {/* Schnellzugriff */}
@@ -95,6 +108,7 @@ function QuickAction({
   return (
     <Link
       href={href}
+      prefetch
       className={`rounded-2xl border p-4 active:opacity-70 ${
         accent
           ? "border-emerald-700/60 bg-emerald-600/10"

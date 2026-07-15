@@ -1,23 +1,29 @@
+"use client";
+
 import Link from "next/link";
-import { getPortfolio, getLastPriceUpdate } from "@/lib/data";
 import { formatEur, formatPct, changeColor } from "@/lib/format";
 import { Avatar } from "@/components/Avatar";
 import { AppHeader } from "@/components/AppHeader";
 import { AutoRefresh } from "@/components/AutoRefresh";
 import { LastUpdated } from "@/components/LastUpdated";
-import { PeriodPerformance } from "@/components/PeriodPerformance";
-import { LineChart } from "@/components/LineChart";
-import { getPeriodPerformance } from "@/lib/data";
+import { PerformanceSection } from "@/components/PerformanceSection";
+import { usePortfolio } from "@/lib/store";
 
-export const dynamic = "force-dynamic";
+export default function OverviewPage() {
+  const { portfolio } = usePortfolio();
 
-export default async function OverviewPage() {
-  const [portfolio, lastUpdate, performance] = await Promise.all([
-    getPortfolio(),
-    getLastPriceUpdate(),
-    getPeriodPerformance(),
-  ]);
-  const lastUpdatedMs = lastUpdate ? new Date(lastUpdate).getTime() : null;
+  if (!portfolio) {
+    return (
+      <div>
+        <AppHeader title="Übersicht" />
+        <OverviewSkeleton />
+      </div>
+    );
+  }
+
+  const lastUpdatedMs = portfolio.lastUpdate
+    ? new Date(portfolio.lastUpdate).getTime()
+    : null;
   const {
     accounts,
     otherAccounts,
@@ -55,16 +61,9 @@ export default async function OverviewPage() {
           {formatEur(changeEur1d)} heute
         </div>
         <div className="mt-1">
-          <LastUpdated iso={lastUpdate} />
+          <LastUpdated iso={portfolio.lastUpdate} />
         </div>
-        <div className="mt-4">
-          <PeriodPerformance data={performance.total} />
-        </div>
-        {performance.totalSeries.length >= 2 && (
-          <div className="mt-4">
-            <LineChart points={performance.totalSeries} height={140} />
-          </div>
-        )}
+        <PerformanceSection scope="total" />
       </section>
 
       {!hasData ? (
@@ -89,6 +88,7 @@ export default async function OverviewPage() {
               <li key={a.account.id}>
                 <Link
                   href={`/depot/${a.account.id}`}
+                  prefetch
                   className="flex items-center gap-3 py-4 active:opacity-70"
                 >
                   <Avatar label={a.account.name} />
@@ -135,6 +135,7 @@ export default async function OverviewPage() {
                 <li key={a.account.id}>
                   <Link
                     href={`/depot/${a.account.id}`}
+                    prefetch
                     className="flex items-center gap-3 py-4 active:opacity-70"
                   >
                     <Avatar label={a.account.name} />
@@ -168,10 +169,37 @@ export default async function OverviewPage() {
           </Link>
 
           <p className="mt-6 text-center text-xs text-neutral-600">
-            Tippe oben auf „Aktualisieren" für Live-Kurse
+            Nach unten ziehen für Live-Kurse
           </p>
         </section>
       )}
+    </div>
+  );
+}
+
+function OverviewSkeleton() {
+  return (
+    <div className="animate-pulse">
+      <div className="mb-8">
+        <div className="mb-2 h-4 w-32 rounded bg-neutral-900" />
+        <div className="mb-2 h-10 w-56 rounded bg-neutral-900" />
+        <div className="h-4 w-40 rounded bg-neutral-900" />
+        <div className="mt-4 h-8 w-full rounded-lg bg-neutral-900" />
+        <div className="mt-4 h-[140px] w-full rounded-lg bg-neutral-900" />
+      </div>
+      <div className="mb-2 h-7 w-40 rounded bg-neutral-900" />
+      <div className="space-y-3">
+        {[0, 1, 2].map((i) => (
+          <div key={i} className="flex items-center gap-3 py-2">
+            <div className="h-11 w-11 rounded-full bg-neutral-900" />
+            <div className="flex-1 space-y-2">
+              <div className="h-4 w-32 rounded bg-neutral-900" />
+              <div className="h-3 w-20 rounded bg-neutral-900" />
+            </div>
+            <div className="h-4 w-16 rounded bg-neutral-900" />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

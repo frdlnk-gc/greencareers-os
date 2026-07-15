@@ -1,41 +1,24 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { signOut } from "@/app/auth/actions";
+import { refreshAll } from "@/lib/store";
 
 // Kopfzeile mit Titel, Live-Aktualisieren-Button und Abmelden.
 export function AppHeader({ title }: { title: string }) {
-  const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   function refresh() {
-    setError(null);
     setNote(null);
     startTransition(async () => {
       try {
-        const res = await fetch("/api/refresh", { method: "POST" });
-        const body = (await res.json().catch(() => ({}))) as {
-          error?: string;
-          updated?: number;
-          failed?: string[];
-        };
-        if (!res.ok) {
-          setError(body.error ?? "Aktualisieren fehlgeschlagen.");
-        } else {
-          const failedCount = body.failed?.length ?? 0;
-          setNote(
-            `${body.updated ?? 0} Kurse aktualisiert` +
-              (failedCount > 0 ? ` · ${failedCount} ohne Kurs` : ""),
-          );
-        }
+        await refreshAll();
+        setNote("aktualisiert");
       } catch {
-        setError("Netzwerkfehler beim Aktualisieren.");
+        setNote("Aktualisieren fehlgeschlagen");
       }
-      router.refresh();
     });
   }
 
@@ -92,10 +75,7 @@ export function AppHeader({ title }: { title: string }) {
         </button>
       </div>
 
-      {error && (
-        <p className="mt-2 text-right text-xs text-red-400">{error}</p>
-      )}
-      {note && !error && (
+      {note && (
         <p className="mt-2 text-right text-xs text-neutral-500">{note}</p>
       )}
     </header>
