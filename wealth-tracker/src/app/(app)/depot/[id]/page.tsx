@@ -13,7 +13,9 @@ export default async function DepotPage({
 }) {
   const { id } = await params;
   const portfolio = await getPortfolio();
-  const summary = portfolio.accounts.find((a) => a.account.id === id);
+  const summary = [...portfolio.accounts, ...portfolio.otherAccounts].find(
+    (a) => a.account.id === id,
+  );
 
   if (!summary) notFound();
 

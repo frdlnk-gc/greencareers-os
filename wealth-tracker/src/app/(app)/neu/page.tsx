@@ -44,11 +44,27 @@ export default function NewAccountPage() {
             <option value="other">Sonstiges Vermögen</option>
           </select>
         </div>
+        <div className="rounded-xl border border-neutral-800 bg-neutral-900/40 p-3">
+          <label className="mb-1 block text-sm text-neutral-400">
+            Aktueller Wert (nur für Cash / Sonstiges)
+          </label>
+          <input
+            name="value"
+            inputMode="decimal"
+            placeholder="z. B. 15000"
+            className="w-full rounded-xl border border-neutral-800 bg-neutral-900 px-4 py-3 text-base outline-none focus:border-neutral-600"
+          />
+          <label className="mt-3 flex items-center gap-2 text-sm text-neutral-300">
+            <input type="checkbox" name="liability" className="h-4 w-4 accent-red-500" />
+            Ist eine Verbindlichkeit (Schulden – wird abgezogen)
+          </label>
+        </div>
+
         <button
           type="submit"
           className="w-full rounded-xl bg-emerald-600 px-4 py-3 font-medium text-white active:opacity-80"
         >
-          Depot anlegen
+          Anlegen
         </button>
       </form>
     </div>

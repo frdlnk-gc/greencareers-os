@@ -42,13 +42,37 @@ export async function createAccount(formData: FormData): Promise<void> {
     .limit(1);
   const nextOrder = ((existing?.[0]?.sort_order as number | undefined) ?? -1) + 1;
 
-  await supabase.from("accounts").insert({
-    user_id: userId,
-    name,
-    type: ["broker", "crypto", "cash", "other"].includes(type) ? type : "broker",
-    currency: "EUR",
-    sort_order: nextOrder,
-  });
+  const finalType = ["broker", "crypto", "cash", "other"].includes(type)
+    ? type
+    : "broker";
+
+  const { data: acc } = await supabase
+    .from("accounts")
+    .insert({
+      user_id: userId,
+      name,
+      type: finalType,
+      currency: "EUR",
+      sort_order: nextOrder,
+    })
+    .select("id")
+    .single();
+
+  // Optionaler Startwert für Cash/Sonstiges (Verbindlichkeit -> negativ).
+  const value = num(formData.get("value"));
+  const isLiability = formData.get("liability") === "on";
+  if (acc && value != null && (finalType === "cash" || finalType === "other")) {
+    await supabase.from("transactions").insert({
+      user_id: userId,
+      account_id: acc.id,
+      type: isLiability ? "withdrawal" : "deposit",
+      trade_date: new Date().toISOString().slice(0, 10),
+      amount: Math.abs(value),
+      fees: 0,
+      currency: "EUR",
+    });
+  }
+
   revalidatePath("/", "layout");
   redirect("/");
 }
