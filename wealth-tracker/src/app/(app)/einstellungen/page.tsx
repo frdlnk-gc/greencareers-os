@@ -1,5 +1,9 @@
 import Link from "next/link";
-import { resetPositions, resetEverything } from "../actions";
+import {
+  resetPositions,
+  resetEverything,
+  resetAndSeedConstellation,
+} from "../actions";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +22,37 @@ export default function SettingsPage() {
         </Link>
         <h1 className="text-xl font-bold">Einstellungen</h1>
       </header>
+
+      {/* Frischer Start mit dem Testfall Constellation */}
+      <section className="mb-5 rounded-2xl border border-emerald-800/50 bg-emerald-950/10 p-5">
+        <h2 className="mb-1 font-semibold text-emerald-300">
+          Frisch starten mit Constellation
+        </h2>
+        <p className="mb-4 text-sm text-neutral-400">
+          Löscht alle Demo-Aktien & -Kryptos aus <b>allen</b> Depots (die Depots
+          bleiben) und trägt als ersten echten Testfall{" "}
+          <b>Constellation Software</b> ins CapTrader-Depot ein: 2 Käufe (CA$) +
+          2 Dividenden (US$), Live-Kurs über Börse Frankfurt. Danach prüfst du,
+          ob alles stimmt.
+        </p>
+        <form action={resetAndSeedConstellation} className="space-y-3">
+          <label className="flex items-center gap-2 text-sm text-neutral-300">
+            <input
+              type="checkbox"
+              name="confirm"
+              required
+              className="h-4 w-4 accent-emerald-500"
+            />
+            Ja: alles leeren und Constellation eintragen
+          </label>
+          <button
+            type="submit"
+            className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-medium text-white active:opacity-80"
+          >
+            Leeren & Constellation eintragen
+          </button>
+        </form>
+      </section>
 
       <section className="rounded-2xl border border-red-900/50 bg-red-950/10 p-5">
         <h2 className="mb-1 font-semibold text-red-300">Daten zurücksetzen</h2>
