@@ -25,7 +25,7 @@ export function LineChart({
         className="flex items-center justify-center rounded-xl border border-neutral-800 bg-neutral-900/40 text-xs text-neutral-600"
         style={{ height }}
       >
-        Chart baut sich auf – sobald genug Verlaufsdaten vorliegen.
+        Noch keine Kursdaten für diesen Wert.
       </div>
     );
   }

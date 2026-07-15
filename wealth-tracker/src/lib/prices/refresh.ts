@@ -245,6 +245,51 @@ export async function refreshHistory(
   return { cryptoFilled, usFilled };
 }
 
+// Sorgt dafür, dass für die angegebenen Instrumente sofort Kurs-Historie
+// vorhanden ist: holt fehlende Historie direkt (Börse Frankfurt für Aktien/ETFs
+// über die ISIN, CoinGecko für Krypto), schreibt sie in price_history UND gibt
+// die Reihen (in ms) zurück, damit die aufrufende Ansicht den Chart sofort
+// zeichnen kann – ohne auf einen Hintergrundlauf zu warten.
+export async function ensureHistory(
+  supabase: SupabaseClient,
+  instruments: InstrumentRow[],
+  maxFetch = 30,
+): Promise<Map<string, [number, number][]>> {
+  const out = new Map<string, [number, number][]>();
+  let fetched = 0;
+  for (const i of instruments) {
+    if (fetched >= maxFetch) break;
+    let series: [string, number][] = [];
+    try {
+      if (i.kind === "crypto" && i.coingecko_id) {
+        series = await fetchCoinGeckoHistory(i.coingecko_id, 365);
+      } else {
+        const isin = isinForSymbol(i.yahoo_symbol);
+        if (isin) series = await fetchBfHistory(isin);
+      }
+    } catch {
+      series = [];
+    }
+    fetched++;
+    if (series.length < 2) continue;
+    const rows = series.map(([day, price]) => ({
+      instrument_id: i.id,
+      as_of: day,
+      price_eur: price,
+    }));
+    await supabase
+      .from("price_history")
+      .upsert(rows, { onConflict: "instrument_id,as_of" });
+    out.set(
+      i.id,
+      series.map(
+        ([day, price]) => [new Date(day).getTime(), price] as [number, number],
+      ),
+    );
+  }
+  return out;
+}
+
 // Füllt die Kurs-Historie für Krypto-Instrumente einmalig aus CoinGecko.
 // Läuft nur für Coins, die noch (fast) keine Historie haben.
 async function backfillCryptoHistory(
