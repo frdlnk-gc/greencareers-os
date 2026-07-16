@@ -17,25 +17,50 @@ import type {
   Transaction,
 } from "./types";
 
+// Supabase/PostgREST liefert pro Query standardmäßig MAX. 1000 Zeilen. Bei
+// großen Depots (viele Transaktionen, lange Kurshistorie) müssen wir
+// paginieren – sonst fehlen die NEUESTEN Transaktionen/Kurse stillschweigend,
+// und Summen, Stückzahlen und Chart werden falsch (z. B. eine längst verkaufte
+// Position erscheint noch als gehalten).
+async function fetchAll<T>(
+  build: () => {
+    range: (
+      from: number,
+      to: number,
+    ) => PromiseLike<{ data: T[] | null; error: unknown }>;
+  },
+): Promise<T[]> {
+  const PAGE = 1000;
+  const out: T[] = [];
+  let from = 0;
+  // Sicherheitsobergrenze, damit es nie endlos läuft.
+  for (let guard = 0; guard < 100; guard++) {
+    const { data } = await build().range(from, from + PAGE - 1);
+    const rows = data ?? [];
+    out.push(...rows);
+    if (rows.length < PAGE) break;
+    from += PAGE;
+  }
+  return out;
+}
+
 // Lädt alle Portfolio-Daten des angemeldeten Nutzers und berechnet die
 // aggregierten Depot- und Gesamtwerte.
 export async function getPortfolio(): Promise<PortfolioSummary> {
   const supabase = await createClient();
 
-  const [accountsRes, instrumentsRes, transactionsRes, pricesRes, fxRes, liveFx] =
+  const [accountsRes, instrumentsRes, transactions, prices, fxRes, liveFx] =
     await Promise.all([
       supabase.from("accounts").select("*"),
-      supabase.from("instruments").select("*"),
-      supabase.from("transactions").select("*"),
-      supabase.from("prices").select("*"),
+      fetchAll<Instrument>(() => supabase.from("instruments").select("*")),
+      fetchAll<Transaction>(() => supabase.from("transactions").select("*")),
+      fetchAll<Price>(() => supabase.from("prices").select("*")),
       supabase.from("fx_rates").select("quote,rate"),
       getLiveFxRates(),
     ]);
 
   const accounts = (accountsRes.data ?? []) as Account[];
-  const instruments = (instrumentsRes.data ?? []) as Instrument[];
-  const transactions = (transactionsRes.data ?? []) as Transaction[];
-  const prices = (pricesRes.data ?? []) as Price[];
+  const instruments = instrumentsRes;
 
   // Live-Kurse (EZB) haben Vorrang, DB-Seed als Baseline, statischer Fallback.
   const fxRates = mergeFxRates(
@@ -67,13 +92,24 @@ export interface WealthData {
 // pro Scope (Gesamt + je Depot) den Wert- und den Performance-Verlauf (TWR).
 export async function getWealthSeries(): Promise<WealthData> {
   const supabase = await createClient();
-  const [portfolio, txRes, liveFx, fxRes] = await Promise.all([
+  const [portfolio, txAll, liveFx, fxRes] = await Promise.all([
     getPortfolio(),
-    supabase
-      .from("transactions")
-      .select(
-        "account_id,instrument_id,type,trade_date,quantity,price,fees,currency",
-      ),
+    fetchAll<{
+      account_id: string;
+      instrument_id: string | null;
+      type: string;
+      trade_date: string;
+      quantity: number | null;
+      price: number | null;
+      fees: number | null;
+      currency: string | null;
+    }>(() =>
+      supabase
+        .from("transactions")
+        .select(
+          "account_id,instrument_id,type,trade_date,quantity,price,fees,currency",
+        ),
+    ),
     getLiveFxRates(),
     supabase.from("fx_rates").select("quote,rate"),
   ]);
@@ -82,12 +118,16 @@ export async function getWealthSeries(): Promise<WealthData> {
     liveFx,
   );
 
-  // Historie laden.
+  // Historie laden (paginiert – kann zehntausende Zeilen umfassen).
   const history: HistoryMap = new Map();
   try {
-    const { data } = await supabase
-      .from("price_history")
-      .select("instrument_id,as_of,price_eur");
+    const data = await fetchAll<{
+      instrument_id: string;
+      as_of: string;
+      price_eur: number;
+    }>(() =>
+      supabase.from("price_history").select("instrument_id,as_of,price_eur"),
+    );
     for (const row of data ?? []) {
       const id = (row as { instrument_id: string }).instrument_id;
       const ts = new Date((row as { as_of: string }).as_of).getTime();
@@ -135,16 +175,7 @@ export async function getWealthSeries(): Promise<WealthData> {
   }
 
   const now = new Date();
-  const allTx = (txRes.data ?? []) as {
-    account_id: string;
-    instrument_id: string | null;
-    type: string;
-    trade_date: string;
-    quantity: number | null;
-    price: number | null;
-    fees: number | null;
-    currency: string | null;
-  }[];
+  const allTx = txAll;
 
   const investmentAccountIds = new Set(
     portfolio.accounts.map((a) => a.account.id),
@@ -222,12 +253,14 @@ export async function getInstrumentDetail(
   );
   if (!account || !position) return null;
 
-  const [histRes, txRes, liveFx, fxRes] = await Promise.all([
-    supabase
-      .from("price_history")
-      .select("as_of,price_eur")
-      .eq("instrument_id", instrumentId)
-      .order("as_of", { ascending: true }),
+  const [histAll, txRes, liveFx, fxRes] = await Promise.all([
+    fetchAll<{ as_of: string; price_eur: number }>(() =>
+      supabase
+        .from("price_history")
+        .select("as_of,price_eur")
+        .eq("instrument_id", instrumentId)
+        .order("as_of", { ascending: true }),
+    ),
     supabase
       .from("transactions")
       .select("id,type,trade_date,quantity,price,amount,currency,fees")
@@ -242,9 +275,9 @@ export async function getInstrumentDetail(
     liveFx,
   );
 
-  let priceSeries: [number, number][] = (histRes.data ?? []).map((r) => [
-    new Date((r as { as_of: string }).as_of).getTime(),
-    Number((r as { price_eur: number }).price_eur),
+  let priceSeries: [number, number][] = histAll.map((r) => [
+    new Date(r.as_of).getTime(),
+    Number(r.price_eur),
   ]);
 
   // Historie fehlt noch? Sofort von Börse Frankfurt / CoinGecko holen.
@@ -345,14 +378,29 @@ export interface DividendSummary {
 //  - Prognose: letzte 12 Monate ein Jahr fortgeschrieben.
 export async function getDividends(): Promise<DividendSummary> {
   const supabase = await createClient();
-  const [txRes, instRes, fxRes, liveFx] = await Promise.all([
-    supabase
-      .from("transactions")
-      .select(
-        "trade_date,amount,instrument_id,type,currency,account_id,quantity",
-      )
-      .order("trade_date", { ascending: false }),
-    supabase.from("instruments").select("id,name,yahoo_symbol,kind"),
+  const [allTx, instAll, fxRes, liveFx] = await Promise.all([
+    fetchAll<{
+      trade_date: string;
+      amount: number | null;
+      instrument_id: string | null;
+      type: string;
+      currency: string | null;
+      account_id: string;
+      quantity: number | null;
+    }>(() =>
+      supabase
+        .from("transactions")
+        .select(
+          "trade_date,amount,instrument_id,type,currency,account_id,quantity",
+        )
+        .order("trade_date", { ascending: false }),
+    ),
+    fetchAll<{
+      id: string;
+      name: string;
+      yahoo_symbol: string | null;
+      kind: string;
+    }>(() => supabase.from("instruments").select("id,name,yahoo_symbol,kind")),
     supabase.from("fx_rates").select("quote,rate"),
     getLiveFxRates(),
   ]);
@@ -362,22 +410,8 @@ export async function getDividends(): Promise<DividendSummary> {
     liveFx,
   );
 
-  const instruments = (instRes.data ?? []) as {
-    id: string;
-    name: string;
-    yahoo_symbol: string | null;
-    kind: string;
-  }[];
+  const instruments = instAll;
   const nameById = new Map(instruments.map((i) => [i.id, i.name]));
-  const allTx = (txRes.data ?? []) as {
-    trade_date: string;
-    amount: number | null;
-    instrument_id: string | null;
-    type: string;
-    currency: string | null;
-    account_id: string;
-    quantity: number | null;
-  }[];
 
   const todayStr = new Date().toISOString().slice(0, 10);
 
