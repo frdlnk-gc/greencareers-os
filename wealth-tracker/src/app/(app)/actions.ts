@@ -131,6 +131,50 @@ export async function deleteAccount(formData: FormData): Promise<void> {
   redirect("/");
 }
 
+// Depot leeren: löscht ALLE Transaktionen dieses Depots (Depot-Hülle bleibt)
+// und räumt die Instrumente weg, die danach in keinem anderen Depot mehr
+// vorkommen (sonst würden 100+ verwaiste Namen die Auswahllisten zumüllen).
+export async function clearAccount(formData: FormData): Promise<void> {
+  const { supabase, userId } = await requireUser();
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+
+  // Welche Instrumente werden in ANDEREN Depots noch verwendet? (klein → kein
+  // Zeilenlimit-Problem.)
+  const { data: otherTx } = await supabase
+    .from("transactions")
+    .select("instrument_id")
+    .eq("user_id", userId)
+    .neq("account_id", id);
+  const keep = new Set(
+    (otherTx ?? [])
+      .map((t) => t.instrument_id as string | null)
+      .filter((x): x is string => !!x),
+  );
+
+  // Dieses Depot leeren.
+  await supabase
+    .from("transactions")
+    .delete()
+    .eq("account_id", id)
+    .eq("user_id", userId);
+
+  // Instrumente entfernen, die nur in diesem Depot vorkamen.
+  const { data: insts } = await supabase
+    .from("instruments")
+    .select("id")
+    .eq("user_id", userId);
+  const orphans = (insts ?? [])
+    .map((i) => i.id as string)
+    .filter((iid) => !keep.has(iid));
+  if (orphans.length) {
+    await supabase.from("instruments").delete().in("id", orphans);
+  }
+
+  revalidatePath("/", "layout");
+  redirect(`/depot/${id}`);
+}
+
 // Instrument finden oder neu anlegen ---------------------------------------
 
 async function resolveInstrumentId(
