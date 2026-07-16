@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { formatEur, formatPct, changeColor } from "@/lib/format";
 import { usePersistentState } from "@/lib/usePersistentState";
 import { LineChart } from "./LineChart";
@@ -28,12 +29,15 @@ const RANGES: { key: RangeKey; days: number | null }[] = [
 export function WealthChart({
   scopes,
   initialScopeId = "total",
-  lockScope = false,
+  depotView = false,
 }: {
   scopes: WealthScope[];
   initialScopeId?: string;
-  lockScope?: boolean;
+  // In der Depot-Ansicht ist der Scope fix auf dieses Depot; die Auswahl wird
+  // zum Sprung-Menü (Gesamt + ANDERE Depots) und navigiert die ganze Seite.
+  depotView?: boolean;
 }) {
+  const router = useRouter();
   // Scope hängt vom Kontext ab (Übersicht = „total", Depot = dessen ID) und
   // wird daher NICHT gespeichert. Modus & Zeitraum sind Nutzervorlieben und
   // bleiben über Tab-Wechsel/erneutes Öffnen erhalten.
@@ -42,6 +46,7 @@ export function WealthChart({
       ? initialScopeId
       : scopes[0]?.id ?? "total",
   );
+  const [scopeMenu, setScopeMenu] = useState(false);
   const [mode, setMode] = usePersistentState<Mode>("chartMode", "performance");
   const [chosen, setChosen] = usePersistentState<RangeKey>("chartRange", "30T");
 
@@ -149,18 +154,69 @@ export function WealthChart({
     <div>
       {/* Scope + Modus */}
       <div className="mb-3 flex items-center gap-2">
-        {!lockScope && scopes.length > 1 && (
-          <select
-            value={scopeId}
-            onChange={(e) => setScopeId(e.target.value)}
-            className="rounded-lg border border-neutral-800 bg-neutral-900 px-2.5 py-1.5 text-xs font-medium text-neutral-200 outline-none"
-          >
-            {scopes.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
+        {depotView ? (
+          // Depot-Ansicht: Sprung-Menü zu Gesamt oder ANDEREN Depots. Das
+          // aktuelle Depot steht (als Label) oben, ist aber kein Menüpunkt –
+          // Auswahl navigiert die ganze Seite dorthin.
+          <div className="relative">
+            <button
+              onClick={() => setScopeMenu((v) => !v)}
+              className="flex items-center gap-1 rounded-lg border border-neutral-800 bg-neutral-900 px-2.5 py-1.5 text-xs font-medium text-neutral-200 active:opacity-70"
+            >
+              {scope.name}
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className={`text-neutral-500 transition-transform ${scopeMenu ? "rotate-180" : ""}`}
+              >
+                <path d="M6 9l6 6 6-6" />
+              </svg>
+            </button>
+            {scopeMenu && (
+              <>
+                <div
+                  className="fixed inset-0 z-20"
+                  onClick={() => setScopeMenu(false)}
+                />
+                <div className="absolute left-0 top-9 z-30 max-h-72 w-52 overflow-auto rounded-xl border border-neutral-800 bg-neutral-900 py-1 text-left shadow-xl">
+                  {scopes
+                    .filter((s) => s.id !== scopeId)
+                    .map((s) => (
+                      <button
+                        key={s.id}
+                        onClick={() => {
+                          setScopeMenu(false);
+                          router.push(s.id === "total" ? "/" : `/depot/${s.id}`);
+                        }}
+                        className="block w-full px-4 py-2.5 text-left text-sm text-neutral-200 hover:bg-neutral-800"
+                      >
+                        {s.name}
+                      </button>
+                    ))}
+                </div>
+              </>
+            )}
+          </div>
+        ) : (
+          scopes.length > 1 && (
+            <select
+              value={scopeId}
+              onChange={(e) => setScopeId(e.target.value)}
+              className="rounded-lg border border-neutral-800 bg-neutral-900 px-2.5 py-1.5 text-xs font-medium text-neutral-200 outline-none"
+            >
+              {scopes.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+          )
         )}
         <div className="ml-auto flex w-44 gap-1 rounded-lg bg-neutral-900 p-0.5">
           <button

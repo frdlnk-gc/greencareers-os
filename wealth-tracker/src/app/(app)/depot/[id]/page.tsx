@@ -83,7 +83,7 @@ export default function DepotPage({
             </div>
             {summary.account.type !== "cash" &&
               summary.account.type !== "other" && (
-                <PerformanceSection scope={id} locked />
+                <PerformanceSection scope={id} depotView />
               )}
           </section>
 

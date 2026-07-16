@@ -7,10 +7,10 @@ import { usePerformance } from "@/lib/store";
 // Vorauswahl im Dropdown ("total" oder eine Depot-ID) – umschalten geht immer.
 export function PerformanceSection({
   scope,
-  locked = false,
+  depotView = false,
 }: {
   scope: string;
-  locked?: boolean;
+  depotView?: boolean;
 }) {
   const { data } = usePerformance();
 
@@ -30,7 +30,7 @@ export function PerformanceSection({
       <WealthChart
         scopes={data.scopes}
         initialScopeId={scope}
-        lockScope={locked}
+        depotView={depotView}
       />
     </div>
   );
