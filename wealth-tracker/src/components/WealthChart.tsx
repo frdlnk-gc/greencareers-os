@@ -28,9 +28,11 @@ const RANGES: { key: RangeKey; days: number | null }[] = [
 export function WealthChart({
   scopes,
   initialScopeId = "total",
+  lockScope = false,
 }: {
   scopes: WealthScope[];
   initialScopeId?: string;
+  lockScope?: boolean;
 }) {
   // Scope hängt vom Kontext ab (Übersicht = „total", Depot = dessen ID) und
   // wird daher NICHT gespeichert. Modus & Zeitraum sind Nutzervorlieben und
@@ -147,7 +149,7 @@ export function WealthChart({
     <div>
       {/* Scope + Modus */}
       <div className="mb-3 flex items-center gap-2">
-        {scopes.length > 1 && (
+        {!lockScope && scopes.length > 1 && (
           <select
             value={scopeId}
             onChange={(e) => setScopeId(e.target.value)}
