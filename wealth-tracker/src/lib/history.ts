@@ -8,6 +8,27 @@ import { toEur } from "./prices/fx";
 export const PERIODS = ["1T", "7T", "30T", "YTD", "1J", "3J", "5J", "10J"] as const;
 export type Period = (typeof PERIODS)[number];
 
+// Entfernt grobe Ausreißer aus einer Kursreihe (einzelne Fehlkurse, oder
+// unbereinigte Vor-Split-Kurse, die um ein Vielfaches daneben liegen). Solche
+// Punkte zerstören sonst den Chart (z. B. −578 %). Alles, was stark vom Median
+// abweicht, wird verworfen; kurze Reihen bleiben unangetastet.
+export function sanitizePriceSeries(
+  series: [number, number][],
+): [number, number][] {
+  if (series.length < 6) return series;
+  const sorted = series
+    .map((p) => p[1])
+    .filter((v) => Number.isFinite(v) && v > 0)
+    .sort((a, b) => a - b);
+  if (sorted.length === 0) return series;
+  const median = sorted[Math.floor(sorted.length / 2)];
+  if (!(median > 0)) return series;
+  return series.filter(
+    ([, p]) =>
+      Number.isFinite(p) && p > 0 && p <= median * 6 && p >= median / 6,
+  );
+}
+
 // --- Vermögens-Zeitreihen (wie getquin: Wert + Performance) -----------------
 
 export interface ScopeSeries {

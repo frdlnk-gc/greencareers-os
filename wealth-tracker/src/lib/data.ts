@@ -6,6 +6,7 @@ import { fetchBfDividends } from "./prices/boersefrankfurt";
 import { isinForSymbol } from "./prices/isins";
 import {
   computeScopeSeries,
+  sanitizePriceSeries,
   type HistoryMap,
   type ScopeSeries,
 } from "./history";
@@ -136,35 +137,19 @@ export async function getWealthSeries(): Promise<WealthData> {
       arr.push([ts, price]);
       history.set(id, arr);
     }
-    for (const arr of history.values()) arr.sort((a, b) => a[0] - b[0]);
+    for (const [id, arr] of history) {
+      arr.sort((a, b) => a[0] - b[0]);
+      history.set(id, sanitizePriceSeries(arr));
+    }
   } catch {
     // keine Historie
   }
 
-  // Fehlende Historie sofort nachladen (Börse Frankfurt / CoinGecko).
-  const positionsInstruments = portfolio.accounts.flatMap((a) =>
-    a.positions.map((p) => p.instrument),
-  );
-  const missing = positionsInstruments.filter(
-    (inst) => (history.get(inst.id)?.length ?? 0) < 2,
-  );
-  if (missing.length > 0) {
-    const filled = await ensureHistory(
-      supabase,
-      missing.map((inst) => ({
-        id: inst.id,
-        kind: inst.kind,
-        yahoo_symbol: inst.yahoo_symbol,
-        coingecko_id: inst.coingecko_id,
-      })),
-    );
-    for (const [id, series] of filled) {
-      const arr = history.get(id) ?? [];
-      const merged = [...arr, ...series];
-      merged.sort((a, b) => a[0] - b[0]);
-      history.set(id, merged);
-    }
-  }
+  // Hinweis: Fehlende Historie wird NICHT mehr synchron in dieser Anfrage
+  // nachgeladen. Bei großen Depots (100+ Titel) bedeutete das bis zu 30 Börse-
+  // Frankfurt-Abrufe pro Aufruf → die Anfrage lief ins Zeitlimit und der Chart
+  // blieb leer. Die Historie füllt jetzt der Hintergrund-Backfill (/api/backfill,
+  // parallel); diese Anfrage liest nur noch aus der DB und ist damit schnell.
 
   // Aktuelle EUR-Kurse je Instrument (aus den Positionen).
   const currentPriceEur = new Map<string, number>();
@@ -275,10 +260,9 @@ export async function getInstrumentDetail(
     liveFx,
   );
 
-  let priceSeries: [number, number][] = histAll.map((r) => [
-    new Date(r.as_of).getTime(),
-    Number(r.price_eur),
-  ]);
+  let priceSeries: [number, number][] = sanitizePriceSeries(
+    histAll.map((r) => [new Date(r.as_of).getTime(), Number(r.price_eur)]),
+  );
 
   // Historie fehlt noch? Sofort von Börse Frankfurt / CoinGecko holen.
   if (priceSeries.length < 2) {
