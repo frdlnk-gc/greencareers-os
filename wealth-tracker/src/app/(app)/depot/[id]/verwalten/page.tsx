@@ -1,7 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { renameAccount, deleteAccount, deleteTransaction } from "../../../actions";
+import {
+  renameAccount,
+  deleteAccount,
+  deleteTransaction,
+  clearAccount,
+} from "../../../actions";
 import { formatMoney, formatQuantity } from "@/lib/format";
 import { SubmitButton, ConfirmButton } from "@/components/FormButtons";
 
@@ -115,6 +120,23 @@ export default async function ManageAccountPage({
             </li>
           ))}
         </ul>
+      )}
+
+      {/* Alle Positionen löschen (Depot bleibt) */}
+      {(txns ?? []).length > 0 && (
+        <form action={clearAccount} className="mb-6">
+          <input type="hidden" name="id" value={id} />
+          <ConfirmButton
+            confirm="Alle Positionen und Transaktionen in diesem Depot löschen? Das Depot selbst bleibt bestehen."
+            className="w-full rounded-xl border border-red-900/60 py-3 text-sm font-medium text-red-400 active:opacity-70 disabled:opacity-50"
+          >
+            Alle Positionen löschen
+          </ConfirmButton>
+          <p className="mt-2 text-center text-xs text-neutral-600">
+            Leert das Depot (alle Käufe/Verkäufe/Dividenden) – das Depot bleibt
+            erhalten. Titel, die nur hier vorkamen, werden mit entfernt.
+          </p>
+        </form>
       )}
 
       {/* Depot löschen */}
