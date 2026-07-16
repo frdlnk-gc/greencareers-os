@@ -5,7 +5,13 @@ import { usePerformance } from "@/lib/store";
 
 // Vermögenstracker-Chart (Scope + Modus + Zeitraum). `scope` bestimmt nur die
 // Vorauswahl im Dropdown ("total" oder eine Depot-ID) – umschalten geht immer.
-export function PerformanceSection({ scope }: { scope: string }) {
+export function PerformanceSection({
+  scope,
+  locked = false,
+}: {
+  scope: string;
+  locked?: boolean;
+}) {
   const { data } = usePerformance();
 
   if (!data) {
@@ -21,7 +27,11 @@ export function PerformanceSection({ scope }: { scope: string }) {
 
   return (
     <div className="mt-4">
-      <WealthChart scopes={data.scopes} initialScopeId={scope} />
+      <WealthChart
+        scopes={data.scopes}
+        initialScopeId={scope}
+        lockScope={locked}
+      />
     </div>
   );
 }

@@ -322,9 +322,12 @@ async function backfillCryptoHistory(
 }
 
 // Füllt die Kurs-Historie für Aktien/ETFs aus der Börse-Frankfurt-API — für
-// ALLE Titel (US, Europa, Asien) direkt in EURO. Pro Durchlauf begrenzt, damit
-// jede Aktualisierung schnell bleibt; der Rest wird nachgezogen.
-const BACKFILL_PER_RUN = 20;
+// ALLE Titel (US, Europa, Asien) direkt in EURO. Läuft PARALLEL (mit
+// Nebenläufigkeits-Limit), damit auch große Depots (100+ Titel) in einem
+// Durchlauf gefüllt werden statt in vielen kleinen. Bereits gefüllte Titel
+// werden übersprungen; einzelne Fehlschläge blockieren die anderen nicht mehr.
+const HIST_CONCURRENCY = 6;
+const HIST_MAX_PER_RUN = 220; // Sicherheitsnetz gegen Endlos-/Riesendepots
 
 async function backfillUsStockHistory(
   supabase: SupabaseClient,
@@ -333,29 +336,46 @@ async function backfillUsStockHistory(
   const withIsin = stocks.filter((i) => isinForSymbol(i.yahoo_symbol));
   if (withIsin.length === 0) return 0;
 
-  let done = 0;
-  let filled = 0;
-  for (const s of withIsin) {
-    if (done >= BACKFILL_PER_RUN) break;
-    const { count } = await supabase
-      .from("price_history")
-      .select("as_of", { count: "exact", head: true })
-      .eq("instrument_id", s.id);
-    if ((count ?? 0) >= 30) continue; // schon befüllt
+  // Welche Titel brauchen noch Historie? (Zählung parallel.)
+  const counts = await Promise.all(
+    withIsin.map((s) =>
+      supabase
+        .from("price_history")
+        .select("as_of", { count: "exact", head: true })
+        .eq("instrument_id", s.id)
+        .then((r) => r.count ?? 0),
+    ),
+  );
+  const need = withIsin
+    .filter((_, i) => counts[i] < 30)
+    .slice(0, HIST_MAX_PER_RUN);
+  if (need.length === 0) return 0;
 
-    const isin = isinForSymbol(s.yahoo_symbol) as string;
-    const series = await fetchBfHistory(isin);
-    done++;
-    if (series.length === 0) continue;
-    const histRows = series.map(([day, priceEur]) => ({
-      instrument_id: s.id,
-      as_of: day,
-      price_eur: priceEur,
-    }));
-    await supabase
-      .from("price_history")
-      .upsert(histRows, { onConflict: "instrument_id,as_of" });
-    filled++;
+  let filled = 0;
+  // In Blöcken mit begrenzter Nebenläufigkeit abarbeiten.
+  for (let i = 0; i < need.length; i += HIST_CONCURRENCY) {
+    const batch = need.slice(i, i + HIST_CONCURRENCY);
+    await Promise.all(
+      batch.map(async (s) => {
+        const isin = isinForSymbol(s.yahoo_symbol) as string;
+        let series: [string, number][] = [];
+        try {
+          series = await fetchBfHistory(isin);
+        } catch {
+          series = [];
+        }
+        if (series.length === 0) return;
+        const histRows = series.map(([day, priceEur]) => ({
+          instrument_id: s.id,
+          as_of: day,
+          price_eur: priceEur,
+        }));
+        await supabase
+          .from("price_history")
+          .upsert(histRows, { onConflict: "instrument_id,as_of" });
+        filled++;
+      }),
+    );
   }
   return filled;
 }

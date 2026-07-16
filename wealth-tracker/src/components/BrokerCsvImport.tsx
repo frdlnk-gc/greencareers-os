@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { revalidateAll } from "@/lib/store";
 import type { ImportSummary } from "@/lib/import/traderepublic";
 
 interface Account {
@@ -53,6 +54,9 @@ export function BrokerCsvImport({ accounts }: { accounts: Account[] }) {
             break;
         }
         await fetch("/api/refresh", { method: "POST" }).catch(() => {});
+        // Store zwingend neu laden, damit Depotwert & Stückzahlen sofort die
+        // vollständigen Daten zeigen (nicht einen Zwischenstand).
+        await revalidateAll();
         setStatus(null);
       } else {
         setStatus("Nichts gebucht – bitte prüfen, ob es der TR-CSV-Export ist.");
