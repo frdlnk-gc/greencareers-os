@@ -23,6 +23,10 @@ import type {
 // paginieren – sonst fehlen die NEUESTEN Transaktionen/Kurse stillschweigend,
 // und Summen, Stückzahlen und Chart werden falsch (z. B. eine längst verkaufte
 // Position erscheint noch als gehalten).
+// WICHTIG: Die Seiten werden PARALLEL geladen (in Wellen), nicht seriell –
+// bei >100k Historie-Zeilen wären 100+ serielle Anfragen sonst langsamer als
+// das Client-Timeout und die App wirkt „tot". Damit parallele Seiten stabil
+// sind, MUSS die Query im build() eine eindeutige Sortierung haben (.order).
 async function fetchAll<T>(
   build: () => {
     range: (
@@ -32,15 +36,30 @@ async function fetchAll<T>(
   },
 ): Promise<T[]> {
   const PAGE = 1000;
-  const out: T[] = [];
-  let from = 0;
-  // Sicherheitsobergrenze, damit es nie endlos läuft.
-  for (let guard = 0; guard < 100; guard++) {
-    const { data } = await build().range(from, from + PAGE - 1);
-    const rows = data ?? [];
-    out.push(...rows);
-    if (rows.length < PAGE) break;
-    from += PAGE;
+  const WAVE = 25; // parallele Seiten je Welle
+  // Erste Seite einzeln: kleine Tabellen (Regel) kosten nur EINE Anfrage.
+  const { data: first } = await build().range(0, PAGE - 1);
+  const out: T[] = [...(first ?? [])];
+  if ((first?.length ?? 0) < PAGE) return out;
+
+  for (let wave = 0; wave < 16; wave++) {
+    const starts = Array.from(
+      { length: WAVE },
+      (_, k) => (1 + wave * WAVE + k) * PAGE,
+    );
+    const results = await Promise.all(
+      starts.map((s) => build().range(s, s + PAGE - 1)),
+    );
+    let done = false;
+    for (const r of results) {
+      const rows = r.data ?? [];
+      out.push(...rows);
+      if (rows.length < PAGE) {
+        done = true;
+        break;
+      }
+    }
+    if (done) break;
   }
   return out;
 }
@@ -53,9 +72,15 @@ export async function getPortfolio(): Promise<PortfolioSummary> {
   const [accountsRes, instrumentsRes, transactions, prices, fxRes, liveFx] =
     await Promise.all([
       supabase.from("accounts").select("*"),
-      fetchAll<Instrument>(() => supabase.from("instruments").select("*")),
-      fetchAll<Transaction>(() => supabase.from("transactions").select("*")),
-      fetchAll<Price>(() => supabase.from("prices").select("*")),
+      fetchAll<Instrument>(() =>
+        supabase.from("instruments").select("*").order("id"),
+      ),
+      fetchAll<Transaction>(() =>
+        supabase.from("transactions").select("*").order("id"),
+      ),
+      fetchAll<Price>(() =>
+        supabase.from("prices").select("*").order("instrument_id"),
+      ),
       supabase.from("fx_rates").select("quote,rate"),
       getLiveFxRates(),
     ]);
@@ -109,7 +134,8 @@ export async function getWealthSeries(): Promise<WealthData> {
         .from("transactions")
         .select(
           "account_id,instrument_id,type,trade_date,quantity,price,fees,currency",
-        ),
+        )
+        .order("id"),
     ),
     getLiveFxRates(),
     supabase.from("fx_rates").select("quote,rate"),
@@ -119,7 +145,12 @@ export async function getWealthSeries(): Promise<WealthData> {
     liveFx,
   );
 
-  // Historie laden (paginiert – kann zehntausende Zeilen umfassen).
+  // Historie laden (paginiert & PARALLEL – kann >100k Zeilen umfassen). Nur ab
+  // der ersten Transaktion: ältere Kurse braucht kein Chart.
+  const tradeDates = txAll.map((t) => t.trade_date).filter(Boolean);
+  const earliestTrade = tradeDates.length
+    ? tradeDates.reduce((a, b) => (a < b ? a : b))
+    : "2000-01-01";
   const history: HistoryMap = new Map();
   try {
     const data = await fetchAll<{
@@ -127,7 +158,12 @@ export async function getWealthSeries(): Promise<WealthData> {
       as_of: string;
       price_eur: number;
     }>(() =>
-      supabase.from("price_history").select("instrument_id,as_of,price_eur"),
+      supabase
+        .from("price_history")
+        .select("instrument_id,as_of,price_eur")
+        .gte("as_of", earliestTrade)
+        .order("instrument_id")
+        .order("as_of"),
     );
     for (const row of data ?? []) {
       const id = (row as { instrument_id: string }).instrument_id;
@@ -377,14 +413,16 @@ export async function getDividends(): Promise<DividendSummary> {
         .select(
           "trade_date,amount,instrument_id,type,currency,account_id,quantity",
         )
-        .order("trade_date", { ascending: false }),
+        .order("id"),
     ),
     fetchAll<{
       id: string;
       name: string;
       yahoo_symbol: string | null;
       kind: string;
-    }>(() => supabase.from("instruments").select("id,name,yahoo_symbol,kind")),
+    }>(() =>
+      supabase.from("instruments").select("id,name,yahoo_symbol,kind").order("id"),
+    ),
     supabase.from("fx_rates").select("quote,rate"),
     getLiveFxRates(),
   ]);
@@ -517,7 +555,11 @@ export async function getDividends(): Promise<DividendSummary> {
     forecast.push({ ...e, date: projDate, status: "forecast" });
   }
 
-  const events: DividendEvent[] = [...combined, ...forecast];
+  // Neueste zuerst (Queries sind für stabile Paginierung nach id sortiert,
+  // daher hier explizit nach Datum sortieren).
+  const events: DividendEvent[] = [...combined, ...forecast].sort((a, b) =>
+    b.date.localeCompare(a.date),
+  );
 
   // 5) Aggregate aus tatsächlichen Zahlungen (ohne Prognose).
   const paidEvents = events.filter((e) => e.status !== "forecast");
