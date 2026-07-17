@@ -60,7 +60,10 @@ async function load<T>(key: string, url: string, force = false): Promise<T> {
     return e.data as T;
   }
   if (e.inflight) return e.inflight as Promise<T>;
-  e.inflight = fetch(url, { cache: "no-store", signal: AbortSignal.timeout(20000) })
+  // 55 s: die Vermögens-API kann beim ERSTEN Laden großer Depots (>100k
+  // Historie-Zeilen) mehrere Sekunden brauchen; ein zu knappes Timeout würde
+  // sie immer wieder abbrechen und die App wirkte „tot".
+  e.inflight = fetch(url, { cache: "no-store", signal: AbortSignal.timeout(55000) })
     .then((r) => {
       if (!r.ok) throw new Error(`${url} ${r.status}`);
       return r.json();
