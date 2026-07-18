@@ -1,0 +1,138 @@
+<!doctype html>
+<!--
+  GreenCareers · Landingpage-Newsletter-Embed  (Single-Opt-in)
+  =====================================================================
+  Das ist die "automatische Schnittstelle" von der Landingpage zu Supabase
+  und – nachgelagert – zu Lemlist:
+
+     Landingpage-Formular
+        -> RPC public.newsletter_subscribe(...)         (Lead landet aktiv in Supabase)
+        -> Edge-Function newsletter-lemlist (enroll)     (Lead in die gemappte Kampagne)
+
+  Der richtige Newsletter / die richtige Kampagne wird NICHT auf der
+  Landingpage entschieden, sondern ueber den LEADMAGNETEN (data-leadmagnet).
+  Im Cockpit (bzw. Tabelle newsletter_leadmagnets) ist pro Leadmagnet
+  hinterlegt: Zielgruppe (audience), theme/branche und die Lemlist-Kampagne.
+  So genuegt es, auf jeder Landingpage nur den passenden slug zu setzen.
+
+  EINBINDUNG auf einer Landingpage (nur dieser Block, kein <html>/<body> noetig):
+
+     <div id="gc-newsletter"
+          data-leadmagnet="galabau-fachkraefte-guide"
+          data-accent="#16A34A"></div>
+     <script src="https://os.green-careers.de/newsletter-lp-embed.js"></script>
+
+  ODER kopiere den <script>-Block unten direkt in die Seite. Die Datei hier
+  dient als lauffaehiges Beispiel + Referenz (oeffne sie im Browser).
+
+  Optionale data-Attribute am Container #gc-newsletter:
+     data-leadmagnet   (Pflicht-Empfehlung)  slug aus newsletter_leadmagnets
+     data-audience      override der Zielgruppe (b2b_neukunde|b2b_bestandskunde|bewerber)
+     data-theme         override galabau|tiefbau|landwirtschaft
+     data-branche       override Sub-Branche
+     data-accent        Button-/Akzentfarbe (Default #16A34A)
+     data-title         Ueberschrift ueber dem Formular
+     data-consent       Einwilligungstext (sonst der aus dem Leadmagneten)
+-->
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GreenCareers · Newsletter-Anmeldung (LP-Embed Beispiel)</title>
+<style>
+  body{ margin:0; padding:40px 16px; background:#F6F5F2;
+        font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; }
+</style>
+</head>
+<body>
+
+  <!-- ==== BEISPIEL-EINBINDUNG (dieser eine Container reicht auf der LP) ==== -->
+  <div id="gc-newsletter"
+       data-leadmagnet="galabau-fachkraefte-guide"
+       data-audience="b2b_neukunde"
+       data-theme="galabau"
+       data-accent="#16A34A"
+       data-title="Kostenloser Fachkräfte-Guide für GaLaBau-Betriebe"></div>
+
+  <!-- ==== AB HIER: das Widget-Script. In Produktion als /newsletter-lp-embed.js auslagern. ==== -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script>
+  (function(){
+    var SB_URL  = 'https://tfoopogxaqvfwbonabpi.supabase.co';
+    var SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmb29wb2d4YXF2Zndib25hYnBpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEyNTQzMjQsImV4cCI6MjA5NjgzMDMyNH0.udWRPszXVOj7EG4bspmsU9HXbZYFRDn8QO9kZi2tw8M';
+    var sb = window.supabase.createClient(SB_URL, SB_ANON);
+    var box = document.getElementById('gc-newsletter');
+    if(!box) return;
+
+    var slug     = box.dataset.leadmagnet || '';
+    var audience = box.dataset.audience || '';
+    var theme    = box.dataset.theme || '';
+    var branche  = box.dataset.branche || '';
+    var accent   = box.dataset.accent || '#16A34A';
+    var title    = box.dataset.title || 'Bleib auf dem Laufenden';
+    var consent  = box.dataset.consent || '';
+
+    function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];}); }
+
+    // Standard-Einwilligungstext (Single-Opt-in) – wird vom Leadmagneten
+    // ueberschrieben, falls dort einer hinterlegt ist.
+    var defaultConsent = 'Ja, ich möchte den GreenCareers-Newsletter mit News und Angeboten per E-Mail erhalten. Die Einwilligung kann ich jederzeit über den Abmeldelink in jeder E-Mail widerrufen.';
+
+    box.innerHTML =
+      '<form id="gcnl-form" style="max-width:440px;margin:0 auto;background:#fff;border-radius:16px;padding:26px 24px;box-shadow:0 8px 30px rgba(16,25,29,.08);font-family:inherit;color:#16191D">'
+      + '<h3 style="margin:0 0 6px;font-size:19px;line-height:1.3">'+esc(title)+'</h3>'
+      + '<p style="margin:0 0 16px;font-size:14px;color:#6B7480;line-height:1.5">Trag dich ein – wir schicken dir Relevantes, nichts Belangloses.</p>'
+      + '<input id="gcnl-name" type="text" placeholder="Name (optional)" autocomplete="name" style="width:100%;padding:12px 13px;border:1px solid #E6E3DD;border-radius:10px;font-size:15px;margin-bottom:10px">'
+      + '<input id="gcnl-email" type="email" required placeholder="E-Mail-Adresse" autocomplete="email" style="width:100%;padding:12px 13px;border:1px solid #E6E3DD;border-radius:10px;font-size:15px;margin-bottom:12px">'
+      + '<label style="display:flex;gap:9px;align-items:flex-start;font-size:12.5px;color:#6B7480;line-height:1.45;margin-bottom:14px;cursor:pointer">'
+      +   '<input id="gcnl-consent" type="checkbox" required style="margin-top:2px;flex:0 0 auto"> <span id="gcnl-consent-txt"></span>'
+      + '</label>'
+      + '<button id="gcnl-btn" type="submit" style="width:100%;padding:13px 18px;border:0;border-radius:10px;background:'+esc(accent)+';color:#fff;font-weight:700;font-size:15px;cursor:pointer">Jetzt eintragen</button>'
+      + '<p id="gcnl-msg" style="margin:12px 0 0;font-size:13.5px;line-height:1.5"></p>'
+      + '</form>';
+
+    var consentTxtEl = document.getElementById('gcnl-consent-txt');
+    consentTxtEl.textContent = consent || defaultConsent;
+
+    // Falls kein Consent-Text gesetzt: den aus dem Leadmagneten holen (best effort).
+    if(!consent && slug){
+      sb.rpc('newsletter_leadmagnet_public', { p_slug: slug }).then(function(res){
+        var d = res && res.data;
+        if(d && d.ok && d.consent_text){ consentTxtEl.textContent = d.consent_text; consent = d.consent_text; }
+        if(d && d.ok){ if(!audience && d.audience) audience = d.audience; if(!theme && d.theme) theme = d.theme; if(!branche && d.branche) branche = d.branche; }
+      }).catch(function(){});
+    }
+
+    document.getElementById('gcnl-form').addEventListener('submit', function(ev){
+      ev.preventDefault();
+      var email = document.getElementById('gcnl-email').value.trim();
+      var name  = document.getElementById('gcnl-name').value.trim();
+      var msg   = document.getElementById('gcnl-msg');
+      var btn   = document.getElementById('gcnl-btn');
+      if(!document.getElementById('gcnl-consent').checked){ msg.innerHTML = '<span style="color:#B42318">Bitte die Einwilligung bestätigen.</span>'; return; }
+      btn.disabled = true; btn.textContent = 'Wird gesendet …';
+      sb.rpc('newsletter_subscribe', {
+        p_email: email,
+        p_leadmagnet: slug || null,
+        p_name: name || null,
+        p_audience: audience || null,
+        p_theme: theme || null,
+        p_branche: branche || null,
+        p_consent_text: consentTxtEl.textContent || null,
+        p_landingpage: location.href,
+        p_meta: {}
+      }).then(function(res){
+        if(res.error) throw res.error;
+        document.getElementById('gcnl-form').innerHTML =
+          '<div style="text-align:center;padding:10px 0"><div style="font-size:34px">✅</div>'
+          + '<h3 style="margin:8px 0 6px;font-size:19px">Passt – du bist eingetragen.</h3>'
+          + '<p style="margin:0;font-size:14px;color:#6B7480;line-height:1.5">Schau in dein Postfach. Abmelden kannst du dich jederzeit über den Link in jeder E-Mail.</p></div>';
+      }).catch(function(e){
+        btn.disabled = false; btn.textContent = 'Jetzt eintragen';
+        msg.innerHTML = '<span style="color:#B42318">'+esc(e.message||'Da ging etwas schief. Bitte erneut versuchen.')+'</span>';
+      });
+    });
+  })();
+  </script>
+</body>
+</html>

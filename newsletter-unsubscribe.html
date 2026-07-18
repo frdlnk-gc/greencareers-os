@@ -1,0 +1,100 @@
+<!doctype html>
+<!--
+  GreenCareers · Newsletter-Abmeldung (Single-Opt-in Opt-out)
+  Oeffentliche Seite. Ziel des Abmeldelinks aus jeder Newsletter-Mail:
+     https://os.green-careers.de/newsletter-unsubscribe.html?token=<unsubscribe_token>
+  (In der Mail als {{unsubscribe_url}} einsetzen; Lemlist-Custom-Feld oder
+   direkt der Token aus newsletter_subscribers.unsubscribe_token.)
+  Ruft die anon-RPC public.newsletter_unsubscribe(uuid) auf -> setzt den
+  Abonnenten auf 'unsubscribed'. Die Abmeldung wird zusaetzlich per
+  Edge-Function newsletter-lemlist (action: sync_unsubscribes) nach Lemlist
+  gespiegelt.
+-->
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>GreenCareers · Newsletter abmelden</title>
+<style>
+  :root{ --green:#16A34A; --green-2:#0E7A43; --ink:#16191D; --muted:#6B7480; --line:#E6E3DD; --bg:#F6F5F2; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px;
+        background:var(--bg); color:var(--ink);
+        font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; }
+  .card{ width:100%; max-width:480px; background:#fff; border-radius:16px; padding:34px 32px;
+         box-shadow:0 8px 30px rgba(16,25,29,.08); }
+  .logo{ display:flex; align-items:center; gap:12px; margin-bottom:22px; }
+  .logo .mark{ width:40px; height:40px; border-radius:10px; background:linear-gradient(135deg,var(--green),var(--green-2));
+               display:flex; align-items:center; justify-content:center; color:#fff; font-weight:800; font-size:16px; }
+  .logo b{ font-size:17px; } .logo b span{ color:var(--green-2); }
+  .logo small{ display:block; color:var(--muted); font-weight:600; font-size:12px; }
+  h1{ font-size:20px; margin:0 0 10px; }
+  p{ font-size:15px; line-height:1.6; color:#3A4047; margin:0 0 18px; }
+  .btn{ display:inline-flex; align-items:center; justify-content:center; gap:8px; width:100%; padding:13px 18px;
+        border:0; border-radius:10px; background:var(--green); color:#fff; font-weight:700; font-size:15px; cursor:pointer; }
+  .btn:hover{ background:var(--green-2); }
+  .btn[disabled]{ opacity:.6; cursor:not-allowed; }
+  .muted{ color:var(--muted); font-size:13px; }
+  .ok{ color:#067647; } .err{ color:#B42318; }
+  .spin{ width:16px; height:16px; border:2px solid rgba(255,255,255,.5); border-top-color:#fff; border-radius:50%;
+         display:inline-block; animation:sp .6s linear infinite; } @keyframes sp{ to{ transform:rotate(360deg); } }
+  .hidden{ display:none !important; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">
+      <div class="mark">GC</div>
+      <div><b>GreenCareers <span>Newsletter</span></b><small>Karrierenetzwerk für Bau, GaLaBau, Tiefbau & Landwirtschaft</small></div>
+    </div>
+
+    <div id="confirm">
+      <h1>Newsletter abmelden</h1>
+      <p>Du möchtest keine weiteren E-Mails von GreenCareers erhalten? Mit einem Klick bist du aus der Liste.</p>
+      <button class="btn" id="btn" onclick="doUnsub()">Ja, keine weiteren E-Mails mehr</button>
+      <p class="muted" style="margin-top:16px" id="hint"></p>
+    </div>
+
+    <div id="done" class="hidden">
+      <h1 id="doneTitle" class="ok">Du bist abgemeldet.</h1>
+      <p id="doneMsg">Wir schicken dir keine Newsletter mehr. Schade, dass du gehst – du kannst dich jederzeit wieder eintragen.</p>
+      <p class="muted">© GreenCareers · <a href="https://www.green-careers.de" style="color:var(--muted)">green-careers.de</a></p>
+    </div>
+  </div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+  // Gleiches Projekt wie das OS/Admin (anon-Key ist bewusst oeffentlich).
+  const SB_URL  = 'https://tfoopogxaqvfwbonabpi.supabase.co';
+  const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmb29wb2d4YXF2Zndib25hYnBpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEyNTQzMjQsImV4cCI6MjA5NjgzMDMyNH0.udWRPszXVOj7EG4bspmsU9HXbZYFRDn8QO9kZi2tw8M';
+  const sb = window.supabase.createClient(SB_URL, SB_ANON);
+
+  const $ = id => document.getElementById(id);
+  const params = new URLSearchParams(location.search);
+  const token = params.get('token') || params.get('t') || '';
+
+  if(!token){
+    $('confirm').classList.add('hidden');
+    $('done').classList.remove('hidden');
+    $('doneTitle').textContent = 'Link unvollständig';
+    $('doneTitle').className = 'err';
+    $('doneMsg').textContent = 'Dieser Abmeldelink ist ungültig oder unvollständig. Nutze bitte den Link aus der aktuellsten E-Mail.';
+  }
+
+  async function doUnsub(){
+    const btn = $('btn'); btn.disabled = true; btn.innerHTML = '<span class="spin"></span>';
+    try{
+      const { data, error } = await sb.rpc('newsletter_unsubscribe', { p_token: token });
+      if(error) throw error;
+      if(data && data.ok === false){ throw new Error(data.error || 'not_found'); }
+      $('confirm').classList.add('hidden');
+      $('done').classList.remove('hidden');
+    }catch(e){
+      btn.disabled = false; btn.textContent = 'Erneut versuchen';
+      $('hint').innerHTML = '<span class="err">Das hat gerade nicht geklappt ('+ (e.message||e) +'). Bitte versuche es noch einmal.</span>';
+    }
+  }
+</script>
+</body>
+</html>
